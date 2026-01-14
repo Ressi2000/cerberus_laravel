@@ -19,8 +19,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    Route::get('export/usuarios', [ExportController::class, 'usuarios'])
-    ->name('export.usuarios');
+    Route::get('export/usuarios', [ExportController::class, 'usuarios'])->name('export.usuarios');
 
 
     // Perfil del usuario

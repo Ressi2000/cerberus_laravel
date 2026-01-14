@@ -3,9 +3,10 @@
     'paginated' => null,
     'export' => false,
     'actions' => true,
+    'filters' => [],
 ])
 
-<div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl">
+<div class="relative bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl">
 
     {{-- TOP BAR --}}
     <div class="p-4 flex items-center justify-between">
@@ -17,39 +18,30 @@
 
         {{-- Export button --}}
         @if ($export)
+            @php
+                // solo filtra valores NO vacíos
+                $filtersClean = collect($filters)->filter()->toArray();
+            @endphp
             <div class="relative">
-                <button
-                    id="exportDropdownButton"
-                    data-dropdown-toggle="exportDropdown"
-                    class="flex items-center gap-2 bg-cerberus-dark border border-cerberus-steel text-white px-4 py-2 rounded-lg hover:bg-cerberus-steel"
-                    type="button"
-                    aria-expanded="false"
-                >
+                <button id="exportDropdownButton" data-dropdown-toggle="exportDropdown"
+                    class="flex items-center gap-2 bg-cerberus-dark border border-cerberus-steel text-white px-4 py-2 rounded-lg hover:bg-cerberus-steel">
                     <span class="material-icons text-base">file_download</span>
                     Exportar
-                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                    </svg>
+                    <span class="material-icons text-sm">expand_more</span>
                 </button>
 
                 <div id="exportDropdown" class="hidden z-10 w-44 bg-cerberus-mid rounded-md shadow-cerberus mt-2">
                     <ul class="py-1 text-sm text-cerberus-light" aria-labelledby="exportDropdownButton">
                         <li>
-                            <a
-                                href="{{ route('export.usuarios', ['format' => 'csv']) }}"
-                                class="flex items-center gap-2 px-4 py-2 hover:bg-cerberus-steel/20"
-                            >
-                                <span class="material-icons text-base">upload_file</span>
-                                Exportar CSV
+                            <a href="{{ route('export.usuarios', array_merge(['format' => 'csv'], $filtersClean)) }}"
+                                class="flex items-center gap-2 px-4 py-2 hover:bg-cerberus-steel/20">
+                                CSV
                             </a>
                         </li>
                         <li>
-                            <a
-                                href="{{ route('export.usuarios', ['format' => 'xlsx']) }}"
-                                class="flex items-center gap-2 px-4 py-2 hover:bg-cerberus-steel/20"
-                            >
-                                <span class="material-icons text-base">table_view</span>
-                                Exportar XLSX
+                            <a href="{{ route('export.usuarios', array_merge(['format' => 'xlsx'], $filtersClean)) }}"
+                                class="flex items-center gap-2 px-4 py-2 hover:bg-cerberus-steel/20">
+                                XLSX
                             </a>
                         </li>
                     </ul>
@@ -60,33 +52,46 @@
     </div>
 
     {{-- TABLE CONTAINER --}}
+    <div wire:loading.flex
+        wire:target="search, empresa_id, rol_id, departamento_id, cargo_id, ubicacion_id, estado, perPage"
+        class="absolute inset-0 backdrop-blur-sm bg-black/40 flex items-center justify-center z-20 rounded-xl">
+
+        <div class="flex flex-col items-center gap-3 animate-fade-in">
+            <div class="h-10 w-10 border-4 border-cerberus-primary border-t-transparent rounded-full animate-spin">
+            </div>
+            <span class="text-white font-medium tracking-wide">Cargando...</span>
+        </div>
+
+    </div>
+
     {{-- <div class="overflow-x-auto"> --}}
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm text-left">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
 
-                <thead class="bg-cerberus-steel/40 text-gray-200 uppercase text-xs">
-                    <tr>
-                        @foreach ($headers as $h)
-                            <th scope="col" class="px-6 py-3 font-semibold tracking-wide">
-                                {{ $h }}
-                            </th>
-                        @endforeach
-                    </tr>
-                </thead>
+            <thead class="bg-cerberus-steel/40 text-gray-200 uppercase text-xs">
+                <tr>
+                    @foreach ($headers as $h)
+                        <th scope="col" class="px-6 py-3 font-semibold tracking-wide">
+                            {{ $h }}
+                        </th>
+                    @endforeach
+                </tr>
+            </thead>
 
-                <tbody class="divide-y divide-cerberus-steel/30">
-                    {{ $slot }}
-                </tbody>
+            <tbody class="divide-y divide-cerberus-steel/30">
+                {{ $slot }}
+            </tbody>
 
-            </table>
-        </div>
-    {{-- </div> --}}
+        </table>
+    </div>
+</div>
+{{-- </div> --}}
 
-    {{-- PAGINATION --}}
-    @if ($paginated)
-        <div class="p-4 border-t border-cerberus-steel">
-            {{ $paginated->links() }}
-        </div>
-    @endif
+{{-- PAGINATION --}}
+@if ($paginated)
+    <div class="p-4 border-t border-cerberus-steel">
+        {{ $paginated->links() }}
+    </div>
+@endif
 
 </div>

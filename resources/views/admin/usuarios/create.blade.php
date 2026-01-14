@@ -43,6 +43,9 @@
                 {{-- Nombre --}}
                 <x-form.input name="name" label="Nombre completo" required />
 
+                {{-- Username --}}
+                <x-form.input name="username" label="Nombre de usuario" required />
+
                 {{-- Cédula --}}
                 <x-form.input name="cedula" label="Cédula" />
 
@@ -62,19 +65,19 @@
                 <h2 class="text-xl text-white font-semibold mb-4">Datos laborales</h2>
 
                 {{-- Empresa --}}
-                <x-form.select name="empresa_id" label="Empresa" :options="$empresas" required />
+                <x-select name="empresa_id" label="Empresa" :options="$empresas" required />
 
                 {{-- Departamento --}}
-                <x-form.select name="departamento_id" label="Departamento" :options="$departamentos" />
+                <x-select name="departamento_id" label="Departamento" :options="$departamentos" />
 
                 {{-- Cargo --}}
-                <x-form.select name="cargo_id" label="Cargo" :options="$cargos" />
+                <x-select name="cargo_id" label="Cargo" :options="$cargos" />
 
                 {{-- Jefe --}}
-                <x-form.select name="jefe_id" label="Jefe" :options="$jefes" />
+                <x-select name="jefe_id" label="Jefe" :options="$jefes" />
 
                 {{-- Ubicación --}}
-                <x-form.select name="ubicacion_id" label="Ubicación principal" :options="$ubicaciones" />
+                <x-select name="ubicacion_id" label="Ubicación principal" :options="$ubicaciones" />
             </div>
         </div>
 
@@ -85,10 +88,10 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
                 {{-- Rol --}}
-                <x-form.select name="rol_id" label="Rol del sistema" :options="$roles" required />
+                <x-select name="rol_id" label="Rol del sistema" :options="$roles" required />
 
                 {{-- Estado --}}
-                <x-form.select name="estado" label="Estado" :options="['Activo'=>'Activo','Inactivo'=>'Inactivo']" />
+                <x-select name="estado" label="Estado" :options="['Activo'=>'Activo','Inactivo'=>'Inactivo']" />
 
                 {{-- Password --}}
                 <x-form.input type="password" name="password" label="Contraseña" required />

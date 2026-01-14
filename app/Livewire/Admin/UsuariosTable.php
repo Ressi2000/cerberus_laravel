@@ -44,6 +44,7 @@ class UsuariosTable extends Component
         // incluso si está vacío
     }
 
+    public $loading = false;
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -90,6 +91,19 @@ class UsuariosTable extends Component
         ])->filter()->count();
     }
 
+    public function getFilterParamsProperty()
+    {
+        return [
+            'search' => $this->search,
+            'rol_id' => $this->rol_id,
+            'empresa_id' => $this->empresa_id,
+            'departamento_id' => $this->departamento_id,
+            'cargo_id' => $this->cargo_id,
+            'ubicacion_id' => $this->ubicacion_id,
+            'estado' => $this->estado,
+        ];
+    }
+
     public function render()
     {
         $query = User::query()->with('roles','empresa','departamento','cargo','ubicacion');
@@ -133,7 +147,7 @@ class UsuariosTable extends Component
             'empresas' => Empresa::pluck('nombre', 'id'),
             'departamentos' => Departamento::pluck('nombre', 'id'),
             'cargos' => Cargo::pluck('nombre', 'id'),
-            'ubicaciones' => Ubicacion::pluck('nombre', 'id'),
+            'ubicaciones' => Empresa::pluck('nombre', 'id'),
         ]);
     }
 }

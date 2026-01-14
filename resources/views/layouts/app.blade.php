@@ -34,6 +34,7 @@
     <x-footer />
 
     <!-- Scripts para la interactividad - VERSIÓN CORREGIDA -->
+    
     <script>
         // Esperar a que el DOM esté completamente cargado
         document.addEventListener('DOMContentLoaded', function() {

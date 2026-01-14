@@ -14,7 +14,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, Auditable; 
+    use HasFactory, Notifiable, HasRoles, Auditable;
 
     /**
      * The attributes that are mass assignable.
@@ -25,17 +25,17 @@ class User extends Authenticatable
         'name',
         'username',
         'email',
-        'password',
+        'ficha',
+        'cedula',
         'empresa_id',
         'departamento_id',
         'cargo_id',
         'ubicacion_id',
-        'estado',
         'telefono',
-        'foto',
-        'ficha',
-        'cedula',
         'jefe_id',
+        'foto',
+        'password',
+        'estado',
     ];
 
     /**
@@ -58,7 +58,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'estado' => 'boolean',
         ];
     }
 
@@ -87,4 +86,8 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'jefe_id');
     }
 
+    public function subordinados()
+    {
+        return $this->hasMany(User::class, 'jefe_id');
+    }
 }

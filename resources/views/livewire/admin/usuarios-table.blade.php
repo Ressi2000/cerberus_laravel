@@ -3,10 +3,9 @@
         :buttonUrl="route('admin.usuarios.create')">
 
         <x-slot name="filters">
-            
+
             {{-- TOP BARRAS + FILTROS --}}
-            <div 
-                class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4">
+            <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4">
 
                 {{-- BADGE DE FILTROS ACTIVOS --}}
                 @if ($this->activeFiltersCount > 0)
@@ -23,20 +22,19 @@
                     {{-- SEARCH --}}
                     <div class="flex items-center flex-grow min-w-[200px]">
                         <div class="relative w-full">
-                            <input type="text" wire:model.debounce.500ms="search" placeholder="Buscar usuarios..."
+                            <input type="text" wire:model.live.500ms="search" placeholder="Buscar usuarios..."
                                 class="w-full bg-cerberus-dark border border-cerberus-steel rounded-lg px-4 py-2 text-white">
                             <span class="material-icons absolute right-3 top-2.5 text-gray-400">search</span>
                         </div>
                     </div>
 
                     {{-- SELECTS --}}
-                    
-                    <x-select name="empresa_id" label="Empresa" :options="$empresas" wire:model="empresa_id" />
-                    <x-select name="rol_id" label="Rol" :options="$roles" wire:model="rol_id" />
-                    <x-select name="departamento_id" label="Departamento" :options="$departamentos"
-                        wire:model="departamento_id" />
-                    <x-select name="cargo_id" label="Cargo" :options="$cargos" wire:model="cargo_id" />
-                    <x-select name="ubicacion_id" label="Ubicación" :options="$ubicaciones" wire:model="ubicacion_id" />
+
+                    <x-select name="empresa_id" label="Empresa" :options="$empresas" wire:model.live="empresa_id" />
+                    <x-select name="rol_id" label="Rol" :options="$roles" wire:model.live="rol_id" />
+                    <x-select name="departamento_id" label="Departamento" :options="$departamentos" wire:model.live="departamento_id" />
+                    <x-select name="cargo_id" label="Cargo" :options="$cargos" wire:model.live="cargo_id" />
+                    <x-select name="ubicacion_id" label="Ubicación" :options="$ubicaciones" wire:model.live="ubicacion_id" />
 
 
                     {{-- ACTIONS --}}
@@ -53,17 +51,17 @@
                     <span class="text-white">Mostrar:</span>
 
                     <label class="flex items-center gap-1">
-                        <input type="radio" value="" wire:model="estado">
+                        <input type="radio" value="" wire:model.live="estado">
                         <span>Todos</span>
                     </label>
 
                     <label class="flex items-center gap-1">
-                        <input type="radio" value="Activo" wire:model="estado">
+                        <input type="radio" value="Activo" wire:model.live="estado">
                         <span>Activos</span>
                     </label>
 
                     <label class="flex items-center gap-1">
-                        <input type="radio" value="Inactivo" wire:model="estado">
+                        <input type="radio" value="Inactivo" wire:model.live="estado">
                         <span>Inactivos</span>
                     </label>
 
@@ -78,12 +76,13 @@
     </x-crud-header>
 
     {{-- TABLA REUSABLE --}}
-    <x-crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export>
+    <x-crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export :filters="$this->filterParams">
         @foreach ($usuarios as $u)
             <tr class="hover:bg-cerberus-darkest">
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-3">
-                        <img src="{{ $u->profile_photo_url }}" class="w-10 h-10 rounded-full">
+                        <img src="{{ $u->foto ? asset('storage/'.$u->foto) : 'https://ui-avatars.com/api/?name='.$u->name }}" 
+                            class="w-10 h-10 rounded-full">
                         <div class="text-white font-medium">{{ $u->name }}</div>
                     </div>
                 </td>

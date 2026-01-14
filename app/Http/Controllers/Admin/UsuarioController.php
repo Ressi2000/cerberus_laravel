@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
@@ -10,74 +11,37 @@ use App\Models\Ubicacion;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class UsuarioController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        // Filtros dinámicos (los implementamos en la siguiente sección)
-        $query = User::with('roles','departamento','cargo','empresa','ubicacion');
-
-        /** FILTRO BÚSQUEDA */
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', "%{$request->search}%")
-                ->orWhere('email', 'like', "%{$request->search}%")
-                ->orWhere('username', 'LIKE', "%{$request->search}%")
-                ->orWhere('ficha', 'like', "%{$request->search}%");
-            });
-        }
-
-        /** FILTROS AVANZADOS */
-        if ($request->filled('rol_id')) {
-            $query->whereHas('roles', function ($q) use ($request) {
-                $q->where('id', $request->rol_id);
-            });
-        }
-
-        if ($request->filled('cargo_id')) {
-            $query->where('cargo_id', $request->cargo_id);
-        }
-
-        if ($request->filled('departamento_id')) {
-            $query->where('departamento_id', $request->departamento_id);
-        }
-
-        if ($request->filled('empresa_id')) {
-            $query->where('empresa_id', $request->empresa_id);
-        }
-
-        if ($request->filled('ubicacion_id')) {
-            $query->where('ubicacion_id', $request->ubicacion_id);
-        }
-
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
-        }
-
-        /** Obtener usuarios paginados */
-        $perPage = $request->get('per_page', 10);
-        $usuarios = $query->paginate($perPage)->appends($request->query());
-
-        /** Estadísticas */
+        // Estadísticas rápidas
         $usuariosActivos = User::where('estado', 'Activo')->count();
         $usuariosInactivos = User::where('estado', 'Inactivo')->count();
         $admins = User::role('Administrador')->count();
+        $analistas = User::role('Analista')->count();
 
-        /** Filtros para Selects */
+        // Filtros para selects (cachea para rendimiento)
         $roles = Role::pluck('name', 'id');
         $cargos = Cargo::pluck('nombre', 'id');
         $departamentos = Departamento::pluck('nombre', 'id');
         $empresas = Empresa::pluck('nombre', 'id');
-        $ubicaciones = Ubicacion::pluck('nombre', 'id');
+        $ubicaciones = Empresa::pluck('nombre', 'id');
 
+        // Livewire se encarga del filtrado real
         return view('admin.usuarios.index', compact(
-            'usuarios',
             'usuariosActivos',
             'usuariosInactivos',
             'admins',
-            'roles','cargos','departamentos','empresas','ubicaciones'
+            'analistas',
+            'roles',
+            'cargos',
+            'departamentos',
+            'empresas',
+            'ubicaciones'
         ));
     }
 
@@ -87,9 +51,9 @@ class UsuarioController extends Controller
         $departamentos = Departamento::pluck('nombre', 'id');
         $cargos = Cargo::pluck('nombre', 'id');
         $empresas = Empresa::pluck('nombre', 'id');
-        $ubicaciones = Ubicacion::pluck('nombre', 'id');
+        $ubicaciones = Empresa::pluck('nombre', 'id');
         $jefes = User::pluck('name', 'id');
-        return view('admin.usuarios.create', compact('roles','departamentos','cargos', 'empresas', 'ubicaciones', 'jefes'));
+        return view('admin.usuarios.create', compact('roles', 'departamentos', 'cargos', 'empresas', 'ubicaciones', 'jefes'));
     }
 
     public function store(Request $request)
@@ -99,51 +63,60 @@ class UsuarioController extends Controller
             'username' => 'required|string|max:255|unique:users,username',
             'cedula' => 'nullable|string|max:20',
             'telefono' => 'nullable|string|max:20',
-            'email' => 'required|email|unique:users,email',
+            'email' => 'nullable|email|unique:users,email',
             'ficha' => 'nullable|string|max:100',
-
             'empresa_id' => 'nullable|exists:empresas,id',
             'departamento_id' => 'nullable|exists:departamentos,id',
             'cargo_id' => 'nullable|exists:cargos,id',
-            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
+            'ubicacion_id' => 'nullable|exists:empresas,id',
             'jefe_id' => 'nullable|exists:users,id',
 
-            'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
+            // Un único rol
+            'rol_id' => 'nullable|exists:roles,id',
 
             'password' => 'required|min:6|confirmed',
-            'estado' => 'nullable|boolean',
+
+            // viene como string en tu formulario
+            'estado' => 'nullable|string|in:Activo,Inactivo',
+
+            // imagen
             'foto' => 'nullable|image|max:2048',
         ]);
 
+
         // handle foto upload if present
         $fotoPath = null;
+
         if ($request->hasFile('foto')) {
-            $fotoPath = $request->file('foto')->store('fotos', 'public');
+            $fotoPath = $request->file('foto')
+                ->store('users', 'public');
         }
+
 
         $user = User::create([
             'name' => $data['name'],
             'username' => $data['username'],
-            'email' => $data['email'],
+            'email' => $data['email'] ?? null,
             'password' => Hash::make($data['password']),
             'empresa_id' => $data['empresa_id'] ?? null,
             'departamento_id' => $data['departamento_id'] ?? null,
             'cargo_id' => $data['cargo_id'] ?? null,
             'ubicacion_id' => $data['ubicacion_id'] ?? null,
             'jefe_id' => $data['jefe_id'] ?? null,
-            'estado' => $data['estado'] ?? true,
+            'estado' => $data['estado'] ?? 'Activo',
             'telefono' => $data['telefono'] ?? null,
             'foto' => $fotoPath,
             'ficha' => $data['ficha'] ?? null,
             'cedula' => $data['cedula'] ?? null,
         ]);
 
-        if (!empty($data['roles'])) {
-            $user->syncRoles($data['roles']);
+        if ($request->filled('rol_id')) {
+            $role = Role::findOrFail($request->rol_id);
+            $user->assignRole($role);
         }
 
-        return redirect()->route('admin.usuarios.index')->with('success','Usuario creado correctamente.');
+
+        return redirect()->route('admin.usuarios.index')->with('success', 'Usuario creado correctamente.');
     }
 
     public function edit(User $usuario)
@@ -152,77 +125,66 @@ class UsuarioController extends Controller
         $departamentos = Departamento::pluck('nombre', 'id');
         $cargos = Cargo::pluck('nombre', 'id');
         $empresas = Empresa::pluck('nombre', 'id');
-        $ubicaciones = Ubicacion::pluck('nombre', 'id');
+        $ubicaciones = Empresa::pluck('nombre', 'id');
         $jefes = User::pluck('name', 'id');
-        $userRoles = $usuario->roles->pluck('name')->toArray();
-        return view('admin.usuarios.edit', compact('usuario','roles','departamentos','cargos','userRoles', 'empresas', 'ubicaciones', 'jefes'));
+        $userRoles = $usuario->roles->first()?->id;
+        return view('admin.usuarios.edit', compact('usuario', 'roles', 'departamentos', 'cargos', 'userRoles', 'empresas', 'ubicaciones', 'jefes'));
     }
 
     public function update(Request $request, User $usuario)
     {
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => [
-                'required','string','max:255',
-                Rule::unique('users','username')->ignore($usuario->id)
-            ],
+            'username' => ['required', 'string', 'max:255', Rule::unique('users', 'username')->ignore($usuario->id)],
             'cedula' => 'nullable|string|max:20',
             'telefono' => 'nullable|string|max:20',
-            'email' => [
-                'required','email',
-                Rule::unique('users','email')->ignore($usuario->id)
-            ],
+            'email' => ['nullable', 'email', Rule::unique('users', 'email')->ignore($usuario->id)],
             'ficha' => 'nullable|string|max:100',
-
             'empresa_id' => 'nullable|exists:empresas,id',
             'departamento_id' => 'nullable|exists:departamentos,id',
             'cargo_id' => 'nullable|exists:cargos,id',
-            'ubicacion_id' => 'nullable|exists:ubicaciones,id',
+            'ubicacion_id' => 'nullable|exists:empresas,id',
             'jefe_id' => 'nullable|exists:users,id',
-
-            'roles' => 'nullable|array',
-            'roles.*' => 'exists:roles,id',
-
+            'rol_id' => 'nullable|exists:roles,id',
             'password' => 'nullable|min:6|confirmed',
-            'estado' => 'nullable|boolean',
+            'estado' => 'nullable|string|in:Activo,Inactivo',
             'foto' => 'nullable|image|max:2048',
         ]);
 
-        $usuario->name = $data['name'];
-        $usuario->username = $data['username'];
-        $usuario->email = $data['email'];
-        $usuario->empresa_id = $data['empresa_id'] ?? null;
-        $usuario->departamento_id = $data['departamento_id'] ?? null;
-        $usuario->cargo_id = $data['cargo_id'] ?? null;
-        $usuario->ubicacion_id = $data['ubicacion_id'] ?? null;
-        $usuario->jefe_id = $data['jefe_id'] ?? null;
-        $usuario->telefono = $data['telefono'] ?? null;
-        $usuario->ficha = $data['ficha'] ?? null;
-        $usuario->cedula = $data['cedula'] ?? null;
-        if (isset($data['estado'])) {
-            $usuario->estado = (bool)$data['estado'];
-        }
-
-        // handle foto upload if present
+        // FOTO
         if ($request->hasFile('foto')) {
-            $fotoPath = $request->file('foto')->store('fotos', 'public');
-            $usuario->foto = $fotoPath;
+            if ($usuario->foto && Storage::disk('public')->exists($usuario->foto)) {
+                Storage::disk('public')->delete($usuario->foto);
+            }
+
+            $data['foto'] = $request->file('foto')->store('users', 'public');
+        } else {
+            unset($data['foto']); // ← CLAVE
         }
 
+
+        // PASSWORD
         if (!empty($data['password'])) {
-            $usuario->password = Hash::make($data['password']);
+            $data['password'] = Hash::make($data['password']);
+        } else {
+            unset($data['password']); // evita sobreescribir con null
+        }
+        
+        $usuario->update($data);
+
+        // ROL - convertir ID a objeto Role
+        if (!empty($data['rol_id'])) {
+            $role = Role::find($data['rol_id']);
+            $usuario->syncRoles([$role]);
         }
 
-        $usuario->save();
-        $usuario->syncRoles($data['roles'] ?? []);
-
-        return redirect()->route('admin.usuarios.index')->with('success','Usuario actualizado.');
+        return redirect()->route('admin.usuarios.index')->with('success', 'Usuario actualizado correctamente.');
     }
 
     public function destroy(User $usuario)
     {
         $usuario->delete();
-        return redirect()->route('admin.usuarios.index')->with('success','Usuario eliminado.');
+        return redirect()->route('admin.usuarios.index')->with('success', 'Usuario eliminado.');
     }
 
     public function show(User $usuario)

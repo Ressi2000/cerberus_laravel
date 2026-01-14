@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\CollectionExport;
+use App\Exports\UsuariosExport;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -14,57 +15,45 @@ class ExportController extends Controller
     {
         $format = $request->input('format', 'xlsx'); // xlsx (default) o csv
 
-        // Convertimos los usuarios al arreglo exportable
-        $users = User::with(['rol', 'empresa', 'departamento', 'cargo', 'ubicacion'])
-            ->get()
-            ->map(function ($u) {
-                return [
-                    'ID'           => $u->id,
-                    'Nombre'       => $u->name,
-                    'Email'        => $u->email,
-                    'Rol'          => $u->roles->pluck('name')->join(', '),
-                    'Estado'       => $u->estado ? 'Activo' : 'Inactivo',
-                    'Empresa'      => $u->empresa->nombre ?? '',
-                    'Departamento' => $u->departamento->nombre ?? '',
-                    'Cargo'        => $u->cargo->nombre ?? '',
-                    'Ubicación'    => $u->ubicacion->nombre ?? '',
-                    'Creado'       => $u->created_at?->format('Y-m-d H:i'),
-                ];
-            });
+        // ==============================
+        // Construir query con filtros activos
+        // ==============================
+        $query = User::with(['empresa', 'departamento', 'cargo', 'ubicacion', 'roles']);
 
-        // ============================
-        // EXPORTACIÓN XLSX
-        // ============================
-        if ($format === 'xlsx') {
-            return Excel::download(new CollectionExport($users), 'usuarios.xlsx');
+        if ($request->search) {
+            $search = $request->search;
+            $query->where(
+                fn($q) =>
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('username', 'like', "%{$search}%")
+            );
         }
 
-        // ============================
-        // EXPORTACIÓN CSV
-        // ============================
-        if ($format === 'csv') {
-            $filename = 'usuarios.csv';
-
-            return new StreamedResponse(function () use ($users) {
-                $handle = fopen('php://output', 'w');
-
-                // Escribimos el header
-                if ($users->isNotEmpty()) {
-                    fputcsv($handle, array_keys($users->first()));
-                }
-
-                // Escribimos las filas
-                foreach ($users as $row) {
-                    fputcsv($handle, $row);
-                }
-
-                fclose($handle);
-            }, 200, [
-                'Content-Type'        => 'text/csv',
-                'Content-Disposition' => "attachment; filename={$filename}",
-            ]);
+        if ($request->rol_id) {
+            $query->whereHas('roles', fn($q) => $q->where('id', $request->rol_id));
+        }
+        if ($request->empresa_id) {
+            $query->where('empresa_id', $request->empresa_id);
+        }
+        if ($request->departamento_id) {
+            $query->where('departamento_id', $request->departamento_id);
+        }
+        if ($request->cargo_id) {
+            $query->where('cargo_id', $request->cargo_id);
+        }
+        if ($request->ubicacion_id) {
+            $query->where('ubicacion_id', $request->ubicacion_id);
+        }
+        if ($request->estado) {
+            $query->where('estado', $request->estado);
         }
 
-        abort(400, 'Formato no válido.');
+        // ==============================
+        // Exportación XLSX o CSV
+        // ==============================
+        $filename = 'usuarios.' . $format;
+
+        return Excel::download(new UsuariosExport($query), $filename);
     }
 }

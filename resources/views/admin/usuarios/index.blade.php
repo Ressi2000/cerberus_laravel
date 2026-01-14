@@ -9,10 +9,10 @@
 
     {{-- STAT CARDS --}}
     <x-stats-cards :items="[
-        ['title' => 'Total Usuarios', 'value' => $usuarios->count(), 'icon' => 'group'],
         ['title' => 'Activos', 'value' => $usuariosActivos ?? 0, 'icon' => 'check_circle'],
         ['title' => 'Inactivos', 'value' => $usuariosInactivos ?? 0, 'icon' => 'cancel'],
         ['title' => 'Admins', 'value' => $admins ?? 0, 'icon' => 'admin_panel_settings'],
+        ['title' => 'Analistas', 'value' => $analistas ?? 0, 'icon' => 'group'],
     ]" />
     
     @livewire('admin.usuarios-table')
