@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Database\Eloquent\Builder;
 
 class User extends Authenticatable
 {
@@ -24,13 +25,14 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'username',
+        'empresa_id', //nomina
+        'empresa_activa_id', //contexto analista
         'email',
         'ficha',
         'cedula',
-        'empresa_id',
         'departamento_id',
         'cargo_id',
-        'ubicacion_id',
+        'ubicacion_id', //visibilidad
         'telefono',
         'jefe_id',
         'foto',
@@ -71,16 +73,6 @@ class User extends Authenticatable
         return $this->belongsTo(Cargo::class, 'cargo_id');
     }
 
-    public function empresa()
-    {
-        return $this->belongsTo(Empresa::class, 'empresa_id');
-    }
-
-    public function ubicacion()
-    {
-        return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
-    }
-
     public function jefe()
     {
         return $this->belongsTo(User::class, 'jefe_id');
@@ -89,5 +81,49 @@ class User extends Authenticatable
     public function subordinados()
     {
         return $this->hasMany(User::class, 'jefe_id');
+    }
+
+    public function empresaNomina()
+    {
+        return $this->belongsTo(Empresa::class, 'empresa_id');
+    }
+
+    public function empresasAsignadas()
+    {
+        return $this->belongsToMany(Empresa::class, 'empresa_user')->withTimestamps();
+    }
+
+    public function ubicacion()
+    {
+        return $this->belongsTo(Ubicacion::class, 'ubicacion_id');
+    }
+
+    public function empresaActiva()
+    {
+        return $this->belongsTo(Empresa::class, 'empresa_activa_id');
+    }
+
+    // Scope para filtrar usuarios visibles para el actor dado
+    public function scopeVisiblePara(Builder $query, User $actor): Builder
+    {
+        // Admin ve todo
+        if ($actor->hasRole('Administrador')) {
+            return $query;
+        }
+
+        // Usuario normal: solo él mismo
+        if ($actor->hasRole('Usuario')) {
+            return $query->whereKey($actor->id);
+        }
+
+        // Analista
+        if ($actor->hasRole('Analista')) {
+            return $query->where(function ($q) use ($actor) {
+                $q->where('ubicacion_id', $actor->empresa_activa_id)
+                  ->orWhereHas('ubicacion', fn ($u) => $u->where('es_estado', true));
+            });
+        }
+
+        return $query->whereRaw('1 = 0');
     }
 }

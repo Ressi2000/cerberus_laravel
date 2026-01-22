@@ -1,9 +1,9 @@
-@props(['name', 'label', 'options' => [], 'selected' => null, 'required' => false])
+@props(['name', 'label', 'options' => [], 'selected' => null, 'required' => false, 'disabled' => false])
 
 <div class="mb-4">
     <label class="block text-cerberus-accent mb-1">{{ $label }}</label>
 
-    <select name="{{ $name }}" {{ $required ? 'required' : '' }}
+    <select name="{{ $name }}" {{ $required ? 'required' : '' }} {{ $disabled ? 'disabled' : '' }}
         {{ $attributes->merge([
             'class' =>
                 'w-full bg-cerberus-dark border border-cerberus-steel text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-cerberus-primary outline-none',

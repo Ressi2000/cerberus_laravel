@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\UsuarioController;
+use App\Http\Controllers\EmpresaSelectorController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -9,10 +11,23 @@ Route::middleware('guest')->get('/', function () {
     return view('welcome');
 });
 
+Route::middleware('auth')->group(function () {
+    Route::get('/seleccionar-empresa', [EmpresaSelectorController::class, 'create'])
+        ->name('empresa.select');
+
+    Route::post('/seleccionar-empresa', [EmpresaSelectorController::class, 'store'])
+        ->name('empresa.select.store');
+    
+    Route::post('/cambiar-empresa', [EmpresaSelectorController::class, 'switch'])
+    ->middleware('auth')
+    ->name('empresa.switch');
+
+});
+
 // -------------------
 // Zona privada (requiere login)
 // -------------------
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'empresa.activa'])->group(function () {
 
     // Dashboard principal
     Route::get('/dashboard', function () {
@@ -20,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 
     Route::get('export/usuarios', [ExportController::class, 'usuarios'])->name('export.usuarios');
+    Route::get('export/auditoria', [ExportController::class, 'auditoria'])->name('export.auditoria');
 
 
     // Perfil del usuario
@@ -34,6 +50,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->group(function () {
             Route::resource('/usuarios', UsuarioController::class);
         });
+
+    Route::middleware(['role:Administrador'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/auditoria', [AuditoriaController::class, 'index'])
+            ->name('auditoria.index');
+    });
+
 });
 
 require __DIR__.'/auth.php';

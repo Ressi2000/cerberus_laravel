@@ -10,6 +10,7 @@ use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Ubicacion;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Url;
 
 class UsuariosTable extends Component
@@ -40,7 +41,8 @@ class UsuariosTable extends Component
     #[Url]
     public $perPage = 10;
 
-    public function loadData() {
+    public function loadData()
+    {
         // incluso si está vacío
     }
 
@@ -106,14 +108,53 @@ class UsuariosTable extends Component
 
     public function render()
     {
-        $query = User::query()->with('roles','empresa','departamento','cargo','ubicacion');
+        /** @var \App\Models\User $actor */
+        $actor = Auth::user();
+
+        $query = User::query()
+            ->with(['roles', 'empresasAsignadas', 'departamento', 'cargo', 'ubicacion', 'empresaNomina'])
+            ->where(function ($q) use ($actor) {
+
+                // ADMIN → ve todo
+                if ($actor->hasRole('Administrador')) {
+                    return;
+                }
+
+                // USUARIO → solo se ve a sí mismo
+                if ($actor->hasRole('Usuario')) {
+                    $q->where('id', $actor->id);
+                    return;
+                }
+
+                // ANALISTA → reglas de ubicación física
+                if ($actor->hasRole('Analista')) {
+                    $q->where(function ($sub) use ($actor) {
+                        $sub
+                            // misma ubicación física
+                            ->where('ubicacion_id', $actor->empresa_activa_id)
+
+                            // o foráneos (estado)
+                            ->orWhereHas(
+                                'ubicacion',
+                                fn($u) =>
+                                $u->where('es_estado', true)
+                            );
+                    });
+                        // opcional pero recomendado: ocultar admins
+                        // ->whereDoesntHave(
+                        //     'roles',
+                        //     fn($r) =>
+                        //     $r->where('name', 'Administrador')
+                        // );
+                }
+            });
 
         // filtros dinámicos
         if ($this->search) {
             $query->where(function ($q) {
                 $q->where('name', 'like', "%{$this->search}%")
-                  ->orWhere('email', 'like', "%{$this->search}%")
-                  ->orWhere('username', 'like', "%{$this->search}%");
+                    ->orWhere('email', 'like', "%{$this->search}%")
+                    ->orWhere('username', 'like', "%{$this->search}%");
             });
         }
 
@@ -122,7 +163,9 @@ class UsuariosTable extends Component
         }
 
         if ($this->empresa_id) {
-            $query->where('empresa_id', $this->empresa_id);
+            $query->whereHas('empresasAsignadas', function ($q) {
+                $q->where('empresas.id', $this->empresa_id);
+            });
         }
 
         if ($this->departamento_id) {
@@ -147,7 +190,7 @@ class UsuariosTable extends Component
             'empresas' => Empresa::pluck('nombre', 'id'),
             'departamentos' => Departamento::pluck('nombre', 'id'),
             'cargos' => Cargo::pluck('nombre', 'id'),
-            'ubicaciones' => Empresa::pluck('nombre', 'id'),
+            'ubicaciones' => Ubicacion::pluck('nombre', 'id'),
         ]);
     }
 }

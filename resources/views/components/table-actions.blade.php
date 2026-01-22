@@ -2,6 +2,7 @@
     'editUrl' => null,
     'deleteModalId' => null,
     'viewModalId' => null,
+    'user' => null,
 ])
 
 <div class="relative">
@@ -26,7 +27,8 @@
                     </button>
                 </li>
             @endif
-
+            
+            @can('update', $user)
             @if ($editUrl)
                 <li>
                     <a href="{{ $editUrl }}"
@@ -36,20 +38,22 @@
                     </a>
                 </li>
             @endif
-
+            @endcan
+            
             {{-- Eliminar con modal --}}
-            @if ($deleteModalId)
-                <li>
-                    <button type="button"
-                        data-modal-target="{{ $deleteModalId }}"
-                        data-modal-toggle="{{ $deleteModalId }}"
-                        class="flex items-center gap-2 px-4 py-2 w-full text-left hover:bg-red-600 hover:text-white">
-                        <span class="material-icons text-base">delete</span>
-                        Eliminar
-                    </button>
-                </li>
-            @endif
-
+            @can('delete', $user)
+                @if ($deleteModalId)
+                    <li>
+                        <button type="button"
+                            data-modal-target="{{ $deleteModalId }}"
+                            data-modal-toggle="{{ $deleteModalId }}"
+                            class="flex items-center gap-2 px-4 py-2 w-full text-left hover:bg-red-600 hover:text-white">
+                            <span class="material-icons text-base">delete</span>
+                            Eliminar
+                        </button>
+                    </li>
+                @endif
+            @endcan
         </ul>
     </div>
 </div>

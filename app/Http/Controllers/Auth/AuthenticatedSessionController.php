@@ -25,10 +25,34 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
-
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = $request->user();
+
+        // Admin y Usuario → directo
+        if ($user->hasAnyRole(['Administrador', 'Usuario'])) {
+            return redirect()->intended(route('dashboard'));
+        }
+
+        // Analista
+        $empresas = $user->empresasAsignadas;
+
+        if ($empresas->isEmpty()) {
+            Auth::logout();
+
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Tu usuario no tiene empresas asignadas.']);
+        }
+
+        if ($empresas->count() === 1) {
+            $user->update([
+                'empresa_activa_id' => $empresas->first()->id
+            ]);
+
+            return redirect()->intended(route('dashboard'));
+        }
+
+        return redirect()->route('empresa.select');
     }
 
     /**
@@ -36,10 +60,16 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        if ($user && $user->hasRole('Analista')) {
+            $user->update([
+                'empresa_activa_id' => null
+            ]);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/');

@@ -2,6 +2,7 @@
     'headers' => [],
     'paginated' => null,
     'export' => false,
+    'exportRoute' => null,
     'actions' => true,
     'filters' => [],
 ])
@@ -33,13 +34,13 @@
                 <div id="exportDropdown" class="hidden z-10 w-44 bg-cerberus-mid rounded-md shadow-cerberus mt-2">
                     <ul class="py-1 text-sm text-cerberus-light" aria-labelledby="exportDropdownButton">
                         <li>
-                            <a href="{{ route('export.usuarios', array_merge(['format' => 'csv'], $filtersClean)) }}"
+                            <a href="{{ route($exportRoute, array_merge(['format' => 'csv'], $filtersClean)) }}"
                                 class="flex items-center gap-2 px-4 py-2 hover:bg-cerberus-steel/20">
                                 CSV
                             </a>
                         </li>
                         <li>
-                            <a href="{{ route('export.usuarios', array_merge(['format' => 'xlsx'], $filtersClean)) }}"
+                            <a href="{{ route($exportRoute, array_merge(['format' => 'xlsx'], $filtersClean)) }}"
                                 class="flex items-center gap-2 px-4 py-2 hover:bg-cerberus-steel/20">
                                 XLSX
                             </a>
@@ -53,7 +54,6 @@
 
     {{-- TABLE CONTAINER --}}
     <div wire:loading.flex
-        wire:target="search, empresa_id, rol_id, departamento_id, cargo_id, ubicacion_id, estado, perPage"
         class="absolute inset-0 backdrop-blur-sm bg-black/40 flex items-center justify-center z-20 rounded-xl">
 
         <div class="flex flex-col items-center gap-3 animate-fade-in">
@@ -89,8 +89,25 @@
 
 {{-- PAGINATION --}}
 @if ($paginated)
-    <div class="p-4 border-t border-cerberus-steel">
-        {{ $paginated->links() }}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border-t border-cerberus-steel">
+
+        {{-- PER PAGE --}}
+        <div class="flex items-center gap-3 text-sm text-cerberus-light">
+            <span>Mostrar</span>
+
+            <select wire:model.live="perPage"
+                class="bg-cerberus-dark border border-cerberus-steel rounded-lg px-3 py-1 text-white text-sm focus:ring-cerberus-primary focus:border-cerberus-primary">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+
+            <span>por página</span>
+        </div>
+
+        {{ $paginated->links('vendor.livewire.cerberus-pagination') }}
+
     </div>
 @endif
 

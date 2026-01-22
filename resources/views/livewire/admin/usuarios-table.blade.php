@@ -32,7 +32,8 @@
 
                     <x-select name="empresa_id" label="Empresa" :options="$empresas" wire:model.live="empresa_id" />
                     <x-select name="rol_id" label="Rol" :options="$roles" wire:model.live="rol_id" />
-                    <x-select name="departamento_id" label="Departamento" :options="$departamentos" wire:model.live="departamento_id" />
+                    <x-select name="departamento_id" label="Departamento" :options="$departamentos"
+                        wire:model.live="departamento_id" />
                     <x-select name="cargo_id" label="Cargo" :options="$cargos" wire:model.live="cargo_id" />
                     <x-select name="ubicacion_id" label="Ubicación" :options="$ubicaciones" wire:model.live="ubicacion_id" />
 
@@ -76,12 +77,12 @@
     </x-crud-header>
 
     {{-- TABLA REUSABLE --}}
-    <x-crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export :filters="$this->filterParams">
+    <x-crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export exportRoute="export.usuarios" :filters="$this->filterParams">
         @foreach ($usuarios as $u)
             <tr class="hover:bg-cerberus-darkest">
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-3">
-                        <img src="{{ $u->foto ? asset('storage/'.$u->foto) : 'https://ui-avatars.com/api/?name='.$u->name }}" 
+                        <img src="{{ $u->foto ? asset('storage/' . $u->foto) : 'https://ui-avatars.com/api/?name=' . $u->name }}"
                             class="w-10 h-10 rounded-full">
                         <div class="text-white font-medium">{{ $u->name }}</div>
                     </div>
@@ -92,8 +93,9 @@
 
                 <td class="px-4 py-3">
                     @foreach ($u->roles as $r)
-                        <span
-                            class="px-2 py-1 text-xs rounded-md bg-blue-800 text-blue-300 mr-1">{{ $r->name }}</span>
+                        <span class="px-2 py-1 text-xs rounded-md bg-blue-800 text-blue-300 mr-1">
+                            {{ $r->name }}
+                        </span>
                     @endforeach
                 </td>
 
@@ -111,14 +113,13 @@
 
                 <td class="px-6 py-4 text-center">
 
-                    <x-table-actions row-id="user-{{ $u->id }}" :viewModalId="'viewUser-' . $u->id" :editUrl="route('admin.usuarios.edit', $u)"
+                    <x-table-actions row-id="user-{{ $u->id }}" :viewModalId="'viewUser-' . $u->id" :editUrl="route('admin.usuarios.edit', $u)" :user="$u"
                         deleteModalId="deleteUser-{{ $u->id }}" />
 
                     <x-view-modal id="viewUser-{{ $u->id }}" title="Detalle del Usuario" :data="$u" />
 
                     <x-delete-modal id="deleteUser-{{ $u->id }}" title="Eliminar Usuario" :message="'¿Seguro que deseas eliminar a ' . $u->name . '?'"
                         :action="route('admin.usuarios.destroy', $u)" />
-
                 </td>
 
             </tr>

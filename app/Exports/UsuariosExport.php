@@ -18,13 +18,16 @@ class UsuariosExport implements FromIterator
     {
         // Encabezados
         yield [
-            'ID','Nombre','Email','Rol','Estado','Empresa','Departamento','Cargo','Ubicación','Creado'
+            'ID','Nombre','Username','Ficha','Cédula','Email','Rol','Estado','Empresa','Departamento','Cargo','Ubicación','Jefe','Creado'
         ];
 
         foreach ($this->query->cursor() as $u) {
             yield [
                 $u->id,
                 $u->name,
+                $u->username,
+                $u->ficha,
+                $u->cedula,
                 $u->email,
                 $u->roles->pluck('name')->join(', '),
                 $u->estado,
@@ -32,6 +35,7 @@ class UsuariosExport implements FromIterator
                 $u->departamento->nombre ?? '',
                 $u->cargo->nombre ?? '',
                 $u->ubicacion->nombre ?? '',
+                $u->jefe->name ?? '',
                 $u->created_at?->format('Y-m-d H:i'),
             ];
         }

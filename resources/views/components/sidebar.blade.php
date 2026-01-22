@@ -26,6 +26,15 @@
                 </a>
             </li>
 
+            {{-- Auditoria --}}
+            <li>
+                <a href="{{ route('admin.auditoria.index') }}"
+                   class="flex items-center p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors">
+                    <span class="material-icons mr-3 text-cerberus-light">fact_check</span>
+                    <span>Auditoria</span>
+                </a>
+            </li>
+
             {{-- Gestión de usuarios --}}
             <li>
                 <button type="button"

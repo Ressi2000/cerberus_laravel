@@ -52,7 +52,7 @@
                         <p><span class="font-semibold text-white">Cédula:</span> {{ $data->cedula }}</p>
                         <p><span class="font-semibold text-white">Teléfono:</span> {{ $data->telefono }}</p>
                         <p><span class="font-semibold text-white">Ficha:</span> {{ $data->ficha }}</p>
-                        <p><span class="font-semibold text-white">Rol:</span> {{ $data->rol->name ?? '—' }}</p>
+                        <p><span class="font-semibold text-white">Rol:</span> {{ $data->getRoleNames()->join(', ') ?: '—' }}</p>
                     </div>
                 </div>
 
@@ -60,7 +60,7 @@
                     <h4 class="text-cerberus-accent font-semibold mb-2">Información Laboral</h4>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-cerberus-light">
-                        <p><span class="font-semibold text-white">Empresa:</span> {{ $data->empresa->nombre ?? '—' }}</p>
+                        <p><span class="font-semibold text-white">Empresa:</span> {{ $data->empresaNomina->nombre ?? '—' }}</p>
                         <p><span class="font-semibold text-white">Departamento:</span> {{ $data->departamento->nombre ?? '—' }}</p>
                         <p><span class="font-semibold text-white">Cargo:</span> {{ $data->cargo->nombre ?? '—' }}</p>
                         <p><span class="font-semibold text-white">Ubicación:</span> {{ $data->ubicacion->nombre ?? '—' }}</p>

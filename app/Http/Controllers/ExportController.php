@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Exports\CollectionExport;
 use App\Exports\UsuariosExport;
+use App\Exports\AuditoriaExport;
+use App\Models\Auditoria;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -18,7 +20,7 @@ class ExportController extends Controller
         // ==============================
         // Construir query con filtros activos
         // ==============================
-        $query = User::with(['empresa', 'departamento', 'cargo', 'ubicacion', 'roles']);
+        $query = User::with(['empresaNomina', 'departamento', 'cargo', 'ubicacion', 'roles']);
 
         if ($request->search) {
             $search = $request->search;
@@ -55,5 +57,39 @@ class ExportController extends Controller
         $filename = 'usuarios.' . $format;
 
         return Excel::download(new UsuariosExport($query), $filename);
+    }
+
+    // Auditoria
+    public function auditoria(Request $request)
+    {
+        $format = $request->input('format', 'xlsx'); // xlsx (default) o csv
+
+        // ==============================
+        // Construir query con filtros activos
+        // ==============================
+        $query = Auditoria::with('usuario');
+
+        if ($request->usuario_id) {
+            $query->where('usuario_id', $request->usuario_id);
+        }
+        if ($request->accion) {
+            $query->where('accion', $request->accion);
+        }
+        if ($request->tabla) {
+            $query->where('tabla', $request->tabla);
+        }
+        if ($request->fecha_desde) {
+            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        }
+        if ($request->fecha_hasta) {
+            $query->whereDate('created_at', '<=', $request->fecha_hasta);
+        }
+
+        // ==============================
+        // Exportación XLSX o CSV
+        // ==============================
+        $filename = 'auditoria.' . $format;
+
+        return Excel::download(new AuditoriaExport($query), $filename);
     }
 }

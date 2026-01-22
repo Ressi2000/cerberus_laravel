@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Traits;
 
 use App\Models\Auditoria;
@@ -7,6 +8,10 @@ use Illuminate\Support\Facades\Log;
 
 trait Auditable
 {
+    protected $auditExclude = [
+        'remember_token',
+    ];
+
     protected static function bootAuditable()
     {
         static::created(function ($model) {
@@ -20,11 +25,11 @@ trait Auditable
         static::deleted(function ($model) {
             $model->registrarAuditoria('ELIMINAR');
         });
-
     }
 
     public function registrarAuditoria($accion)
     {
+        // Evitar auditoría recursiva
         if ($this->getTable() === (new Auditoria())->getTable()) {
             return;
         }
@@ -40,7 +45,7 @@ trait Auditable
                 'created_at' => now(),
             ]);
         } catch (\Exception $e) {
-            Log::error('Error auditoria: '.$e->getMessage());
+            Log::error('Error auditoria: ' . $e->getMessage());
         }
     }
 }
