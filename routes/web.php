@@ -27,20 +27,23 @@ Route::middleware('auth')->group(function () {
 // -------------------
 // Zona privada (requiere login)
 // -------------------
-Route::middleware(['auth', 'verified', 'empresa.activa'])->group(function () {
+Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(function () {
 
     // Dashboard principal
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
 
+    // Exportaciones
     Route::get('export/usuarios', [ExportController::class, 'usuarios'])->name('export.usuarios');
     Route::get('export/auditoria', [ExportController::class, 'auditoria'])->name('export.auditoria');
 
 
     // Perfil del usuario
+    Route::get('/profile/actividad', [ProfileController::class, 'profileActivity'])->name('profile.activity');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Rutas de administración
@@ -50,8 +53,7 @@ Route::middleware(['auth', 'verified', 'empresa.activa'])->group(function () {
         ->group(function () {
             Route::resource('/usuarios', UsuarioController::class);
         });
-
-    Route::middleware(['role:Administrador'])
+    Route::middleware(['role:Administrador|Analista'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {

@@ -7,7 +7,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name', 'Cerberus') }}</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -34,7 +33,7 @@
     <x-footer />
 
     <!-- Scripts para la interactividad - VERSIÓN CORREGIDA -->
-    
+
     <script>
         // Esperar a que el DOM esté completamente cargado
         document.addEventListener('DOMContentLoaded', function() {
@@ -128,7 +127,7 @@
             });
         });
     </script>
-    
+
     @livewireScripts
 
 </body>

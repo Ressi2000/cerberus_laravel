@@ -163,7 +163,7 @@ class UsuariosTable extends Component
         }
 
         if ($this->empresa_id) {
-            $query->whereHas('empresasAsignadas', function ($q) {
+            $query->whereHas('empresaNomina', function ($q) {
                 $q->where('empresas.id', $this->empresa_id);
             });
         }

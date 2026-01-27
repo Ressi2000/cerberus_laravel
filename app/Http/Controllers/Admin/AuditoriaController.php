@@ -13,9 +13,9 @@ class AuditoriaController extends Controller
     {
 
         return view('admin.auditoria.index', [
-            'usuarios' => User::orderBy('name')->pluck('name', 'id'),
-            'acciones' => Auditoria::select('accion')->distinct()->pluck('accion'),
-            'tablas' => Auditoria::select('tabla')->distinct()->pluck('tabla'),
+            // 'usuarios' => User::orderBy('name')->pluck('name', 'id'),
+            // 'acciones' => Auditoria::select('accion')->distinct()->pluck('accion'),
+            // 'tablas' => Auditoria::select('tabla')->distinct()->pluck('tabla'),
         ]);
     }
 }

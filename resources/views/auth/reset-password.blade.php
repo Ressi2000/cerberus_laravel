@@ -12,6 +12,12 @@
             </div>
 
             <div class="mt-4">
+                <x-input-label for="username" :value="__('Usuario')" />
+                <x-text-input id="username" name="username" :value="old('username')" required autocomplete="username" />
+                <x-input-error :messages="$errors->get('username')" class="mt-2 text-blue-500 dark:text-blue-300" />
+            </div>
+
+            <div class="mt-4">
                 <x-input-label for="password" :value="__('Nueva contraseña')" />
                 <x-text-input id="password" type="password" name="password" required autocomplete="new-password" />
                 <x-input-error :messages="$errors->get('password')" class="mt-2 text-blue-500 dark:text-blue-300" />

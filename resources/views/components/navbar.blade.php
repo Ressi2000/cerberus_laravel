@@ -22,7 +22,7 @@
         {{-- Menú de usuario --}}
         <button id="user-menu-button" data-dropdown-toggle="user-dropdown"
             class="flex items-center gap-2 text-sm font-medium text-cerberus-light hover:text-white focus:outline-none">
-            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=1E40AF&color=fff"
+            <img src="{{ Auth::user()->foto_url }}"
                 class="w-8 h-8 rounded-full border border-cerberus-steel">
             <span>{{ Auth::user()->name ?? 'Usuario' }}</span>
             <span class="material-icons text-base">expand_more</span>

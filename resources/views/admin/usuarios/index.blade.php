@@ -15,6 +15,9 @@
         ['title' => 'Analistas', 'value' => $analistas ?? 0, 'icon' => 'group'],
     ]" />
     
+    <x-form.success />
+    
+    {{-- LIVEWIRE TABLE --}}
     @livewire('admin.usuarios-table')
 
     {{-- TITLE + BUTTON + TOP FILTERS + SEARCH --}}

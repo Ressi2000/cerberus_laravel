@@ -30,7 +30,7 @@
 
             {{-- FOTO --}}
             <div class="flex flex-col items-center">
-                <img src="{{ $data->foto ? asset('storage/' . $data->foto) : 'https://ui-avatars.com/api/?name=' . urlencode($data->name) }}"
+                <img src="{{ $data->foto_url }}"
                      class="w-28 h-28 rounded-full object-cover border border-cerberus-steel">
 
                 <h3 class="text-white text-lg font-semibold mt-3">{{ $data->name }}</h3>

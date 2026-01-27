@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+use App\Notifications\CerberusResetPassword;
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -11,6 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
 {
@@ -61,6 +63,16 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new CerberusResetPassword($token));
+    }
+
+    public function canResetPassword(): bool
+    {
+        return $this->estado === 'Activo';
     }
 
     public function departamento()
@@ -120,10 +132,41 @@ class User extends Authenticatable
         if ($actor->hasRole('Analista')) {
             return $query->where(function ($q) use ($actor) {
                 $q->where('ubicacion_id', $actor->empresa_activa_id)
-                  ->orWhereHas('ubicacion', fn ($u) => $u->where('es_estado', true));
+                    ->orWhereHas('ubicacion', fn($u) => $u->where('es_estado', true));
             });
         }
 
         return $query->whereRaw('1 = 0');
     }
+
+    public function scopeActivos(Builder $query): Builder
+    {
+        return $query->where('estado', 'Activo');
+    }
+
+    /**
+     * Usuarios que pueden ser seleccionados en formularios
+     */
+    public function scopeSeleccionables(Builder $query): Builder
+    {
+        return $query
+            ->where('estado', 'Activo')
+            ->orderBy('name');
+    }
+
+    public function getFotoUrlAttribute()
+    {
+        if ($this->foto && Storage::disk('public')->exists($this->foto)) {
+            return Storage::url($this->foto);
+        }
+        return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=1B263B&color=A9D6E5&size=128';
+    }
+
+    // para negar acceso a inactivos si deseas filtrar en queries, y un método para chequear el estado en login
+    // protected static function booted()
+    // {
+    //     static::addGlobalScope('activo', function (Builder $builder) {
+    //         $builder->where('estado', 'Activo');
+    //     });
+    // }
 }

@@ -30,7 +30,7 @@
 
                     {{-- SELECTS --}}
 
-                    <x-select name="empresa_id" label="Empresa" :options="$empresas" wire:model.live="empresa_id" />
+                    <x-select name="empresa_id" label="Empresa (Nómina)" :options="$empresas" wire:model.live="empresa_id" />
                     <x-select name="rol_id" label="Rol" :options="$roles" wire:model.live="rol_id" />
                     <x-select name="departamento_id" label="Departamento" :options="$departamentos"
                         wire:model.live="departamento_id" />
@@ -82,8 +82,8 @@
             <tr class="hover:bg-cerberus-darkest">
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-3">
-                        <img src="{{ $u->foto ? asset('storage/' . $u->foto) : 'https://ui-avatars.com/api/?name=' . $u->name }}"
-                            class="w-10 h-10 rounded-full">
+                        <img src="{{ $u->foto_url }}"
+                            class="w-10 h-10 rounded-full object-cover border border-cerberus-steel">
                         <div class="text-white font-medium">{{ $u->name }}</div>
                     </div>
                 </td>
@@ -124,6 +124,23 @@
 
             </tr>
         @endforeach
+
+        <x-slot name="paginationSlot">
+            <div class="flex items-center gap-3 text-sm text-cerberus-light">
+                <span>Mostrar</span>
+                <select wire:model.live="perPage"
+                    class="bg-cerberus-dark border border-cerberus-steel rounded-lg px-3 py-1 text-white">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+                <span>por página</span>
+            </div>
+            <div>
+                {{ $usuarios->links() }}
+            </div>
+        </x-slot>
     </x-crud-table>
 
 </div>

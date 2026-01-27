@@ -39,8 +39,7 @@
 
                 {{-- Avatar --}}
                 <div class="mb-4 flex items-center gap-4">
-                    <img id="previewFoto"
-                        src="{{ $usuario->foto ? asset('storage/' . $usuario->foto) : 'https://ui-avatars.com/api/?name=' . urlencode($usuario->name) }}"
+                    <img id="previewFoto" src="{{ $usuario->foto_url }}"
                         class="w-20 h-20 rounded-full object-cover border border-cerberus-steel">
 
                     <label class="cursor-pointer text-cerberus-light hover:text-cerberus-accent">
@@ -50,7 +49,7 @@
                 </div>
 
                 <x-form.input name="name" label="Nombre" :value="$usuario->name" required :readonly="$readonly" />
-                <x-form.input name="username" label="Nombre de usuario" :value="$usuario->name" required :readonly="$readonly" />
+                <x-form.input name="username" label="Nombre de usuario" :value="$usuario->username" required :readonly="$readonly" />
                 <x-form.input name="cedula" label="Cédula" :value="$usuario->cedula" :readonly="$readonly" />
                 <x-form.input name="telefono" label="Teléfono" :value="$usuario->telefono" />
                 <x-form.input name="email" label="Email" type="email" :value="$usuario->email" required
@@ -101,8 +100,8 @@
                     <input type="hidden" name="rol_id" value="{{ $userRoles }}">
                     <input type="hidden" name="estado" value="{{ $usuario->estado }}">
 
-                    <x-form.input label="Rol" :value="$usuario->getRoleNames()->first()" readonly />
-                    <x-form.input label="Estado" :value="$usuario->estado" readonly />
+                    <x-form.input label="Rol" name="rol" :value="$usuario->getRoleNames()->first()" readonly />
+                    <x-form.input label="Estado" name="state" :value="$usuario->estado" readonly />
                 @endif
 
                 @if (!$actorIsUsuario)
@@ -126,29 +125,55 @@
         </div>
     </form>
 
-    <script>
+    {{-- <script>
         document.getElementById('fotoInput')?.addEventListener('change', e => {
             const file = e.target.files[0];
             if (file) {
                 document.getElementById('previewFoto').src = URL.createObjectURL(file);
             }
         });
-    </script>
+    </script> --}}
+
+    @if ($actorIsAdmin)
+        <script>
+            const rolSelect = document.querySelector('select[name="rol_id"]');
+            const empresasBox = document.getElementById('empresas-analista');
+
+            function toggleEmpresas() {
+                const selectedText = rolSelect.options[rolSelect.selectedIndex]?.text;
+                empresasBox.classList.toggle('hidden', selectedText !== 'Analista');
+            }
+
+            rolSelect?.addEventListener('change', toggleEmpresas);
+            toggleEmpresas(); // estado inicial
+        </script>
+    @endif
+
+    {{-- MODAL CROP FOTO --}}
+    <x-modal name="crop-photo" maxWidth="lg">
+        <div class="bg-cerberus-dark p-6 space-y-4">
+
+            <h3 class="text-lg font-semibold text-white">
+                Ajustar foto de perfil
+            </h3>
+
+            <div class="w-full max-h-[400px] overflow-hidden bg-black rounded-lg">
+                <img id="cropperImage" class="max-w-full block">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" id="cancelCrop"
+                    class="px-4 py-2 text-sm rounded-lg bg-cerberus-steel text-white hover:bg-cerberus-hover">
+                    Cancelar
+                </button>
+
+                <button type="button" id="confirmCrop"
+                    class="px-4 py-2 text-sm rounded-lg bg-cerberus-primary text-white hover:bg-cerberus-hover">
+                    Usar imagen
+                </button>
+            </div>
+
+        </div>
+    </x-modal>
 
 </x-app-layout>
-
-
-{{-- @extends('layouts.admin')
-@section('header', 'Editar Usuario')
-@section('content')
-<div class="card">
-  <div class="card-body">
-    <form action="{{ route('admin.usuarios.update', $usuario) }}" method="POST">
-      @method('PUT')
-      @include('admin.usuarios._form')
-      <button class="btn btn-primary">Actualizar</button>
-      <a href="{{ route('admin.usuarios.index') }}" class="btn btn-secondary">Cancelar</a>
-    </form>
-  </div>
-</div>
-@endsection --}}

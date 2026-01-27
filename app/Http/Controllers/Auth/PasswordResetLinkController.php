@@ -7,6 +7,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
+use App\Models\User;
+use Illuminate\Validation\ValidationException;
 
 class PasswordResetLinkController extends Controller
 {
@@ -26,8 +28,26 @@ class PasswordResetLinkController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'email' => ['required', 'email'],
+            'username' => 'required|string',
+            'email' => 'required',
+            'email',
         ]);
+
+        $user = User::where('username', $request->username)
+            ->where('email', $request->email)
+            ->first();
+
+        if (! $user) {
+            throw ValidationException::withMessages([
+                'username' => 'No se encontró un usuario con esos datos.',
+            ]);
+        }
+
+        if ($user->estado !== 'Activo') {
+            throw ValidationException::withMessages([
+                'username' => 'Tu usuario está inactivo. Contacta al administrador.',
+            ]);
+        }
 
         // We will send the password reset link to this user. Once we have attempted
         // to send the link, we will examine the response then see the message we
@@ -37,8 +57,8 @@ class PasswordResetLinkController extends Controller
         );
 
         return $status == Password::RESET_LINK_SENT
-                    ? back()->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+            ? back()->with('status', __($status))
+            : back()->withInput($request->only('email'))
+            ->withErrors(['email' => __($status)]);
     }
 }

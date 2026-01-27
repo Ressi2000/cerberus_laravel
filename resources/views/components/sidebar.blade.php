@@ -52,7 +52,7 @@
                         </a>
                     </li>
                     <li>
-                        <a href="#"
+                        <a href="{{ route('profile.edit')}}"
                            class="flex items-center p-2 pl-11 rounded-lg hover:bg-cerberus-steel transition-colors">
                             <span class="material-icons mr-2 text-sm">person</span>
                             Perfil

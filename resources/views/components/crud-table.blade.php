@@ -5,6 +5,8 @@
     'exportRoute' => null,
     'actions' => true,
     'filters' => [],
+    'perPage' => false,
+    'perPageOptions' => [10, 25, 50, 100],
 ])
 
 <div class="relative bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl">
@@ -89,25 +91,8 @@
 
 {{-- PAGINATION --}}
 @if ($paginated)
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border-t border-cerberus-steel">
-
-        {{-- PER PAGE --}}
-        <div class="flex items-center gap-3 text-sm text-cerberus-light">
-            <span>Mostrar</span>
-
-            <select wire:model.live="perPage"
-                class="bg-cerberus-dark border border-cerberus-steel rounded-lg px-3 py-1 text-white text-sm focus:ring-cerberus-primary focus:border-cerberus-primary">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
-
-            <span>por página</span>
-        </div>
-
-        {{ $paginated->links('vendor.livewire.cerberus-pagination') }}
-
+    <div class="p-4 border-t border-cerberus-steel flex items-center justify-between">
+        {{ $paginationSlot }}
     </div>
 @endif
 

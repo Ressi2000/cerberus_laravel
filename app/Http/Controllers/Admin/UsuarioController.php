@@ -58,7 +58,7 @@ class UsuarioController extends Controller
         $cargos = Cargo::pluck('nombre', 'id');
         $empresas = Empresa::pluck('nombre', 'id');
         $ubicaciones = Ubicacion::pluck('nombre', 'id');
-        $jefes = User::pluck('name', 'id');
+        $jefes = User::seleccionables()->pluck('name', 'id');
         return view('admin.usuarios.create', compact('roles', 'departamentos', 'cargos', 'empresas', 'ubicaciones', 'jefes'));
     }
 
@@ -77,7 +77,16 @@ class UsuarioController extends Controller
 
             'departamento_id' => 'nullable|exists:departamentos,id',
             'cargo_id' => 'nullable|exists:cargos,id',
-            'jefe_id' => 'nullable|exists:users,id',
+            'jefe_id' => [
+                'nullable',
+                'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    if (! \App\Models\User::where('id', $value)->where('estado', 'Activo')->exists()) {
+                        $fail('El jefe seleccionado no se encuentra activo.');
+                    }
+                },
+            ],
+
 
             'ubicacion_id' => 'required|exists:ubicaciones,id',
             'empresa_id' => 'required|exists:empresas,id',
@@ -171,7 +180,7 @@ class UsuarioController extends Controller
         $cargos = Cargo::pluck('nombre', 'id');
         $empresas = Empresa::pluck('nombre', 'id');
         $ubicaciones = Ubicacion::pluck('nombre', 'id');
-        $jefes = User::pluck('name', 'id');
+        $jefes = User::seleccionables()->pluck('name', 'id');
         $userRoles = $usuario->roles->first()?->id;
         return view('admin.usuarios.edit', compact('usuario', 'roles', 'departamentos', 'cargos', 'userRoles', 'empresas', 'ubicaciones', 'jefes'));
     }
@@ -193,7 +202,16 @@ class UsuarioController extends Controller
 
             'departamento_id' => 'nullable|exists:departamentos,id',
             'cargo_id' => 'nullable|exists:cargos,id',
-            'jefe_id' => 'nullable|exists:users,id',
+            'jefe_id' => [
+                'nullable',
+                'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    if (! \App\Models\User::where('id', $value)->where('estado', 'Activo')->exists()) {
+                        $fail('El jefe seleccionado no se encuentra activo.');
+                    }
+                },
+            ],
+
 
             'ubicacion_id' => 'required|exists:ubicaciones,id',
             'empresa_id' => 'required|exists:empresas,id',
@@ -278,13 +296,14 @@ class UsuarioController extends Controller
         $this->authorize('delete', $usuario);
 
         try {
-            $usuario->delete();
-            return redirect()->route('admin.usuarios.index')->with('success', 'Usuario eliminado.');
+            $usuario->update(['estado' => 'Inactivo']);
+            return redirect()->route('admin.usuarios.index')->with('success', 'Usuario inactivado correctamente.');
         } catch (\Exception $e) {
-            Log::error('Error eliminando usuario: ' . $e->getMessage());
-            return redirect()->route('admin.usuarios.index')->with('error', 'Ocurrió un error al eliminar el usuario.');
+            Log::error('Error inactivando usuario: ' . $e->getMessage());
+            return redirect()->route('admin.usuarios.index')->with('error', 'Ocurrió un error al inactivar el usuario.');
         }
     }
+
 
     public function show(User $usuario)
     {

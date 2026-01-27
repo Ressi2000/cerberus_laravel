@@ -92,11 +92,18 @@ class UserPolicy
         }
 
         // Analista SOLO usuarios de su ubicación física
-        return (
+        if (
             $user->hasRole('Analista') &&
             $model->hasRole('Usuario') &&
-            $model->ubicacion_id === $user->empresa_activa_id
-        );
+            (
+                $model->ubicacion_id === $user->empresa_activa_id ||
+                $model->ubicacion?->es_estado === true
+            )
+        ) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

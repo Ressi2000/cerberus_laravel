@@ -6,11 +6,20 @@
             @csrf
 
             <!-- Email -->
-            <div>
+            {{-- <div>
                 <x-input-label for="email" :value="__('Correo electrónico')" />
                 <x-text-input id="email" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
                 <x-input-error :messages="$errors->get('email')" class="mt-2 text-blue-500 dark:text-blue-300" />
+            </div> --}}
+
+            <!-- Username -->
+            <div>
+                <x-input-label for="username" :value="__('Usuario')" />
+                <x-text-input id="username" type="text" name="username" :value="old('username')" required autofocus
+                    autocomplete="username" />
+                <x-input-error :messages="$errors->get('username')" class="mt-2 text-blue-500 dark:text-blue-300" />
             </div>
+
 
             <!-- Password -->
             <div class="mt-4">
@@ -37,7 +46,8 @@
                     </a>
                 @endif
 
-                <x-primary-button class="ms-3 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white dark:bg-[#A9D6E5] dark:text-[#0D1B2A] dark:hover:bg-[#89C2D9]">
+                <x-primary-button
+                    class="ms-3 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white dark:bg-[#A9D6E5] dark:text-[#0D1B2A] dark:hover:bg-[#89C2D9]">
                     {{ __('Iniciar sesión') }}
                 </x-primary-button>
             </div>

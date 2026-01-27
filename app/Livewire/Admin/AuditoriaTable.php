@@ -13,6 +13,8 @@ class AuditoriaTable extends Component
 {
     use WithPagination;
 
+    public bool $isProfileView = false;
+
     public int $page = 1;
 
     #[Url] public $usuario_id = '';
@@ -22,6 +24,11 @@ class AuditoriaTable extends Component
     #[Url] public $fecha_hasta = '';
 
     #[Url] public $perPage = 10;
+
+    public function updatingPerPage()
+    {
+        $this->resetPage();
+    }
 
     public function loadData()
     {
@@ -86,10 +93,14 @@ class AuditoriaTable extends Component
             ->visiblePara(Auth::user())
             ->latest();
 
-
-        if ($this->usuario_id) {
-            $query->where('usuario_id', $this->usuario_id);
+        if ($this->isProfileView) {
+            $query->where('usuario_id', Auth::id());
+        } else {
+            if ($this->usuario_id) {
+                $query->where('usuario_id', $this->usuario_id);
+            }
         }
+
 
         if ($this->accion) {
             $query->where('accion', $this->accion);

@@ -109,7 +109,7 @@
                     {{-- Analista solo crea Usuarios --}}
                     <input type="hidden" name="rol_id"
                         value="{{ $roles['Usuario'] ?? collect($roles)->search('Usuario') }}">
-                    <x-form.input label="Rol del sistema" value="Usuario" readonly />
+                    <x-form.input label="Rol del sistema" name="rol" value="Usuario" readonly />
                 @endif
 
 
@@ -144,14 +144,14 @@
 
 
     {{-- JS para previsualizar foto --}}
-    <script>
+    {{-- <script>
         document.getElementById('fotoInput')?.addEventListener('change', e => {
             const file = e.target.files[0];
             if (file) {
                 document.getElementById('previewFoto').src = URL.createObjectURL(file);
             }
         });
-    </script>
+    </script> --}}
 
     {{-- JS para mostrar/ocultar empresas asignadas según rol --}}
     @if ($actorIsAdmin)
@@ -168,21 +168,32 @@
             toggleEmpresas(); // estado inicial
         </script>
     @endif
+    
+    {{-- MODAL CROP FOTO --}}
+    <x-modal name="crop-photo" maxWidth="lg">
+        <div class="bg-cerberus-dark p-6 space-y-4">
 
+            <h3 class="text-lg font-semibold text-white">
+                Ajustar foto de perfil
+            </h3>
+
+            <div class="w-full max-h-[400px] overflow-hidden bg-black rounded-lg">
+                <img id="cropperImage" class="max-w-full block">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" id="cancelCrop"
+                    class="px-4 py-2 text-sm rounded-lg bg-cerberus-steel text-white hover:bg-cerberus-hover">
+                    Cancelar
+                </button>
+
+                <button type="button" id="confirmCrop"
+                    class="px-4 py-2 text-sm rounded-lg bg-cerberus-primary text-white hover:bg-cerberus-hover">
+                    Usar imagen
+                </button>
+            </div>
+
+        </div>
+    </x-modal>
 
 </x-app-layout>
-
-
-{{-- @extends('layouts.admin')
-@section('header', 'Crear Usuario')
-@section('content')
-<div class="card">
-  <div class="card-body">
-    <form action="{{ route('admin.usuarios.store') }}" method="POST">
-      @include('admin.usuarios._form')
-      <button class="btn btn-primary">Guardar</button>
-      <a href="{{ route('admin.usuarios.index') }}" class="btn btn-secondary">Cancelar</a>
-    </form>
-  </div>
-</div>
-@endsection --}}
