@@ -1,4 +1,9 @@
-<div class="space-y-6" wire:init="loadData">
+<div class="space-y-6">
+
+    {{-- MODAL --}}
+    <livewire:admin.auditoria-modal />
+
+    {{-- HEADER + FILTROS --}}
 
     <x-crud-header :title="$isProfileView ? 'Mi actividad' : 'Auditoría del sistema'" :subtitle="$isProfileView
         ? 'Registro de acciones realizadas por mi'
@@ -56,64 +61,83 @@
     <x-crud-table :headers="$headers" :paginated="$auditorias" :export="!$isProfileView" exportRoute="export.auditoria"
         :filters="$this->filterParams">
         @foreach ($auditorias as $log)
-            <tr class="hover:bg-cerberus-darkest">
-
+            <tr wire:key="auditoria-{{ $log->id }}" class="hover:bg-cerberus-darkest">
                 <td class="px-4 py-3 text-sm">
                     {{ $log->created_at ? \Illuminate\Support\Carbon::parse($log->created_at)->format('d/m/Y H:i') : '—' }}
                 </td>
-
                 @if (!$isProfileView)
                     <td class="px-4 py-3 text-white">
                         {{ $log->usuario->name ?? 'Sistema' }}
                     </td>
                 @endif
-
-
                 <td class="px-4 py-3">
                     <x-audit-action-badge :accion="$log->accion" />
                 </td>
-
                 <td class="px-4 py-3 text-cerberus-light">
                     {{ $log->tabla }}
                 </td>
-
-                <td class="px-4 py-3">
+                {{-- <td class="px-4 py-3">
 
                     @if (count($log->cambios))
-                        <button data-modal-target="audit-{{ $log->id }}"
-                            data-modal-toggle="audit-{{ $log->id }}"
+                        <button wire:click="openModal({{ $log->id }})"
                             class="text-cerberus-accent hover:underline text-sm">
                             {{ count($log->cambios) }} cambio(s)
                         </button>
-
-                        <x-audit-detail-modal :id="$log->id" :cambios="$log->cambios" />
                     @else
-                        <span class="text-xs text-cerberus-light">
-                            —
-                        </span>
+                        <span class="text-xs text-cerberus-light">—</span>
                     @endif
 
+                </td> --}}
+                {{-- <td>
+                    @if ($log->cambios)
+                        <button wire:click="openModal({{ $log->id }})"
+                            class="text-cerberus-accent hover:underline text-sm">
+                            {{ count($log->cambios) }} cambio(s)
+                        </button>
+                    @else
+                        <span class="text-xs text-cerberus-light">—</span>
+                    @endif
+                </td> --}}
+                <td class="px-4 py-3">
+                    @if ($log->cambios)
+                        <button wire:click="$dispatch('openAuditoriaModal', { logId: {{ $log->id }} })"
+                            class="text-cerberus-accent hover:underline text-sm">
+                            {{ count($log->cambios) }} cambio(s)
+                        </button>
+                    @else
+                        <span class="text-xs text-cerberus-light">—</span>
+                    @endif
                 </td>
 
             </tr>
+            {{-- Fila expandida con detalles --}}
+            @if ($expandedLogId === $log->id)
+                <tr class="bg-cerberus-dark/20">
+                    <td colspan="{{ $isProfileView ? 4 : 5 }}" class="p-4">
+                        <div class="space-y-2">
+                            @foreach ($log->cambios as $campo => $values)
+                                <div class="border border-cerberus-steel rounded-lg p-3">
+                                    <div class="text-cerberus-accent font-semibold mb-1">{{ $campo }}</div>
+                                    <div class="grid grid-cols-2 gap-4 text-xs">
+                                        <div>
+                                            <div class="text-red-400 mb-1">Antes</div>
+                                            <div class="bg-black/60 p-2 rounded font-mono break-all">
+                                                {{ is_array($values['before']) ? json_encode($values['before'], JSON_UNESCAPED_UNICODE) : $values['before'] }}
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="text-green-400 mb-1">Después</div>
+                                            <div class="bg-black/60 p-2 rounded font-mono break-all">
+                                                {{ is_array($values['after']) ? json_encode($values['after'], JSON_UNESCAPED_UNICODE) : $values['after'] }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </td>
+                </tr>
+            @endif
         @endforeach
-
-        <x-slot name="paginationSlot">
-            <div class="flex items-center gap-3 text-sm text-cerberus-light">
-                <span>Mostrar</span>
-                <select wire:model.live="perPage"
-                    class="bg-cerberus-dark border border-cerberus-steel rounded-lg px-3 py-1 text-white">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                <span>por página</span>
-            </div>
-            <div>
-                {{ $auditorias->links() }}
-            </div>
-        </x-slot>
     </x-crud-table>
-
 </div>

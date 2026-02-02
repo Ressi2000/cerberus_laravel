@@ -5,8 +5,6 @@
     'exportRoute' => null,
     'actions' => true,
     'filters' => [],
-    'perPage' => false,
-    'perPageOptions' => [10, 25, 50, 100],
 ])
 
 <div class="relative bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl">
@@ -55,21 +53,19 @@
     </div>
 
     {{-- TABLE CONTAINER --}}
-    <div wire:loading.flex
-        class="absolute inset-0 backdrop-blur-sm bg-black/40 flex items-center justify-center z-20 rounded-xl">
 
-        <div class="flex flex-col items-center gap-3 animate-fade-in">
-            <div class="h-10 w-10 border-4 border-cerberus-primary border-t-transparent rounded-full animate-spin">
+    <div class="overflow-x-auto">
+        {{-- Spinner SOLO sobre la tabla --}}
+        <div wire:loading.flex
+            class="absolute inset-0 backdrop-blur-sm bg-black/40 flex items-center justify-center z-30 rounded-xl">
+            <div class="flex flex-col items-center gap-3 animate-fade-in">
+                <div class="h-10 w-10 border-4 border-cerberus-primary border-t-transparent rounded-full animate-spin">
+                </div>
+                <span class="text-white font-medium tracking-wide">Cargando...</span>
             </div>
-            <span class="text-white font-medium tracking-wide">Cargando...</span>
         </div>
 
-    </div>
-
-    {{-- <div class="overflow-x-auto"> --}}
-    <div class="overflow-x-auto">
         <table class="w-full text-sm text-left">
-
             <thead class="bg-cerberus-steel/40 text-gray-200 uppercase text-xs">
                 <tr>
                     @foreach ($headers as $h)
@@ -87,12 +83,11 @@
         </table>
     </div>
 </div>
-{{-- </div> --}}
 
 {{-- PAGINATION --}}
-@if ($paginated)
-    <div class="p-4 border-t border-cerberus-steel flex items-center justify-between">
-        {{ $paginationSlot }}
+@if ($paginated->hasPages())
+    <div class="mt-4">
+        {{ $paginated->links() }}
     </div>
 @endif
 

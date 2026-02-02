@@ -13,47 +13,37 @@ class AuditoriaTable extends Component
 {
     use WithPagination;
 
+    // Variables de estado
+    // public $selectedLog = null;      // Registro actual mostrado en el modal
+    public $expandedLogId = null;    // Para fila expandible
+    // public $showModal = false;       // Modal cerrado por defecto
+    public $loading = false;         // Indicador de carga
+
+    protected $paginationTheme = 'tailwind';
+
     public bool $isProfileView = false;
 
-    public int $page = 1;
+    // Filtros
+    public $usuario_id = '';
+    public $accion = '';
+    public $tabla = '';
+    public $fecha_desde = '';
+    public $fecha_hasta = '';
+    public $perPage = 10;
 
-    #[Url] public $usuario_id = '';
-    #[Url] public $accion = '';
-    #[Url] public $tabla = '';
-    #[Url] public $fecha_desde = '';
-    #[Url] public $fecha_hasta = '';
-
-    #[Url] public $perPage = 10;
-
-    public function updatingPerPage()
+    /**
+     * Resetea la paginación al actualizar filtros
+     */
+    public function updated($property)
     {
-        $this->resetPage();
-    }
-
-    public function loadData()
-    {
-        // incluso si está vacío
-    }
-
-    public $loading = false;
-
-    protected $queryString = [
-        'page' => ['except' => 1],
-        'usuario_id' => ['except' => ''],
-        'accion' => ['except' => ''],
-        'tabla' => ['except' => ''],
-        'fecha_desde' => ['except' => ''],
-        'fecha_hasta' => ['except' => ''],
-        'perPage' => ['except' => 10],
-    ];
-
-    public function updating($field)
-    {
-        if (!in_array($field, ['page', 'perPage'])) {
+        if ($property !== 'page') {
             $this->resetPage();
         }
     }
 
+    /**
+     * Resetea todos los filtros
+     */
     public function resetFilters()
     {
         $this->reset([
@@ -65,7 +55,10 @@ class AuditoriaTable extends Component
         ]);
     }
 
-    public function getActiveFiltersCountProperty()
+    /**
+     * Contador de filtros activos
+     */
+    public function getActiveFiltersCountProperty(): int
     {
         return collect([
             $this->usuario_id,
@@ -76,17 +69,59 @@ class AuditoriaTable extends Component
         ])->filter()->count();
     }
 
-    public function getFilterParamsProperty()
+    /**
+     * Array de filtros para pasar al view o export
+     */
+    public function getFilterParamsProperty(): array
     {
         return [
-            'usuario_id' => $this->usuario_id,
-            'accion' => $this->accion,
-            'tabla' => $this->tabla,
-            'fecha_desde' => $this->fecha_desde,
-            'fecha_hasta' => $this->fecha_hasta,
+            'usuario_id'   => $this->usuario_id,
+            'accion'       => $this->accion,
+            'tabla'        => $this->tabla,
+            'fecha_desde'  => $this->fecha_desde,
+            'fecha_hasta'  => $this->fecha_hasta,
         ];
     }
 
+    /**
+     * Abre modal con el registro seleccionado
+     */
+    // public function openModal(int $logId): void
+    // {
+    //     $log = Auditoria::with('usuario')->find($logId);
+
+    //     $this->selectedLog = [
+    //         'id'      => $log->id,
+    //         'usuario' => $log->usuario->name ?? 'Sistema',
+    //         'tabla'   => $log->tabla,
+    //         'accion'  => $log->accion,
+    //         'fecha'   => \Carbon\Carbon::parse($log->created_at)->format('d/m/Y H:i:s'),
+    //         'cambios' => $log->cambios,
+    //     ];
+
+    //     $this->showModal = true;
+    // }
+
+    /**
+     * Cierra modal
+     */
+    // public function closeModal(): void
+    // {
+    //     $this->selectedLog = null;
+    //     $this->showModal = false;
+    // }
+
+    /**
+     * Alterna la fila expandible
+     */
+    public function toggleDetails(int $logId): void
+    {
+        $this->expandedLogId = $this->expandedLogId === $logId ? null : $logId;
+    }
+
+    /**
+     * Renderiza la vista
+     */
     public function render()
     {
         $query = Auditoria::with('usuario')
@@ -95,12 +130,9 @@ class AuditoriaTable extends Component
 
         if ($this->isProfileView) {
             $query->where('usuario_id', Auth::id());
-        } else {
-            if ($this->usuario_id) {
-                $query->where('usuario_id', $this->usuario_id);
-            }
+        } elseif ($this->usuario_id) {
+            $query->where('usuario_id', $this->usuario_id);
         }
-
 
         if ($this->accion) {
             $query->where('accion', $this->accion);
@@ -120,9 +152,9 @@ class AuditoriaTable extends Component
 
         return view('livewire.admin.auditoria-table', [
             'auditorias' => $query->paginate($this->perPage),
-            'usuarios' => User::pluck('name', 'id'),
-            'acciones' => Auditoria::select('accion')->distinct()->pluck('accion', 'accion'),
-            'tablas' => Auditoria::select('tabla')->distinct()->pluck('tabla', 'tabla'),
+            'usuarios'   => User::pluck('name', 'id'),
+            'acciones'   => Auditoria::select('accion')->distinct()->pluck('accion', 'accion'),
+            'tablas'     => Auditoria::select('tabla')->distinct()->pluck('tabla', 'tabla'),
         ]);
     }
 }

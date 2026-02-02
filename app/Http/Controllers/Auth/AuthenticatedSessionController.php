@@ -41,7 +41,7 @@ class AuthenticatedSessionController extends Controller
             Auth::logout();
 
             return redirect()->route('login')
-                ->withErrors(['email' => 'Tu usuario no tiene empresas asignadas.']);
+                ->withErrors(['username' => 'Tu usuario no tiene empresas asignadas. Contacta con el administrador.']);
         }
 
         if ($empresas->count() === 1) {

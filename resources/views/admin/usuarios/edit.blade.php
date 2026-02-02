@@ -64,13 +64,14 @@
                 <x-select name="empresa_id" label="Empresa" :options="$empresas" :selected="$usuario->empresa_id" required
                     :disabled="$disabled" />
 
-                @if ($actorIsAdmin && $usuario->hasRole('Analista'))
+                @if ($actorIsAdmin)
                     @php
                         $empresasUsuario = $usuario->empresasAsignadas->pluck('id')->toArray();
                     @endphp
-
-                    <x-form.checkbox-group name="empresa_ids" label="Empresas Asignadas (rotación)" :options="$empresas"
-                        :selected="$empresasUsuario" />
+                    <div id="empresas-analista" class="{{ $usuario->hasRole('Analista') ? '' : 'hidden' }}">
+                        <x-form.checkbox-group name="empresa_ids" label="Empresas Asignadas (rotación)"
+                            :options="$empresas" :selected="$empresasUsuario" />
+                    </div>
                 @endif
 
 

@@ -1,4 +1,4 @@
-<div class="space-y-6" wire:init="loadData">
+<div class="space-y-6">
     <x-crud-header title="Usuarios" subtitle="Gestión de usuarios del sistema" buttonLabel="Crear usuario"
         :buttonUrl="route('admin.usuarios.create')">
 
@@ -30,7 +30,8 @@
 
                     {{-- SELECTS --}}
 
-                    <x-select name="empresa_id" label="Empresa (Nómina)" :options="$empresas" wire:model.live="empresa_id" />
+                    <x-select name="empresa_id" label="Empresa (Nómina)" :options="$empresas"
+                        wire:model.live="empresa_id" />
                     <x-select name="rol_id" label="Rol" :options="$roles" wire:model.live="rol_id" />
                     <x-select name="departamento_id" label="Departamento" :options="$departamentos"
                         wire:model.live="departamento_id" />
@@ -79,7 +80,7 @@
     {{-- TABLA REUSABLE --}}
     <x-crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export exportRoute="export.usuarios" :filters="$this->filterParams">
         @foreach ($usuarios as $u)
-            <tr class="hover:bg-cerberus-darkest">
+            <tr wire:key="usuario-{{ $u->id }}" class="hover:bg-cerberus-darkest">
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-3">
                         <img src="{{ $u->foto_url }}"
@@ -113,8 +114,8 @@
 
                 <td class="px-6 py-4 text-center">
 
-                    <x-table-actions row-id="user-{{ $u->id }}" :viewModalId="'viewUser-' . $u->id" :editUrl="route('admin.usuarios.edit', $u)" :user="$u"
-                        deleteModalId="deleteUser-{{ $u->id }}" />
+                    <x-table-actions row-id="user-{{ $u->id }}" :viewModalId="'viewUser-' . $u->id" :editUrl="route('admin.usuarios.edit', $u)"
+                        :user="$u" deleteModalId="deleteUser-{{ $u->id }}" />
 
                     <x-view-modal id="viewUser-{{ $u->id }}" title="Detalle del Usuario" :data="$u" />
 
@@ -124,23 +125,5 @@
 
             </tr>
         @endforeach
-
-        <x-slot name="paginationSlot">
-            <div class="flex items-center gap-3 text-sm text-cerberus-light">
-                <span>Mostrar</span>
-                <select wire:model.live="perPage"
-                    class="bg-cerberus-dark border border-cerberus-steel rounded-lg px-3 py-1 text-white">
-                    <option value="10">10</option>
-                    <option value="25">25</option>
-                    <option value="50">50</option>
-                    <option value="100">100</option>
-                </select>
-                <span>por página</span>
-            </div>
-            <div>
-                {{ $usuarios->links() }}
-            </div>
-        </x-slot>
     </x-crud-table>
-
 </div>

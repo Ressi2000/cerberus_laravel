@@ -27,7 +27,7 @@ class Auditoria extends Model
         'updated_at',
         'deleted_at',
         'remember_token',
-        'empresa_activa_id',
+        // 'empresa_activa_id',
     ];
 
     public function usuario()

@@ -19,53 +19,22 @@ class UsuariosTable extends Component
 
     #[Url(as: 'q')]
     public $search = '';
-
-    #[Url]
     public $rol_id = '';
-
-    #[Url]
     public $empresa_id = '';
-
-    #[Url]
     public $departamento_id = '';
-
-    #[Url]
     public $cargo_id = '';
-
-    #[Url]
     public $ubicacion_id = '';
-
-    #[Url]
     public $estado = '';
-
-    #[Url]
     public $perPage = 10;
 
-    public function loadData()
+    public function updated($property)
     {
-        // incluso si está vacío
-    }
-
-    public $loading = false;
-
-    protected $queryString = [
-        'search' => ['except' => ''],
-        'rol_id' => ['except' => ''],
-        'empresa_id' => ['except' => ''],
-        'departamento_id' => ['except' => ''],
-        'cargo_id' => ['except' => ''],
-        'ubicacion_id' => ['except' => ''],
-        'estado' => ['except' => ''],
-        'perPage' => ['except' => 10],
-    ];
-
-    public function updating($field)
-    {
-        // reinicia siempre la paginación en la página 1
-        if ($field !== 'perPage') {
+        if ($property !== 'page') {
             $this->resetPage();
         }
     }
+
+    public $loading = false;
 
     public function resetFilters()
     {
