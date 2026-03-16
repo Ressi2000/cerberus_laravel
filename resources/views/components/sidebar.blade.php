@@ -1,6 +1,6 @@
 <aside id="sidebar"
-       class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform duration-300 bg-cerberus-mid border-r border-cerberus-steel lg:translate-x-0 -translate-x-full"
-       aria-label="Sidebar">
+    class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform duration-300 bg-cerberus-mid border-r border-cerberus-steel lg:translate-x-0 -translate-x-full"
+    aria-label="Sidebar">
 
     {{-- Logo --}}
     <div class="h-16 flex items-center justify-between px-4 border-b border-cerberus-steel bg-cerberus-dark">
@@ -20,7 +20,7 @@
             {{-- Dashboard --}}
             <li>
                 <a href="{{ route('dashboard') }}"
-                   class="flex items-center p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors">
+                    class="flex items-center p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors">
                     <span class="material-icons mr-3 text-cerberus-light">dashboard</span>
                     <span>Dashboard</span>
                 </a>
@@ -29,7 +29,7 @@
             {{-- Auditoria --}}
             <li>
                 <a href="{{ route('admin.auditoria.index') }}"
-                   class="flex items-center p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors">
+                    class="flex items-center p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors">
                     <span class="material-icons mr-3 text-cerberus-light">fact_check</span>
                     <span>Auditoria</span>
                 </a>
@@ -38,7 +38,7 @@
             {{-- Gestión de usuarios --}}
             <li>
                 <button type="button"
-                        class="flex items-center w-full p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors users-menu-toggle">
+                    class="flex items-center w-full p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors users-menu-toggle">
                     <span class="material-icons mr-3 text-cerberus-light">group</span>
                     <span class="flex-1 text-left">Gestión de Usuarios</span>
                     <span class="material-icons text-sm text-cerberus-light transition-transform">expand_more</span>
@@ -46,14 +46,14 @@
                 <ul id="users-menu" class="hidden py-2 space-y-1 transition-all duration-200">
                     <li>
                         <a href="{{ route('admin.usuarios.index') }}"
-                           class="flex items-center p-2 pl-11 rounded-lg hover:bg-cerberus-steel transition-colors">
+                            class="flex items-center p-2 pl-11 rounded-lg hover:bg-cerberus-steel transition-colors">
                             <span class="material-icons mr-2 text-sm">people</span>
                             Usuarios
                         </a>
                     </li>
                     <li>
-                        <a href="{{ route('profile.edit')}}"
-                           class="flex items-center p-2 pl-11 rounded-lg hover:bg-cerberus-steel transition-colors">
+                        <a href="{{ route('profile.edit') }}"
+                            class="flex items-center p-2 pl-11 rounded-lg hover:bg-cerberus-steel transition-colors">
                             <span class="material-icons mr-2 text-sm">person</span>
                             Perfil
                         </a>
@@ -64,32 +64,50 @@
             {{-- Equipos --}}
             <li>
                 <button type="button"
-                        class="flex items-center w-full p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors equipos-menu-toggle">
+                    class="flex items-center w-full p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors equipos-menu-toggle">
                     <span class="material-icons mr-3 text-cerberus-light">devices</span>
                     <span class="flex-1 text-left">Equipos</span>
                     <span class="material-icons text-sm text-cerberus-light transition-transform">expand_more</span>
                 </button>
                 <ul id="equipos-menu" class="hidden py-2 space-y-1 transition-all duration-200">
                     <li>
-                        <a href="#" class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
+                        <a href="{{ route('admin.equipos.index') }}"
+                            class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
                             <span class="material-icons mr-2 text-sm">inventory_2</span>
                             Inventario
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
+                        <a href="#"
+                            class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
+                            <span class="material-icons mr-2 text-sm">assignment</span>
+                            Categorías
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#"
+                            class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
+                            <span class="material-icons mr-2 text-sm">assignment</span>
+                            Estados
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#"
+                            class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
                             <span class="material-icons mr-2 text-sm">assignment</span>
                             Asignaciones
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
+                        <a href="#"
+                            class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
                             <span class="material-icons mr-2 text-sm">swap_horiz</span>
                             Préstamos
                         </a>
                     </li>
                     <li>
-                        <a href="#" class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
+                        <a href="#"
+                            class="flex items-center p-2 pl-11 hover:bg-cerberus-steel rounded-lg transition-colors">
                             <span class="material-icons mr-2 text-sm">build</span>
                             Mantenimientos
                         </a>
@@ -100,7 +118,7 @@
             {{-- Configuración --}}
             <li>
                 <a href="#"
-                   class="flex items-center p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors">
+                    class="flex items-center p-2 text-gray-200 rounded-lg hover:bg-cerberus-steel transition-colors">
                     <span class="material-icons mr-3 text-cerberus-light">settings</span>
                     <span>Configuración</span>
                 </a>
@@ -110,9 +128,10 @@
         {{-- Logout --}}
         <form method="POST" action="{{ route('logout') }}" class="mt-auto pt-3 border-t border-cerberus-steel">
             @csrf
-            <button type="submit" class="w-full flex items-center justify-center gap-2 bg-cerberus-primary hover:bg-cerberus-hover
+            <button type="submit"
+                class="w-full flex items-center justify-center gap-2 bg-cerberus-primary hover:bg-cerberus-hover
                            py-2 rounded-lg text-white transition-colors">
-                <span class="material-icons">logout</span> 
+                <span class="material-icons">logout</span>
                 <span>Cerrar sesión</span>
             </button>
         </form>

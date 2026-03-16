@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('empresa_id')
-                ->after('id')
-                ->constrained('empresas')
-                ->default(1);
+        Schema::create('categorias_equipos', function (Blueprint $table) {
+            $table->id();
+            $table->string('nombre');
+            $table->boolean('asignable')->default(true);
+            $table->text('descripcion')->nullable();
+            $table->timestamps();
         });
     }
 
@@ -24,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            //
-        });
+        Schema::dropIfExists('categorias_equipos');
     }
 };

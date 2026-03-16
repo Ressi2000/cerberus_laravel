@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\UsuarioController;
 use App\Http\Controllers\EmpresaSelectorController;
+use App\Http\Controllers\Equipo\EquipoController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -38,7 +39,6 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     Route::get('export/usuarios', [ExportController::class, 'usuarios'])->name('export.usuarios');
     Route::get('export/auditoria', [ExportController::class, 'auditoria'])->name('export.auditoria');
 
-
     // Perfil del usuario
     Route::get('/profile/actividad', [ProfileController::class, 'profileActivity'])->name('profile.activity');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -46,20 +46,21 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     Route::put('/profile', [ProfileController::class, 'updatePhoto'])->name('profile.photo.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Rutas de administración
-    Route::prefix('admin')
-        ->name('admin.')
-        ->middleware('role:Administrador|Analista')
-        ->group(function () {
-            Route::resource('/usuarios', UsuarioController::class);
-        });
-    Route::middleware(['role:Administrador|Analista'])
-    ->prefix('admin')
-    ->name('admin.')
-    ->group(function () {
-        Route::get('/auditoria', [AuditoriaController::class, 'index'])
-            ->name('auditoria.index');
+    // Usuarios
+    Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
+        Route::resource('/usuarios', UsuarioController::class);
     });
+
+    // Auditoria
+    Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
+        Route::get('/auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
+    });
+
+    // Equipos
+    Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
+        Route::resource('/equipos', EquipoController::class);
+    });
+
 
 });
 

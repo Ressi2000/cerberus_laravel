@@ -4,7 +4,6 @@ namespace App\Livewire\Admin;
 
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Url;
 use App\Models\Auditoria;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -14,9 +13,6 @@ class AuditoriaTable extends Component
     use WithPagination;
 
     // Variables de estado
-    // public $selectedLog = null;      // Registro actual mostrado en el modal
-    public $expandedLogId = null;    // Para fila expandible
-    // public $showModal = false;       // Modal cerrado por defecto
     public $loading = false;         // Indicador de carga
 
     protected $paginationTheme = 'tailwind';
@@ -81,42 +77,6 @@ class AuditoriaTable extends Component
             'fecha_desde'  => $this->fecha_desde,
             'fecha_hasta'  => $this->fecha_hasta,
         ];
-    }
-
-    /**
-     * Abre modal con el registro seleccionado
-     */
-    // public function openModal(int $logId): void
-    // {
-    //     $log = Auditoria::with('usuario')->find($logId);
-
-    //     $this->selectedLog = [
-    //         'id'      => $log->id,
-    //         'usuario' => $log->usuario->name ?? 'Sistema',
-    //         'tabla'   => $log->tabla,
-    //         'accion'  => $log->accion,
-    //         'fecha'   => \Carbon\Carbon::parse($log->created_at)->format('d/m/Y H:i:s'),
-    //         'cambios' => $log->cambios,
-    //     ];
-
-    //     $this->showModal = true;
-    // }
-
-    /**
-     * Cierra modal
-     */
-    // public function closeModal(): void
-    // {
-    //     $this->selectedLog = null;
-    //     $this->showModal = false;
-    // }
-
-    /**
-     * Alterna la fila expandible
-     */
-    public function toggleDetails(int $logId): void
-    {
-        $this->expandedLogId = $this->expandedLogId === $logId ? null : $logId;
     }
 
     /**

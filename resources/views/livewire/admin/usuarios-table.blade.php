@@ -1,4 +1,11 @@
 <div class="space-y-6">
+
+    {{-- MODAL --}}
+    <livewire:admin.usuario-view-modal />
+    <livewire:admin.usuario-delete-modal />
+
+    {{-- HEADER + FILTROS --}}
+
     <x-crud-header title="Usuarios" subtitle="Gestión de usuarios del sistema" buttonLabel="Crear usuario"
         :buttonUrl="route('admin.usuarios.create')">
 
@@ -113,16 +120,8 @@
                 </td>
 
                 <td class="px-6 py-4 text-center">
-
-                    <x-table-actions row-id="user-{{ $u->id }}" :viewModalId="'viewUser-' . $u->id" :editUrl="route('admin.usuarios.edit', $u)"
-                        :user="$u" deleteModalId="deleteUser-{{ $u->id }}" />
-
-                    <x-view-modal id="viewUser-{{ $u->id }}" title="Detalle del Usuario" :data="$u" />
-
-                    <x-delete-modal id="deleteUser-{{ $u->id }}" title="Eliminar Usuario" :message="'¿Seguro que deseas eliminar a ' . $u->name . '?'"
-                        :action="route('admin.usuarios.destroy', $u)" />
+                    <x-table-actions row-id="user-{{ $u->id }}" :editUrl="route('admin.usuarios.edit', $u)" :user="$u" />
                 </td>
-
             </tr>
         @endforeach
     </x-crud-table>
