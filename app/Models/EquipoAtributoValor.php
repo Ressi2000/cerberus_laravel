@@ -18,7 +18,7 @@ class EquipoAtributoValor extends Model
 
     public function equipo()
     {
-        return $this->belongsTo(Equipos::class);
+        return $this->belongsTo(Equipo::class);
     }
 
     public function atributo()

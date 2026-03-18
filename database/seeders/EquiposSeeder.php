@@ -5,9 +5,9 @@ namespace Database\Seeders;
 use App\Models\AtributoEquipo;
 use App\Models\CategoriaEquipo;
 use App\Models\Empresa;
+use App\Models\Equipo;
 use Illuminate\Support\Str;
 use App\Models\EquipoAtributoValor;
-use App\Models\Equipos;
 use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
 use App\Models\User;
@@ -51,7 +51,7 @@ class EquiposSeeder extends Seeder
 
                     $fechaAdquisicion = Carbon::now()->subYears(rand(0,5))->subDays(rand(0,365));
 
-                    $equipo = Equipos::create([
+                    $equipo = Equipo::create([
                         'empresa_id'          => $empresa->id,
                         'categoria_id'        => $categoria->id,
                         'estado_id'           => $estados->random()->id,

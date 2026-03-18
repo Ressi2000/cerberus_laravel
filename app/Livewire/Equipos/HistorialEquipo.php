@@ -4,15 +4,14 @@ namespace App\Livewire\Equipos;
 
 use Livewire\Component;
 use App\Models\Equipo;
-use App\Models\Equipos;
 
 class HistorialEquipo extends Component
 {
-    public Equipos $equipo;
+    public Equipo $equipo;
 
     public $historial = [];
 
-    public function mount(Equipos $equipo)
+    public function mount(Equipo $equipo)
     {
         $this->authorize('view', $equipo);
 

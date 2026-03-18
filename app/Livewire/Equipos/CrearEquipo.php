@@ -8,110 +8,143 @@ use Illuminate\Support\Str;
 use App\Models\CategoriaEquipo;
 use App\Models\EstadoEquipo;
 use App\Models\AtributoEquipo;
+use App\Models\Equipo;
 use App\Models\EquipoAtributoValor;
-use App\Models\Equipos;
 use Illuminate\Support\Facades\Auth;
 
 class CrearEquipo extends Component
 {
     public $empresa_id;
-    public $categoria_id;
-    public $estado_id;
-    public $ubicacion_id;
+    public $categoria_id    = '';
+    public $estado_id       = '';
+    public $ubicacion_id    = '';
 
-    public $codigo_interno;
-    public $serial;
-    public $nombre_maquina;
-    public $fecha_adquisicion;
-    public $fecha_garantia_fin;
-    public $observaciones;
+    public $codigo_interno   = '';
+    public $serial           = '';
+    public $nombre_maquina   = '';
+    public $fecha_adquisicion   = '';
+    public $fecha_garantia_fin  = '';
+    public $observaciones    = '';
 
-    public $atributos = [];
-    public $valores = [];
+    // IDs + metadatos de atributos (array plano, serializable por Livewire)
+    public array $atributos = [];
 
-    public function mount()
+    // Valores indexados por atributo_id
+    public array $valores = [];
+
+    public function mount(): void
     {
-        $this->empresa_id = session('empresa_activa_id');
-        $this->estado_id = EstadoEquipo::where('nombre', 'Disponible')->first()?->id;
+        $this->empresa_id = Auth::user()->empresa_id;
+        $this->estado_id  = EstadoEquipo::where('nombre', 'Disponible')->value('id') ?? '';
     }
 
-    public function updatedCategoriaId($value)
+    // Cuando cambia la categoría, recarga atributos
+    public function updatedCategoriaId($value): void
     {
         $this->cargarAtributos($value);
+        $this->resetValidation();
     }
 
-    private function cargarAtributos($categoriaId)
+    private function cargarAtributos($categoriaId): void
     {
+        if (!$categoriaId) {
+            $this->atributos = [];
+            $this->valores   = [];
+            return;
+        }
+
+        // Convertimos a array plano para que Livewire pueda serializar sin problemas
         $this->atributos = AtributoEquipo::where('categoria_id', $categoriaId)
             ->orderBy('orden')
-            ->get();
+            ->get()
+            ->map(fn($a) => [
+                'id'        => $a->id,
+                'nombre'    => $a->nombre,
+                'tipo'      => $a->tipo,
+                'requerido' => $a->requerido,
+                'filtrable' => $a->filtrable,
+                'opciones'  => $a->opciones ?? [],
+            ])
+            ->toArray();
 
+        // Inicializar valores vacíos
         $this->valores = [];
-
         foreach ($this->atributos as $atributo) {
-            $this->valores[$atributo->id] = null;
+            $this->valores[$atributo['id']] = null;
         }
     }
 
-    private function reglasDinamicas()
+    private function reglasDinamicas(): array
     {
         $rules = [
-            'categoria_id' => 'required|exists:categorias_equipos,id',
-            'codigo_interno' => 'required|unique:equipos,codigo_interno',
-            'estado_id' => 'required|exists:estados_equipos,id',
+            'categoria_id'     => 'required|exists:categorias_equipos,id',
+            'codigo_interno'   => 'required|unique:equipos,codigo_interno',
+            'estado_id'        => 'required|exists:estados_equipos,id',
+            'ubicacion_id'     => 'nullable|exists:ubicaciones,id',
+            'serial'           => 'nullable|string|max:255',
+            'nombre_maquina'   => 'nullable|string|max:255',
+            'fecha_adquisicion'  => 'nullable|date',
+            'fecha_garantia_fin' => 'nullable|date|after_or_equal:fecha_adquisicion',
+            'observaciones'    => 'nullable|string',
         ];
 
         foreach ($this->atributos as $atributo) {
-
-            $rule = match ($atributo->tipo) {
+            $tipo = match ($atributo['tipo']) {
                 'integer' => 'integer',
                 'decimal' => 'numeric',
                 'boolean' => 'boolean',
-                'date' => 'date',
-                default => 'string',
+                'date'    => 'date',
+                'text'    => 'string',
+                default   => 'string|max:500',
             };
 
-            if ($atributo->requerido) {
-                $rule = 'required|' . $rule;
-            } else {
-                $rule = 'nullable|' . $rule;
-            }
-
-            $rules["valores.{$atributo->id}"] = $rule;
+            $rules["valores.{$atributo['id']}"] = $atributo['requerido']
+                ? "required|{$tipo}"
+                : "nullable|{$tipo}";
         }
 
         return $rules;
     }
 
-    public function guardar()
+    private function mensajesDinamicos(): array
     {
-        $this->validate($this->reglasDinamicas());
+        $messages = [];
+
+        foreach ($this->atributos as $atributo) {
+            $messages["valores.{$atributo['id']}.required"] =
+                "El campo \"{$atributo['nombre']}\" es obligatorio.";
+        }
+
+        return $messages;
+    }
+
+    public function guardar(): void
+    {
+        $this->validate($this->reglasDinamicas(), $this->mensajesDinamicos());
 
         DB::transaction(function () {
 
-            $equipo = Equipos::create([
-                'empresa_id' => $this->empresa_id,
-                'categoria_id' => $this->categoria_id,
-                'estado_id' => $this->estado_id,
-                'ubicacion_id' => $this->ubicacion_id,
-                'codigo_interno' => $this->codigo_interno ?? Str::uuid(),
-                'serial' => $this->serial,
-                'nombre_maquina' => $this->nombre_maquina,
-                'fecha_adquisicion' => $this->fecha_adquisicion,
-                'fecha_garantia_fin' => $this->fecha_garantia_fin,
-                'observaciones' => $this->observaciones,
+            $equipo = Equipo::create([
+                'empresa_id'        => $this->empresa_id,
+                'categoria_id'      => $this->categoria_id,
+                'estado_id'         => $this->estado_id,
+                'ubicacion_id'      => $this->ubicacion_id ?: null,
+                'codigo_interno'    => $this->codigo_interno ?: Str::uuid(),
+                'serial'            => $this->serial ?: null,
+                'nombre_maquina'    => $this->nombre_maquina ?: null,
+                'fecha_adquisicion' => $this->fecha_adquisicion ?: null,
+                'fecha_garantia_fin'=> $this->fecha_garantia_fin ?: null,
+                'observaciones'     => $this->observaciones ?: null,
             ]);
 
             foreach ($this->valores as $atributoId => $valor) {
-
                 if ($valor !== null && $valor !== '') {
-
                     EquipoAtributoValor::create([
-                        'equipo_id' => $equipo->id,
+                        'equipo_id'   => $equipo->id,
                         'atributo_id' => $atributoId,
-                        'valor' => $valor,
-                        'es_actual' => true,
-                        'creado_por' => Auth::id(),
+                        'valor'       => $valor,
+                        'es_actual'   => true,
+                        'creado_por'  => Auth::id(),
                     ]);
                 }
             }
@@ -119,14 +152,17 @@ class CrearEquipo extends Component
 
         session()->flash('success', 'Equipo registrado correctamente.');
 
-        return redirect()->route('equipos.index');
+        $this->redirect(route('admin.equipos.index'), navigate: true);
     }
 
     public function render()
     {
         return view('livewire.equipos.crear-equipo', [
-            'categorias' => CategoriaEquipo::orderBy('nombre')->get(),
-            'estados' => EstadoEquipo::orderBy('nombre')->get(),
+            'categorias' => CategoriaEquipo::orderBy('nombre')->pluck('nombre', 'id'),
+            'estados'    => EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id'),
+            'ubicaciones'=> \App\Models\Ubicacion::where('empresa_id', $this->empresa_id)
+                                ->orderBy('nombre')
+                                ->pluck('nombre', 'id'),
         ]);
     }
 }

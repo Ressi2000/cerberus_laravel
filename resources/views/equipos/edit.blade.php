@@ -4,13 +4,11 @@
         ['label' => 'Dashboard', 'url' => route('dashboard')],
         ['label' => 'Inventario', 'url' => '#'],
         ['label' => 'Equipos', 'url' => route('admin.equipos.index')],
+        ['label' => 'Editar Equipo', 'url' => '#'],
     ]" />
 
     <x-form.success />
 
-    @livewire('equipos.equipo-view-modal')
-@livewire('equipos.equipo-delete-modal')
-
-    @livewire('equipos.equipos-table')
+    @livewire('equipos.editar-equipo', ['equipo' => $equipo])
 
 </x-app-layout>

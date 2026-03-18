@@ -5,9 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Equipos extends Model
+class Equipo extends Model
 {
-     use SoftDeletes;
+    use SoftDeletes;
 
     protected $fillable = [
         'empresa_id',
@@ -45,7 +45,7 @@ class Equipos extends Model
     public function atributosActuales()
     {
         return $this->hasMany(EquipoAtributoValor::class)
-                    ->where('es_actual', true);
+            ->where('es_actual', true);
     }
 
     public function atributosHistorico()

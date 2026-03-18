@@ -2,138 +2,171 @@
 
 namespace App\Livewire\Equipos;
 
+use App\Models\Equipo;
 use Livewire\Component;
 use Illuminate\Support\Facades\DB;
 use App\Models\EquipoAtributoValor;
-use App\Models\Equipos;
+use App\Models\EstadoEquipo;
 use Illuminate\Support\Facades\Auth;
 
 class EditarEquipo extends Component
 {
-    public Equipos $equipo;
+    public Equipo $equipo;
 
-    public $estado_id;
-    public $ubicacion_id;
-    public $serial;
-    public $nombre_maquina;
-    public $fecha_adquisicion;
-    public $fecha_garantia_fin;
-    public $observaciones;
+    public $estado_id        = '';
+    public $ubicacion_id     = '';
+    public $serial           = '';
+    public $nombre_maquina   = '';
+    public $fecha_adquisicion   = '';
+    public $fecha_garantia_fin  = '';
+    public $observaciones    = '';
 
-    public $atributos = [];
-    public $valores = [];
+    // Array plano serializable por Livewire (NO Collection de Eloquent)
+    public array $atributos = [];
+    public array $valores   = [];
 
-    public function mount(Equipos $equipo)
+    public function mount(Equipo $equipo): void
     {
         $this->authorize('update', $equipo);
 
         $this->equipo = $equipo->load([
             'categoria.atributos',
-            'atributosActuales'
+            'atributosActuales.atributo',
         ]);
 
-        $this->estado_id = $equipo->estado_id;
-        $this->ubicacion_id = $equipo->ubicacion_id;
-        $this->serial = $equipo->serial;
-        $this->nombre_maquina = $equipo->nombre_maquina;
-        $this->fecha_adquisicion = $equipo->fecha_adquisicion;
-        $this->fecha_garantia_fin = $equipo->fecha_garantia_fin;
-        $this->observaciones = $equipo->observaciones;
+        // Datos base
+        $this->estado_id          = $equipo->estado_id;
+        $this->ubicacion_id       = $equipo->ubicacion_id;
+        $this->serial             = $equipo->serial ?? '';
+        $this->nombre_maquina     = $equipo->nombre_maquina ?? '';
+        $this->fecha_adquisicion  = $equipo->fecha_adquisicion ?? '';
+        $this->fecha_garantia_fin = $equipo->fecha_garantia_fin ?? '';
+        $this->observaciones      = $equipo->observaciones ?? '';
 
-        $this->atributos = $equipo->categoria->atributos()->orderBy('orden')->get();
+        // Atributos como array plano (serializable)
+        $this->atributos = $equipo->categoria->atributos()
+            ->orderBy('orden')
+            ->get()
+            ->map(fn($a) => [
+                'id'        => $a->id,
+                'nombre'    => $a->nombre,
+                'tipo'      => $a->tipo,
+                'requerido' => $a->requerido,
+                'opciones'  => $a->opciones ?? [],
+            ])
+            ->toArray();
+
+        // Cargar valores actuales
+        $valoresActuales = $equipo->atributosActuales->keyBy('atributo_id');
 
         foreach ($this->atributos as $atributo) {
-            $valorActual = $equipo->atributosActuales
-                ->where('atributo_id', $atributo->id)
-                ->first();
-
-            $this->valores[$atributo->id] = $valorActual?->valor;
+            $this->valores[$atributo['id']] = $valoresActuales[$atributo['id']]?->valor ?? null;
         }
     }
 
-    private function reglasDinamicas()
+    private function reglasDinamicas(): array
     {
         $rules = [
-            'estado_id' => 'required|exists:estados_equipos,id',
+            'estado_id'          => 'required|exists:estados_equipos,id',
+            'ubicacion_id'       => 'nullable|exists:ubicaciones,id',
+            'serial'             => 'nullable|string|max:255',
+            'nombre_maquina'     => 'nullable|string|max:255',
+            'fecha_adquisicion'  => 'nullable|date',
+            'fecha_garantia_fin' => 'nullable|date|after_or_equal:fecha_adquisicion',
+            'observaciones'      => 'nullable|string',
         ];
 
         foreach ($this->atributos as $atributo) {
-
-            $rule = match ($atributo->tipo) {
+            $tipo = match ($atributo['tipo']) {
                 'integer' => 'integer',
                 'decimal' => 'numeric',
                 'boolean' => 'boolean',
-                'date' => 'date',
-                default => 'string',
+                'date'    => 'date',
+                'text'    => 'string',
+                default   => 'string|max:500',
             };
 
-            if ($atributo->requerido) {
-                $rule = 'required|' . $rule;
-            } else {
-                $rule = 'nullable|' . $rule;
-            }
-
-            $rules["valores.{$atributo->id}"] = $rule;
+            $rules["valores.{$atributo['id']}"] = $atributo['requerido']
+                ? "required|{$tipo}"
+                : "nullable|{$tipo}";
         }
 
         return $rules;
     }
 
-    public function actualizar()
+    private function mensajesDinamicos(): array
     {
-        $this->validate($this->reglasDinamicas());
+        $messages = [];
+
+        foreach ($this->atributos as $atributo) {
+            $messages["valores.{$atributo['id']}.required"] =
+                "El campo \"{$atributo['nombre']}\" es obligatorio.";
+        }
+
+        return $messages;
+    }
+
+    public function actualizar(): void
+    {
+        $this->validate($this->reglasDinamicas(), $this->mensajesDinamicos());
 
         DB::transaction(function () {
 
-            // Actualizar datos base
+            // Actualizar datos base del equipo
             $this->equipo->update([
-                'estado_id' => $this->estado_id,
-                'ubicacion_id' => $this->ubicacion_id,
-                'serial' => $this->serial,
-                'nombre_maquina' => $this->nombre_maquina,
-                'fecha_adquisicion' => $this->fecha_adquisicion,
-                'fecha_garantia_fin' => $this->fecha_garantia_fin,
-                'observaciones' => $this->observaciones,
+                'estado_id'          => $this->estado_id,
+                'ubicacion_id'       => $this->ubicacion_id ?: null,
+                'serial'             => $this->serial ?: null,
+                'nombre_maquina'     => $this->nombre_maquina ?: null,
+                'fecha_adquisicion'  => $this->fecha_adquisicion ?: null,
+                'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
+                'observaciones'      => $this->observaciones ?: null,
             ]);
 
-            // Versionado de atributos
+            // Versionado EAV: solo registra si el valor cambió
             foreach ($this->valores as $atributoId => $nuevoValor) {
 
                 $valorActual = EquipoAtributoValor::where([
-                    'equipo_id' => $this->equipo->id,
-                    'atributo_id' => $atributoId,
-                    'es_actual' => true,
+                    'equipo_id'  => $this->equipo->id,
+                    'atributo_id'=> $atributoId,
+                    'es_actual'  => true,
                 ])->first();
 
-                $valorAnterior = $valorActual?->valor;
+                // Sin cambio → no hacer nada
+                if ($valorActual && (string) $valorActual->valor === (string) $nuevoValor) {
+                    continue;
+                }
 
-                if ($valorAnterior != $nuevoValor) {
+                // Marcar anterior como histórico
+                if ($valorActual) {
+                    $valorActual->update(['es_actual' => false]);
+                }
 
-                    if ($valorActual) {
-                        $valorActual->update(['es_actual' => false]);
-                    }
-
-                    if ($nuevoValor !== null && $nuevoValor !== '') {
-                        EquipoAtributoValor::create([
-                            'equipo_id' => $this->equipo->id,
-                            'atributo_id' => $atributoId,
-                            'valor' => $nuevoValor,
-                            'es_actual' => true,
-                            'creado_por' => Auth::id(),
-                        ]);
-                    }
+                // Crear nueva versión solo si hay valor
+                if ($nuevoValor !== null && $nuevoValor !== '') {
+                    EquipoAtributoValor::create([
+                        'equipo_id'   => $this->equipo->id,
+                        'atributo_id' => $atributoId,
+                        'valor'       => $nuevoValor,
+                        'es_actual'   => true,
+                        'creado_por'  => Auth::id(),
+                    ]);
                 }
             }
         });
 
         session()->flash('success', 'Equipo actualizado correctamente.');
 
-        return redirect()->route('equipos.index');
+        $this->redirect(route('admin.equipos.index'), navigate: true);
     }
 
     public function render()
     {
-        return view('livewire.equipos.editar-equipo');
+        return view('livewire.equipos.editar-equipo', [
+            'estados'    => EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id'),
+            'ubicaciones'=> \App\Models\Ubicacion::where('empresa_id', $this->equipo->empresa_id)
+                                ->orderBy('nombre')
+                                ->pluck('nombre', 'id'),
+        ]);
     }
 }
-

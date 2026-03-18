@@ -120,7 +120,13 @@
                 </td>
 
                 <td class="px-6 py-4 text-center">
-                    <x-table-actions row-id="user-{{ $u->id }}" :editUrl="route('admin.usuarios.edit', $u)" :user="$u" />
+                    <x-table-actions
+                        :model="$u"
+                        :editUrl="route('admin.usuarios.edit', $u)"
+                        viewEvent="openUserView"
+                        deleteEvent="openUserDelete"
+                        deleteLabel="Inactivar"
+                        :policy="$u" />
                 </td>
             </tr>
         @endforeach

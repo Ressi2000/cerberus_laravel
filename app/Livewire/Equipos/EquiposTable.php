@@ -10,7 +10,7 @@ use App\Models\Equipo;
 use App\Models\CategoriaEquipo;
 use App\Models\EstadoEquipo;
 use App\Models\AtributoEquipo;
-use App\Models\Equipos;
+use Illuminate\Support\Facades\Auth;
 
 class EquiposTable extends Component
 {
@@ -90,9 +90,9 @@ class EquiposTable extends Component
 
     public function render()
     {
-        $empresaId = session('empresa_activa_id');
+        $empresaId = Auth::user()->empresa_id;
 
-        $query = Equipos::query()
+        $query = Equipo::query()
             ->with(['categoria', 'estado'])
             ->where('empresa_id', $empresaId);
 

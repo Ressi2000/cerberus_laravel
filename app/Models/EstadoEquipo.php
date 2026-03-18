@@ -12,6 +12,6 @@ class EstadoEquipo extends Model
 
     public function equipos()
     {
-        return $this->hasMany(Equipos::class);
+        return $this->hasMany(Equipo::class);
     }
 }
