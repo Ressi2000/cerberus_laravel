@@ -7,7 +7,7 @@
 
 <x-app-layout title="Crear Usuario" header="Gestión de Usuarios">
     {{-- Breadcrumb --}}
-    <x-breadcrumb :items="[
+    <x-ui.breadcrumb :items="[
         ['label' => 'Dashboard', 'url' => route('dashboard')],
         ['label' => 'Gestión de Usuarios', 'url' => '#'],
         ['label' => 'Usuarios', 'url' => route('admin.usuarios.index')],
@@ -20,7 +20,7 @@
     </x-slot> --}}
 
     {{-- Estadísticas opcionales arriba --}}
-    {{-- <x-stats-cards :items="[...]"/> --}}
+    {{-- <x-ui.stats-cards :items="[...]"/> --}}
 
     <x-form.errors />
 
@@ -75,7 +75,7 @@
                 <h2 class="text-xl text-white font-semibold mb-4">Datos laborales</h2>
 
                 {{-- Empresa Nómina --}}
-                <x-select name="empresa_id" label="Empresa" :options="$empresas" required />
+                <x-form.select name="empresa_id" label="Empresa" :options="$empresas" required />
 
                 {{-- Empresas Asignadas --}}
                 <div id="empresas-analista" class="{{ !$actorIsAdmin ? 'hidden' : 'hidden' }}">
@@ -83,16 +83,16 @@
                 </div>
 
                 {{-- Departamento --}}
-                <x-select name="departamento_id" label="Departamento" :options="$departamentos" />
+                <x-form.select name="departamento_id" label="Departamento" :options="$departamentos" />
 
                 {{-- Cargo --}}
-                <x-select name="cargo_id" label="Cargo" :options="$cargos" />
+                <x-form.select name="cargo_id" label="Cargo" :options="$cargos" />
 
                 {{-- Jefe --}}
-                <x-select name="jefe_id" label="Jefe" :options="$jefes" />
+                <x-form.select name="jefe_id" label="Jefe" :options="$jefes" />
 
                 {{-- Ubicación --}}
-                <x-select name="ubicacion_id" label="Ubicación principal" :options="$ubicaciones" />
+                <x-form.select name="ubicacion_id" label="Ubicación principal" :options="$ubicaciones" />
             </div>
         </div>
 
@@ -104,7 +104,7 @@
 
                 {{-- Rol --}}
                 @if ($actorIsAdmin)
-                    <x-select name="rol_id" label="Rol del sistema" :options="$roles" required />
+                    <x-form.select name="rol_id" label="Rol del sistema" :options="$roles" required />
                 @else
                     {{-- Analista solo crea Usuarios --}}
                     <input type="hidden" name="rol_id"
@@ -115,7 +115,7 @@
 
                 {{-- Estado --}}
                 @if ($actorIsAdmin)
-                    <x-select name="estado" label="Estado" :options="['Activo' => 'Activo', 'Inactivo' => 'Inactivo']" />
+                    <x-form.select name="estado" label="Estado" :options="['Activo' => 'Activo', 'Inactivo' => 'Inactivo']" />
                 @else
                     <input type="hidden" name="estado" value="Activo">
                 @endif
@@ -170,7 +170,7 @@
     @endif
     
     {{-- MODAL CROP FOTO --}}
-    <x-modal name="crop-photo" maxWidth="lg">
+    <x-modal.modal name="crop-photo" maxWidth="lg">
         <div class="bg-cerberus-dark p-6 space-y-4">
 
             <h3 class="text-lg font-semibold text-white">

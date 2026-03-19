@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <x-auth-card>
+    <x-auth.auth-card>
         <x-form.errors />
         <h2 class="text-lg font-semibold mb-4 text-center">
             Selecciona la empresa
@@ -16,7 +16,7 @@
                 @endforeach
             </select>
 
-            <x-primary-button class="mt-4 w-full">
+            <x-auth.primary-button class="mt-4 w-full">
                 Continuar
             </x-primary-button>
         </form>

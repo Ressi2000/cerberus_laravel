@@ -6,7 +6,7 @@
 
     {{-- HEADER + FILTROS --}}
 
-    <x-crud-header title="Usuarios" subtitle="Gestión de usuarios del sistema" buttonLabel="Crear usuario"
+    <x-table.crud-header title="Usuarios" subtitle="Gestión de usuarios del sistema" buttonLabel="Crear usuario"
         :buttonUrl="route('admin.usuarios.create')">
 
         <x-slot name="filters">
@@ -37,13 +37,13 @@
 
                     {{-- SELECTS --}}
 
-                    <x-select name="empresa_id" label="Empresa (Nómina)" :options="$empresas"
+                    <x-form.select name="empresa_id" label="Empresa (Nómina)" :options="$empresas"
                         wire:model.live="empresa_id" />
-                    <x-select name="rol_id" label="Rol" :options="$roles" wire:model.live="rol_id" />
-                    <x-select name="departamento_id" label="Departamento" :options="$departamentos"
+                    <x-form.select name="rol_id" label="Rol" :options="$roles" wire:model.live="rol_id" />
+                    <x-form.select name="departamento_id" label="Departamento" :options="$departamentos"
                         wire:model.live="departamento_id" />
-                    <x-select name="cargo_id" label="Cargo" :options="$cargos" wire:model.live="cargo_id" />
-                    <x-select name="ubicacion_id" label="Ubicación" :options="$ubicaciones" wire:model.live="ubicacion_id" />
+                    <x-form.select name="cargo_id" label="Cargo" :options="$cargos" wire:model.live="cargo_id" />
+                    <x-form.select name="ubicacion_id" label="Ubicación" :options="$ubicaciones" wire:model.live="ubicacion_id" />
 
 
                     {{-- ACTIONS --}}
@@ -85,7 +85,7 @@
     </x-crud-header>
 
     {{-- TABLA REUSABLE --}}
-    <x-crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export exportRoute="export.usuarios" :filters="$this->filterParams">
+    <x-table.crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export exportRoute="export.usuarios" :filters="$this->filterParams">
         @foreach ($usuarios as $u)
             <tr wire:key="usuario-{{ $u->id }}" class="hover:bg-cerberus-darkest">
                 <td class="px-4 py-3">
@@ -120,7 +120,7 @@
                 </td>
 
                 <td class="px-6 py-4 text-center">
-                    <x-table-actions
+                    <x-table.table-actions
                         :model="$u"
                         :editUrl="route('admin.usuarios.edit', $u)"
                         viewEvent="openUserView"

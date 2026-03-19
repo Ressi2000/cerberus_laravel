@@ -1,7 +1,7 @@
 <x-app-layout title="Perfil" header="Gestión de Usuarios">
 
     {{-- BREADCRUMB --}}
-    <x-breadcrumb :items="[
+    <x-ui.breadcrumb :items="[
         ['label' => 'Dashboard', 'url' => route('dashboard')],
         ['label' => 'Gestión de Usuarios', 'url' => '#'],
         ['label' => 'Perfil', 'url' => route('profile.edit')],
@@ -11,7 +11,7 @@
         <div class="space-y-8 lg:col-span-2">
 
             {{-- FOTO DE PERFIL --}}
-            <x-card title="Foto de perfil" description="Actualiza tu imagen de usuario">
+            <x-ui.card title="Foto de perfil" description="Actualiza tu imagen de usuario">
                 @if (session('photo-updated'))
                     <x-form.success />
                 @endif
@@ -54,7 +54,7 @@
             </x-card>
 
             {{-- INFORMACIÓN DEL PERFIL --}}
-            <x-card title="Información del perfil" description="Actualiza tus datos personales y correo electrónico">
+            <x-ui.card title="Información del perfil" description="Actualiza tus datos personales y correo electrónico">
                 @if (session('profile-updated'))
                     <x-form.success />
                 @endif
@@ -89,7 +89,7 @@
             </x-card>
 
             {{-- INFORMACIÓN ADICIONAL --}}
-            <x-card title="Información adicional" description="Datos laborales y de sistema asociados a tu cuenta">
+            <x-ui.card title="Información adicional" description="Datos laborales y de sistema asociados a tu cuenta">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 text-sm">
 
                     {{-- Usuario --}}
@@ -227,7 +227,7 @@
             </x-card>
 
             {{-- SEGURIDAD --}}
-            <x-card title="Seguridad" description="Actualiza tu contraseña de acceso">
+            <x-ui.card title="Seguridad" description="Actualiza tu contraseña de acceso">
                 @if (session('password-updated'))
                     <x-form.success />
                 @endif
@@ -255,7 +255,7 @@
                     <x-form.input type="password" name="password_confirmation" label="Confirmar contraseña" required />
 
                     <div class="flex justify-end">
-                        <x-primary-button>
+                        <x-auth.primary-button>
                             Actualizar contraseña
                         </x-primary-button>
                     </div>
@@ -265,7 +265,7 @@
 
         {{-- ULTIMAS ACCIONES --}}
         <aside class="lg:col-span-1">
-            <x-card title="Actividad reciente" description="Últimas acciones realizadas en el sistema">
+            <x-ui.card title="Actividad reciente" description="Últimas acciones realizadas en el sistema">
                 <ol class="relative border-s border-cerberus-steel ps-6 space-y-8">
 
                     @forelse($auditorias as $log)
@@ -331,7 +331,7 @@
             </aside>
 
             {{-- ZONA PELIGROSA --}}
-            {{-- <x-card title="Eliminar cuenta" description="Esta acción es permanente y no se puede deshacer"
+            {{-- <x-ui.card title="Eliminar cuenta" description="Esta acción es permanente y no se puede deshacer"
             class="border-red-300">
             <form method="POST" action="{{ route('profile.destroy') }}"
                 onsubmit="return confirm('¿Seguro que deseas eliminar tu cuenta? Esta acción no se puede deshacer.')"
@@ -346,10 +346,10 @@
                 <div>
                     <x-form.input type="password" name="password_delete" label="Contraseña"
                         placeholder="Confirma tu contraseña" required /> --}}
-            {{-- <x-input-label for="password_delete" value="Contraseña" />
-                    <x-text-input id="password_delete" name="password" type="password" class="mt-1 block w-full"
+            {{-- <x-auth.input-label for="password_delete" value="Contraseña" />
+                    <x-auth.text-input id="password_delete" name="password" type="password" class="mt-1 block w-full"
                         placeholder="Confirma tu contraseña" />
-                    <x-input-error :messages="$errors->get('password')" class="mt-2" /> --}}
+                    <x-auth.input-error :messages="$errors->get('password')" class="mt-2" /> --}}
             {{-- </div>
 
                 <div class="flex justify-end">
@@ -364,7 +364,7 @@
         </div>
 
         {{-- MODAL CROP FOTO --}}
-        <x-modal name="crop-photo" maxWidth="lg">
+        <x-modal.modal name="crop-photo" maxWidth="lg">
             <div class="bg-cerberus-dark p-6 space-y-4">
 
                 <h3 class="text-lg font-semibold text-white">

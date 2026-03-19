@@ -1,7 +1,7 @@
 <div class="space-y-6">
 
     {{-- STATS --}}
-    <x-stats-cards :items="[
+    <x-ui.stats-cards :items="[
         ['title' => 'Total Equipos', 'value' => $total, 'icon' => 'inventory_2'],
         ['title' => 'Activos', 'value' => $activos, 'icon' => 'check_circle'],
         ['title' => 'En Mantenimiento', 'value' => $mantenimiento, 'icon' => 'build'],
@@ -9,7 +9,7 @@
     ]" />
 
     {{-- HEADER --}}
-    <x-crud-header title="Equipos" subtitle="Gestión del inventario corporativo" buttonLabel="Crear equipo"
+    <x-table.crud-header title="Equipos" subtitle="Gestión del inventario corporativo" buttonLabel="Crear equipo"
         :buttonUrl="route('admin.equipos.create')">
 
         <x-slot name="filters">
@@ -35,9 +35,9 @@
                         </div>
                     </div>
 
-                    <x-select name="categoria_id" label="Categoría" :options="$categorias" wire:model.live="categoria_id" />
+                    <x-form.select name="categoria_id" label="Categoría" :options="$categorias" wire:model.live="categoria_id" />
 
-                    <x-select name="estado_id" label="Estado" :options="$estados" wire:model.live="estado_id" />
+                    <x-form.select name="estado_id" label="Estado" :options="$estados" wire:model.live="estado_id" />
 
                 </div>
 
@@ -47,10 +47,10 @@
 
                         @foreach ($atributosFiltrables as $atributo)
                             @if ($atributo->tipo === 'boolean')
-                                <x-select :name="'filtros.' . $atributo->id" :label="$atributo->nombre" :options="[1 => 'Sí', 0 => 'No']"
+                                <x-form.select :name="'filtros.' . $atributo->id" :label="$atributo->nombre" :options="[1 => 'Sí', 0 => 'No']"
                                     wire:model.live="filtros.{{ $atributo->id }}" />
                             @elseif($atributo->tipo === 'select')
-                                <x-select :name="'filtros.' . $atributo->id" :label="$atributo->nombre" :options="$atributo->opciones ?? []"
+                                <x-form.select :name="'filtros.' . $atributo->id" :label="$atributo->nombre" :options="$atributo->opciones ?? []"
                                     wire:model.live="filtros.{{ $atributo->id }}" />
                             @else
                                 <div>
@@ -79,7 +79,7 @@
     </x-crud-header>
 
     {{-- TABLA --}}
-    <x-crud-table :headers="['Código', 'Categoría', 'Estado', 'Creado', 'Acciones']" :paginated="$equipos">
+    <x-table.crud-table :headers="['Código', 'Categoría', 'Estado', 'Creado', 'Acciones']" :paginated="$equipos">
 
         @foreach ($equipos as $equipo)
             <tr wire:key="equipo-{{ $equipo->id }}" class="hover:bg-cerberus-darkest">
@@ -103,7 +103,7 @@
                 </td>
 
                 <td class="px-6 py-4 text-center">
-                    <x-table-actions :model="$equipo" :editUrl="route('admin.equipos.edit', $equipo)" viewEvent="openEquipoView"
+                    <x-table.table-actions :model="$equipo" :editUrl="route('admin.equipos.edit', $equipo)" viewEvent="openEquipoView"
                         deleteEvent="openEquipoDelete" deleteLabel="Eliminar" :policy="$equipo" />
                 </td>
 

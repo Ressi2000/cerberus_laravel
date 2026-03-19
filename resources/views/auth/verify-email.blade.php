@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <x-auth-card>
+    <x-auth.auth-card>
         <div class="mb-4 text-sm text-gray-700 dark:text-gray-300">
             {{ __('¡Gracias por registrarte! Antes de comenzar, por favor verifica tu dirección de correo electrónico haciendo clic en el enlace que te enviamos. Si no recibiste el correo, podemos enviarte otro.') }}
         </div>
@@ -13,7 +13,7 @@
         <div class="mt-6 flex items-center justify-between">
             <form method="POST" action="{{ route('verification.send') }}">
                 @csrf
-                <x-primary-button class="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white dark:bg-[#A9D6E5] dark:text-[#0D1B2A] dark:hover:bg-[#89C2D9]">
+                <x-auth.primary-button class="bg-[#1E40AF] hover:bg-[#1E3A8A] text-white dark:bg-[#A9D6E5] dark:text-[#0D1B2A] dark:hover:bg-[#89C2D9]">
                     {{ __('Reenviar correo de verificación') }}
                 </x-primary-button>
             </form>

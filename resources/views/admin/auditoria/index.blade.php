@@ -1,7 +1,7 @@
 <x-app-layout title="Auditoría" header="Auditoría del sistema">
 
     {{-- BREADCRUMB --}}
-    <x-breadcrumb :items="[
+    <x-ui.breadcrumb :items="[
         ['label' => 'Dashboard', 'url' => route('dashboard')],
         ['label' => 'Auditoría', 'url' => route('admin.auditoria.index')],
     ]" />

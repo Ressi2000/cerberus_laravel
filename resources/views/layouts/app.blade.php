@@ -1,135 +1,92 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="cerberusDarkMode()" :class="{ 'dark': isDark }">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name', 'Cerberus') }}</title>
+
+    {{-- Anti-flash: aplica la clase dark ANTES de que el navegador pinte --}}
+    <script>
+        (function () {
+            const saved = localStorage.getItem('cerberus-theme')
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+            if (saved === 'dark' || (saved === null && prefersDark)) {
+                document.documentElement.classList.add('dark')
+            }
+        })()
+    </script>
+
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
 
-<body class="bg-cerberus-dark text-gray-100 antialiased">
-    <!-- Sidebar -->
-    <x-sidebar />
+<body class="bg-[#E2E8F0] dark:bg-cerberus-dark text-[#1E293B] dark:text-gray-100 antialiased transition-colors duration-200">
 
-    <!-- Main Content -->
+    <x-ui.sidebar />
+
     <div class="lg:ml-64">
-        <!-- Navbar -->
-        <x-navbar :header="$header ?? 'Dashboard'" />
+        <x-ui.navbar :header="$header ?? 'Dashboard'" />
 
-        <!-- Page Content -->
-        <main class="p-4 mt-5 min-h-screen bg-cerberus-dark">
+        <main class="p-4 mt-5 min-h-screen">
             @if (isset($title))
-                <h1 class="text-2xl font-bold text-white mb-6">{{ $title }}</h1>
+                <h1 class="text-2xl font-bold text-[#1E293B] dark:text-white mb-6">{{ $title }}</h1>
             @endif
             {{ $slot }}
         </main>
     </div>
 
-    {{-- Footer --}}
-    <x-footer />
-
-    <!-- Scripts para la interactividad - VERSIÓN CORREGIDA -->
+    <x-ui.footer />
 
     <script>
-        // Esperar a que el DOM esté completamente cargado
-        document.addEventListener('DOMContentLoaded', function() {
-            // Elementos del DOM
-            const mobileSidebarToggle = document.getElementById('mobile-sidebar-toggle');
-            const sidebarClose = document.getElementById('sidebar-close');
-            const sidebar = document.getElementById('sidebar');
-            const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleBtn = document.getElementById('mobile-sidebar-toggle')
+            const closeBtn  = document.getElementById('sidebar-close')
+            const sidebar   = document.getElementById('sidebar')
+            const backdrop  = document.getElementById('sidebar-backdrop')
 
-            console.log('Elementos cargados:', {
-                mobileSidebarToggle,
-                sidebarClose,
-                sidebar,
-                sidebarBackdrop
-            });
-
-            // Toggle sidebar en móvil
             function openSidebar() {
-                console.log('Abriendo sidebar');
-                sidebar.classList.remove('-translate-x-full');
-                sidebarBackdrop.classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
+                sidebar.classList.remove('-translate-x-full')
+                backdrop.classList.remove('hidden')
+                document.body.style.overflow = 'hidden'
             }
 
             function closeSidebar() {
-                console.log('Cerrando sidebar');
-                sidebar.classList.add('-translate-x-full');
-                sidebarBackdrop.classList.add('hidden');
-                document.body.style.overflow = 'auto';
+                sidebar.classList.add('-translate-x-full')
+                backdrop.classList.add('hidden')
+                document.body.style.overflow = ''
             }
 
-            // Event listeners - CON VERIFICACIÓN
-            if (mobileSidebarToggle) {
-                mobileSidebarToggle.addEventListener('click', openSidebar);
-                console.log('Listener agregado al botón móvil');
-            } else {
-                console.error('No se encontró el botón mobile-sidebar-toggle');
-            }
+            toggleBtn?.addEventListener('click', openSidebar)
+            closeBtn?.addEventListener('click', closeSidebar)
+            backdrop?.addEventListener('click', closeSidebar)
 
-            if (sidebarClose) {
-                sidebarClose.addEventListener('click', closeSidebar);
-                console.log('Listener agregado al botón cerrar');
-            }
-
-            if (sidebarBackdrop) {
-                sidebarBackdrop.addEventListener('click', closeSidebar);
-                console.log('Listener agregado al backdrop');
-            }
-
-            // Cerrar sidebar al redimensionar
             window.addEventListener('resize', () => {
                 if (window.innerWidth >= 1024) {
-                    sidebar.classList.remove('-translate-x-full');
-                    sidebarBackdrop.classList.add('hidden');
-                    document.body.style.overflow = 'auto';
-                } else {
-                    // Solo cerrar si no está explícitamente abierto
-                    if (!sidebar.classList.contains('-translate-x-full')) {
-                        closeSidebar();
-                    }
+                    sidebar.classList.remove('-translate-x-full')
+                    backdrop.classList.add('hidden')
+                    document.body.style.overflow = ''
                 }
-            });
+            })
 
-            // Funcionalidad de menús desplegables
             document.querySelectorAll('.users-menu-toggle, .equipos-menu-toggle').forEach(toggle => {
-                toggle.addEventListener('click', function() {
-                    const menuId = this.classList.contains('users-menu-toggle') ? 'users-menu' :
-                        'equipos-menu';
-                    const menu = document.getElementById(menuId);
-                    const icon = this.querySelector('.material-icons:last-child');
+                toggle.addEventListener('click', function () {
+                    const menuId = this.classList.contains('users-menu-toggle') ? 'users-menu' : 'equipos-menu'
+                    const menu = document.getElementById(menuId)
+                    const icon = this.querySelector('.material-icons:last-child')
+                    menu.classList.toggle('hidden')
+                    if (icon) icon.style.transform = menu.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)'
+                })
+            })
 
-                    menu.classList.toggle('hidden');
-                    icon.style.transform = menu.classList.contains('hidden') ? 'rotate(0deg)' :
-                        'rotate(180deg)';
-                });
-            });
-
-            // Cerrar sidebar al hacer clic en un enlace en móvil
             document.querySelectorAll('#sidebar a').forEach(link => {
-                link.addEventListener('click', () => {
-                    if (window.innerWidth < 1024) {
-                        closeSidebar();
-                    }
-                });
-            });
-
-            // Debug: Verificar estado inicial
-            console.log('Estado inicial del sidebar:', {
-                translateClass: sidebar.classList.contains('-translate-x-full') ? 'oculto' : 'visible',
-                width: window.innerWidth
-            });
-        });
+                link.addEventListener('click', () => { if (window.innerWidth < 1024) closeSidebar() })
+            })
+        })
     </script>
 
     @livewireScripts
-
 </body>
-
 </html>

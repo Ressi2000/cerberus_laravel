@@ -1,14 +1,14 @@
 <x-app-layout title="Usuarios" header="Gestión de Usuarios">
 
     {{-- BREADCRUMB --}}
-    <x-breadcrumb :items="[
+    <x-ui.breadcrumb :items="[
         ['label' => 'Dashboard', 'url' => route('dashboard')],
         ['label' => 'Gestión de Usuarios', 'url' => '#'],
         ['label' => 'Usuarios', 'url' => route('admin.usuarios.index')],
     ]" />
 
     {{-- STAT CARDS --}}
-    <x-stats-cards :items="[
+    <x-ui.stats-cards :items="[
         ['title' => 'Activos', 'value' => $usuariosActivos ?? 0, 'icon' => 'check_circle'],
         ['title' => 'Inactivos', 'value' => $usuariosInactivos ?? 0, 'icon' => 'cancel'],
         ['title' => 'Admins', 'value' => $admins ?? 0, 'icon' => 'admin_panel_settings'],
@@ -21,7 +21,7 @@
     @livewire('admin.usuarios-table')
 
     {{-- TITLE + BUTTON + TOP FILTERS + SEARCH --}}
-    {{-- <x-crud-header title="Usuarios" subtitle="Gestión de usuarios del sistema" buttonLabel="Crear usuario"
+    {{-- <x-table.crud-header title="Usuarios" subtitle="Gestión de usuarios del sistema" buttonLabel="Crear usuario"
         :buttonUrl="route('admin.usuarios.create')">
         <x-slot name="filters">
 
@@ -131,7 +131,7 @@
     </x-crud-header> --}}
 
     {{-- TABLE --}}
-    {{-- <x-crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export>
+    {{-- <x-table.crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export>
 
         @foreach ($usuarios as $u)
             <tr class="hover:bg-cerberus-darkest">
@@ -164,12 +164,12 @@
                 </td>
 
                 <td class="px-6 py-4 text-center">
-                    <x-table-actions row-id="user-{{ $u->id }}" :viewModalId="'viewUser-' . $u->id" :editUrl="route('admin.usuarios.edit', $u)"
+                    <x-table.table-actions row-id="user-{{ $u->id }}" :viewModalId="'viewUser-' . $u->id" :editUrl="route('admin.usuarios.edit', $u)"
                         deleteModalId="deleteUser-{{ $u->id }}" />
 
                     <x-view-modal id="viewUser-{{ $u->id }}" title="Detalle del Usuario" :data="$u" />
 
-                    <x-delete-modal id="deleteUser-{{ $u->id }}" title="Eliminar Usuario" :message="'¿Seguro que deseas eliminar a ' . $u->name . '?'"
+                    <x-modal.delete-modal id="deleteUser-{{ $u->id }}" title="Eliminar Usuario" :message="'¿Seguro que deseas eliminar a ' . $u->name . '?'"
                         :action="route('admin.usuarios.destroy', $u)" />
                 </td>
             </tr>
