@@ -48,7 +48,7 @@ class CrearUsuario extends Component
     {
         $this->departamento_id = '';
         $this->cargo_id        = '';
-        $this->empresa_ids     = [];
+        // $this->empresa_ids     = [];
         unset($this->departamentos, $this->cargos);
     }
 

@@ -1,40 +1,45 @@
 // resources/js/modules/avatar-cropper.js
-// Se renderiza en app.js
+//
+// Estrategia para funcionar con Livewire WithFileUploads:
+//   1. Input VISIBLE (#fotoInput) — solo para el cropper JS
+//   2. Input OCULTO (#fotoInputLivewire) — wire:model, lo maneja Livewire
+//   3. Al confirmar el crop, inyectamos el blob en el input de Livewire via DataTransfer
 
 export function initAvatarCropper({
-    inputId = 'fotoInput',
-    imageId = 'cropperImage',
-    previewId = 'previewFoto',
-    modalName = 'crop-photo',
-    aspectRatio = 1,
-    outputSize = 256,
+    inputId       = 'fotoInput',
+    livewireInputId = 'fotoInputLivewire',
+    imageId       = 'cropperImage',
+    previewId     = 'previewFoto',
+    modalName     = 'crop-photo',
+    aspectRatio   = 1,
+    outputSize    = 256,
 }) {
-    let cropper = null;
+    let cropper = null
 
-    const fotoInput = document.getElementById(inputId);
-    const cropperImage = document.getElementById(imageId);
-    const previewFoto = document.getElementById(previewId);
-    const cancelBtn = document.getElementById('cancelCrop');
-    const confirmBtn = document.getElementById('confirmCrop');
+    const fotoInput         = document.getElementById(inputId)
+    const livewireInput     = document.getElementById(livewireInputId)
+    const cropperImage      = document.getElementById(imageId)
+    const previewFoto       = document.getElementById(previewId)
+    const cancelBtn         = document.getElementById('cancelCrop')
+    const confirmBtn        = document.getElementById('confirmCrop')
 
-    if (!fotoInput || !cropperImage) return;
+    // Si no existe ninguno de los inputs, no hay formulario con foto en esta página
+    if (!fotoInput && !livewireInput) return
 
-    const openModal = () =>
-        window.dispatchEvent(new CustomEvent('open-modal', { detail: modalName }));
+    const openModal  = () => window.dispatchEvent(new CustomEvent('open-modal',  { detail: modalName }))
+    const closeModal = () => window.dispatchEvent(new CustomEvent('close-modal', { detail: modalName }))
 
-    const closeModal = () =>
-        window.dispatchEvent(new CustomEvent('close-modal', { detail: modalName }));
+    // Escuchar el input VISIBLE (no el de Livewire)
+    fotoInput?.addEventListener('change', e => {
+        const file = e.target.files[0]
+        if (!file || !file.type.startsWith('image/')) return
 
-    fotoInput.addEventListener('change', e => {
-        const file = e.target.files[0];
-        if (!file || !file.type.startsWith('image/')) return;
-
-        const reader = new FileReader();
+        const reader = new FileReader()
         reader.onload = () => {
-            cropperImage.src = reader.result;
-            openModal();
+            cropperImage.src = reader.result
+            openModal()
 
-            cropper?.destroy();
+            cropper?.destroy()
 
             requestAnimationFrame(() => {
                 cropper = new Cropper(cropperImage, {
@@ -43,43 +48,51 @@ export function initAvatarCropper({
                     autoCropArea: 1,
                     background: false,
                     responsive: true,
-                });
-            });
-        };
-
-        reader.readAsDataURL(file);
-    });
+                })
+            })
+        }
+        reader.readAsDataURL(file)
+    })
 
     cancelBtn?.addEventListener('click', () => {
-        cropper?.destroy();
-        cropper = null;
-        fotoInput.value = '';
-        closeModal();
-    });
+        cropper?.destroy()
+        cropper = null
+        if (fotoInput) fotoInput.value = ''
+        closeModal()
+    })
 
     confirmBtn?.addEventListener('click', () => {
-        if (!cropper) return;
+        if (!cropper) return
 
         const canvas = cropper.getCroppedCanvas({
             width: outputSize,
             height: outputSize,
             imageSmoothingQuality: 'high',
-        });
+        })
 
         canvas.toBlob(blob => {
-            const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
+            const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
 
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            fotoInput.files = dt.files;
-
-            if (previewFoto) {
-                previewFoto.src = URL.createObjectURL(blob);
+            // Inyectar en el input de Livewire via DataTransfer
+            if (livewireInput) {
+                const dt = new DataTransfer()
+                dt.items.add(file)
+                livewireInput.files = dt.files
+                // Disparar el evento 'change' para que Livewire lo detecte
+                livewireInput.dispatchEvent(new Event('change', { bubbles: true }))
             }
 
-            cropper.destroy();
-            cropper = null;
-            closeModal();
-        }, 'image/jpeg', 0.9);
-    });
+            // Actualizar el preview visual
+            if (previewFoto) {
+                previewFoto.src = URL.createObjectURL(blob)
+            }
+
+            // Limpiar el input visible
+            if (fotoInput) fotoInput.value = ''
+
+            cropper.destroy()
+            cropper = null
+            closeModal()
+        }, 'image/jpeg', 0.9)
+    })
 }

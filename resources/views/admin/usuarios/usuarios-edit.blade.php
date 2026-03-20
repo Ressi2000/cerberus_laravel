@@ -6,5 +6,5 @@
         ['label' => 'Editar'],
     ]" />
     <x-form.success />
-    @livewire('admin.editar-usuario', ['usuario' => $usuario])
+    @livewire('admin.editar-usuario', ['usuarioId' => $usuario->id])
 </x-app-layout>

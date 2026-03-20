@@ -7,14 +7,25 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name', 'Cerberus') }}</title>
 
-    {{-- Anti-flash: aplica la clase dark ANTES de que el navegador pinte --}}
+    {{--
+        Anti-flash: aplica la clase dark ANTES de que el navegador pinte.
+        Corre de forma síncrona, antes de cualquier CSS o JS.
+        También lo reaplica en cada navegación SPA de Livewire.
+    --}}
     <script>
         (function () {
-            const saved = localStorage.getItem('cerberus-theme')
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-            if (saved === 'dark' || (saved === null && prefersDark)) {
-                document.documentElement.classList.add('dark')
+            function applyTheme() {
+                const saved = localStorage.getItem('cerberus-theme')
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+                const isDark = saved !== null ? saved === 'dark' : prefersDark
+                document.documentElement.classList.toggle('dark', isDark)
             }
+
+            // Aplicar en la carga inicial
+            applyTheme()
+
+            // Reaplicar en cada navegación SPA de Livewire (wire:navigate)
+            document.addEventListener('livewire:navigated', applyTheme)
         })()
     </script>
 
@@ -42,10 +53,23 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            setupSidebar()
+            setupMenuToggles()
+        })
+
+        // Reinicializar tras navegación SPA de Livewire
+        document.addEventListener('livewire:navigated', function () {
+            setupSidebar()
+            setupMenuToggles()
+        })
+
+        function setupSidebar() {
             const toggleBtn = document.getElementById('mobile-sidebar-toggle')
             const closeBtn  = document.getElementById('sidebar-close')
             const sidebar   = document.getElementById('sidebar')
             const backdrop  = document.getElementById('sidebar-backdrop')
+
+            if (!sidebar) return
 
             function openSidebar() {
                 sidebar.classList.remove('-translate-x-full')
@@ -71,6 +95,19 @@
                 }
             })
 
+            document.querySelectorAll('#sidebar a').forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 1024) closeSidebar()
+                })
+            })
+        }
+
+        function setupMenuToggles() {
+            document.querySelectorAll('.users-menu-toggle, .equipos-menu-toggle').forEach(toggle => {
+                // Evitar duplicar listeners
+                toggle.replaceWith(toggle.cloneNode(true))
+            })
+
             document.querySelectorAll('.users-menu-toggle, .equipos-menu-toggle').forEach(toggle => {
                 toggle.addEventListener('click', function () {
                     const menuId = this.classList.contains('users-menu-toggle') ? 'users-menu' : 'equipos-menu'
@@ -80,11 +117,7 @@
                     if (icon) icon.style.transform = menu.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)'
                 })
             })
-
-            document.querySelectorAll('#sidebar a').forEach(link => {
-                link.addEventListener('click', () => { if (window.innerWidth < 1024) closeSidebar() })
-            })
-        })
+        }
     </script>
 
     @livewireScripts

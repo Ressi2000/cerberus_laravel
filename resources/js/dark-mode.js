@@ -17,14 +17,13 @@ export function cerberusDarkMode() {
             if (saved !== null) {
                 this.isDark = saved === 'dark'
             } else {
-                // Fallback: preferencia del sistema operativo
                 this.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
             }
 
-            // Sincronizar la clase en <html> inmediatamente (evita flash)
+            // Sincronizar inmediatamente
             this.applyClass()
 
-            // Escuchar cambios del SO si no hay preferencia guardada
+            // Escuchar cambios del SO solo si no hay preferencia guardada
             window.matchMedia('(prefers-color-scheme: dark)')
                 .addEventListener('change', (e) => {
                     if (localStorage.getItem('cerberus-theme') === null) {
@@ -47,8 +46,7 @@ export function cerberusDarkMode() {
 }
 
 /**
- * Acceso global para usar fuera de Alpine (ej: botón en navbar).
- * Llama desde cualquier script: window.cerberusToggleDark()
+ * Acceso global fuera de Alpine
  */
 window.cerberusToggleDark = function () {
     const isDark = document.documentElement.classList.toggle('dark')
