@@ -2,48 +2,56 @@
 
 namespace App\Livewire\Equipos;
 
+use App\Models\AtributoEquipo;
 use App\Models\Equipo;
-use Livewire\Component;
-use Illuminate\Support\Facades\DB;
 use App\Models\EquipoAtributoValor;
 use App\Models\EstadoEquipo;
+use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Computed;
+use Livewire\Component;
 
 class EditarEquipo extends Component
 {
-    public Equipo $equipo;
+    // ── ID del equipo (int = serializable por Livewire entre requests) ────────
+    public int $equipoId;
 
-    public $estado_id        = '';
-    public $ubicacion_id     = '';
-    public $serial           = '';
-    public $nombre_maquina   = '';
-    public $fecha_adquisicion   = '';
-    public $fecha_garantia_fin  = '';
-    public $observaciones    = '';
+    // ── Datos base editables ──────────────────────────────────────────────────
+    public string $estado_id          = '';
+    public string $ubicacion_id       = '';
+    public string $serial             = '';
+    public string $nombre_maquina     = '';
+    public string $fecha_adquisicion  = '';
+    public string $fecha_garantia_fin = '';
+    public string $observaciones      = '';
 
-    // Array plano serializable por Livewire (NO Collection de Eloquent)
+    // ── Atributos EAV como array plano (serializable por Livewire) ────────────
     public array $atributos = [];
     public array $valores   = [];
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Mount: recibe el modelo por route-model binding del controller
+    // ─────────────────────────────────────────────────────────────────────────
     public function mount(Equipo $equipo): void
     {
         $this->authorize('update', $equipo);
 
-        $this->equipo = $equipo->load([
-            'categoria.atributos',
-            'atributosActuales.atributo',
-        ]);
+        $this->equipoId = $equipo->id;
 
-        // Datos base
-        $this->estado_id          = $equipo->estado_id;
-        $this->ubicacion_id       = $equipo->ubicacion_id;
-        $this->serial             = $equipo->serial ?? '';
-        $this->nombre_maquina     = $equipo->nombre_maquina ?? '';
-        $this->fecha_adquisicion  = $equipo->fecha_adquisicion ?? '';
+        // Cargar relaciones necesarias
+        $equipo->load(['categoria.atributos', 'atributosActuales.atributo']);
+
+        // Hidratar campos base
+        $this->estado_id          = (string) ($equipo->estado_id ?? '');
+        $this->ubicacion_id       = (string) ($equipo->ubicacion_id ?? '');
+        $this->serial             = $equipo->serial          ?? '';
+        $this->nombre_maquina     = $equipo->nombre_maquina  ?? '';
+        $this->fecha_adquisicion  = $equipo->fecha_adquisicion  ?? '';
         $this->fecha_garantia_fin = $equipo->fecha_garantia_fin ?? '';
-        $this->observaciones      = $equipo->observaciones ?? '';
+        $this->observaciones      = $equipo->observaciones    ?? '';
 
-        // Atributos como array plano (serializable)
+        // Atributos de la categoría como array plano
         $this->atributos = $equipo->categoria->atributos()
             ->orderBy('orden')
             ->get()
@@ -51,12 +59,12 @@ class EditarEquipo extends Component
                 'id'        => $a->id,
                 'nombre'    => $a->nombre,
                 'tipo'      => $a->tipo,
-                'requerido' => $a->requerido,
+                'requerido' => (bool) $a->requerido,
                 'opciones'  => $a->opciones ?? [],
             ])
             ->toArray();
 
-        // Cargar valores actuales
+        // Valores actuales indexados por atributo_id
         $valoresActuales = $equipo->atributosActuales->keyBy('atributo_id');
 
         foreach ($this->atributos as $atributo) {
@@ -64,7 +72,36 @@ class EditarEquipo extends Component
         }
     }
 
-    private function reglasDinamicas(): array
+    // ─────────────────────────────────────────────────────────────────────────
+    // Computed Properties — disponibles como variables en el blade
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** El equipo fresco desde BD — disponible como $equipo en el blade */
+    #[Computed]
+    public function equipo(): Equipo
+    {
+        return Equipo::with(['categoria', 'estado', 'ubicacion'])->findOrFail($this->equipoId);
+    }
+
+    #[Computed]
+    public function estados()
+    {
+        return EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id');
+    }
+
+    #[Computed]
+    public function ubicaciones()
+    {
+        // Las ubicaciones disponibles son las de la empresa del equipo
+        return Ubicacion::where('empresa_id', $this->equipo->empresa_id)
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Validación dinámica
+    // ─────────────────────────────────────────────────────────────────────────
+    protected function rules(): array
     {
         $rules = [
             'estado_id'          => 'required|exists:estados_equipos,id',
@@ -73,7 +110,7 @@ class EditarEquipo extends Component
             'nombre_maquina'     => 'nullable|string|max:255',
             'fecha_adquisicion'  => 'nullable|date',
             'fecha_garantia_fin' => 'nullable|date|after_or_equal:fecha_adquisicion',
-            'observaciones'      => 'nullable|string',
+            'observaciones'      => 'nullable|string|max:1000',
         ];
 
         foreach ($this->atributos as $atributo) {
@@ -94,42 +131,51 @@ class EditarEquipo extends Component
         return $rules;
     }
 
-    private function mensajesDinamicos(): array
+    protected function messages(): array
     {
-        $messages = [];
+        $messages = [
+            'estado_id.required' => 'Debe seleccionar un estado.',
+            'fecha_garantia_fin.after_or_equal' =>
+                'La garantía no puede ser anterior a la fecha de adquisición.',
+        ];
 
         foreach ($this->atributos as $atributo) {
             $messages["valores.{$atributo['id']}.required"] =
-                "El campo \"{$atributo['nombre']}\" es obligatorio.";
+                "El campo «{$atributo['nombre']}» es obligatorio.";
         }
 
         return $messages;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Actualizar con versionado EAV
+    // ─────────────────────────────────────────────────────────────────────────
     public function actualizar(): void
     {
-        $this->validate($this->reglasDinamicas(), $this->mensajesDinamicos());
+        $equipo = $this->equipo;
+        $this->authorize('update', $equipo);
+        $this->validate();
 
-        DB::transaction(function () {
+        DB::transaction(function () use ($equipo) {
 
-            // Actualizar datos base del equipo
-            $this->equipo->update([
+            // ── Datos base del equipo ─────────────────────────────────────────
+            $equipo->update([
                 'estado_id'          => $this->estado_id,
-                'ubicacion_id'       => $this->ubicacion_id ?: null,
-                'serial'             => $this->serial ?: null,
+                'ubicacion_id'       => $this->ubicacion_id  ?: null,
+                'serial'             => $this->serial         ?: null,
                 'nombre_maquina'     => $this->nombre_maquina ?: null,
-                'fecha_adquisicion'  => $this->fecha_adquisicion ?: null,
+                'fecha_adquisicion'  => $this->fecha_adquisicion  ?: null,
                 'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
-                'observaciones'      => $this->observaciones ?: null,
+                'observaciones'      => $this->observaciones       ?: null,
             ]);
 
-            // Versionado EAV: solo registra si el valor cambió
+            // ── Versionado EAV: solo registra si el valor realmente cambió ────
             foreach ($this->valores as $atributoId => $nuevoValor) {
 
                 $valorActual = EquipoAtributoValor::where([
-                    'equipo_id'  => $this->equipo->id,
-                    'atributo_id'=> $atributoId,
-                    'es_actual'  => true,
+                    'equipo_id'   => $equipo->id,
+                    'atributo_id' => $atributoId,
+                    'es_actual'   => true,
                 ])->first();
 
                 // Sin cambio → no hacer nada
@@ -137,7 +183,7 @@ class EditarEquipo extends Component
                     continue;
                 }
 
-                // Marcar anterior como histórico
+                // Marcar versión anterior como histórico
                 if ($valorActual) {
                     $valorActual->update(['es_actual' => false]);
                 }
@@ -145,7 +191,7 @@ class EditarEquipo extends Component
                 // Crear nueva versión solo si hay valor
                 if ($nuevoValor !== null && $nuevoValor !== '') {
                     EquipoAtributoValor::create([
-                        'equipo_id'   => $this->equipo->id,
+                        'equipo_id'   => $equipo->id,
                         'atributo_id' => $atributoId,
                         'valor'       => $nuevoValor,
                         'es_actual'   => true,
@@ -156,17 +202,14 @@ class EditarEquipo extends Component
         });
 
         session()->flash('success', 'Equipo actualizado correctamente.');
-
         $this->redirect(route('admin.equipos.index'), navigate: true);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Render
+    // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
-        return view('livewire.equipos.editar-equipo', [
-            'estados'    => EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id'),
-            'ubicaciones'=> \App\Models\Ubicacion::where('empresa_id', $this->equipo->empresa_id)
-                                ->orderBy('nombre')
-                                ->pluck('nombre', 'id'),
-        ]);
+        return view('livewire.equipos.editar-equipo');
     }
 }

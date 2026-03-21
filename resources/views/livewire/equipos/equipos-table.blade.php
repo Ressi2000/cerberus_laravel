@@ -1,115 +1,494 @@
-<div class="space-y-6">
+<div
+    class="space-y-6"
+    x-data="equiposColumnas()"
+    x-init="init()"
+>
 
-    {{-- STATS --}}
+    {{-- ── Modales ─────────────────────────────────────────────────────────── --}}
+    @livewire('equipos.equipo-view-modal')
+    @livewire('equipos.equipo-delete-modal')
+
+    {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
-        ['title' => 'Total Equipos', 'value' => $total, 'icon' => 'inventory_2'],
-        ['title' => 'Activos', 'value' => $activos, 'icon' => 'check_circle'],
-        ['title' => 'En Mantenimiento', 'value' => $mantenimiento, 'icon' => 'build'],
-        ['title' => 'Baja', 'value' => $baja, 'icon' => 'cancel'],
+        ['title' => 'Total equipos',      'value' => $total,           'icon' => 'inventory_2'],
+        ['title' => 'Activos',            'value' => $totalActivos,    'icon' => 'check_circle'],
+        ['title' => 'Garantía vencida',   'value' => $garantiaVencida, 'icon' => 'warning'],
+        ['title' => 'En mantenimiento',   'value' => $enMantenimiento, 'icon' => 'build'],
     ]" />
 
-    {{-- HEADER --}}
-    <x-table.crud-header title="Equipos" subtitle="Gestión del inventario corporativo" buttonLabel="Crear equipo"
+    {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
+    <x-table.crud-header
+        title="Equipos"
+        subtitle="Inventario tecnológico corporativo"
+        buttonLabel="Registrar equipo"
         :buttonUrl="route('admin.equipos.create')">
 
         <x-slot name="filters">
+            <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4 space-y-4">
 
-            <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4">
-
+                {{-- Badge de filtros activos --}}
                 @if ($this->activeFiltersCount > 0)
-                    <div class="mb-3">
-                        <span class="px-3 py-1 text-xs rounded-md bg-cerberus-primary/60 text-white">
-                            Filtros activos: {{ $this->activeFiltersCount }}
+                    <div class="flex items-center gap-2">
+                        <span class="px-3 py-1 text-xs rounded-full bg-cerberus-primary/60 text-white">
+                            {{ $this->activeFiltersCount }} filtro(s) activo(s)
                         </span>
+                        <button wire:click="resetFilters"
+                                class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition">
+                            <span class="material-icons text-xs">close</span>
+                            Limpiar todos
+                        </button>
                     </div>
                 @endif
 
-                <div class="flex flex-wrap items-center gap-4">
+                {{-- FILA 1: Búsqueda — ancho completo --}}
+                <x-form.input
+                    label="Buscar"
+                    wire:model.live.500ms="search"
+                    placeholder="Código interno, serial, hostname..."
+                    hint="Busca por código interno, número de serie o nombre de máquina (hostname)."
+                />
 
-                    {{-- SEARCH --}}
-                    <div class="flex items-center flex-grow min-w-[220px]">
-                        <div class="relative w-full">
-                            <input type="text" wire:model.live.500ms="search" placeholder="Buscar equipos..."
-                                class="w-full bg-cerberus-dark border border-cerberus-steel rounded-lg px-4 py-2 text-white">
-                            <span class="material-icons absolute right-3 top-2.5 text-gray-400">search</span>
+                {{-- FILA 2: Selects principales en grid de 3 columnas --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
+                    <x-form.select
+                        label="Categoría"
+                        :options="$this->categorias"
+                        wire:model.live="categoria_id"
+                        hint="Filtra por tipo de equipo. Al seleccionar una categoría aparecerán sus atributos técnicos como filtros adicionales."
+                    />
+                    <x-form.select
+                        label="Estado"
+                        :options="$this->estados"
+                        wire:model.live="estado_id"
+                        hint="Estado operativo actual del equipo en el sistema."
+                    />
+                    <x-form.select
+                        label="Ubicación"
+                        :options="$this->ubicaciones"
+                        wire:model.live="ubicacion_id"
+                        hint="Ubicación física donde se encuentra el equipo."
+                    />
+                </div>
+
+                {{-- FILA 3: Fechas + Activo + Garantía --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4">
+
+                    <x-form.input
+                        type="date"
+                        label="Adquisición desde"
+                        wire:model.live="fecha_desde"
+                        hint="Filtra equipos adquiridos a partir de esta fecha."
+                    />
+
+                    <x-form.input
+                        type="date"
+                        label="Adquisición hasta"
+                        wire:model.live="fecha_hasta"
+                    />
+
+                    {{-- Activo/Baja --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">
+                            Condición
+                        </label>
+                        <div class="flex items-center gap-3 h-[38px] text-sm text-cerberus-light">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="" wire:model.live="activo"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Todos
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="1" wire:model.live="activo"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Activos
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="0" wire:model.live="activo"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Baja
+                            </label>
                         </div>
                     </div>
 
-                    <x-form.select name="categoria_id" label="Categoría" :options="$categorias" wire:model.live="categoria_id" />
-
-                    <x-form.select name="estado_id" label="Estado" :options="$estados" wire:model.live="estado_id" />
+                    {{-- Garantía --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">
+                            Garantía
+                        </label>
+                        <div class="flex items-center gap-3 h-[38px] text-sm text-cerberus-light">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="" wire:model.live="garantia"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Todas
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="vigente" wire:model.live="garantia"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Vigente
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="vencida" wire:model.live="garantia"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Vencida
+                            </label>
+                        </div>
+                    </div>
 
                 </div>
 
-                {{-- FILTROS EAV --}}
-                @if ($atributosFiltrables->count())
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-
-                        @foreach ($atributosFiltrables as $atributo)
-                            @if ($atributo->tipo === 'boolean')
-                                <x-form.select :name="'filtros.' . $atributo->id" :label="$atributo->nombre" :options="[1 => 'Sí', 0 => 'No']"
-                                    wire:model.live="filtros.{{ $atributo->id }}" />
-                            @elseif($atributo->tipo === 'select')
-                                <x-form.select :name="'filtros.' . $atributo->id" :label="$atributo->nombre" :options="$atributo->opciones ?? []"
-                                    wire:model.live="filtros.{{ $atributo->id }}" />
-                            @else
-                                <div>
-                                    <label class="text-sm text-cerberus-light">
-                                        {{ $atributo->nombre }}
-                                    </label>
-                                    <input type="text" wire:model.live.500ms="filtros.{{ $atributo->id }}"
-                                        class="w-full bg-cerberus-dark border border-cerberus-steel rounded-lg px-3 py-2 text-white">
-                                </div>
-                            @endif
-                        @endforeach
-
+                {{-- FILA 4: Filtros EAV dinámicos --}}
+                @if ($this->atributosFiltrables->count())
+                    <div>
+                        <p class="text-xs text-cerberus-accent uppercase tracking-wide font-semibold mb-3">
+                            Características técnicas — {{ $this->categorias[$categoria_id] ?? '' }}
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
+                            @foreach ($this->atributosFiltrables as $atributo)
+                                @if ($atributo->tipo === 'boolean')
+                                    <x-form.select
+                                        :label="$atributo->nombre"
+                                        :options="[1 => 'Sí', 0 => 'No']"
+                                        wire:model.live="filtros.{{ $atributo->id }}"
+                                    />
+                                @elseif ($atributo->tipo === 'select' && $atributo->opciones)
+                                    <x-form.select
+                                        :label="$atributo->nombre"
+                                        :options="$atributo->opciones"
+                                        wire:model.live="filtros.{{ $atributo->id }}"
+                                    />
+                                @else
+                                    <x-form.input
+                                        :label="$atributo->nombre"
+                                        wire:model.live.500ms="filtros.{{ $atributo->id }}"
+                                        :placeholder="'Filtrar por ' . strtolower($atributo->nombre) . '...'"
+                                    />
+                                @endif
+                            @endforeach
+                        </div>
                     </div>
                 @endif
 
-                <div class="mt-4 flex justify-end">
-                    <button wire:click="resetFilters"
-                        class="bg-red-600/20 border border-red-700 text-red-300 px-3 py-2 rounded-lg hover:bg-red-700/40">
-                        Limpiar filtros
-                    </button>
-                </div>
-
             </div>
-
         </x-slot>
+
     </x-crud-header>
 
-    {{-- TABLA --}}
-    <x-table.crud-table :headers="['Código', 'Categoría', 'Estado', 'Creado', 'Acciones']" :paginated="$equipos">
+    {{-- ── SELECTOR DE COLUMNAS VISIBLES ──────────────────────────────────── --}}
+    <div class="flex justify-end">
+        <div class="relative" x-data="{ open: false }" @click.outside="open = false">
 
-        @foreach ($equipos as $equipo)
-            <tr wire:key="equipo-{{ $equipo->id }}" class="hover:bg-cerberus-darkest">
+            <button @click="open = !open"
+                    class="flex items-center gap-2 text-sm px-3 py-2 rounded-lg
+                           bg-cerberus-mid border border-cerberus-steel
+                           text-cerberus-light hover:text-white transition">
+                <span class="material-icons text-base">view_column</span>
+                Columnas
+                <span class="material-icons text-sm">expand_more</span>
+            </button>
 
-                <td class="px-4 py-3 text-white font-medium">
-                    {{ $equipo->codigo_interno }}
-                </td>
+            <div x-show="open"
+                 x-transition:enter="transition ease-out duration-100"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-75"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute right-0 z-50 mt-1 w-52
+                        bg-cerberus-mid border border-cerberus-steel
+                        rounded-xl shadow-cerberus overflow-hidden"
+                 style="display:none">
+                <div class="px-3 py-2 border-b border-cerberus-steel">
+                    <p class="text-xs font-semibold text-cerberus-accent uppercase tracking-wide">
+                        Columnas visibles
+                    </p>
+                </div>
+                <ul class="py-2 text-sm text-cerberus-light max-h-72 overflow-y-auto">
+                    <template x-for="(label, key) in columnLabels" :key="key">
+                        <li>
+                            <label class="flex items-center gap-3 px-4 py-2
+                                          hover:bg-cerberus-dark cursor-pointer transition">
+                                <input type="checkbox"
+                                       x-model="columnas[key]"
+                                       @change="save()"
+                                       class="rounded text-cerberus-primary
+                                              border-cerberus-steel bg-cerberus-dark">
+                                <span x-text="label"></span>
+                            </label>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+        </div>
+    </div>
 
-                <td class="px-4 py-3 text-cerberus-light">
-                    {{ $equipo->categoria->nombre }}
-                </td>
+    {{-- ── TABLA ───────────────────────────────────────────────────────────── --}}
+    <div class="relative bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl">
 
-                <td class="px-4 py-3">
-                    <span class="px-2 py-1 text-xs rounded-md bg-cerberus-primary/20 text-cerberus-primary">
-                        {{ $equipo->estado->nombre }}
-                    </span>
-                </td>
+        {{-- Top bar: count + export --}}
+        <div class="px-4 py-3 flex items-center justify-between border-b border-cerberus-steel/30">
+            <p class="text-sm text-cerberus-light">
+                {{ $equipos->total() }} equipo(s) encontrado(s)
+            </p>
+            <div class="relative" x-data="{ open: false }" @click.outside="open = false">
+                <button @click="open = !open"
+                        class="flex items-center gap-2 text-sm px-3 py-2 rounded-lg
+                               bg-cerberus-dark border border-cerberus-steel
+                               text-white hover:bg-cerberus-steel transition">
+                    <span class="material-icons text-base">file_download</span>
+                    Exportar
+                    <span class="material-icons text-sm">expand_more</span>
+                </button>
+                <div x-show="open"
+                     class="absolute right-0 z-10 mt-1 w-44
+                            bg-cerberus-mid border border-cerberus-steel
+                            rounded-xl shadow-cerberus overflow-hidden"
+                     style="display:none">
+                    <ul class="py-1 text-sm text-cerberus-light">
+                        <li>
+                            <a href="{{ route('export.equipos', array_merge($this->filterParams, ['format' => 'xlsx'])) }}"
+                               class="flex items-center gap-2 px-4 py-2
+                                      hover:bg-cerberus-dark transition">
+                                <span class="material-icons text-sm text-green-400">table_chart</span>
+                                Excel (.xlsx)
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('export.equipos', array_merge($this->filterParams, ['format' => 'csv'])) }}"
+                               class="flex items-center gap-2 px-4 py-2
+                                      hover:bg-cerberus-dark transition">
+                                <span class="material-icons text-sm text-blue-400">description</span>
+                                CSV (.csv)
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
-                <td class="px-4 py-3 text-cerberus-light">
-                    {{ $equipo->created_at->format('d/m/Y') }}
-                </td>
+        {{-- Tabla --}}
+        <div class="overflow-x-auto relative">
 
-                <td class="px-6 py-4 text-center">
-                    <x-table.table-actions :model="$equipo" :editUrl="route('admin.equipos.edit', $equipo)" viewEvent="openEquipoView"
-                        deleteEvent="openEquipoDelete" deleteLabel="Eliminar" :policy="$equipo" />
-                </td>
+            {{-- Spinner Livewire --}}
+            <div wire:loading.flex
+                 class="absolute inset-0 backdrop-blur-sm bg-black/40 items-center
+                        justify-center z-30 rounded-b-xl">
+                <div class="flex flex-col items-center gap-3">
+                    <div class="h-10 w-10 border-4 border-cerberus-primary
+                                border-t-transparent rounded-full animate-spin"></div>
+                    <span class="text-white font-medium">Cargando...</span>
+                </div>
+            </div>
 
-            </tr>
-        @endforeach
+            <table class="w-full text-sm text-left">
+                <thead class="bg-cerberus-steel/40 text-gray-200 uppercase text-xs">
+                    <tr>
+                        {{-- Código: siempre visible --}}
+                        <th class="px-4 py-3 font-semibold tracking-wide">Código</th>
 
-    </x-crud-table>
+                        <th x-show="columnas.categoria"     class="px-4 py-3 font-semibold tracking-wide">Categoría</th>
+                        <th x-show="columnas.marca_modelo"  class="px-4 py-3 font-semibold tracking-wide">Marca / Modelo</th>
+                        <th x-show="columnas.estado"        class="px-4 py-3 font-semibold tracking-wide">Estado</th>
+                        <th x-show="columnas.serial"        class="px-4 py-3 font-semibold tracking-wide">Serial</th>
+                        <th x-show="columnas.nombre_maquina" class="px-4 py-3 font-semibold tracking-wide">Hostname</th>
+                        <th x-show="columnas.ubicacion"     class="px-4 py-3 font-semibold tracking-wide">Ubicación</th>
+                        <th x-show="columnas.garantia"      class="px-4 py-3 font-semibold tracking-wide">Garantía</th>
+                        <th x-show="columnas.adquisicion"   class="px-4 py-3 font-semibold tracking-wide">Adquisición</th>
+                        <th x-show="columnas.activo"        class="px-4 py-3 font-semibold tracking-wide">Condición</th>
+                        <th x-show="columnas.creado"        class="px-4 py-3 font-semibold tracking-wide">Creado</th>
+
+                        {{-- Acciones: siempre visible --}}
+                        <th class="px-4 py-3 text-center font-semibold tracking-wide">Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-cerberus-steel/30">
+                    @forelse ($equipos as $equipo)
+                        @php
+                            /*
+                             * Marca y Modelo son atributos EAV con slug 'marca' y 'modelo'.
+                             * Los buscamos entre los atributosActuales del equipo.
+                             * Si la categoría no los tiene, queda null → mostramos '—'.
+                             */
+                            $marcaValor  = $equipo->atributosActuales
+                                ->first(fn($v) => str($v->atributo?->slug ?? '')->lower()->is('marca'))
+                                ?->valor;
+                            $modeloValor = $equipo->atributosActuales
+                                ->first(fn($v) => str($v->atributo?->slug ?? '')->lower()->is('modelo'))
+                                ?->valor;
+                        @endphp
+
+                        <tr wire:key="equipo-{{ $equipo->id }}"
+                            class="hover:bg-cerberus-darkest">
+
+                            {{-- Código --}}
+                            <td class="px-4 py-3">
+                                <span class="font-mono text-white text-sm font-semibold">
+                                    {{ $equipo->codigo_interno }}
+                                </span>
+                            </td>
+
+                            <td x-show="columnas.categoria"
+                                class="px-4 py-3 text-cerberus-light text-sm">
+                                {{ $equipo->categoria->nombre }}
+                            </td>
+
+                            {{-- Marca / Modelo —— columna combinada --}}
+                            <td x-show="columnas.marca_modelo" class="px-4 py-3 text-sm">
+                                @if ($marcaValor || $modeloValor)
+                                    <span class="text-white font-medium">
+                                        {{ $marcaValor ?? '' }}
+                                    </span>
+                                    @if ($modeloValor)
+                                        <span class="text-cerberus-light text-xs block">
+                                            {{ $modeloValor }}
+                                        </span>
+                                    @endif
+                                @else
+                                    <span class="text-cerberus-steel">—</span>
+                                @endif
+                            </td>
+
+                            <td x-show="columnas.estado" class="px-4 py-3">
+                                <span class="px-2 py-0.5 text-xs rounded-md
+                                             bg-cerberus-primary/20 text-cerberus-accent">
+                                    {{ $equipo->estado->nombre }}
+                                </span>
+                            </td>
+
+                            <td x-show="columnas.serial"
+                                class="px-4 py-3 text-cerberus-light text-sm font-mono">
+                                {{ $equipo->serial ?? '—' }}
+                            </td>
+
+                            <td x-show="columnas.nombre_maquina"
+                                class="px-4 py-3 text-cerberus-light text-sm">
+                                {{ $equipo->nombre_maquina ?? '—' }}
+                            </td>
+
+                            <td x-show="columnas.ubicacion"
+                                class="px-4 py-3 text-cerberus-light text-sm">
+                                {{ $equipo->ubicacion?->nombre ?? '—' }}
+                            </td>
+
+                            <td x-show="columnas.garantia" class="px-4 py-3 text-sm">
+                                @if ($equipo->fecha_garantia_fin)
+                                    @php
+                                        $vencida = \Carbon\Carbon::parse($equipo->fecha_garantia_fin)->isPast();
+                                    @endphp
+                                    <span class="{{ $vencida ? 'text-red-400' : 'text-green-400' }}">
+                                        {{ \Carbon\Carbon::parse($equipo->fecha_garantia_fin)->format('d/m/Y') }}
+                                    </span>
+                                @else
+                                    <span class="text-cerberus-steel">—</span>
+                                @endif
+                            </td>
+
+                            <td x-show="columnas.adquisicion"
+                                class="px-4 py-3 text-cerberus-light text-sm">
+                                {{ $equipo->fecha_adquisicion
+                                    ? \Carbon\Carbon::parse($equipo->fecha_adquisicion)->format('d/m/Y')
+                                    : '—' }}
+                            </td>
+
+                            <td x-show="columnas.activo" class="px-4 py-3">
+                                @if ($equipo->activo)
+                                    <span class="inline-flex items-center rounded-md bg-green-400/10
+                                                 px-2 py-0.5 text-xs font-medium text-green-400
+                                                 ring-1 ring-inset ring-green-500/20">
+                                        Activo
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center rounded-md bg-red-400/10
+                                                 px-2 py-0.5 text-xs font-medium text-red-400
+                                                 ring-1 ring-inset ring-red-400/20">
+                                        Baja
+                                    </span>
+                                @endif
+                            </td>
+
+                            <td x-show="columnas.creado"
+                                class="px-4 py-3 text-cerberus-light text-sm">
+                                {{ $equipo->created_at->format('d/m/Y') }}
+                            </td>
+
+                            <td class="px-4 py-3 text-center">
+                                <x-table.table-actions
+                                    :model="$equipo"
+                                    :editUrl="route('admin.equipos.edit', $equipo)"
+                                    viewEvent="openEquipoView"
+                                    deleteEvent="openEquipoDelete"
+                                    deleteLabel="Dar de baja"
+                                    :policy="$equipo"
+                                />
+                            </td>
+
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="12"
+                                class="px-4 py-12 text-center text-cerberus-light">
+                                <span class="material-icons text-4xl block mb-2 text-cerberus-steel">
+                                    devices_other
+                                </span>
+                                No se encontraron equipos con los filtros aplicados.
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Paginación --}}
+        @if ($equipos->hasPages())
+            <div class="px-4 py-3 border-t border-cerberus-steel/30">
+                {{ $equipos->links('vendor.livewire.cerberus-pagination') }}
+            </div>
+        @endif
+
+    </div>
 
 </div>
+
+{{-- ── Alpine: columnas visibles con localStorage ─────────────────────────── --}}
+<script>
+function equiposColumnas() {
+    return {
+        columnas: {
+            categoria:    true,
+            marca_modelo: true,   // ← nuevo: Marca / Modelo (EAV)
+            estado:       true,
+            serial:       true,
+            nombre_maquina: false,
+            ubicacion:    true,
+            garantia:     false,
+            adquisicion:  false,
+            activo:       true,
+            creado:       false,
+        },
+        columnLabels: {
+            categoria:    'Categoría',
+            marca_modelo: 'Marca / Modelo',   // ← nuevo
+            estado:       'Estado',
+            serial:       'Serial',
+            nombre_maquina: 'Hostname',
+            ubicacion:    'Ubicación',
+            garantia:     'Fecha garantía',
+            adquisicion:  'Fecha adquisición',
+            activo:       'Condición',
+            creado:       'Fecha creación',
+        },
+        init() {
+            const saved = localStorage.getItem('cerberus_equipos_columnas')
+            if (saved) {
+                try {
+                    // Merge: conserva nuevas claves con su default si no estaban guardadas
+                    this.columnas = { ...this.columnas, ...JSON.parse(saved) }
+                } catch (e) { /* ignorar JSON inválido */ }
+            }
+        },
+        save() {
+            localStorage.setItem('cerberus_equipos_columnas', JSON.stringify(this.columnas))
+        },
+    }
+}
+</script>

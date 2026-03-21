@@ -2,58 +2,69 @@
 
 namespace App\Livewire\Equipos;
 
-use Livewire\Component;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use App\Models\CategoriaEquipo;
-use App\Models\EstadoEquipo;
 use App\Models\AtributoEquipo;
+use App\Models\CategoriaEquipo;
 use App\Models\Equipo;
 use App\Models\EquipoAtributoValor;
+use App\Models\EstadoEquipo;
+use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
+use Livewire\Component;
 
 class CrearEquipo extends Component
 {
-    public $empresa_id;
-    public $categoria_id    = '';
-    public $estado_id       = '';
-    public $ubicacion_id    = '';
+    // ── Datos base ────────────────────────────────────────────────────────────
+    public string $categoria_id       = '';
+    public string $estado_id          = '';
+    public string $ubicacion_id       = '';
+    public string $codigo_interno     = '';
+    public string $serial             = '';
+    public string $nombre_maquina     = '';
+    public string $fecha_adquisicion  = '';
+    public string $fecha_garantia_fin = '';
+    public string $observaciones      = '';
 
-    public $codigo_interno   = '';
-    public $serial           = '';
-    public $nombre_maquina   = '';
-    public $fecha_adquisicion   = '';
-    public $fecha_garantia_fin  = '';
-    public $observaciones    = '';
-
-    // IDs + metadatos de atributos (array plano, serializable por Livewire)
+    // ── Atributos EAV (array plano serializable) ──────────────────────────────
     public array $atributos = [];
+    public array $valores   = [];
 
-    // Valores indexados por atributo_id
-    public array $valores = [];
+    // ── Empresa del equipo ────────────────────────────────────────────────────
+    public int $empresa_id;
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Mount
+    // ─────────────────────────────────────────────────────────────────────────
     public function mount(): void
     {
-        $this->empresa_id = Auth::user()->empresa_id;
-        $this->estado_id  = EstadoEquipo::where('nombre', 'Disponible')->value('id') ?? '';
+        $user = Auth::user();
+
+        // Prioridad: empresa activa (analista) → empresa de nómina
+        $this->empresa_id = (int) ($user->empresa_activa_id ?? $user->empresa_id);
+
+        // Estado inicial: Disponible
+        $this->estado_id = (string) (EstadoEquipo::where('nombre', 'Disponible')->value('id') ?? '');
     }
 
-    // Cuando cambia la categoría, recarga atributos
-    public function updatedCategoriaId($value): void
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cascada de categoría → atributos EAV
+    // ─────────────────────────────────────────────────────────────────────────
+    public function updatedCategoriaId(string $value): void
     {
         $this->cargarAtributos($value);
         $this->resetValidation();
     }
 
-    private function cargarAtributos($categoriaId): void
+    private function cargarAtributos(string $categoriaId): void
     {
-        if (!$categoriaId) {
+        if (! $categoriaId) {
             $this->atributos = [];
             $this->valores   = [];
             return;
         }
 
-        // Convertimos a array plano para que Livewire pueda serializar sin problemas
         $this->atributos = AtributoEquipo::where('categoria_id', $categoriaId)
             ->orderBy('orden')
             ->get()
@@ -61,31 +72,56 @@ class CrearEquipo extends Component
                 'id'        => $a->id,
                 'nombre'    => $a->nombre,
                 'tipo'      => $a->tipo,
-                'requerido' => $a->requerido,
-                'filtrable' => $a->filtrable,
+                'requerido' => (bool) $a->requerido,
                 'opciones'  => $a->opciones ?? [],
             ])
             ->toArray();
 
         // Inicializar valores vacíos
         $this->valores = [];
-        foreach ($this->atributos as $atributo) {
-            $this->valores[$atributo['id']] = null;
+        foreach ($this->atributos as $a) {
+            $this->valores[$a['id']] = null;
         }
     }
 
-    private function reglasDinamicas(): array
+    // ─────────────────────────────────────────────────────────────────────────
+    // Computed Properties
+    // ─────────────────────────────────────────────────────────────────────────
+    #[Computed]
+    public function categorias()
+    {
+        return CategoriaEquipo::orderBy('nombre')->pluck('nombre', 'id');
+    }
+
+    #[Computed]
+    public function estados()
+    {
+        return EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id');
+    }
+
+    #[Computed]
+    public function ubicaciones()
+    {
+        return Ubicacion::where('empresa_id', $this->empresa_id)
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Validación dinámica
+    // ─────────────────────────────────────────────────────────────────────────
+    protected function rules(): array
     {
         $rules = [
-            'categoria_id'     => 'required|exists:categorias_equipos,id',
-            'codigo_interno'   => 'required|unique:equipos,codigo_interno',
-            'estado_id'        => 'required|exists:estados_equipos,id',
-            'ubicacion_id'     => 'nullable|exists:ubicaciones,id',
-            'serial'           => 'nullable|string|max:255',
-            'nombre_maquina'   => 'nullable|string|max:255',
+            'categoria_id'       => 'required|exists:categorias_equipos,id',
+            'codigo_interno'     => 'required|string|max:100|unique:equipos,codigo_interno',
+            'estado_id'          => 'required|exists:estados_equipos,id',
+            'ubicacion_id'       => 'nullable|exists:ubicaciones,id',
+            'serial'             => 'nullable|string|max:255',
+            'nombre_maquina'     => 'nullable|string|max:255',
             'fecha_adquisicion'  => 'nullable|date',
             'fecha_garantia_fin' => 'nullable|date|after_or_equal:fecha_adquisicion',
-            'observaciones'    => 'nullable|string',
+            'observaciones'      => 'nullable|string|max:1000',
         ];
 
         foreach ($this->atributos as $atributo) {
@@ -106,21 +142,30 @@ class CrearEquipo extends Component
         return $rules;
     }
 
-    private function mensajesDinamicos(): array
+    protected function messages(): array
     {
-        $messages = [];
+        $messages = [
+            'categoria_id.required'   => 'Debe seleccionar una categoría.',
+            'codigo_interno.required' => 'El código interno es obligatorio.',
+            'codigo_interno.unique'   => 'Ese código interno ya está en uso.',
+            'estado_id.required'      => 'Debe seleccionar un estado.',
+            'fecha_garantia_fin.after_or_equal' => 'La garantía no puede ser anterior a la fecha de adquisición.',
+        ];
 
         foreach ($this->atributos as $atributo) {
             $messages["valores.{$atributo['id']}.required"] =
-                "El campo \"{$atributo['nombre']}\" es obligatorio.";
+                "El campo «{$atributo['nombre']}» es obligatorio.";
         }
 
         return $messages;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Guardar
+    // ─────────────────────────────────────────────────────────────────────────
     public function guardar(): void
     {
-        $this->validate($this->reglasDinamicas(), $this->mensajesDinamicos());
+        $this->validate();
 
         DB::transaction(function () {
 
@@ -129,12 +174,13 @@ class CrearEquipo extends Component
                 'categoria_id'      => $this->categoria_id,
                 'estado_id'         => $this->estado_id,
                 'ubicacion_id'      => $this->ubicacion_id ?: null,
-                'codigo_interno'    => $this->codigo_interno ?: Str::uuid(),
-                'serial'            => $this->serial ?: null,
+                'codigo_interno'    => $this->codigo_interno,
+                'serial'            => $this->serial        ?: null,
                 'nombre_maquina'    => $this->nombre_maquina ?: null,
-                'fecha_adquisicion' => $this->fecha_adquisicion ?: null,
+                'fecha_adquisicion' => $this->fecha_adquisicion  ?: null,
                 'fecha_garantia_fin'=> $this->fecha_garantia_fin ?: null,
-                'observaciones'     => $this->observaciones ?: null,
+                'observaciones'     => $this->observaciones      ?: null,
+                'activo'            => true,
             ]);
 
             foreach ($this->valores as $atributoId => $valor) {
@@ -151,18 +197,14 @@ class CrearEquipo extends Component
         });
 
         session()->flash('success', 'Equipo registrado correctamente.');
-
         $this->redirect(route('admin.equipos.index'), navigate: true);
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Render
+    // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
-        return view('livewire.equipos.crear-equipo', [
-            'categorias' => CategoriaEquipo::orderBy('nombre')->pluck('nombre', 'id'),
-            'estados'    => EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id'),
-            'ubicaciones'=> \App\Models\Ubicacion::where('empresa_id', $this->empresa_id)
-                                ->orderBy('nombre')
-                                ->pluck('nombre', 'id'),
-        ]);
+        return view('livewire.equipos.crear-equipo');
     }
 }

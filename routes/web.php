@@ -38,6 +38,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     // Exportaciones
     Route::get('export/usuarios', [ExportController::class, 'usuarios'])->name('export.usuarios');
     Route::get('export/auditoria', [ExportController::class, 'auditoria'])->name('export.auditoria');
+    Route::get('export/equipos',   [ExportController::class, 'equipos'])->name('export.equipos');
 
     // Perfil del usuario
     Route::get('/profile/actividad', [ProfileController::class, 'profileActivity'])->name('profile.activity');

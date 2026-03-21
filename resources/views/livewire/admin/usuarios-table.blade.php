@@ -1,134 +1,220 @@
 <div class="space-y-6">
 
-    {{-- MODAL --}}
+    {{-- Modales Livewire --}}
     <livewire:admin.usuario-view-modal />
     <livewire:admin.usuario-delete-modal />
 
-    {{-- HEADER + FILTROS --}}
-
-    <x-table.crud-header title="Usuarios" subtitle="Gestión de usuarios del sistema" buttonLabel="Crear usuario"
+    {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
+    <x-table.crud-header
+        title="Usuarios"
+        subtitle="Gestión de usuarios del sistema"
+        buttonLabel="Crear usuario"
         :buttonUrl="route('admin.usuarios.create')">
 
         <x-slot name="filters">
+            <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4 space-y-4">
 
-            {{-- TOP BARRAS + FILTROS --}}
-            <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4">
-
-                {{-- BADGE DE FILTROS ACTIVOS --}}
+                {{-- Badge de filtros activos --}}
                 @if ($this->activeFiltersCount > 0)
-                    <div class="mb-3">
-                        <span class="px-3 py-1 text-xs rounded-md bg-cerberus-primary/60 text-white">
-                            Filtros activos: {{ $this->activeFiltersCount }}
+                    <div class="flex items-center gap-2">
+                        <span class="px-3 py-1 text-xs rounded-full bg-cerberus-primary/60 text-white">
+                            {{ $this->activeFiltersCount }} filtro(s) activo(s)
                         </span>
+                        <button wire:click="resetFilters"
+                                class="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition">
+                            <span class="material-icons text-xs">close</span>
+                            Limpiar todos
+                        </button>
                     </div>
                 @endif
 
-                {{-- FILA 1 --}}
-                <div class="flex flex-wrap items-center gap-4">
+                {{-- FILA 1: Búsqueda — ancho completo --}}
+                <x-form.input
+                    label="Buscar"
+                    wire:model.live.500ms="search"
+                    placeholder="Nombre, email, usuario, cédula..."
+                    hint="Busca por nombre completo, nombre de usuario, correo electrónico o cédula."
+                />
 
-                    {{-- SEARCH --}}
-                    <div class="flex items-center flex-grow min-w-[200px]">
-                        <div class="relative w-full">
-                            <input type="text" wire:model.live.500ms="search" placeholder="Buscar usuarios..."
-                                class="w-full bg-cerberus-dark border border-cerberus-steel rounded-lg px-4 py-2 text-white">
-                            <span class="material-icons absolute right-3 top-2.5 text-gray-400">search</span>
+                {{-- FILA 2: Selects principales en grid de 3 columnas --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
+                    <x-form.select
+                        label="Empresa (nómina)"
+                        :options="$empresas"
+                        wire:model.live="empresa_id"
+                        hint="Filtra por empresa de nómina del usuario."
+                    />
+                    <x-form.select
+                        label="Rol"
+                        :options="$roles"
+                        wire:model.live="rol_id"
+                        hint="Filtra por rol asignado en el sistema."
+                    />
+                    <x-form.select
+                        label="Departamento"
+                        :options="$departamentos"
+                        wire:model.live="departamento_id"
+                    />
+                    <x-form.select
+                        label="Cargo"
+                        :options="$cargos"
+                        wire:model.live="cargo_id"
+                    />
+                    <x-form.select
+                        label="Ubicación"
+                        :options="$ubicaciones"
+                        wire:model.live="ubicacion_id"
+                        hint="La ubicación física controla la visibilidad del usuario para los analistas."
+                    />
+                    <x-form.select
+                        label="Jefe directo"
+                        :options="$jefesDisponibles"
+                        wire:model.live="jefe_id"
+                    />
+                </div>
+
+                {{-- FILA 3: Fechas + Estado + Foráneo — grid de 4 columnas --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4">
+
+                    <x-form.input
+                        type="date"
+                        label="Creado desde"
+                        wire:model.live="fecha_desde"
+                    />
+
+                    <x-form.input
+                        type="date"
+                        label="Creado hasta"
+                        wire:model.live="fecha_hasta"
+                    />
+
+                    {{-- Estado: ocupa 1 columna, mismo label+altura que los inputs --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">
+                            Estado
+                        </label>
+                        <div class="flex items-center gap-4 h-[38px] text-sm text-cerberus-light">
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="" wire:model.live="estado"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Todos
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="Activo" wire:model.live="estado"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Activos
+                            </label>
+                            <label class="flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="Inactivo" wire:model.live="estado"
+                                       class="text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Inactivos
+                            </label>
                         </div>
                     </div>
 
-                    {{-- SELECTS --}}
+                    {{-- Foráneo: misma estructura label+altura --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">
+                            Tipo de ubicación
+                        </label>
+                        <div class="flex items-center h-[38px]">
+                            <label class="flex items-center gap-2 cursor-pointer text-sm text-cerberus-light">
+                                <input type="checkbox"
+                                       wire:model.live="foraneo"
+                                       true-value="1"
+                                       false-value=""
+                                       class="rounded text-cerberus-primary border-cerberus-steel bg-cerberus-dark">
+                                Solo foráneos
+                            </label>
+                        </div>
+                    </div>
 
-                    <x-form.select name="empresa_id" label="Empresa (Nómina)" :options="$empresas"
-                        wire:model.live="empresa_id" />
-                    <x-form.select name="rol_id" label="Rol" :options="$roles" wire:model.live="rol_id" />
-                    <x-form.select name="departamento_id" label="Departamento" :options="$departamentos"
-                        wire:model.live="departamento_id" />
-                    <x-form.select name="cargo_id" label="Cargo" :options="$cargos" wire:model.live="cargo_id" />
-                    <x-form.select name="ubicacion_id" label="Ubicación" :options="$ubicaciones" wire:model.live="ubicacion_id" />
-
-
-                    {{-- ACTIONS --}}
-                    <button
-                        class="ml-auto bg-cerberus-dark border border-cerberus-steel text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                        Acciones
-                        <span class="material-icons text-sm">expand_more</span>
-                    </button>
                 </div>
 
-                {{-- FILA 2 --}}
-                <div class="flex items-center gap-4 mt-4 text-sm text-cerberus-light">
-
-                    <span class="text-white">Mostrar:</span>
-
-                    <label class="flex items-center gap-1">
-                        <input type="radio" value="" wire:model.live="estado">
-                        <span>Todos</span>
-                    </label>
-
-                    <label class="flex items-center gap-1">
-                        <input type="radio" value="Activo" wire:model.live="estado">
-                        <span>Activos</span>
-                    </label>
-
-                    <label class="flex items-center gap-1">
-                        <input type="radio" value="Inactivo" wire:model.live="estado">
-                        <span>Inactivos</span>
-                    </label>
-
-                    {{-- RESET --}}
-                    <button wire:click="resetFilters"
-                        class="ml-auto bg-red-600/20 border border-red-700 text-red-300 px-3 py-2 rounded-lg hover:bg-red-700/40">
-                        Limpiar filtros
-                    </button>
-                </div>
             </div>
         </x-slot>
+
     </x-crud-header>
 
-    {{-- TABLA REUSABLE --}}
-    <x-table.crud-table :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Estado', 'Acciones']" :paginated="$usuarios" export exportRoute="export.usuarios" :filters="$this->filterParams">
-        @foreach ($usuarios as $u)
+    {{-- ── TABLA ───────────────────────────────────────────────────────────── --}}
+    <x-table.crud-table
+        :headers="['Nombre', 'Username', 'Email', 'Rol', 'Ficha', 'Ubicación', 'Estado', 'Acciones']"
+        :paginated="$usuarios"
+        export
+        exportRoute="export.usuarios"
+        :filters="$this->filterParams">
+
+        @forelse ($usuarios as $u)
             <tr wire:key="usuario-{{ $u->id }}" class="hover:bg-cerberus-darkest">
+
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-3">
-                        <img src="{{ $u->foto_url }}"
-                            class="w-10 h-10 rounded-full object-cover border border-cerberus-steel">
-                        <div class="text-white font-medium">{{ $u->name }}</div>
+                        <img src="{{ $u->foto_url }}" alt="{{ $u->name }}"
+                             class="w-9 h-9 rounded-full object-cover border border-cerberus-steel">
+                        <div>
+                            <p class="text-white font-medium text-sm">{{ $u->name }}</p>
+                            <p class="text-cerberus-steel text-xs">{{ $u->cedula }}</p>
+                        </div>
                     </div>
                 </td>
 
-                <td class="px-4 py-3 text-white">{{ $u->username }}</td>
-                <td class="px-4 py-3 text-cerberus-light">{{ $u->email }}</td>
+                <td class="px-4 py-3 text-white text-sm">{{ $u->username }}</td>
+                <td class="px-4 py-3 text-cerberus-light text-sm">{{ $u->email }}</td>
 
                 <td class="px-4 py-3">
                     @foreach ($u->roles as $r)
-                        <span class="px-2 py-1 text-xs rounded-md bg-blue-800 text-blue-300 mr-1">
+                        <span class="px-2 py-0.5 text-xs rounded-md bg-blue-800 text-blue-300 mr-1">
                             {{ $r->name }}
                         </span>
                     @endforeach
                 </td>
 
-                <td class="px-4 py-3">{{ $u->ficha }}</td>
+                <td class="px-4 py-3 text-cerberus-light text-sm">{{ $u->ficha ?? '—' }}</td>
 
-                <td class="px-4 py-3">
-                    @if ($u->estado === 'Activo')
-                        <span
-                            class="inline-flex items-center rounded-md bg-green-400/10 px-2 py-1 text-xs font-medium text-green-400 inset-ring inset-ring-green-500/20">Activo</span>
-                    @else
-                        <span
-                            class="inline-flex items-center rounded-md bg-red-400/10 px-2 py-1 text-xs font-medium text-red-400 inset-ring inset-ring-red-400/20">Inactivo</span>
+                <td class="px-4 py-3 text-sm">
+                    <span class="text-cerberus-light">{{ $u->ubicacion?->nombre ?? '—' }}</span>
+                    @if ($u->ubicacion?->es_estado)
+                        <span class="ml-1 px-1.5 py-0.5 text-xs rounded bg-teal-800/40 text-teal-300">
+                            Foráneo
+                        </span>
                     @endif
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td class="px-4 py-3">
+                    @if ($u->estado === 'Activo')
+                        <span class="inline-flex items-center rounded-md bg-green-400/10 px-2 py-1
+                                     text-xs font-medium text-green-400 ring-1 ring-inset ring-green-500/20">
+                            Activo
+                        </span>
+                    @else
+                        <span class="inline-flex items-center rounded-md bg-red-400/10 px-2 py-1
+                                     text-xs font-medium text-red-400 ring-1 ring-inset ring-red-400/20">
+                            Inactivo
+                        </span>
+                    @endif
+                </td>
+
+                <td class="px-4 py-3 text-center">
                     <x-table.table-actions
                         :model="$u"
                         :editUrl="route('admin.usuarios.edit', $u)"
                         viewEvent="openUserView"
                         deleteEvent="openUserDelete"
                         deleteLabel="Inactivar"
-                        :policy="$u" />
+                        :policy="$u"
+                    />
+                </td>
+
+            </tr>
+        @empty
+            <tr>
+                <td colspan="8" class="px-4 py-12 text-center text-cerberus-light">
+                    <span class="material-icons text-4xl block mb-2 text-cerberus-steel">person_search</span>
+                    No se encontraron usuarios con los filtros aplicados.
                 </td>
             </tr>
-        @endforeach
+        @endforelse
+
     </x-crud-table>
+
 </div>

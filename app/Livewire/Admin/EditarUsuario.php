@@ -17,23 +17,34 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Spatie\Permission\Models\Role;
 
+/**
+ * EditarUsuario — Componente Livewire 3
+ *
+ * Por qué guardamos $usuarioId (int) y no el objeto User:
+ *   Livewire serializa todas las propiedades públicas en cada request.
+ *   Serializar un modelo Eloquent completo con relaciones es costoso y
+ *   puede fallar. El patrón correcto es guardar solo el ID y exponer
+ *   el objeto a través de una computed property cacheada.
+ *
+ * $usuario → computed property → accesible en el blade como $usuario
+ */
 class EditarUsuario extends Component
 {
     use WithFileUploads;
 
-    // El modelo se guarda como ID para evitar problemas de serialización de Livewire
+    // ── ID del usuario que se edita ───────────────────────────────────────────
+    // Solo este int se serializa en el estado de Livewire (liviano y seguro)
     public int $usuarioId;
-    public ?User $usuario = null;
 
     // ── Datos personales ──────────────────────────────────────────────────────
-    public string $name            = '';
-    public string $username        = '';
-    public string $cedula          = '';
-    public string $ficha           = '';
-    public string $telefono        = '';
-    public string $email           = '';
-    public $foto                   = null;
-    public ?string $fotoActual     = null;
+    public string $name     = '';
+    public string $username = '';
+    public string $cedula   = '';
+    public string $ficha    = '';
+    public string $telefono = '';
+    public string $email    = '';
+    public $foto            = null;
+    public ?string $fotoActual = null;
 
     // ── Datos laborales ───────────────────────────────────────────────────────
     public string $empresa_id      = '';
@@ -43,69 +54,89 @@ class EditarUsuario extends Component
     public string $jefe_id         = '';
 
     // ── Acceso ────────────────────────────────────────────────────────────────
-    public string $rol_id          = '';
-    public string $estado          = 'Activo';
-    public string $password        = '';
+    public string $rol_id               = '';
+    public string $estado               = 'Activo';
+    public string $password             = '';
     public string $password_confirmation = '';
 
-    // ── Empresas asignadas (solo Analistas) ───────────────────────────────────
-    // ¡NO se resetea al cambiar empresa_id! Solo depende del rol.
+    // ── Empresas asignadas (Analistas) ────────────────────────────────────────
+    // Se carga una sola vez en mount(). NO se limpia al cambiar empresa_id,
+    // ya que empresa_id = nómina y empresa_ids = acceso analista son independientes.
     public array $empresa_ids = [];
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Mount: recibir ID, buscar el usuario internamente
+    // Mount: recibir el ID, cargar el modelo y llenar los campos
     // ─────────────────────────────────────────────────────────────────────────
     public function mount(int $usuarioId): void
     {
         $this->usuarioId = $usuarioId;
-        $this->usuario = User::with(['roles', 'empresasAsignadas'])->findOrFail($usuarioId);
 
-        $this->authorize('update', $this->usuario);
+        // Cargar con relaciones necesarias para la hidratación inicial
+        $u = User::with(['roles', 'empresasAsignadas'])->findOrFail($usuarioId);
 
-        // Hidratar todos los campos
-        $this->name            = $this->usuario->name;
-        $this->username        = $this->usuario->username;
-        $this->cedula          = $this->usuario->cedula ?? '';
-        $this->ficha           = $this->usuario->ficha ?? '';
-        $this->telefono        = $this->usuario->telefono ?? '';
-        $this->email           = $this->usuario->email ?? '';
-        $this->fotoActual      = $this->usuario->foto;
+        $this->authorize('update', $u);
 
-        $this->empresa_id      = (string) ($this->usuario->empresa_id ?? '');
-        $this->departamento_id = (string) ($this->usuario->departamento_id ?? '');
-        $this->cargo_id        = (string) ($this->usuario->cargo_id ?? '');
-        $this->ubicacion_id    = (string) ($this->usuario->ubicacion_id ?? '');
-        $this->jefe_id         = (string) ($this->usuario->jefe_id ?? '');
+        // Datos personales
+        $this->name       = $u->name;
+        $this->username   = $u->username;
+        $this->cedula     = $u->cedula     ?? '';
+        $this->ficha      = $u->ficha      ?? '';
+        $this->telefono   = $u->telefono   ?? '';
+        $this->email      = $u->email      ?? '';
+        $this->fotoActual = $u->foto;
 
-        $this->rol_id          = (string) ($this->usuario->roles->first()?->id ?? '');
-        $this->estado          = $this->usuario->estado;
+        // Datos laborales — convertir a string para que los selects coincidan
+        $this->empresa_id      = (string) ($u->empresa_id      ?? '');
+        $this->departamento_id = (string) ($u->departamento_id ?? '');
+        $this->cargo_id        = (string) ($u->cargo_id        ?? '');
+        $this->ubicacion_id    = (string) ($u->ubicacion_id    ?? '');
+        $this->jefe_id         = (string) ($u->jefe_id         ?? '');
 
-        // Empresas asignadas — se carga UNA SOLA VEZ en mount, NO se toca al cambiar empresa_id
-        $this->empresa_ids = $this->usuario->empresasAsignadas
+        // Acceso
+        $this->rol_id = (string) ($u->roles->first()?->id ?? '');
+        $this->estado = $u->estado;
+
+        // Empresas asignadas (pivot) — se carga una sola vez aquí
+        $this->empresa_ids = $u->empresasAsignadas
             ->pluck('id')
             ->map(fn($id) => (string) $id)
             ->toArray();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Cascada empresa → departamento → cargo
-    // IMPORTANTE: empresa_ids NO se toca aquí
+    // Cascada de selects
     // ─────────────────────────────────────────────────────────────────────────
+
     public function updatedEmpresaId(): void
     {
         $this->departamento_id = '';
         $this->cargo_id        = '';
-        // ❌ NO limpiar empresa_ids aquí — son independientes de la empresa nómina
+        unset($this->departamentos, $this->cargos);
     }
 
     public function updatedDepartamentoId(): void
     {
         $this->cargo_id = '';
+        unset($this->cargos);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Computed properties
+    // Computed Properties
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * El objeto User del usuario que se está editando.
+     * Se expone como $usuario en el blade (Livewire 3 inyecta computed
+     * properties como variables de la vista con el mismo nombre).
+     * Se recarga fresco de BD en cada request, así siempre refleja
+     * el estado actual (foto_url, estado badge, etc.).
+     */
+    #[Computed]
+    public function usuario(): User
+    {
+        return User::with(['roles', 'empresaNomina'])->findOrFail($this->usuarioId);
+    }
+
     #[Computed]
     public function empresas()
     {
@@ -171,81 +202,93 @@ class EditarUsuario extends Component
         return Role::find($this->rol_id)?->name ?? '';
     }
 
+    /**
+     * URL de preview de la foto.
+     * Prioridad: nueva foto subida (temporal) → foto actual en storage → avatar generado
+     */
     #[Computed]
-    public function fotoPreviewUrl(): ?string
+    public function fotoPreviewUrl(): string
     {
         if ($this->foto) {
             return $this->foto->temporaryUrl();
         }
-        // Recargar el usuario para obtener la foto actual
-        return User::find($this->usuarioId)?->foto_url;
+
+        return User::find($this->usuarioId)?->foto_url
+            ?? 'https://ui-avatars.com/api/?name=U&background=1B263B&color=A9D6E5&size=128';
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Acciones
     // ─────────────────────────────────────────────────────────────────────────
+
+    /** Marcar la foto para eliminación al guardar */
     public function eliminarFoto(): void
     {
         $this->foto       = null;
         $this->fotoActual = null;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Validación
+    // ─────────────────────────────────────────────────────────────────────────
     protected function rules(): array
     {
         $id = $this->usuarioId;
 
-        $rules = [
+        return [
             'name'            => 'required|string|max:255',
-            'username'        => ['required', 'string', 'max:50', Rule::unique('users', 'username')->ignore($id)],
-            'cedula'          => ['required', 'string', 'max:20',  Rule::unique('users', 'cedula')->ignore($id)],
-            'ficha'           => ['required', 'string', 'max:100', Rule::unique('users', 'ficha')->ignore($id)],
+            'username'        => ['required', 'string', 'max:50',
+                                  Rule::unique('users', 'username')->ignore($id)],
+            'cedula'          => ['required', 'string', 'max:15',
+                                  'regex:/^[VvEe]-\d{6,9}$/',
+                                  Rule::unique('users', 'cedula')->ignore($id)],
+            'ficha'           => ['required', 'string', 'max:50',
+                                  Rule::unique('users', 'ficha')->ignore($id)],
             'telefono'        => 'nullable|string|max:20',
-            'email'           => ['nullable', 'email', Rule::unique('users', 'email')->ignore($id)],
+            'email'           => 'required|email|max:255',
+            'foto'            => 'nullable|image|max:5120',
+
             'empresa_id'      => 'required|exists:empresas,id',
             'departamento_id' => 'nullable|exists:departamentos,id',
             'cargo_id'        => 'nullable|exists:cargos,id',
             'ubicacion_id'    => 'required|exists:ubicaciones,id',
-            'jefe_id'         => ['nullable', 'exists:users,id'],
+            'jefe_id'         => 'nullable|exists:users,id',
+
             'rol_id'          => 'required|exists:roles,id',
             'empresa_ids'     => 'nullable|array',
             'empresa_ids.*'   => 'exists:empresas,id',
             'password'        => 'nullable|min:6|confirmed',
-            'foto'            => 'nullable|image|max:5120',
         ];
-
-        if (Auth::user()->hasRole('Administrador')) {
-            $rules['estado'] = 'required|in:Activo,Inactivo';
-        }
-
-        return $rules;
     }
 
     protected function messages(): array
     {
         return [
-            'name.required'          => 'El nombre es obligatorio.',
-            'username.required'      => 'El nombre de usuario es obligatorio.',
-            'username.unique'        => 'Ese nombre de usuario ya está en uso.',
-            'cedula.required'        => 'La cédula es obligatoria.',
-            'cedula.unique'          => 'Esa cédula ya está registrada.',
-            'ficha.required'         => 'La ficha es obligatoria.',
-            'ficha.unique'           => 'Esa ficha ya está registrada.',
-            'email.unique'           => 'Ese correo ya está en uso.',
-            'empresa_id.required'    => 'La empresa es obligatoria.',
-            'ubicacion_id.required'  => 'La ubicación es obligatoria.',
-            'rol_id.required'        => 'El rol es obligatorio.',
-            'foto.image'             => 'El archivo debe ser una imagen.',
-            'foto.max'               => 'La imagen no debe superar 5MB.',
-            'password.confirmed'     => 'Las contraseñas no coinciden.',
-            'password.min'           => 'La contraseña debe tener al menos 6 caracteres.',
+            'name.required'         => 'El nombre completo es obligatorio.',
+            'username.required'     => 'El nombre de usuario es obligatorio.',
+            'username.unique'       => 'Ese nombre de usuario ya está en uso.',
+            'cedula.required'       => 'La cédula es obligatoria.',
+            'cedula.unique'         => 'Esa cédula ya está registrada.',
+            'cedula.regex'          => 'La cédula debe tener el formato V-12345678 o E-12345678.',
+            'ficha.required'        => 'La ficha de nómina es obligatoria.',
+            'ficha.unique'          => 'Esa ficha ya está registrada.',
+            'email.required'        => 'El correo electrónico es obligatorio.',
+            'empresa_id.required'   => 'Debe seleccionar la empresa de nómina.',
+            'ubicacion_id.required' => 'Debe seleccionar la ubicación del usuario.',
+            'rol_id.required'       => 'Debe asignar un rol al usuario.',
+            'foto.image'            => 'El archivo debe ser una imagen.',
+            'foto.max'              => 'La imagen no debe superar los 5MB.',
+            'password.confirmed'    => 'Las contraseñas no coinciden.',
+            'password.min'          => 'La contraseña debe tener al menos 6 caracteres.',
         ];
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Guardar cambios
+    // ─────────────────────────────────────────────────────────────────────────
     public function actualizar(): void
     {
-        $actor = Auth::user();
-
-        // Recargar el usuario fresco para operar sobre él
+        $actor   = Auth::user();
         $usuario = User::findOrFail($this->usuarioId);
 
         $this->authorize('update', $usuario);
@@ -262,29 +305,27 @@ class EditarUsuario extends Component
             $fotoPath = $usuario->foto;
 
             if ($this->foto) {
-                if ($fotoPath) {
-                    Storage::disk('public')->delete($fotoPath);
-                }
+                if ($fotoPath) Storage::disk('public')->delete($fotoPath);
                 $fotoPath = $this->foto->store('users', 'public');
             } elseif ($this->fotoActual === null && $usuario->foto) {
                 Storage::disk('public')->delete($usuario->foto);
                 $fotoPath = null;
             }
 
-            // ── Datos base ────────────────────────────────────────────────────
+            // ── Datos ─────────────────────────────────────────────────────────
             $data = [
                 'name'            => $this->name,
                 'username'        => $this->username,
-                'email'           => $this->email ?: null,
+                'email'           => $this->email,
                 'empresa_id'      => $this->empresa_id,
                 'departamento_id' => $this->departamento_id ?: null,
-                'cargo_id'        => $this->cargo_id ?: null,
+                'cargo_id'        => $this->cargo_id        ?: null,
                 'ubicacion_id'    => $this->ubicacion_id,
-                'jefe_id'         => $this->jefe_id ?: null,
-                'telefono'        => $this->telefono ?: null,
+                'jefe_id'         => $this->jefe_id         ?: null,
+                'telefono'        => $this->telefono        ?: null,
                 'foto'            => $fotoPath,
                 'ficha'           => $this->ficha,
-                'cedula'          => $this->cedula,
+                'cedula'          => strtoupper($this->cedula),
             ];
 
             if ($actor->hasRole('Administrador')) {
@@ -302,23 +343,25 @@ class EditarUsuario extends Component
                 $usuario->syncRoles([$rol]);
             }
 
-            // ── Empresas asignadas — SOLO para Analistas ──────────────────────
+            // ── Empresas asignadas ────────────────────────────────────────────
             if ($rol->name === 'Analista') {
                 $usuario->empresasAsignadas()->sync($this->empresa_ids);
             } else {
-                // Si cambió de Analista a otro rol, limpiar empresas asignadas
                 $usuario->empresasAsignadas()->detach();
             }
 
-            session()->flash('success', "Usuario {$usuario->name} actualizado correctamente.");
+            session()->flash('success', "Usuario «{$usuario->name}» actualizado correctamente.");
             $this->redirect(route('admin.usuarios.index'), navigate: true);
 
         } catch (\Exception $e) {
-            Log::error('Error actualizando usuario: ' . $e->getMessage());
+            Log::error('EditarUsuario@actualizar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al actualizar el usuario.');
         }
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Render
+    // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
         return view('livewire.admin.editar-usuario');

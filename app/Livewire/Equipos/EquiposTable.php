@@ -2,120 +2,170 @@
 
 namespace App\Livewire\Equipos;
 
+use App\Models\AtributoEquipo;
+use App\Models\CategoriaEquipo;
+use App\Models\Equipo;
+use App\Models\EstadoEquipo;
+use App\Models\Ubicacion;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Livewire\Attributes\Url;
-use Illuminate\Support\Collection;
-use App\Models\Equipo;
-use App\Models\CategoriaEquipo;
-use App\Models\EstadoEquipo;
-use App\Models\AtributoEquipo;
-use Illuminate\Support\Facades\Auth;
 
 class EquiposTable extends Component
 {
     use WithPagination;
 
     #[Url(as: 'q')]
-    public $search = '';
+    public string $search = '';
 
-    public $categoria_id = '';
-    public $estado_id = '';
-    public $perPage = 10;
+    public string $categoria_id  = '';
+    public string $estado_id     = '';
+    public string $ubicacion_id  = '';
+    public string $activo        = '';
+    public string $garantia      = '';
+    public string $fecha_desde   = '';
+    public string $fecha_hasta   = '';
+    public int    $perPage       = 10;
 
-    public Collection $atributosFiltrables;
-    public $filtros = [];
+    public array $filtros = [];
 
-    public function mount()
+    // ─────────────────────────────────────────────────────────────────────────
+    public function updated(string $property): void
     {
-        $this->atributosFiltrables = collect();
+        if ($property !== 'page') $this->resetPage();
     }
 
-    public function updated($property)
+    public function updatedCategoriaId(): void
     {
-        if ($property !== 'page') {
-            $this->resetPage();
-        }
-    }
-
-    public function updatedCategoriaId()
-    {
-        $this->cargarAtributosFiltrables();
-    }
-
-    private function cargarAtributosFiltrables()
-    {
-        if (!$this->categoria_id) {
-            $this->atributosFiltrables = collect();
-            $this->filtros = [];
-            return;
-        }
-
-        $this->atributosFiltrables = AtributoEquipo::where('categoria_id', $this->categoria_id)
-            ->where('filtrable', true)
-            ->orderBy('orden')
-            ->get();
-
-        foreach ($this->atributosFiltrables as $atributo) {
-            if (!isset($this->filtros[$atributo->id])) {
-                $this->filtros[$atributo->id] = '';
-            }
-        }
-    }
-
-    public function resetFilters()
-    {
-        $this->reset([
-            'search',
-            'categoria_id',
-            'estado_id',
-            'filtros'
-        ]);
-
-        $this->atributosFiltrables = collect();
+        $this->filtros = [];
         $this->resetPage();
     }
 
-    public function getActiveFiltersCountProperty()
+    public function resetFilters(): void
+    {
+        $this->reset([
+            'search', 'categoria_id', 'estado_id', 'ubicacion_id',
+            'activo', 'garantia', 'fecha_desde', 'fecha_hasta', 'filtros',
+        ]);
+        $this->resetPage();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Computed Properties
+    // ─────────────────────────────────────────────────────────────────────────
+    #[Computed]
+    public function categorias()
+    {
+        return CategoriaEquipo::orderBy('nombre')->pluck('nombre', 'id');
+    }
+
+    #[Computed]
+    public function estados()
+    {
+        return EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id');
+    }
+
+    #[Computed]
+    public function ubicaciones()
+    {
+        $empresaId = Auth::user()->empresa_activa_id ?? Auth::user()->empresa_id;
+        return Ubicacion::where('empresa_id', $empresaId)->orderBy('nombre')->pluck('nombre', 'id');
+    }
+
+    #[Computed]
+    public function atributosFiltrables(): Collection
+    {
+        if (! $this->categoria_id) return collect();
+
+        return AtributoEquipo::where('categoria_id', $this->categoria_id)
+            ->where('filtrable', true)
+            ->orderBy('orden')
+            ->get();
+    }
+
+    #[Computed]
+    public function activeFiltersCount(): int
     {
         return collect([
-            $this->search,
-            $this->categoria_id,
-            $this->estado_id,
+            $this->search, $this->categoria_id, $this->estado_id,
+            $this->ubicacion_id, $this->activo, $this->garantia,
+            $this->fecha_desde, $this->fecha_hasta,
         ])
         ->merge($this->filtros)
         ->filter()
         ->count();
     }
 
+    #[Computed]
+    public function filterParams(): array
+    {
+        return [
+            'search'       => $this->search,
+            'categoria_id' => $this->categoria_id,
+            'estado_id'    => $this->estado_id,
+            'ubicacion_id' => $this->ubicacion_id,
+            'activo'       => $this->activo,
+            'garantia'     => $this->garantia,
+            'fecha_desde'  => $this->fecha_desde,
+            'fecha_hasta'  => $this->fecha_hasta,
+        ];
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Render / Query
+    // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
-        $empresaId = Auth::user()->empresa_id;
+        $empresaId = Auth::user()->empresa_activa_id ?? Auth::user()->empresa_id;
 
         $query = Equipo::query()
-            ->with(['categoria', 'estado'])
+            ->with([
+                'categoria',
+                'estado',
+                'ubicacion',
+                // Cargamos TODOS los atributos actuales (marca, modelo, RAM, etc.)
+                // en una sola query para evitar N+1. El blade los accede por slug.
+                'atributosActuales.atributo',
+            ])
             ->where('empresa_id', $empresaId);
 
-        // 🔎 búsqueda
+        // Búsqueda libre — incluye atributos EAV
         if ($this->search) {
-            $query->where('codigo_interno', 'like', "%{$this->search}%");
+            $s = $this->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('codigo_interno', 'like', "%{$s}%")
+                  ->orWhere('serial', 'like', "%{$s}%")
+                  ->orWhere('nombre_maquina', 'like', "%{$s}%")
+                  ->orWhereHas('atributosActuales', fn($sub) =>
+                      $sub->where('valor', 'like', "%{$s}%")
+                  );
+            });
         }
 
-        // 📂 filtros base
-        if ($this->categoria_id) {
-            $query->where('categoria_id', $this->categoria_id);
+        if ($this->categoria_id)  $query->where('categoria_id', $this->categoria_id);
+        if ($this->estado_id)     $query->where('estado_id',    $this->estado_id);
+        if ($this->ubicacion_id)  $query->where('ubicacion_id', $this->ubicacion_id);
+
+        if ($this->activo !== '') {
+            $query->where('activo', (bool) $this->activo);
         }
 
-        if ($this->estado_id) {
-            $query->where('estado_id', $this->estado_id);
+        if ($this->garantia === 'vigente') {
+            $query->where('fecha_garantia_fin', '>=', now()->toDateString());
+        } elseif ($this->garantia === 'vencida') {
+            $query->whereNotNull('fecha_garantia_fin')
+                  ->where('fecha_garantia_fin', '<', now()->toDateString());
         }
 
-        // 🔥 filtros dinámicos EAV
+        if ($this->fecha_desde) $query->whereDate('fecha_adquisicion', '>=', $this->fecha_desde);
+        if ($this->fecha_hasta) $query->whereDate('fecha_adquisicion', '<=', $this->fecha_hasta);
+
+        // Filtros EAV dinámicos
         foreach ($this->filtros as $atributoId => $valor) {
-
-            if ($valor === null || $valor === '') {
-                continue;
-            }
+            if ($valor === null || $valor === '') continue;
 
             $atributo = $this->atributosFiltrables->firstWhere('id', $atributoId);
 
@@ -129,38 +179,31 @@ class EquiposTable extends Component
                 if ($atributo && in_array($atributo->tipo, ['integer', 'decimal'])) {
                     $sub->where('eav.valor', $valor);
                 } elseif ($atributo && $atributo->tipo === 'boolean') {
-                    $sub->where('eav.valor', $valor ? 1 : 0);
+                    $sub->where('eav.valor', (int) $valor);
                 } else {
                     $sub->where('eav.valor', 'like', "%{$valor}%");
                 }
             });
         }
 
-        // 📊 stats
-        $baseQuery = clone $query;
-
-        $total = (clone $baseQuery)->count();
-
-        $activos = (clone $baseQuery)
-            ->whereHas('estado', fn($q) => $q->where('nombre', 'Activo'))
+        // Stats
+        $baseQuery       = clone $query;
+        $total           = (clone $baseQuery)->count();
+        $totalActivos    = (clone $baseQuery)->where('activo', true)->count();
+        $garantiaVencida = (clone $baseQuery)
+            ->whereNotNull('fecha_garantia_fin')
+            ->where('fecha_garantia_fin', '<', now()->toDateString())
             ->count();
-
-        $mantenimiento = (clone $baseQuery)
-            ->whereHas('estado', fn($q) => $q->where('nombre', 'Mantenimiento'))
-            ->count();
-
-        $baja = (clone $baseQuery)
-            ->whereHas('estado', fn($q) => $q->where('nombre', 'Baja'))
+        $enMantenimiento = (clone $baseQuery)
+            ->whereHas('estado', fn($q) => $q->where('nombre', 'like', '%reparaci%'))
             ->count();
 
         return view('livewire.equipos.equipos-table', [
-            'equipos' => $query->paginate($this->perPage),
-            'categorias' => CategoriaEquipo::pluck('nombre', 'id'),
-            'estados' => EstadoEquipo::pluck('nombre', 'id'),
-            'total' => $total,
-            'activos' => $activos,
-            'mantenimiento' => $mantenimiento,
-            'baja' => $baja,
+            'equipos'         => $query->latest()->paginate($this->perPage),
+            'total'           => $total,
+            'totalActivos'    => $totalActivos,
+            'garantiaVencida' => $garantiaVencida,
+            'enMantenimiento' => $enMantenimiento,
         ]);
     }
 }
