@@ -10,6 +10,7 @@ use App\Models\Auditoria;
 use App\Models\Equipo;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -32,7 +33,7 @@ class ExportController extends Controller
             'ubicacion',
             'jefe',
             'roles',
-        ]);
+        ])->visiblePara(Auth::user());
 
         // ── Filtros (los mismos que usa UsuariosTable Livewire) ──────────────
         if ($request->search) {
@@ -106,7 +107,7 @@ class ExportController extends Controller
             'ubicacion',
             'creadoPor',
             'atributosActuales.atributo',
-        ]);
+        ])->visiblePara(Auth::user());
 
         // ── Filtros (los mismos que usa EquiposTable Livewire) ───────────────
         if ($request->search) {

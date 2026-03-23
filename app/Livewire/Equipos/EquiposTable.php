@@ -13,6 +13,12 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+/*
+ * Visibilidad:
+ *  - Administrador → ve todos los equipos
+ *  - Analista       → ve equipos de su ubicación física + foráneos
+ *  - Usuario        → no puede acceder al módulo
+ */
 
 class EquiposTable extends Component
 {
@@ -47,8 +53,15 @@ class EquiposTable extends Component
     public function resetFilters(): void
     {
         $this->reset([
-            'search', 'categoria_id', 'estado_id', 'ubicacion_id',
-            'activo', 'garantia', 'fecha_desde', 'fecha_hasta', 'filtros',
+            'search',
+            'categoria_id',
+            'estado_id',
+            'ubicacion_id',
+            'activo',
+            'garantia',
+            'fecha_desde',
+            'fecha_hasta',
+            'filtros',
         ]);
         $this->resetPage();
     }
@@ -71,8 +84,19 @@ class EquiposTable extends Component
     #[Computed]
     public function ubicaciones()
     {
-        $empresaId = Auth::user()->empresa_activa_id ?? Auth::user()->empresa_id;
-        return Ubicacion::where('empresa_id', $empresaId)->orderBy('nombre')->pluck('nombre', 'id');
+        $user = Auth::user();
+
+        if ($user->hasRole('Administrador')) {
+            return Ubicacion::orderBy('nombre')->pluck('nombre', 'id');
+        }
+
+        // Analista: solo la ubicación de su empresa activa + foráneos
+        return Ubicacion::where(function ($q) use ($user) {
+            $q->where('empresa_id', $user->empresa_activa_id)
+                ->orWhere('es_estado', true);
+        })
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
     }
 
     #[Computed]
@@ -90,13 +114,18 @@ class EquiposTable extends Component
     public function activeFiltersCount(): int
     {
         return collect([
-            $this->search, $this->categoria_id, $this->estado_id,
-            $this->ubicacion_id, $this->activo, $this->garantia,
-            $this->fecha_desde, $this->fecha_hasta,
+            $this->search,
+            $this->categoria_id,
+            $this->estado_id,
+            $this->ubicacion_id,
+            $this->activo,
+            $this->garantia,
+            $this->fecha_desde,
+            $this->fecha_hasta,
         ])
-        ->merge($this->filtros)
-        ->filter()
-        ->count();
+            ->merge($this->filtros)
+            ->filter()
+            ->count();
     }
 
     #[Computed]
@@ -130,18 +159,20 @@ class EquiposTable extends Component
                 // en una sola query para evitar N+1. El blade los accede por slug.
                 'atributosActuales.atributo',
             ])
-            ->where('empresa_id', $empresaId);
+            ->visiblePara(Auth::user());
 
         // Búsqueda libre — incluye atributos EAV
         if ($this->search) {
             $s = $this->search;
             $query->where(function ($q) use ($s) {
                 $q->where('codigo_interno', 'like', "%{$s}%")
-                  ->orWhere('serial', 'like', "%{$s}%")
-                  ->orWhere('nombre_maquina', 'like', "%{$s}%")
-                  ->orWhereHas('atributosActuales', fn($sub) =>
-                      $sub->where('valor', 'like', "%{$s}%")
-                  );
+                    ->orWhere('serial', 'like', "%{$s}%")
+                    ->orWhere('nombre_maquina', 'like', "%{$s}%")
+                    ->orWhereHas(
+                        'atributosActuales',
+                        fn($sub) =>
+                        $sub->where('valor', 'like', "%{$s}%")
+                    );
             });
         }
 
@@ -157,7 +188,7 @@ class EquiposTable extends Component
             $query->where('fecha_garantia_fin', '>=', now()->toDateString());
         } elseif ($this->garantia === 'vencida') {
             $query->whereNotNull('fecha_garantia_fin')
-                  ->where('fecha_garantia_fin', '<', now()->toDateString());
+                ->where('fecha_garantia_fin', '<', now()->toDateString());
         }
 
         if ($this->fecha_desde) $query->whereDate('fecha_adquisicion', '>=', $this->fecha_desde);

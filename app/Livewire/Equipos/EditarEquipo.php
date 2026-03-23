@@ -92,8 +92,17 @@ class EditarEquipo extends Component
     #[Computed]
     public function ubicaciones()
     {
-        // Las ubicaciones disponibles son las de la empresa del equipo
-        return Ubicacion::where('empresa_id', $this->equipo->empresa_id)
+        $user = Auth::user();
+
+        if ($user->hasRole('Administrador')) {
+            return Ubicacion::where('empresa_id', $this->equipo->empresa_id)
+                ->orderBy('nombre')->pluck('nombre', 'id');
+        }
+
+        return Ubicacion::where(function ($q) use ($user) {
+            $q->where('empresa_id', $user->empresa_activa_id)
+                ->orWhere('es_estado', true);
+        })
             ->orderBy('nombre')
             ->pluck('nombre', 'id');
     }
@@ -136,7 +145,7 @@ class EditarEquipo extends Component
         $messages = [
             'estado_id.required' => 'Debe seleccionar un estado.',
             'fecha_garantia_fin.after_or_equal' =>
-                'La garantía no puede ser anterior a la fecha de adquisición.',
+            'La garantía no puede ser anterior a la fecha de adquisición.',
         ];
 
         foreach ($this->atributos as $atributo) {

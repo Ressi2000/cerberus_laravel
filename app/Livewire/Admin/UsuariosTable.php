@@ -11,6 +11,7 @@ use App\Models\Departamento;
 use App\Models\Cargo;
 use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Computed;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -128,6 +129,24 @@ class UsuariosTable extends Component
         ];
     }
 
+    #[Computed()]
+    public function ubicaciones()
+    {
+        $user = Auth::user();
+
+        if ($user->hasRole('Administrador')) {
+            return Ubicacion::orderBy('nombre')->pluck('nombre', 'id');
+        }
+
+        // Analista: solo la ubicación de su empresa activa + foráneos
+        return Ubicacion::where(function ($q) use ($user) {
+            $q->where('empresa_id', $user->empresa_activa_id)
+                ->orWhere('es_estado', true);
+        })
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Render: construir query y pasar datos a la vista
     // ─────────────────────────────────────────────────────────────────────────
@@ -239,7 +258,7 @@ class UsuariosTable extends Component
             'empresas'    => Empresa::pluck('nombre', 'id'),
             'departamentos' => Departamento::pluck('nombre', 'id'),
             'cargos'      => Cargo::pluck('nombre', 'id'),
-            'ubicaciones' => Ubicacion::pluck('nombre', 'id'),
+            'ubicaciones' => $this->ubicaciones,
 
             // Jefes disponibles para el filtro de jefe directo
             'jefesDisponibles' => User::seleccionables()->pluck('name', 'id'),

@@ -102,7 +102,17 @@ class CrearEquipo extends Component
     #[Computed]
     public function ubicaciones()
     {
-        return Ubicacion::where('empresa_id', $this->empresa_id)
+        $user = Auth::user();
+
+        if ($user->hasRole('Administrador')) {
+            return Ubicacion::orderBy('nombre')->pluck('nombre', 'id');
+        }
+
+        // Analista: solo la ubicación de su empresa activa + foráneos
+        return Ubicacion::where(function ($q) use ($user) {
+            $q->where('empresa_id', $user->empresa_activa_id)
+                ->orWhere('es_estado', true);
+        })
             ->orderBy('nombre')
             ->pluck('nombre', 'id');
     }
@@ -178,7 +188,7 @@ class CrearEquipo extends Component
                 'serial'            => $this->serial        ?: null,
                 'nombre_maquina'    => $this->nombre_maquina ?: null,
                 'fecha_adquisicion' => $this->fecha_adquisicion  ?: null,
-                'fecha_garantia_fin'=> $this->fecha_garantia_fin ?: null,
+                'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
                 'observaciones'     => $this->observaciones      ?: null,
                 'activo'            => true,
             ]);

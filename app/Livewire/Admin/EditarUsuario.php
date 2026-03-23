@@ -175,7 +175,19 @@ class EditarUsuario extends Component
     #[Computed]
     public function ubicaciones()
     {
-        return Ubicacion::orderBy('nombre')->pluck('nombre', 'id');
+        $user = Auth::user();
+
+        if ($user->hasRole('Administrador')) {
+            return Ubicacion::where('empresa_id', $this->equipo->empresa_id)
+                ->orderBy('nombre')->pluck('nombre', 'id');
+        }
+
+        return Ubicacion::where(function ($q) use ($user) {
+            $q->where('empresa_id', $user->empresa_activa_id)
+                ->orWhere('es_estado', true);
+        })
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
     }
 
     #[Computed]
