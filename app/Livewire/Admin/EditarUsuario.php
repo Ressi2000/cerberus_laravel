@@ -175,6 +175,7 @@ class EditarUsuario extends Component
     #[Computed]
     public function ubicaciones()
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
@@ -201,7 +202,10 @@ class EditarUsuario extends Component
     #[Computed]
     public function roles()
     {
-        if (Auth::user()->hasRole('Analista')) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if ($user->hasRole('Analista')) {
             return Role::where('name', 'Usuario')->pluck('name', 'id');
         }
         return Role::orderBy('name')->pluck('name', 'id');
@@ -300,6 +304,7 @@ class EditarUsuario extends Component
     // ─────────────────────────────────────────────────────────────────────────
     public function actualizar(): void
     {
+        /** @var \App\Models\User $actor */
         $actor   = Auth::user();
         $usuario = User::findOrFail($this->usuarioId);
 

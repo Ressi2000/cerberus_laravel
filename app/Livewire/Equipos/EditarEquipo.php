@@ -92,6 +92,7 @@ class EditarEquipo extends Component
     #[Computed]
     public function ubicaciones()
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {

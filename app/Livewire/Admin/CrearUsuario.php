@@ -135,6 +135,7 @@ class CrearUsuario extends Component
     #[Computed]
     public function ubicaciones()
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
@@ -165,7 +166,10 @@ class CrearUsuario extends Component
     #[Computed]
     public function roles()
     {
-        if (Auth::user()->hasRole('Analista')) {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        if ($user->hasRole('Analista')) {
             return Role::where('name', 'Usuario')->pluck('name', 'id');
         }
 
