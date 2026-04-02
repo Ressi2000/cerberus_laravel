@@ -2,13 +2,13 @@
 
 namespace App\Livewire\Equipos;
 
-use App\Models\AtributoEquipo;
 use App\Models\Equipo;
 use App\Models\EquipoAtributoValor;
 use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -166,53 +166,58 @@ class EditarEquipo extends Component
         $this->authorize('update', $equipo);
         $this->validate();
 
-        DB::transaction(function () use ($equipo) {
+        try {
+            DB::transaction(function () use ($equipo) {
 
-            // ── Datos base del equipo ─────────────────────────────────────────
-            $equipo->update([
-                'estado_id'          => $this->estado_id,
-                'ubicacion_id'       => $this->ubicacion_id  ?: null,
-                'serial'             => $this->serial         ?: null,
-                'nombre_maquina'     => $this->nombre_maquina ?: null,
-                'fecha_adquisicion'  => $this->fecha_adquisicion  ?: null,
-                'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
-                'observaciones'      => $this->observaciones       ?: null,
-            ]);
+                // ── Datos base del equipo ─────────────────────────────────────────
+                $equipo->update([
+                    'estado_id'          => $this->estado_id,
+                    'ubicacion_id'       => $this->ubicacion_id  ?: null,
+                    'serial'             => $this->serial         ?: null,
+                    'nombre_maquina'     => $this->nombre_maquina ?: null,
+                    'fecha_adquisicion'  => $this->fecha_adquisicion  ?: null,
+                    'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
+                    'observaciones'      => $this->observaciones       ?: null,
+                ]);
 
-            // ── Versionado EAV: solo registra si el valor realmente cambió ────
-            foreach ($this->valores as $atributoId => $nuevoValor) {
+                // ── Versionado EAV: solo registra si el valor realmente cambió ────
+                foreach ($this->valores as $atributoId => $nuevoValor) {
 
-                $valorActual = EquipoAtributoValor::where([
-                    'equipo_id'   => $equipo->id,
-                    'atributo_id' => $atributoId,
-                    'es_actual'   => true,
-                ])->first();
-
-                // Sin cambio → no hacer nada
-                if ($valorActual && (string) $valorActual->valor === (string) $nuevoValor) {
-                    continue;
-                }
-
-                // Marcar versión anterior como histórico
-                if ($valorActual) {
-                    $valorActual->update(['es_actual' => false]);
-                }
-
-                // Crear nueva versión solo si hay valor
-                if ($nuevoValor !== null && $nuevoValor !== '') {
-                    EquipoAtributoValor::create([
+                    $valorActual = EquipoAtributoValor::where([
                         'equipo_id'   => $equipo->id,
                         'atributo_id' => $atributoId,
-                        'valor'       => $nuevoValor,
                         'es_actual'   => true,
-                        'creado_por'  => Auth::id(),
-                    ]);
-                }
-            }
-        });
+                    ])->first();
 
-        session()->flash('success', 'Equipo actualizado correctamente.');
-        $this->redirect(route('admin.equipos.index'), navigate: true);
+                    // Sin cambio → no hacer nada
+                    if ($valorActual && (string) $valorActual->valor === (string) $nuevoValor) {
+                        continue;
+                    }
+
+                    // Marcar versión anterior como histórico
+                    if ($valorActual) {
+                        $valorActual->update(['es_actual' => false]);
+                    }
+
+                    // Crear nueva versión solo si hay valor
+                    if ($nuevoValor !== null && $nuevoValor !== '') {
+                        EquipoAtributoValor::create([
+                            'equipo_id'   => $equipo->id,
+                            'atributo_id' => $atributoId,
+                            'valor'       => $nuevoValor,
+                            'es_actual'   => true,
+                            'creado_por'  => Auth::id(),
+                        ]);
+                    }
+                }
+            });
+
+            session()->flash('success', 'Equipo actualizado correctamente.');
+            $this->redirect(route('admin.equipos.index'), navigate: true);
+        } catch (\Exception $e) {
+            Log::error('EditarEquipo@actualizar: ' . $e->getMessage());
+            $this->addError('general', 'Ocurrió un error al actualizar el equipo.');
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

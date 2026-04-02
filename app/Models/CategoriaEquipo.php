@@ -14,6 +14,10 @@ class CategoriaEquipo extends Model
         'descripcion'
     ];
 
+    protected $casts = [
+        'asignable' => 'boolean',
+    ];
+
     public function atributos()
     {
         return $this->hasMany(AtributoEquipo::class, 'categoria_id');

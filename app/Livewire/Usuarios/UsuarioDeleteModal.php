@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Admin;
+namespace App\Livewire\Usuarios;
 
 use App\Models\User;
 use Livewire\Component;
@@ -39,10 +39,10 @@ class UsuarioDeleteModal extends Component
 
             $this->dispatch('userDeleted');
 
-            return redirect()->route('admin.usuarios.index')->with('success', 'Usuario inactivado correctamente.');
+            return redirect()->route('usuarios.index')->with('success', 'Usuario inactivado correctamente.');
         } catch (\Exception $e) {
             Log::error('Error inactivando usuario: ' . $e->getMessage());
-            return redirect()->route('admin.usuarios.index')->with('error', 'Ocurrió un error al inactivar el usuario.');
+            return redirect()->route('usuarios.index')->with('error', 'Ocurrió un error al inactivar el usuario.');
         }
     }
 
@@ -53,6 +53,6 @@ class UsuarioDeleteModal extends Component
 
     public function render()
     {
-        return view('livewire.admin.usuario-delete-modal');
+        return view('livewire.usuarios.usuario-delete-modal');
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\CollectionExport;
 use App\Exports\UsuariosExport;
 use App\Exports\AuditoriaExport;
 use App\Exports\EquiposExport;
@@ -12,7 +11,6 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
 {

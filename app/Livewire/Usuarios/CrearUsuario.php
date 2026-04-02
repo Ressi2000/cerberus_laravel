@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Admin;
+namespace App\Livewire\Usuarios;
 
 use App\Models\Cargo;
 use App\Models\Departamento;
@@ -105,8 +105,8 @@ class CrearUsuario extends Component
                 $q->orWhere('empresa_id', $this->empresa_id);
             }
         })
-        ->orderBy('nombre')
-        ->pluck('nombre', 'id');
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
     }
 
     /**
@@ -299,7 +299,6 @@ class CrearUsuario extends Component
 
             session()->flash('success', "Usuario «{$user->name}» creado correctamente.");
             $this->redirect(route('admin.usuarios.index'), navigate: true);
-
         } catch (\Exception $e) {
             // Si hubo error, eliminar la foto que se subió para no dejar archivos huérfanos
             if ($fotoPath) {
@@ -316,6 +315,6 @@ class CrearUsuario extends Component
     // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
-        return view('livewire.admin.crear-usuario');
+        return view('livewire.usuarios.crear-usuario');
     }
 }

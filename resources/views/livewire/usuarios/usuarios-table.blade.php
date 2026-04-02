@@ -1,8 +1,8 @@
 <div class="space-y-6">
 
     {{-- Modales Livewire --}}
-    <livewire:admin.usuario-view-modal />
-    <livewire:admin.usuario-delete-modal />
+    <livewire:usuarios.usuario-view-modal />
+    <livewire:usuarios.usuario-delete-modal />
 
     {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
     <x-table.crud-header

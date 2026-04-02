@@ -246,13 +246,15 @@
                         {{-- Analista: rol y estado de solo lectura --}}
                         <x-form.input
                             label="Rol"
+                            name="rol"
                             :value="$this->rolNombre"
                             readonly
                             hint="Tu nivel de acceso no permite cambiar el rol de este usuario."
                         />
                         <x-form.input
                             label="Estado"
-                            :value="$estado"
+                            name="estado"
+                            :value="$this->estado"
                             readonly
                             hint="Tu nivel de acceso no permite cambiar el estado de este usuario."
                         />

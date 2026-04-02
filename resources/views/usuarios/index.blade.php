@@ -18,7 +18,7 @@
     <x-form.success />
     
     {{-- LIVEWIRE TABLE --}}
-    @livewire('admin.usuarios-table')
+    @livewire('usuarios.usuarios-table')
 
     {{-- TITLE + BUTTON + TOP FILTERS + SEARCH --}}
     {{-- <x-table.crud-header title="Usuarios" subtitle="Gestión de usuarios del sistema" buttonLabel="Crear usuario"

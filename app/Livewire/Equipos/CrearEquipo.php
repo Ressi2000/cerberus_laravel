@@ -10,7 +10,7 @@ use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 
@@ -178,37 +178,43 @@ class CrearEquipo extends Component
     {
         $this->validate();
 
-        DB::transaction(function () {
+        try {
 
-            $equipo = Equipo::create([
-                'empresa_id'        => $this->empresa_id,
-                'categoria_id'      => $this->categoria_id,
-                'estado_id'         => $this->estado_id,
-                'ubicacion_id'      => $this->ubicacion_id ?: null,
-                'codigo_interno'    => $this->codigo_interno,
-                'serial'            => $this->serial        ?: null,
-                'nombre_maquina'    => $this->nombre_maquina ?: null,
-                'fecha_adquisicion' => $this->fecha_adquisicion  ?: null,
-                'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
-                'observaciones'     => $this->observaciones      ?: null,
-                'activo'            => true,
-            ]);
+            DB::transaction(function () {
 
-            foreach ($this->valores as $atributoId => $valor) {
-                if ($valor !== null && $valor !== '') {
-                    EquipoAtributoValor::create([
-                        'equipo_id'   => $equipo->id,
-                        'atributo_id' => $atributoId,
-                        'valor'       => $valor,
-                        'es_actual'   => true,
-                        'creado_por'  => Auth::id(),
-                    ]);
+                $equipo = Equipo::create([
+                    'empresa_id'        => $this->empresa_id,
+                    'categoria_id'      => $this->categoria_id,
+                    'estado_id'         => $this->estado_id,
+                    'ubicacion_id'      => $this->ubicacion_id ?: null,
+                    'codigo_interno'    => $this->codigo_interno,
+                    'serial'            => $this->serial        ?: null,
+                    'nombre_maquina'    => $this->nombre_maquina ?: null,
+                    'fecha_adquisicion' => $this->fecha_adquisicion  ?: null,
+                    'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
+                    'observaciones'     => $this->observaciones      ?: null,
+                    'activo'            => true,
+                ]);
+
+                foreach ($this->valores as $atributoId => $valor) {
+                    if ($valor !== null && $valor !== '') {
+                        EquipoAtributoValor::create([
+                            'equipo_id'   => $equipo->id,
+                            'atributo_id' => $atributoId,
+                            'valor'       => $valor,
+                            'es_actual'   => true,
+                            'creado_por'  => Auth::id(),
+                        ]);
+                    }
                 }
-            }
-        });
+            });
 
-        session()->flash('success', 'Equipo registrado correctamente.');
-        $this->redirect(route('admin.equipos.index'), navigate: true);
+            session()->flash('success', 'Equipo registrado correctamente.');
+            $this->redirect(route('admin.equipos.index'), navigate: true);
+        } catch (\Exception $e) {
+            Log::error('CrearEquipo@actualizar: ' . $e->getMessage());
+            $this->addError('general', 'Ocurrió un error al crear el equipo.');
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

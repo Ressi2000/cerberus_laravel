@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Admin;
+namespace App\Livewire\Usuarios;
 
 use App\Models\User;
 use Livewire\Component;
@@ -32,6 +32,6 @@ class UsuarioViewModal extends Component
 
     public function render()
     {
-        return view('livewire.admin.usuario-view-modal');
+        return view('livewire.usuarios.usuario-view-modal');
     }
 }

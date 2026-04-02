@@ -1,11 +1,11 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditoriaController;
-use App\Http\Controllers\Admin\UsuarioController;
-use App\Http\Controllers\EmpresaSelectorController;
+use App\Http\Controllers\Usuario\UsuarioController;
+use App\Http\Controllers\Auth\EmpresaSelectorController;
 use App\Http\Controllers\Equipo\EquipoController;
 use App\Http\Controllers\ExportController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Usuario\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->get('/', function () {

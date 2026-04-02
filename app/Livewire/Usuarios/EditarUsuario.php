@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Admin;
+namespace App\Livewire\Usuarios;
 
 use App\Models\Cargo;
 use App\Models\Departamento;
@@ -152,8 +152,8 @@ class EditarUsuario extends Component
                 $q->orWhere('empresa_id', $this->empresa_id);
             }
         })
-        ->orderBy('nombre')
-        ->pluck('nombre', 'id');
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
     }
 
     #[Computed]
@@ -179,8 +179,7 @@ class EditarUsuario extends Component
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
-            return Ubicacion::where('empresa_id', $this->equipo->empresa_id)
-                ->orderBy('nombre')->pluck('nombre', 'id');
+            return Ubicacion::orderBy('nombre')->pluck('nombre', 'id');
         }
 
         return Ubicacion::where(function ($q) use ($user) {
@@ -218,6 +217,7 @@ class EditarUsuario extends Component
         return Role::find($this->rol_id)?->name ?? '';
     }
 
+
     /**
      * URL de preview de la foto.
      * Prioridad: nueva foto subida (temporal) → foto actual en storage → avatar generado
@@ -253,13 +253,25 @@ class EditarUsuario extends Component
 
         return [
             'name'            => 'required|string|max:255',
-            'username'        => ['required', 'string', 'max:50',
-                                  Rule::unique('users', 'username')->ignore($id)],
-            'cedula'          => ['required', 'string', 'max:15',
-                                  'regex:/^[VvEe]-\d{6,9}$/',
-                                  Rule::unique('users', 'cedula')->ignore($id)],
-            'ficha'           => ['required', 'string', 'max:50',
-                                  Rule::unique('users', 'ficha')->ignore($id)],
+            'username'        => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('users', 'username')->ignore($id)
+            ],
+            'cedula'          => [
+                'required',
+                'string',
+                'max:15',
+                'regex:/^[VvEe]-\d{6,9}$/',
+                Rule::unique('users', 'cedula')->ignore($id)
+            ],
+            'ficha'           => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('users', 'ficha')->ignore($id)
+            ],
             'telefono'        => 'nullable|string|max:20',
             'email'           => 'required|email|max:255',
             'foto'            => 'nullable|image|max:5120',
@@ -369,7 +381,6 @@ class EditarUsuario extends Component
 
             session()->flash('success', "Usuario «{$usuario->name}» actualizado correctamente.");
             $this->redirect(route('admin.usuarios.index'), navigate: true);
-
         } catch (\Exception $e) {
             Log::error('EditarUsuario@actualizar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al actualizar el usuario.');
@@ -381,6 +392,6 @@ class EditarUsuario extends Component
     // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
-        return view('livewire.admin.editar-usuario');
+        return view('livewire.usuarios.editar-usuario');
     }
 }

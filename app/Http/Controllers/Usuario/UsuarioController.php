@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Usuario;
 
 use App\Http\Controllers\Controller;
 use App\Models\Empresa;
@@ -19,7 +19,7 @@ class UsuarioController extends Controller
      */
     public function index()
     {
-        return view('admin.usuarios.index', [
+        return view('usuarios.index', [
             'usuariosActivos'   => User::where('estado', 'Activo')->count(),
             'usuariosInactivos' => User::where('estado', 'Inactivo')->count(),
             'admins'            => User::role('Administrador')->count(),
@@ -32,7 +32,7 @@ class UsuarioController extends Controller
      */
     public function create()
     {
-        return view('admin.usuarios.usuarios-create');
+        return view('usuarios.usuarios-create');
     }
 
     /**
@@ -42,7 +42,7 @@ class UsuarioController extends Controller
     {
         $this->authorize('update', $usuario);
 
-        return view('admin.usuarios.usuarios-edit', compact('usuario'));
+        return view('usuarios.usuarios-edit', compact('usuario'));
     }
 
     /**
@@ -50,7 +50,7 @@ class UsuarioController extends Controller
      */
     public function show(User $usuario)
     {
-        return redirect()->route('admin.usuarios.usuarios-edit', $usuario);
+        return redirect()->route('usuarios.usuarios-edit', $usuario);
     }
 
     /**
@@ -64,12 +64,12 @@ class UsuarioController extends Controller
         try {
             $usuario->update(['estado' => 'Inactivo']);
             return redirect()
-                ->route('admin.usuarios.index')
+                ->route('usuarios.index')
                 ->with('success', 'Usuario inactivado correctamente.');
         } catch (\Exception $e) {
             Log::error('Error inactivando usuario: ' . $e->getMessage());
             return redirect()
-                ->route('admin.usuarios.index')
+                ->route('usuarios.index')
                 ->with('error', 'Ocurrió un error al inactivar el usuario.');
         }
     }

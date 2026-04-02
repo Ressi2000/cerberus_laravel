@@ -1,34 +1,40 @@
 @props([
     'title',
-    'subtitle' => null,
+    'subtitle'    => null,
     'buttonLabel' => null,
-    'buttonUrl' => null,
+    'buttonUrl'   => null,
 ])
 
-<div class="flex items-center justify-between mb-6">
+{{-- ── HEADER ───────────────────────────────────────────────────────────────── --}}
+<div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-5">
 
-    {{-- TITULO + SUBTITULO --}}
-    <div>
-        <h1 class="text-2xl font-bold text-white">{{ $title }}</h1>
+    <div class="min-w-0">
+        <h1 class="text-xl font-bold text-[#1E293B] dark:text-white truncate">
+            {{ $title }}
+        </h1>
         @if ($subtitle)
-            <p class="text-cerberus-accent text-sm mt-1">{{ $subtitle }}</p>
+            <p class="text-sm text-gray-500 dark:text-cerberus-accent mt-0.5">
+                {{ $subtitle }}
+            </p>
         @endif
     </div>
 
-    {{-- BOTÓN --}}
     @if ($buttonLabel && $buttonUrl)
         <a href="{{ $buttonUrl }}"
-            class="inline-flex items-center px-4 py-2 bg-cerberus-primary hover:bg-cerberus-hover
-                   text-white rounded-lg shadow transition-colors duration-150">
-            <span class="material-icons mr-1 text-base">add</span>
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
+                  bg-[#1E40AF] hover:bg-[#1E3A8A]
+                  text-white shadow-sm
+                  transition-all duration-150 flex-shrink-0
+                  focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/30">
+            <span class="material-icons text-base">add</span>
             {{ $buttonLabel }}
         </a>
     @endif
 </div>
 
-{{-- SLOT PARA FILTROS PERSONALIZADOS --}}
+{{-- ── FILTROS (slot) ──────────────────────────────────────────────────────── --}}
 @if (isset($filters))
-    <div class="mt-4">
+    <div class="mb-5">
         {{ $filters }}
     </div>
 @endif

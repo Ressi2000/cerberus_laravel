@@ -9,7 +9,7 @@
     <x-form.success />
 
     @livewire('equipos.equipo-view-modal')
-@livewire('equipos.equipo-delete-modal')
+    @livewire('equipos.equipo-delete-modal')
 
     @livewire('equipos.equipos-table')
 

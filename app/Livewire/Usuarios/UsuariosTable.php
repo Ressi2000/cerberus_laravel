@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Admin;
+namespace App\Livewire\Usuarios;
 
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -251,7 +251,7 @@ class UsuariosTable extends Component
             $query->whereDate('created_at', '<=', $this->fecha_hasta);
         }
 
-        return view('livewire.admin.usuarios-table', [
+        return view('livewire.usuarios.usuarios-table', [
             'usuarios'    => $query->paginate($this->perPage),
 
             // Datos para los selects de filtros

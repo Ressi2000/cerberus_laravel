@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Usuario;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\Auditoria;
 use Illuminate\Http\RedirectResponse;
