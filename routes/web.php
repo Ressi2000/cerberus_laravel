@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Usuario\UsuarioController;
 use App\Http\Controllers\Auth\EmpresaSelectorController;
+use App\Http\Controllers\Configuracion\ConfiguracionController;
 use App\Http\Controllers\Equipo\EquipoController;
 use App\Http\Controllers\ExportController;
 use App\Http\Controllers\Usuario\ProfileController;
@@ -18,11 +19,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/seleccionar-empresa', [EmpresaSelectorController::class, 'store'])
         ->name('empresa.select.store');
-    
-    Route::post('/cambiar-empresa', [EmpresaSelectorController::class, 'switch'])
-    ->middleware('auth')
-    ->name('empresa.switch');
 
+    Route::post('/cambiar-empresa', [EmpresaSelectorController::class, 'switch'])
+        ->middleware('auth')
+        ->name('empresa.switch');
 });
 
 // -------------------
@@ -39,6 +39,9 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     Route::get('export/usuarios', [ExportController::class, 'usuarios'])->name('export.usuarios');
     Route::get('export/auditoria', [ExportController::class, 'auditoria'])->name('export.auditoria');
     Route::get('export/equipos',   [ExportController::class, 'equipos'])->name('export.equipos');
+    Route::get('export/categorias', [ExportController::class, 'categorias'])->name('export.categorias')->middleware(['role:Administrador']);
+    Route::get('export/estados', [ExportController::class, 'estados'])->name('export.estados')->middleware(['role:Administrador']);
+    Route::get('export/atributos', [ExportController::class, 'atributos'])->name('export.atributos')->middleware(['role:Administrador']);
 
     // Perfil del usuario
     Route::get('/profile/actividad', [ProfileController::class, 'profileActivity'])->name('profile.activity');
@@ -62,7 +65,14 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         Route::resource('/equipos', EquipoController::class);
     });
 
-
+    // Configuración (solo para Administrador)
+    Route::prefix('admin/configuracion')->name('admin.configuracion.')
+        ->middleware(['role:Administrador'])
+        ->group(function () {
+            Route::get('/categorias',  [ConfiguracionController::class, 'categorias'])->name('categorias');
+            Route::get('/estados',     [ConfiguracionController::class, 'estados'])->name('estados');
+            Route::get('/atributos',   [ConfiguracionController::class, 'atributos'])->name('atributos');
+        });
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

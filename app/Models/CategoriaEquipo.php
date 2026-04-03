@@ -20,11 +20,11 @@ class CategoriaEquipo extends Model
 
     public function atributos()
     {
-        return $this->hasMany(AtributoEquipo::class, 'categoria_id');
+        return $this->hasMany(AtributoEquipo::class, 'categoria_id')->orderBy('orden');
     }
 
     public function equipos()
     {
-        return $this->hasMany(Equipo::class);
+        return $this->hasMany(Equipo::class, 'categoria_id');
     }
 }

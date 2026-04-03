@@ -2,11 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\AtributosExport;
 use App\Exports\UsuariosExport;
 use App\Exports\AuditoriaExport;
+use App\Exports\CategoriasExport;
 use App\Exports\EquiposExport;
+use App\Exports\EstadosExport;
+use App\Models\AtributoEquipo;
 use App\Models\Auditoria;
+use App\Models\CategoriaEquipo;
 use App\Models\Equipo;
+use App\Models\EstadoEquipo;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -193,5 +199,77 @@ class ExportController extends Controller
         $filename = 'auditoria_cerberus_' . now()->format('Ymd_His') . '.' . $format;
 
         return Excel::download(new AuditoriaExport($query), $filename);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Categorías  (solo Administrador — ver rutas)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function categorias(Request $request)
+    {
+        $format = $request->input('format', 'xlsx');
+
+        $query = CategoriaEquipo::withCount(['atributos', 'equipos'])
+            ->orderBy('nombre');
+
+        if ($request->search) {
+            $query->where(
+                fn($q) =>
+                $q->where('nombre',      'like', "%{$request->search}%")
+                    ->orWhere('descripcion', 'like', "%{$request->search}%")
+            );
+        }
+
+        if ($request->asignable !== null && $request->asignable !== '') {
+            $query->where('asignable', (bool) $request->asignable);
+        }
+
+        $filename = 'categorias_cerberus_' . now()->format('Ymd_His') . '.' . $format;
+        return Excel::download(new CategoriasExport($query), $filename);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Estados  (solo Administrador)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function estados(Request $request)
+    {
+        $format = $request->input('format', 'xlsx');
+
+        $query = EstadoEquipo::withCount('equipos')
+            ->orderBy('nombre');
+
+        if ($request->search) {
+            $query->where('nombre', 'like', "%{$request->search}%");
+        }
+
+        $filename = 'estados_cerberus_' . now()->format('Ymd_His') . '.' . $format;
+        return Excel::download(new EstadosExport($query), $filename);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Atributos  (solo Administrador)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function atributos(Request $request)
+    {
+        $format = $request->input('format', 'xlsx');
+
+        $query = AtributoEquipo::with('categoria')
+            ->withCount('valores')
+            ->orderBy('categoria_id')
+            ->orderBy('orden');
+
+        if ($request->search) {
+            $query->where('nombre', 'like', "%{$request->search}%");
+        }
+
+        if ($request->categoria_id) {
+            $query->where('categoria_id', $request->categoria_id);
+        }
+
+        if ($request->tipo) {
+            $query->where('tipo', $request->tipo);
+        }
+
+        $filename = 'atributos_cerberus_' . now()->format('Ymd_His') . '.' . $format;
+        return Excel::download(new AtributosExport($query), $filename);
     }
 }

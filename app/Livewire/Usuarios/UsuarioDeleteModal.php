@@ -39,10 +39,10 @@ class UsuarioDeleteModal extends Component
 
             $this->dispatch('userDeleted');
 
-            return redirect()->route('usuarios.index')->with('success', 'Usuario inactivado correctamente.');
+            return redirect()->route('admin.usuarios.index')->with('success', 'Usuario inactivado correctamente.');
         } catch (\Exception $e) {
             Log::error('Error inactivando usuario: ' . $e->getMessage());
-            return redirect()->route('usuarios.index')->with('error', 'Ocurrió un error al inactivar el usuario.');
+            return redirect()->route('admin.usuarios.index')->with('error', 'Ocurrió un error al inactivar el usuario.');
         }
     }
 

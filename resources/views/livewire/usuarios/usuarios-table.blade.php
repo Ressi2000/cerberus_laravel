@@ -4,6 +4,14 @@
     <livewire:usuarios.usuario-view-modal />
     <livewire:usuarios.usuario-delete-modal />
 
+    {{-- STAT CARDS --}}
+    <x-ui.stats-cards :items="[
+        ['title' => 'Activos', 'value' => $usuariosActivos ?? 0, 'icon' => 'check_circle'],
+        ['title' => 'Inactivos', 'value' => $usuariosInactivos ?? 0, 'icon' => 'cancel'],
+        ['title' => 'Admins', 'value' => $admins ?? 0, 'icon' => 'admin_panel_settings'],
+        ['title' => 'Analistas', 'value' => $analistas ?? 0, 'icon' => 'group'],
+    ]" />
+
     {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
     <x-table.crud-header
         title="Usuarios"

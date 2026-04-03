@@ -3,6 +3,7 @@
     'subtitle'    => null,
     'buttonLabel' => null,
     'buttonUrl'   => null,
+    'buttonEvent' => null,
 ])
 
 {{-- ── HEADER ───────────────────────────────────────────────────────────────── --}}
@@ -29,6 +30,18 @@
             <span class="material-icons text-base">add</span>
             {{ $buttonLabel }}
         </a>
+    @endif
+
+    {{-- Botón disparar evento (abre modal) --}}
+    @if ($buttonLabel && $buttonEvent)
+        <button wire:click="$dispatch('{{ $buttonEvent }}')"
+                class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
+                       bg-[#1E40AF] hover:bg-[#1E3A8A] text-white shadow-sm
+                       transition-all duration-150 flex-shrink-0
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/30">
+            <span class="material-icons text-base">add</span>
+            {{ $buttonLabel }}
+        </button>
     @endif
 </div>
 

@@ -100,6 +100,10 @@
         <x-ui.footer />
     </div>
 
+    {{-- ── Toast global de notificaciones ────────────────────────────────── --}}
+    {{-- Recibe eventos 'toast' desde cualquier componente Livewire del sistema --}}
+    <livewire:toast-notification />
+
     <script>
         // Activar transiciones sólo después de que Alpine esté listo
         document.addEventListener('alpine:initialized', function () {

@@ -1,5 +1,6 @@
 @props([
     'editUrl'     => null,
+    'editEvent'   => null,
     'model'       => null,
     'modelId'     => null,
     'viewEvent'   => null,
@@ -104,6 +105,22 @@
                         </a>
                     </li>
                 @endif
+            @endif
+
+            {{-- Editar por evento (modal) ← NUEVO --}}
+            @if($editEvent && $id)
+                <li>
+                    <button @click="close()"
+                        wire:click="$dispatch('{{ $editEvent }}', { id: {{ $id }} })"
+                        class="flex items-center gap-3 px-4 py-2.5 w-full text-left
+                               text-gray-600 dark:text-cerberus-light
+                               hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                               hover:text-amber-600 dark:hover:text-amber-400
+                               transition-colors duration-100">
+                        <span class="material-icons text-base text-amber-500">edit</span>
+                        Editar
+                    </button>
+                </li>
             @endif
 
             {{-- Separador antes de eliminar --}}
