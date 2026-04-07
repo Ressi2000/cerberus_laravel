@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditoriaController;
+use App\Http\Controllers\Asignaciones\AsignacionController;
 use App\Http\Controllers\Usuario\UsuarioController;
 use App\Http\Controllers\Auth\EmpresaSelectorController;
 use App\Http\Controllers\Configuracion\ConfiguracionController;
@@ -72,6 +73,24 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/categorias',  [ConfiguracionController::class, 'categorias'])->name('categorias');
             Route::get('/estados',     [ConfiguracionController::class, 'estados'])->name('estados');
             Route::get('/atributos',   [ConfiguracionController::class, 'atributos'])->name('atributos');
+        });
+
+    Route::prefix('admin/asignaciones')
+        ->name('admin.asignaciones.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+
+            // Vistas principales
+            Route::get('/',                              [AsignacionController::class, 'index'])->name('index');
+            Route::get('/crear',                         [AsignacionController::class, 'create'])->name('create');
+            Route::get('/historial/{usuario}',           [AsignacionController::class, 'historial'])->name('historial');
+            Route::get('/devolver/usuario/{usuario}',    [AsignacionController::class, 'devolverUsuario'])->name('devolver.usuario');
+            Route::get('/{asignacion}/devolver',         [AsignacionController::class, 'devolver'])->name('devolver');
+
+            // Planillas PDF
+            Route::get('/{asignacion}/planilla/asignacion', [AsignacionController::class, 'planillaAsignacion'])->name('planilla.asignacion');
+            Route::get('/{asignacion}/planilla/devolucion', [AsignacionController::class, 'planillaDevolucion'])->name('planilla.devolucion');
+            Route::get('/planilla/egreso/{usuario}',        [AsignacionController::class, 'planillaEgreso'])->name('planilla.egreso');
         });
 });
 

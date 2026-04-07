@@ -115,6 +115,22 @@ class User extends Authenticatable
         return $this->belongsTo(Empresa::class, 'empresa_activa_id');
     }
 
+    public function asignaciones()
+    {
+        return $this->hasMany(Asignacion::class, 'usuario_id');
+    }
+
+    // Items activos de todas sus asignaciones (para withCount en la tabla)
+    public function asignacionItemsActivos()
+    {
+        return $this->hasManyThrough(
+            AsignacionItem::class,
+            Asignacion::class,
+            'usuario_id',   // FK en asignaciones
+            'asignacion_id' // FK en asignacion_items
+        )->where('asignacion_items.devuelto', false);
+    }
+
     // Scope para filtrar usuarios visibles para el actor dado
     public function scopeVisiblePara(Builder $query, User $actor): Builder
     {

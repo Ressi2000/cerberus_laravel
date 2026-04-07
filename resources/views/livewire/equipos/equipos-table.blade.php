@@ -349,8 +349,7 @@
                             </td>
 
                             <td x-show="columnas.estado" class="px-4 py-3">
-                                <span class="px-2 py-0.5 text-xs rounded-md
-                                             bg-cerberus-primary/20 text-cerberus-accent">
+                                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset bg-teal-400/10 text-teal-400 ring-teal-500/20">
                                     {{ $equipo->estado->nombre }}
                                 </span>
                             </td>

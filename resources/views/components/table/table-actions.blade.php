@@ -1,3 +1,44 @@
+{{--
+    components/table/table-actions.blade.php
+
+    Dropdown de acciones para filas de tabla.
+    Usa posición fija calculada por JS para evitar clip de overflow.
+
+    Props estándar:
+        :model        → Eloquent model (infiere el ID)
+        :modelId      → ID explícito alternativo
+        viewEvent     → evento Livewire para "Ver detalle"
+        editUrl       → URL para "Editar"
+        editEvent     → evento Livewire alternativo a editUrl
+        deleteEvent   → evento Livewire para "Eliminar"
+        deleteLabel   → texto del botón eliminar (default: 'Eliminar')
+        :policy       → modelo para @can (null = sin verificación)
+
+    Slot $acciones:
+        Permite inyectar ítems adicionales DESPUÉS de los estándar.
+        Cada ítem debe ser un <li> con la misma estructura de clases.
+        El método close() de Alpine está disponible en el scope del slot.
+
+    Ejemplo con acciones extra:
+        <x-table.table-actions :model="$usuario" viewEvent="openView">
+            <x-slot name="acciones">
+                <li>
+                    <a href="{{ route('admin.asignaciones.historial', $usuario) }}"
+                       wire:navigate
+                       @click="close()"
+                       class="flex items-center gap-3 px-4 py-2.5 w-full
+                              text-gray-600 dark:text-cerberus-light
+                              hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                              hover:text-purple-600 dark:hover:text-purple-400
+                              transition-colors duration-100">
+                        <span class="material-icons text-base text-purple-500">history</span>
+                        Historial
+                    </a>
+                </li>
+            </x-slot>
+        </x-table.table-actions>
+--}}
+
 @props([
     'editUrl'     => null,
     'editEvent'   => null,
@@ -15,15 +56,11 @@
     $rowKey = $rowId ?? $id;
 @endphp
 
-{{--
-    El dropdown usa posición fija calculada por JS para que nunca
-    quede recortado por el overflow de la tabla.
---}}
 <div class="relative flex justify-center"
      x-data="tableActions()"
      @click.outside="close()">
 
-    {{-- Botón de tres puntos --}}
+    {{-- ── Botón de tres puntos ───────────────────────────────────────────── --}}
     <button @click.stop="toggle($el)"
         class="flex items-center justify-center w-8 h-8 rounded-lg
                text-gray-400 dark:text-cerberus-steel
@@ -34,10 +71,7 @@
         <span class="material-icons text-lg">more_vert</span>
     </button>
 
-    {{--
-        Dropdown con posición fija (via teleport o posicionamiento manual).
-        Se usa posición absoluta con z-[9999] para evitar clip del overflow-x de la tabla.
-    --}}
+    {{-- ── Dropdown con posición fija ─────────────────────────────────────── --}}
     <div x-show="open"
          x-transition:enter="transition ease-out duration-100"
          x-transition:enter-start="opacity-0 scale-95"
@@ -45,7 +79,7 @@
          x-transition:leave="transition ease-in duration-75"
          x-transition:leave-start="opacity-100 scale-100"
          x-transition:leave-end="opacity-0 scale-95"
-         class="fixed z-[9999] w-44
+         class="fixed z-[9999] w-52
                 bg-white dark:bg-cerberus-mid
                 border border-gray-100 dark:border-cerberus-steel/60
                 rounded-xl shadow-xl dark:shadow-black/30
@@ -74,14 +108,14 @@
                 </li>
             @endif
 
-            {{-- Editar --}}
+            {{-- Editar (por URL) --}}
             @if($editUrl)
                 @if($policy)
                     @can('update', $policy)
                         <li>
                             <a href="{{ $editUrl }}"
                                @click="close()"
-                               class="flex items-center gap-3 px-4 py-2.5
+                               class="flex items-center gap-3 px-4 py-2.5 w-full
                                       text-gray-600 dark:text-cerberus-light
                                       hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
                                       hover:text-amber-600 dark:hover:text-amber-400
@@ -95,7 +129,7 @@
                     <li>
                         <a href="{{ $editUrl }}"
                            @click="close()"
-                           class="flex items-center gap-3 px-4 py-2.5
+                           class="flex items-center gap-3 px-4 py-2.5 w-full
                                   text-gray-600 dark:text-cerberus-light
                                   hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
                                   hover:text-amber-600 dark:hover:text-amber-400
@@ -107,10 +141,11 @@
                 @endif
             @endif
 
-            {{-- Editar por evento (modal) ← NUEVO --}}
+            {{-- Editar (por evento) --}}
             @if($editEvent && $id)
                 <li>
-                    <button @click="close()"
+                    <button
+                        @click="close()"
                         wire:click="$dispatch('{{ $editEvent }}', { id: {{ $id }} })"
                         class="flex items-center gap-3 px-4 py-2.5 w-full text-left
                                text-gray-600 dark:text-cerberus-light
@@ -121,6 +156,18 @@
                         Editar
                     </button>
                 </li>
+            @endif
+
+            {{-- ── SLOT: acciones personalizadas ───────────────────────────── --}}
+            {{-- Se renderizan ANTES del separador y del eliminar, para que     --}}
+            {{-- el eliminar siempre quede al final como acción destructiva.    --}}
+            @if(isset($acciones))
+                @if($viewEvent || $editUrl || $editEvent)
+                    <li>
+                        <div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div>
+                    </li>
+                @endif
+                {{ $acciones }}
             @endif
 
             {{-- Separador antes de eliminar --}}
@@ -181,12 +228,10 @@ function tableActions() {
                 return
             }
 
-            // Calcular posición relativa al viewport
             const rect = triggerEl.getBoundingClientRect()
-            const dropdownH = 160  // altura aproximada del dropdown
-            const dropdownW = 176  // w-44 = 11rem = 176px
+            const dropdownH = 200
+            const dropdownW = 208  // w-52
 
-            // Abrir hacia abajo o hacia arriba según espacio disponible
             const spaceBelow = window.innerHeight - rect.bottom
             const openUp = spaceBelow < dropdownH + 16
 

@@ -12,7 +12,7 @@ class AuditoriaController extends Controller
     public function index(Request $request)
     {
 
-        return view('admin.auditoria.index', [
+        return view('auditoria.index', [
             // 'usuarios' => User::orderBy('name')->pluck('name', 'id'),
             // 'acciones' => Auditoria::select('accion')->distinct()->pluck('accion'),
             // 'tablas' => Auditoria::select('tabla')->distinct()->pluck('tabla'),

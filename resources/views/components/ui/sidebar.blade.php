@@ -260,6 +260,16 @@
             @include('components.ui._sidebar-tooltip', ['label' => 'Auditoría'])
         </a>
 
+        @php $asigOpen = $active('admin.asignaciones.*'); @endphp
+
+        <a href="{{ route('admin.asignaciones.index') }}" class="{{ $li }} {{ $asigOpen ? $on : $off }}">
+            <span
+                class="material-icons text-xl flex-shrink-0
+                  {{ $asigOpen ? $ion : $ioff }}">assignment</span>
+            <span class="sidebar-label text-sm font-medium whitespace-nowrap">Asignaciones</span>
+            @include('components.ui._sidebar-tooltip', ['label' => 'Asignaciones'])
+        </a>
+
         {{-- ── CONFIGURACIÓN (colapsable, solo Administrador) ─────────────── --}}
         @role('Administrador')
             @php $cfgOpen = $active('admin.configuracion.*'); @endphp
