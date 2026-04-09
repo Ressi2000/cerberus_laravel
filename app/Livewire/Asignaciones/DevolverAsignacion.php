@@ -10,46 +10,31 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 
 /**
- * DevolverAsignacion
+ * DevolverAsignacion — v3
  *
- * Gestiona la devolución total o parcial de una asignación.
+ * ── CAMBIOS v3 ──────────────────────────────────────────────────────────────
  *
- * Flujo:
- *   1. Recibe el ID de la asignación vía mount() (route model binding).
- *   2. Muestra todos los items activos (no devueltos) con checkbox individual.
- *   3. El analista selecciona cuáles devuelve y puede agregar observaciones por item.
- *   4. Al confirmar, se ejecuta una transacción que:
- *        · Llama a AsignacionItem::registrarDevolucion() por cada item seleccionado
- *        · registrarDevolucion() actualiza el equipo a "Disponible" y recalcula estado
- *        · La auditoría se registra automáticamente via trait Auditable
+ * Selección granular: muestra TODOS los items activos (principales Y periféricos)
+ * cada uno con su propio checkbox. El analista elige exactamente qué devuelve.
  *
- * Decisión de diseño: página dedicada en lugar de modal
- *   Los items con observaciones individuales y checkboxes necesitan espacio.
- *   Un modal sería demasiado estrecho y frágil para esta interacción.
+ * Aviso de huérfanos: si se devuelve un principal con periféricos activos que
+ * NO se seleccionaron, la UI avisa que esos periféricos serán promovidos
+ * automáticamente a principales (Opción A).
  *
- * La lógica de negocio real (devolver equipo, recalcular estado)
- * vive en AsignacionItem::registrarDevolucion() — no aquí.
- * Este componente solo orquesta la UI y valida la selección.
+ * Sin cascada automática: registrarDevolucion() en el modelo ya no devuelve
+ * hijos automáticamente. Cada item se gestiona de forma independiente.
+ * ────────────────────────────────────────────────────────────────────────────
  */
 class DevolverAsignacion extends Component
 {
-    // ── Asignación en curso ───────────────────────────────────────────────────
     public int $asignacionId;
 
-    // ── Estado del formulario ─────────────────────────────────────────────────
-    // IDs de items que el analista marcó para devolver
-    public array $seleccionados = [];
-
-    // Observaciones individuales por item_id
-    // Estructura: [ item_id => 'texto observación' ]
-    public array $observaciones = [];
-
-    // Marcar/desmarcar todos
-    public bool $seleccionarTodos = false;
+    public array $seleccionados    = [];
+    public array $observaciones    = [];
+    public bool  $seleccionarTodos = false;
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Mount
-    // ─────────────────────────────────────────────────────────────────────────
+
     public function mount(Asignacion $asignacion): void
     {
         $this->authorize('devolver', $asignacion);
@@ -62,96 +47,110 @@ class DevolverAsignacion extends Component
 
         $this->asignacionId = $asignacion->id;
 
-        // Inicializar observaciones vacías para cada item activo
-        foreach ($asignacion->itemsActivos as $item) {
+        foreach ($this->todosLosItemsActivos as $item) {
             $this->observaciones[$item->id] = '';
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Computed Properties
     // ─────────────────────────────────────────────────────────────────────────
 
     #[Computed]
     public function asignacion(): Asignacion
     {
         return Asignacion::with([
-            'usuario.cargo',
-            'ubicacionDestino',
-            'analista',
-            'empresa',
-            'itemsActivos.equipo.categoria',
-            'itemsActivos.equipo.estado',
+            'empresa', 'analista',
+            'usuario.cargo', 'usuario.ubicacion',
+            'areaEmpresa', 'areaDepartamento', 'areaResponsable.cargo',
         ])->findOrFail($this->asignacionId);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Selección de items
+    /**
+     * Todos los items activos (principales Y periféricos), ordenados para
+     * que cada periférico aparezca inmediatamente después de su padre.
+     */
+    #[Computed]
+    public function todosLosItemsActivos()
+    {
+        return AsignacionItem::with([
+            'equipo.categoria',
+            'padre.equipo',
+            'hijosActivos.equipo.categoria',
+        ])
+            ->where('asignacion_id', $this->asignacionId)
+            ->where('devuelto', false)
+            ->orderByRaw('COALESCE(equipo_padre_id, id)')
+            ->orderBy('equipo_padre_id')
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * Principales seleccionados que tienen periféricos activos NO seleccionados.
+     * Estos periféricos se promoverán a principales al confirmar (Opción A).
+     */
+    #[Computed]
+    public function principalesConHuerfanos()
+    {
+        $selIds = collect($this->seleccionados)->map(fn ($id) => (int) $id);
+
+        return $this->todosLosItemsActivos
+            ->whereNull('equipo_padre_id')
+            ->filter(fn ($item) => $selIds->contains($item->id))
+            ->filter(fn ($item) =>
+                $item->hijosActivos->isNotEmpty() &&
+                $item->hijosActivos->contains(fn ($hijo) => ! $selIds->contains($hijo->id))
+            );
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
 
     public function updatedSeleccionarTodos(bool $value): void
     {
-        if ($value) {
-            $this->seleccionados = $this->asignacion
-                ->itemsActivos
-                ->pluck('id')
-                ->map(fn($id) => (string) $id)
-                ->toArray();
-        } else {
-            $this->seleccionados = [];
-        }
+        $this->seleccionados = $value
+            ? $this->todosLosItemsActivos->pluck('id')->map(fn ($id) => (string) $id)->toArray()
+            : [];
     }
 
-    /**
-     * Cuando cambia la selección individual, sincroniza el estado del "todos".
-     */
     public function updatedSeleccionados(): void
     {
-        $totalActivos = $this->asignacion->itemsActivos->count();
-        $this->seleccionarTodos = count($this->seleccionados) === $totalActivos;
+        $total = $this->todosLosItemsActivos->count();
+        $this->seleccionarTodos = $total > 0 && count($this->seleccionados) === $total;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Confirmar devolución
     // ─────────────────────────────────────────────────────────────────────────
 
     public function confirmar(): void
     {
         $this->authorize('devolver', $this->asignacion);
 
-        // Validar que al menos un item esté seleccionado
         if (empty($this->seleccionados)) {
             $this->addError('seleccionados', 'Debes seleccionar al menos un equipo para devolver.');
             return;
         }
 
-        // Validar observaciones (opcionales, pero si se escriben no deben superar 1000 chars)
         $this->validate(
             collect($this->observaciones)->mapWithKeys(
-                fn($v, $k) => ["observaciones.{$k}" => 'nullable|string|max:1000']
+                fn ($v, $k) => ["observaciones.{$k}" => 'nullable|string|max:1000']
             )->toArray(),
             collect($this->observaciones)->mapWithKeys(
-                fn($v, $k) => ["observaciones.{$k}.max" => 'La observación no puede superar 1000 caracteres.']
+                fn ($v, $k) => ["observaciones.{$k}.max" => 'La observación no puede superar 1000 caracteres.']
             )->toArray()
         );
 
         try {
             DB::transaction(function () {
-                $itemsSeleccionados = AsignacionItem::whereIn('id', $this->seleccionados)
+                $items = AsignacionItem::whereIn('id', $this->seleccionados)
                     ->where('asignacion_id', $this->asignacionId)
                     ->where('devuelto', false)
                     ->get();
 
-                foreach ($itemsSeleccionados as $item) {
-                    $obs = $this->observaciones[$item->id] ?? null;
-                    // Toda la lógica vive en el modelo: libera equipo + recalcula estado asignación
-                    $item->registrarDevolucion($obs ?: null);
+                foreach ($items as $item) {
+                    $item->registrarDevolucion($this->observaciones[$item->id] ?: null);
                 }
             });
 
-            $cantDevueltos = count($this->seleccionados);
-            session()->flash('success', "Devolución registrada correctamente. {$cantDevueltos} equipo(s) liberado(s).");
-
+            $cant = count($this->seleccionados);
+            session()->flash('success', "Devolución registrada correctamente. {$cant} equipo(s) liberado(s).");
             $this->redirect(route('admin.asignaciones.index'), navigate: true);
 
         } catch (\Exception $e) {
@@ -161,8 +160,7 @@ class DevolverAsignacion extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Render
-    // ─────────────────────────────────────────────────────────────────────────
+
     public function render()
     {
         return view('livewire.asignaciones.devolver-asignacion');

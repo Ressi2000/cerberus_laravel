@@ -10,7 +10,7 @@
             <div class="relative w-full max-w-lg max-h-[85vh] overflow-y-auto
                         bg-white dark:bg-cerberus-mid
                         border border-gray-200 dark:border-cerberus-steel
-                        rounded-2xl shadow-2xl animate-fade-in">
+                        rounded-2xl shadow-2xl">
 
                 {{-- Cabecera --}}
                 <div class="sticky top-0 z-10 flex items-center justify-between px-6 py-4

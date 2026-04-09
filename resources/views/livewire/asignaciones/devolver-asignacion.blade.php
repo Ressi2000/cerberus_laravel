@@ -1,25 +1,28 @@
 {{--
-    resources/views/livewire/asignaciones/devolver-asignacion.blade.php
+    devolver-asignacion.blade.php — v3
+    ─────────────────────────────────────────────────────────────────────────
+    Muestra TODOS los items activos (principales y periféricos) con
+    checkbox individual. Cada periférico aparece indentado debajo de
+    su equipo padre.
 
-    Formulario de devolución total o parcial.
-    Lista de checkboxes: uno por equipo activo.
-    Cada item puede llevar una observación individual opcional.
-    Alpine maneja el toggle del textarea de observación para no saturar el DOM.
+    Aviso de huérfanos: si el analista selecciona un principal cuyo(s)
+    periférico(s) no están seleccionados, aparece un banner explicando
+    que esos periféricos serán promovidos a principales automáticamente.
+    ─────────────────────────────────────────────────────────────────────────
 --}}
 <div class="space-y-6">
 
-    {{-- ── ERROR GENERAL ───────────────────────────────────────────────────── --}}
+    {{-- ── Error general ───────────────────────────────────────────────────── --}}
     @error('general')
         <div class="flex items-center gap-2 px-4 py-3 rounded-lg
-                    bg-red-50 dark:bg-red-900/30
-                    border border-red-200 dark:border-red-700/50
+                    bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50
                     text-red-700 dark:text-red-300 text-sm">
             <span class="material-icons text-base flex-shrink-0">error_outline</span>
             {{ $message }}
         </div>
     @enderror
 
-    {{-- ── CABECERA DE LA ASIGNACIÓN ───────────────────────────────────────── --}}
+    {{-- ── Cabecera de la asignación ──────────────────────────────────────── --}}
     <div class="bg-white dark:bg-cerberus-mid
                 border border-gray-200 dark:border-cerberus-steel
                 rounded-xl p-6">
@@ -31,25 +34,39 @@
 
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
 
+            {{-- Receptor --}}
             <div>
                 <p class="text-xs text-gray-500 dark:text-cerberus-accent mb-0.5">Receptor</p>
-                <div class="flex items-center gap-1.5">
-                    <span class="material-icons text-sm text-cerberus-accent">
-                        {{ $this->asignacion->usuario_id ? 'person' : 'location_on' }}
-                    </span>
-                    <span class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ $this->asignacion->receptorNombre() }}
-                    </span>
-                </div>
-                @if ($this->asignacion->usuario?->cargo)
+                @if ($this->asignacion->usuario_id)
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-icons text-sm text-cerberus-accent">person</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ $this->asignacion->usuario?->name ?? '—' }}
+                        </span>
+                    </div>
+                    @if ($this->asignacion->usuario?->cargo)
+                        <p class="text-xs text-gray-400 dark:text-cerberus-steel ml-5 mt-0.5">
+                            {{ $this->asignacion->usuario->cargo->nombre }}
+                        </p>
+                    @endif
+                @else
+                    <div class="flex items-center gap-1.5">
+                        <span class="material-icons text-sm text-cerberus-accent">corporate_fare</span>
+                        <span class="text-sm font-medium text-gray-900 dark:text-white">
+                            {{ $this->asignacion->areaDepartamento?->nombre ?? '—' }}
+                        </span>
+                    </div>
                     <p class="text-xs text-gray-400 dark:text-cerberus-steel ml-5 mt-0.5">
-                        {{ $this->asignacion->usuario->cargo->nombre }}
+                        {{ $this->asignacion->areaEmpresa?->nombre ?? '—' }}
+                        @if ($this->asignacion->areaResponsable)
+                            · Resp: {{ $this->asignacion->areaResponsable->name }}
+                        @endif
                     </p>
                 @endif
             </div>
 
             <div>
-                <p class="text-xs text-gray-500 dark:text-cerberus-accent mb-0.5">Estado actual</p>
+                <p class="text-xs text-gray-500 dark:text-cerberus-accent mb-0.5">Estado</p>
                 <x-asignaciones.badge-estado :estado="$this->asignacion->estado" />
             </div>
 
@@ -70,155 +87,206 @@
         </div>
     </div>
 
-    {{-- ── LISTA DE EQUIPOS ACTIVOS ─────────────────────────────────────────── --}}
+    {{-- ── Aviso de huérfanos (aparece dinámicamente) ──────────────────────── --}}
+    @if ($this->principalesConHuerfanos->isNotEmpty())
+        <div class="flex items-start gap-3 px-4 py-3 rounded-xl
+                    bg-amber-50 dark:bg-amber-900/20
+                    border border-amber-300 dark:border-amber-600/50">
+            <span class="material-icons text-amber-500 dark:text-amber-400 flex-shrink-0 mt-0.5">info</span>
+            <div>
+                <p class="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">
+                    Periféricos que quedarán libres
+                </p>
+                <p class="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
+                    Los siguientes equipos principales que vas a devolver tienen periféricos
+                    asociados que <strong>no están seleccionados</strong>. Al confirmar, esos
+                    periféricos se convertirán en equipos principales y seguirán asignados.
+                    Puedes seleccionarlos ahora si también quieres devolverlos.
+                </p>
+                <ul class="mt-2 space-y-0.5">
+                    @foreach ($this->principalesConHuerfanos as $principal)
+                        @foreach ($principal->hijosActivos as $hijo)
+                            @if (! in_array((string) $hijo->id, $seleccionados))
+                                <li class="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                                    <span class="material-icons text-xs">subdirectory_arrow_right</span>
+                                    <strong>{{ $hijo->equipo?->codigo_interno ?? '—' }}</strong>
+                                    · {{ $hijo->equipo?->categoria?->nombre ?? '—' }}
+                                    @if ($hijo->equipo?->serial)
+                                        · S/N {{ $hijo->equipo->serial }}
+                                    @endif
+                                    <span class="text-amber-500/70">(periférico de {{ $principal->equipo?->codigo_interno ?? '—' }})</span>
+                                </li>
+                            @endif
+                        @endforeach
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
+    {{-- ── Lista de equipos activos ────────────────────────────────────────── --}}
     <div class="bg-white dark:bg-cerberus-mid
                 border border-gray-200 dark:border-cerberus-steel
                 rounded-xl overflow-hidden">
 
-        {{-- Cabecera de sección con "seleccionar todos" --}}
+        {{-- Cabecera con seleccionar todos y contador --}}
         <div class="flex items-center justify-between px-6 py-4
                     border-b border-gray-100 dark:border-cerberus-steel/50">
-
-            <div class="flex items-center gap-3">
-                <label class="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                        type="checkbox"
-                        wire:model.live="seleccionarTodos"
-                        class="w-4 h-4 rounded border-gray-300 dark:border-cerberus-steel
-                               text-cerberus-primary bg-white dark:bg-cerberus-dark
-                               focus:ring-cerberus-primary/30 transition"
-                    />
-                    <span class="text-sm font-medium text-gray-700 dark:text-cerberus-light">
-                        Seleccionar todos
-                    </span>
-                </label>
-            </div>
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox"
+                       wire:model.live="seleccionarTodos"
+                       class="w-4 h-4 rounded border-gray-300 dark:border-cerberus-steel
+                              text-cerberus-primary bg-white dark:bg-cerberus-dark
+                              focus:ring-cerberus-primary/30 transition" />
+                <span class="text-sm font-medium text-gray-700 dark:text-cerberus-light">
+                    Seleccionar todos
+                </span>
+            </label>
 
             <span class="text-xs text-gray-500 dark:text-cerberus-accent">
-                {{ count($seleccionados) }} de {{ $this->asignacion->itemsActivos->count() }} seleccionado(s)
+                {{ count($seleccionados) }} de {{ $this->todosLosItemsActivos->count() }} seleccionado(s)
+                <span class="text-gray-300 dark:text-cerberus-steel/40 mx-1">·</span>
+                {{ $this->todosLosItemsActivos->whereNull('equipo_padre_id')->count() }} principal(es),
+                {{ $this->todosLosItemsActivos->whereNotNull('equipo_padre_id')->count() }} periférico(s)
             </span>
         </div>
 
         @error('seleccionados')
-            <div class="px-6 py-2 bg-red-50 dark:bg-red-900/20
-                        border-b border-red-200 dark:border-red-700/30">
+            <div class="px-6 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-700/30">
                 <p class="text-xs text-red-600 dark:text-red-400 flex items-center gap-1">
-                    <span class="material-icons text-xs">error_outline</span>
-                    {{ $message }}
+                    <span class="material-icons text-xs">error_outline</span> {{ $message }}
                 </p>
             </div>
         @enderror
 
-        {{-- Items --}}
+        {{-- Items: principal + periféricos inmediatamente después --}}
         <div class="divide-y divide-gray-100 dark:divide-cerberus-steel/30">
 
-            @forelse ($this->asignacion->itemsActivos as $item)
+            @forelse ($this->todosLosItemsActivos as $item)
 
-                <div
-                    wire:key="item-{{ $item->id }}"
-                    x-data="{ showObs: false }"
-                    class="px-6 py-4 transition-colors duration-150
-                           {{ in_array((string) $item->id, $seleccionados)
-                               ? 'bg-cerberus-primary/5 dark:bg-cerberus-primary/10'
-                               : 'hover:bg-gray-50 dark:hover:bg-cerberus-steel/5' }}"
-                >
+                @php
+                    $esPeriférico      = $item->equipo_padre_id !== null;
+                    $estaSeleccionado  = in_array((string) $item->id, $seleccionados);
+                    $tieneHuerfanos    = ! $esPeriférico &&
+                                        $estaSeleccionado &&
+                                        $item->hijosActivos->isNotEmpty() &&
+                                        $item->hijosActivos->contains(
+                                            fn ($h) => ! in_array((string) $h->id, $seleccionados)
+                                        );
+                @endphp
 
-                    <div class="flex items-start gap-4">
+                <div wire:key="item-{{ $item->id }}"
+                     x-data="{ showObs: false }"
+                     class="transition-colors duration-150
+                            {{ $estaSeleccionado
+                                ? 'bg-cerberus-primary/5 dark:bg-cerberus-primary/10'
+                                : '' }}
+                            {{ $esPeriférico
+                                ? 'pl-10 border-l-2 border-cerberus-primary/20 dark:border-cerberus-primary/30'
+                                : '' }}">
+
+                    <div class="flex items-start gap-4 px-6 py-4">
 
                         {{-- Checkbox --}}
-                        <div class="pt-0.5">
-                            <input
-                                type="checkbox"
-                                wire:model.live="seleccionados"
-                                value="{{ $item->id }}"
-                                id="item-{{ $item->id }}"
-                                class="w-4 h-4 rounded border-gray-300 dark:border-cerberus-steel
-                                       text-cerberus-primary bg-white dark:bg-cerberus-dark
-                                       focus:ring-cerberus-primary/30 transition"
-                            />
+                        <div class="pt-0.5 flex-shrink-0">
+                            <input type="checkbox"
+                                   value="{{ $item->id }}"
+                                   wire:model.live="seleccionados"
+                                   class="w-4 h-4 rounded border-gray-300 dark:border-cerberus-steel
+                                          text-cerberus-primary bg-white dark:bg-cerberus-dark
+                                          focus:ring-cerberus-primary/30 transition" />
                         </div>
 
                         {{-- Datos del equipo --}}
-                        <label for="item-{{ $item->id }}" class="flex-1 cursor-pointer min-w-0">
-                            <div class="flex items-start justify-between gap-3">
+                        <div class="flex-1 min-w-0">
 
+                            <div class="flex items-start justify-between gap-2">
                                 <div class="min-w-0">
-                                    <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+
+                                    {{-- Indicador de periférico --}}
+                                    @if ($esPeriférico)
+                                        <p class="text-xs text-cerberus-primary/60 dark:text-cerberus-accent/60
+                                                   flex items-center gap-1 mb-0.5">
+                                            <span class="material-icons text-xs">subdirectory_arrow_right</span>
+                                            Periférico de
+                                            <strong>{{ $item->padre?->equipo?->codigo_interno ?? '—' }}</strong>
+                                        </p>
+                                    @endif
+
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
                                         {{ $item->equipo?->codigo_interno ?? '—' }}
+                                        <span class="font-normal text-gray-500 dark:text-cerberus-steel">
+                                            · {{ $item->equipo?->categoria?->nombre ?? '—' }}
+                                        </span>
                                     </p>
-                                    <p class="text-xs text-gray-500 dark:text-cerberus-accent mt-0.5 truncate">
-                                        {{ $item->equipo?->categoria?->nombre ?? '—' }}
+
+                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                                        {{ $item->equipo?->nombre_maquina ?? '—' }}
                                         @if ($item->equipo?->serial)
                                             · S/N: {{ $item->equipo->serial }}
                                         @endif
-                                        @if ($item->equipo?->nombre_maquina)
-                                            · {{ $item->equipo->nombre_maquina }}
-                                        @endif
                                     </p>
+
+                                    {{-- Badge "quedarán libres" si es principal seleccionado con huérfanos --}}
+                                    @if ($tieneHuerfanos)
+                                        <p class="text-xs text-amber-600 dark:text-amber-400 mt-1
+                                                   flex items-center gap-1">
+                                            <span class="material-icons text-xs">warning_amber</span>
+                                            Sus periféricos no seleccionados se promoverán a principales
+                                        </p>
+                                    @endif
+
+                                    {{-- Si es principal activo, mostrar sus periféricos como referencia --}}
+                                    @if (! $esPeriférico && $item->hijosActivos->isNotEmpty())
+                                        <div class="mt-1.5 space-y-0.5">
+                                            @foreach ($item->hijosActivos as $hijo)
+                                                <p class="text-xs text-gray-400 dark:text-cerberus-steel/70
+                                                           flex items-center gap-1">
+                                                    <span class="material-icons text-xs">subdirectory_arrow_right</span>
+                                                    {{ $hijo->equipo?->codigo_interno ?? '—' }}
+                                                    ({{ $hijo->equipo?->categoria?->nombre ?? '—' }})
+                                                    @if (in_array((string) $hijo->id, $seleccionados))
+                                                        <span class="text-emerald-500 dark:text-emerald-400
+                                                                      text-xs flex items-center gap-0.5">
+                                                            <span class="material-icons text-xs">check</span>
+                                                            seleccionado
+                                                        </span>
+                                                    @endif
+                                                </p>
+                                            @endforeach
+                                        </div>
+                                    @endif
                                 </div>
 
-                                {{-- Estado del equipo --}}
-                                <span class="flex-shrink-0 inline-flex items-center gap-1
-                                             px-2 py-0.5 text-xs rounded-full
-                                             bg-emerald-100 dark:bg-emerald-900/30
-                                             text-emerald-700 dark:text-emerald-400
-                                             border border-emerald-200 dark:border-emerald-700/40">
-                                    <span class="material-icons text-xs">check_circle</span>
-                                    {{ $item->equipo?->estado?->nombre ?? 'Asignado' }}
-                                </span>
-
+                                {{-- Toggle nota --}}
+                                <button type="button"
+                                        @click="showObs = !showObs"
+                                        class="flex-shrink-0 text-xs text-cerberus-primary dark:text-cerberus-accent
+                                               hover:underline transition">
+                                    <span x-text="showObs ? 'Ocultar nota' : '+ Nota'"></span>
+                                </button>
                             </div>
-                        </label>
 
-                    </div>
+                            {{-- Textarea observación --}}
+                            <div x-show="showObs" x-collapse class="mt-3">
+                                <textarea wire:model="observaciones.{{ $item->id }}"
+                                          rows="2"
+                                          placeholder="Estado físico, motivo, observaciones..."
+                                          class="w-full text-sm rounded-lg px-3 py-2
+                                                 bg-gray-50 dark:bg-cerberus-dark
+                                                 border border-gray-200 dark:border-cerberus-steel/60
+                                                 text-gray-800 dark:text-white
+                                                 placeholder-gray-400 dark:placeholder-cerberus-steel
+                                                 focus:border-cerberus-primary focus:ring-1 focus:ring-cerberus-primary/30
+                                                 resize-none transition">
+                                </textarea>
+                                @error("observaciones.{$item->id}")
+                                    <p class="text-xs text-red-500 dark:text-red-400 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
 
-                    {{-- Toggle observación individual --}}
-                    <div class="ml-8 mt-2">
-                        <button
-                            type="button"
-                            @click="showObs = !showObs"
-                            class="flex items-center gap-1 text-xs
-                                   text-gray-400 dark:text-cerberus-steel
-                                   hover:text-cerberus-primary dark:hover:text-cerberus-accent
-                                   transition-colors duration-150">
-                            <span class="material-icons text-xs"
-                                  :class="showObs ? 'rotate-90' : ''"
-                                  style="transition: transform 150ms ease">
-                                chevron_right
-                            </span>
-                            <span x-text="showObs ? 'Ocultar observación' : 'Agregar observación'"></span>
-                        </button>
-
-                        <div
-                            x-show="showObs"
-                            x-transition:enter="transition ease-out duration-150"
-                            x-transition:enter-start="opacity-0 -translate-y-1"
-                            x-transition:enter-end="opacity-100 translate-y-0"
-                            x-transition:leave="transition ease-in duration-100"
-                            x-transition:leave-start="opacity-100 translate-y-0"
-                            x-transition:leave-end="opacity-0 -translate-y-1"
-                            class="mt-2"
-                            style="display: none"
-                        >
-                            <textarea
-                                wire:model="observaciones.{{ $item->id }}"
-                                placeholder="Observaciones de la devolución (opcional)..."
-                                rows="2"
-                                class="w-full text-sm bg-white dark:bg-cerberus-dark
-                                       border border-gray-200 dark:border-cerberus-steel/60
-                                       text-gray-900 dark:text-white
-                                       placeholder-gray-400 dark:placeholder-cerberus-accent/50
-                                       rounded-lg px-3 py-2
-                                       focus:outline-none focus:ring-1
-                                       focus:border-cerberus-primary focus:ring-cerberus-primary/30
-                                       transition resize-none"
-                            ></textarea>
-                            @error("observaciones.{$item->id}")
-                                <p class="text-xs text-red-500 dark:text-red-400 mt-1">{{ $message }}</p>
-                            @enderror
                         </div>
                     </div>
-
                 </div>
 
             @empty
@@ -231,19 +299,18 @@
         </div>
     </div>
 
-    {{-- ── BOTONES DE ACCIÓN ────────────────────────────────────────────────── --}}
+    {{-- ── Barra de acciones ────────────────────────────────────────────────── --}}
     <div class="flex items-center justify-between gap-4
                 bg-white dark:bg-cerberus-mid
                 border border-gray-200 dark:border-cerberus-steel
                 rounded-xl px-6 py-4">
 
-        {{-- Resumen de lo que se va a devolver --}}
         <div class="text-sm text-gray-600 dark:text-cerberus-light">
             @if (count($seleccionados) > 0)
                 <span class="font-medium text-gray-900 dark:text-white">
                     {{ count($seleccionados) }}
                 </span>
-                equipo(s) pasarán a estado
+                equipo(s) pasarán a
                 <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded
                              bg-emerald-100 dark:bg-emerald-900/30
                              text-emerald-700 dark:text-emerald-400 text-xs font-medium">
@@ -251,52 +318,39 @@
                     Disponible
                 </span>
             @else
-                <span class="text-gray-400 dark:text-cerberus-steel">
-                    Ningún equipo seleccionado
-                </span>
+                <span class="text-gray-400 dark:text-cerberus-steel">Ningún equipo seleccionado</span>
             @endif
         </div>
 
         <div class="flex items-center gap-3">
 
-            {{-- Cancelar --}}
             <a href="{{ route('admin.asignaciones.index') }}"
                wire:navigate
                class="px-4 py-2 rounded-lg text-sm
-                      bg-gray-100 dark:bg-cerberus-dark
-                      text-gray-700 dark:text-cerberus-light
+                      bg-gray-100 dark:bg-cerberus-dark text-gray-700 dark:text-cerberus-light
                       hover:bg-gray-200 dark:hover:bg-cerberus-steel/40
-                      border border-gray-200 dark:border-cerberus-steel/40
-                      transition-colors duration-150">
+                      border border-gray-200 dark:border-cerberus-steel/40 transition">
                 Cancelar
             </a>
 
-            {{-- Confirmar devolución --}}
-            <button
-                type="button"
-                wire:click="confirmar"
-                wire:loading.attr="disabled"
-                @disabled(empty($seleccionados))
-                class="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium
-                       bg-cerberus-primary hover:bg-cerberus-hover
-                       text-white transition-colors duration-150
-                       disabled:opacity-40 disabled:cursor-not-allowed">
-
+            <button type="button"
+                    wire:click="confirmar"
+                    wire:loading.attr="disabled"
+                    @disabled(empty($seleccionados))
+                    class="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium
+                           bg-cerberus-primary hover:bg-cerberus-hover text-white transition
+                           disabled:opacity-40 disabled:cursor-not-allowed">
                 <span wire:loading.remove wire:target="confirmar">
                     <span class="material-icons text-base">keyboard_return</span>
                 </span>
                 <span wire:loading wire:target="confirmar">
                     <span class="material-icons text-base animate-spin">refresh</span>
                 </span>
-
                 <span wire:loading.remove wire:target="confirmar">
                     Confirmar devolución
-                    @if (count($seleccionados) > 0)
-                        ({{ count($seleccionados) }})
-                    @endif
+                    @if (count($seleccionados) > 0)({{ count($seleccionados) }})@endif
                 </span>
                 <span wire:loading wire:target="confirmar">Procesando...</span>
-
             </button>
 
         </div>

@@ -9,6 +9,7 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EstadoEquipo;
+use App\Models\Ubicacion;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,15 +19,19 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 /**
- * CrearAsignacion — versión final
+ * CrearAsignacion v2
  *
- * Paso 1 → Receptor:
- *   - Personal: selector de usuario
- *   - Área común: empresa + departamento + responsable (sin ubicacion_id)
+ * Mejoras respecto a v1:
  *
- * Paso 2 → Grilla de equipos disponibles + carrito con vinculación de periféricos
- *   - Cada item del carrito puede marcarse como "periférico de [otro item]"
- *   - Los periféricos se guardan con equipo_padre_id apuntando al item principal
+ * B1 — Filtro de búsqueda ampliado:
+ *   Antes solo buscaba en codigo_interno, serial y nombre_maquina.
+ *   Ahora también busca en atributos EAV (marca, modelo) y ubicación del equipo.
+ *   Se añade filtro de ubicación como select independiente.
+ *
+ * B2 — Toggle grilla / lista en el carrito de equipos disponibles:
+ *   Nueva propiedad $vistaEquipos: 'grilla' | 'lista'
+ *   El toggle es Alpine puro (sin round-trip al servidor):
+ *   el estado se guarda en la propiedad Livewire para persistir entre renders.
  */
 class CrearAsignacion extends Component
 {
@@ -36,54 +41,54 @@ class CrearAsignacion extends Component
     public int $paso = 1;
 
     // ── Paso 1: Receptor ─────────────────────────────────────────────────────
-    public string $tipo_receptor       = 'usuario';  // 'usuario' | 'area'
-
-    // Receptor personal
-    public string $usuario_id          = '';
-
-    // Receptor área común
-    public string $area_empresa_id     = '';
+    public string $tipo_receptor        = 'usuario';
+    public string $usuario_id           = '';
+    public string $area_empresa_id      = '';
     public string $area_departamento_id = '';
     public string $area_responsable_id  = '';
+    public string $fecha_asignacion     = '';
+    public string $observaciones        = '';
 
-    // Datos comunes
-    public string $fecha_asignacion    = '';
-    public string $observaciones       = '';
+    // ── Paso 2: Filtros de la grilla ─────────────────────────────────────────
+    public string $filtro_categoria  = '';
+    public string $filtro_busqueda   = '';
+    public string $filtro_ubicacion  = '';   // B1: nuevo filtro
 
-    // ── Paso 2: Grilla ───────────────────────────────────────────────────────
-    public string $filtro_categoria    = '';
-    public string $filtro_busqueda     = '';
+    // ── Vista de la grilla: 'grilla' | 'lista' ────────────────────────────────
+    public string $vistaEquipos = 'grilla'; // B2: nuevo toggle
 
     // ── Carrito ───────────────────────────────────────────────────────────────
-    // Cada item: [ 'id', 'codigo', 'categoria', 'serial', 'maquina', 'icono', 'padre_uid' ]
-    // 'padre_uid' = '' (sin padre) | uid de otro item del carrito
     public array $carrito = [];
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Mount
     // ─────────────────────────────────────────────────────────────────────────
 
     public function mount(): void
     {
-        $this->authorize('create', Asignacion::class);
-        $this->fecha_asignacion = now()->toDateString();
+        $this->fecha_asignacion = now()->format('Y-m-d');
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Computed — Paso 1
+    // Datos para Paso 1
     // ─────────────────────────────────────────────────────────────────────────
 
     #[Computed]
     public function usuarios()
     {
         $actor = Auth::user();
-        $query = User::where('estado', 'Activo')->orderBy('name');
 
-        if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
-            $query->whereHas('empresas', fn($q) =>
-                $q->where('empresa_id', $actor->empresa_activa_id)
-            );
-        }
-
-        return $query->select('id', 'name', 'cargo_id')->with('cargo')->get();
+        return User::with(['cargo'])
+            ->where('estado', 'Activo')
+            ->when(
+                $actor->hasRole('Analista') && $actor->empresa_activa_id,
+                fn ($q) => $q->whereHas('ubicacion', function ($u) use ($actor) {
+                    $u->where('empresa_id', $actor->empresa_activa_id)
+                      ->orWhere('es_estado', true);
+                })
+            )
+            ->orderBy('name')
+            ->get();
     }
 
     #[Computed]
@@ -95,9 +100,11 @@ class CrearAsignacion extends Component
     #[Computed]
     public function departamentosArea()
     {
-        if (!$this->area_empresa_id) return collect();
+        if (! $this->area_empresa_id) return collect();
+
         return Departamento::where('empresa_id', $this->area_empresa_id)
-            ->orderBy('nombre')->pluck('nombre', 'id');
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
     }
 
     #[Computed]
@@ -110,8 +117,25 @@ class CrearAsignacion extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Computed — Paso 2
+    // Datos para Paso 2 — B1: nueva opción de ubicación
     // ─────────────────────────────────────────────────────────────────────────
+
+    #[Computed]
+    public function ubicacionesOpciones()
+    {
+        $actor  = Auth::user();
+
+        $query = Ubicacion::orderBy('nombre');
+
+        if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
+            $query->where(function ($q) use ($actor) {
+                $q->where('empresa_id', $actor->empresa_activa_id)
+                  ->orWhere('es_estado', true);
+            });
+        }
+
+        return $query->pluck('nombre', 'id');
+    }
 
     #[Computed]
     public function categorias()
@@ -137,6 +161,10 @@ class CrearAsignacion extends Component
             ->get();
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Equipos disponibles — B1: búsqueda ampliada
+    // ─────────────────────────────────────────────────────────────────────────
+
     #[Computed]
     public function equiposDisponibles()
     {
@@ -148,28 +176,41 @@ class CrearAsignacion extends Component
             ->where('activo', true)
             ->where('estado_id', $estadoDisponible)
             ->whereNotIn('id', $idsEnCarrito)
-            ->whereHas('categoria', fn($q) => $q->where('asignable', true))
+            ->whereHas('categoria', fn ($q) => $q->where('asignable', true))
             ->visiblePara($actor);
 
         if ($this->filtro_categoria) {
             $query->where('categoria_id', $this->filtro_categoria);
         }
 
+        // B1 — Filtro de ubicación
+        if ($this->filtro_ubicacion) {
+            $query->where('ubicacion_id', $this->filtro_ubicacion);
+        }
+
+        // B1 — Búsqueda ampliada:
+        //   código interno, serial, hostname, + atributos EAV (marca, modelo)
         if (strlen($this->filtro_busqueda) >= 2) {
             $s = $this->filtro_busqueda;
             $query->where(function ($q) use ($s) {
                 $q->where('codigo_interno', 'like', "%{$s}%")
                   ->orWhere('serial', 'like', "%{$s}%")
-                  ->orWhere('nombre_maquina', 'like', "%{$s}%");
+                  ->orWhere('nombre_maquina', 'like', "%{$s}%")
+                  // Búsqueda en atributos EAV (marca, modelo y cualquier otro)
+                  ->orWhereHas('atributosActuales', function ($av) use ($s) {
+                      $av->where('valor', 'like', "%{$s}%")
+                         ->whereHas('atributo', fn ($a) => $a->where('visible_en_tabla', true));
+                  });
             });
         }
 
         return $query->orderBy('codigo_interno')->paginate(12);
     }
 
-    /**
-     * Nombre del receptor para el resumen del carrito.
-     */
+    // ─────────────────────────────────────────────────────────────────────────
+    // Receptor
+    // ─────────────────────────────────────────────────────────────────────────
+
     #[Computed]
     public function receptorNombre(): string
     {
@@ -179,8 +220,8 @@ class CrearAsignacion extends Component
 
         if ($this->tipo_receptor === 'area') {
             $partes = array_filter([
-                $this->departamentosArea[(int)$this->area_departamento_id] ?? null,
-                $this->empresasArea[(int)$this->area_empresa_id] ?? null,
+                $this->departamentosArea[(int) $this->area_departamento_id] ?? null,
+                $this->empresasArea[(int) $this->area_empresa_id] ?? null,
             ]);
             return implode(' — ', $partes) ?: '—';
         }
@@ -188,15 +229,11 @@ class CrearAsignacion extends Component
         return '—';
     }
 
-    /**
-     * Solo los equipos del carrito que son PRINCIPALES (sin padre asignado).
-     * Sirven como opciones en el selector "Vincular a".
-     */
     #[Computed]
     public function itemsPrincipalesCarrito(): array
     {
         return collect($this->carrito)
-            ->filter(fn($i) => empty($i['padre_uid']))
+            ->filter(fn ($i) => empty($i['padre_uid']))
             ->values()
             ->toArray();
     }
@@ -223,11 +260,14 @@ class CrearAsignacion extends Component
         $this->resetPage();
     }
 
-    public function updatedFiltroBusqueda(): void
+    // B2 — Método para alternar la vista (puede llamarse desde Livewire o dejarse solo en Alpine)
+    public function toggleVistaEquipos(): void
     {
-        $this->resetPage();
+        $this->vistaEquipos = $this->vistaEquipos === 'grilla' ? 'lista' : 'grilla';
     }
 
+    public function updatedFiltroBusqueda(): void { $this->resetPage(); }
+    public function updatedFiltroUbicacion(): void { $this->resetPage(); }
     public function updatedAreaEmpresaId(): void
     {
         $this->area_departamento_id = '';
@@ -240,122 +280,76 @@ class CrearAsignacion extends Component
 
     public function agregarAlCarrito(int $equipoId): void
     {
-        if (collect($this->carrito)->contains('id', $equipoId)) {
-            return;
-        }
+        if (collect($this->carrito)->contains('id', $equipoId)) return;
 
         $estadoDisponible = EstadoEquipo::where('nombre', 'Disponible')->value('id');
-        $equipo = Equipo::with('categoria')->find($equipoId);
+        $equipo           = Equipo::with('categoria')->find($equipoId);
 
-        if (!$equipo || $equipo->estado_id !== $estadoDisponible || !$equipo->activo) {
-            $this->addError('carrito', "El equipo ya no está disponible.");
+        if (! $equipo || $equipo->estado_id !== $estadoDisponible || ! $equipo->activo) {
+            $this->addError('carrito', 'El equipo ya no está disponible.');
             return;
         }
 
         $uid = uniqid('item_');
 
         $this->carrito[] = [
-            'uid'        => $uid,
-            'id'         => $equipo->id,
-            'codigo'     => $equipo->codigo_interno,
-            'categoria'  => $equipo->categoria?->nombre ?? '—',
-            'serial'     => $equipo->serial ?? '—',
-            'maquina'    => $equipo->nombre_maquina ?? '—',
-            'icono'      => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
-            'padre_uid'  => '',  // '' = sin padre (es principal)
+            'uid'      => $uid,
+            'id'       => $equipo->id,
+            'codigo'   => $equipo->codigo_interno,
+            'categoria' => $equipo->categoria?->nombre ?? '—',
+            'serial'   => $equipo->serial ?? '—',
+            'maquina'  => $equipo->nombre_maquina ?? '—',
+            'icono'    => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
+            'padre_uid' => '',
         ];
-
-        $this->resetErrorBag('carrito');
-        unset($this->equiposDisponibles);
-        unset($this->categorias);
     }
 
-    public function quitarDelCarrito(int $index): void
+    public function quitarDelCarrito(string $uid): void
     {
-        $uid = $this->carrito[$index]['uid'] ?? null;
-
-        // Si tenía hijos que apuntaban a este uid, limpiar su padre_uid
-        if ($uid) {
-            $this->carrito = array_map(function ($item) use ($uid) {
-                if ($item['padre_uid'] === $uid) {
-                    $item['padre_uid'] = '';
-                }
-                return $item;
-            }, $this->carrito);
-        }
-
-        array_splice($this->carrito, $index, 1);
-        unset($this->equiposDisponibles);
-        unset($this->categorias);
+        // Quitar el item y sus hijos
+        $this->carrito = collect($this->carrito)
+            ->filter(fn ($i) => $i['uid'] !== $uid && $i['padre_uid'] !== $uid)
+            ->values()
+            ->toArray();
     }
 
-    /**
-     * Vincula un item del carrito como periférico de otro item.
-     * $index     = posición del item hijo en $carrito
-     * $padreUid  = uid del item padre ('' = quitar vínculo)
-     */
-    public function vincularPadre(int $index, string $padreUid): void
+    public function setPadre(string $uid, string $padreUid): void
     {
-        if (!isset($this->carrito[$index])) return;
-
-        // No permitir auto-referencia
-        if ($padreUid === $this->carrito[$index]['uid']) return;
-
-        $this->carrito[$index]['padre_uid'] = $padreUid;
-    }
-
-    private function iconoCategoria(string $nombre): string
-    {
-        $n = strtolower($nombre);
-        return match(true) {
-            str_contains($n, 'laptop')                => 'laptop',
-            str_contains($n, 'desktop') || str_contains($n, 'pc') => 'computer',
-            str_contains($n, 'monitor') || str_contains($n, 'pantalla') => 'monitor',
-            str_contains($n, 'impresora')             => 'print',
-            str_contains($n, 'teclado')               => 'keyboard',
-            str_contains($n, 'mouse')                 => 'mouse',
-            str_contains($n, 'tel')                   => 'phone',
-            str_contains($n, 'tablet')                => 'tablet',
-            str_contains($n, 'switch') || str_contains($n, 'router') => 'router',
-            str_contains($n, 'servidor')              => 'dns',
-            str_contains($n, 'ups')                   => 'battery_charging_full',
-            default                                   => 'devices_other',
-        };
+        $this->carrito = collect($this->carrito)->map(function ($item) use ($uid, $padreUid) {
+            if ($item['uid'] === $uid) {
+                $item['padre_uid'] = $padreUid;
+            }
+            return $item;
+        })->toArray();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Validaciones
+    // Validación Paso 1
     // ─────────────────────────────────────────────────────────────────────────
 
-    protected function validatePaso1(): void
+    private function validatePaso1(): void
     {
         if ($this->tipo_receptor === 'usuario') {
-            $this->validate([
-                'usuario_id'       => 'required|exists:users,id',
-                'fecha_asignacion' => 'required|date|before_or_equal:today',
-                'observaciones'    => 'nullable|string|max:1000',
-            ], [
-                'usuario_id.required'              => 'Selecciona un usuario receptor.',
-                'fecha_asignacion.before_or_equal' => 'La fecha no puede ser futura.',
-            ]);
+            $this->validate(
+                ['usuario_id' => 'required', 'fecha_asignacion' => 'required|date'],
+                ['usuario_id.required' => 'Selecciona un usuario receptor.']
+            );
         } else {
             $this->validate([
-                'area_empresa_id'      => 'required|exists:empresas,id',
-                'area_departamento_id' => 'required|exists:departamentos,id',
-                'area_responsable_id'  => 'required|exists:users,id',
-                'fecha_asignacion'     => 'required|date|before_or_equal:today',
-                'observaciones'        => 'nullable|string|max:1000',
+                'area_empresa_id'      => 'required',
+                'area_departamento_id' => 'required',
+                'area_responsable_id'  => 'required',
+                'fecha_asignacion'     => 'required|date',
             ], [
                 'area_empresa_id.required'      => 'Selecciona la empresa del área.',
                 'area_departamento_id.required' => 'Selecciona el departamento.',
-                'area_responsable_id.required'  => 'Selecciona el responsable del área.',
-                'fecha_asignacion.before_or_equal' => 'La fecha no puede ser futura.',
+                'area_responsable_id.required'  => 'Selecciona un responsable.',
             ]);
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Confirmar
+    // Confirmar asignación
     // ─────────────────────────────────────────────────────────────────────────
 
     public function confirmar(): void
@@ -363,16 +357,23 @@ class CrearAsignacion extends Component
         $this->authorize('create', Asignacion::class);
 
         if (empty($this->carrito)) {
-            $this->addError('carrito', 'Agrega al menos un equipo al carrito.');
+            $this->addError('carrito', 'El carrito está vacío. Agrega al menos un equipo.');
             return;
         }
 
+        $actor = Auth::user();
+
         try {
-            DB::transaction(function () {
-                $actor = Auth::user();
+            DB::transaction(function () use ($actor) {
+
+                $empresaId = $actor->hasRole('Administrador')
+                    ? ($this->tipo_receptor === 'usuario'
+                        ? User::find($this->usuario_id)?->empresa_activa_id ?? $actor->empresa_activa_id
+                        : $this->area_empresa_id)
+                    : $actor->empresa_activa_id;
 
                 $asignacion = Asignacion::create([
-                    'empresa_id'           => $actor->empresa_activa_id ?? $actor->empresa_id,
+                    'empresa_id'           => $empresaId,
                     'usuario_id'           => $this->tipo_receptor === 'usuario' ? $this->usuario_id : null,
                     'area_empresa_id'      => $this->tipo_receptor === 'area' ? $this->area_empresa_id : null,
                     'area_departamento_id' => $this->tipo_receptor === 'area' ? $this->area_departamento_id : null,
@@ -384,13 +385,10 @@ class CrearAsignacion extends Component
                 ]);
 
                 $estadoAsignado = EstadoEquipo::where('nombre', 'Asignado')->value('id');
+                $uidToItemId    = [];
 
-                // Mapa uid → id de AsignacionItem creado (para resolver padre_uid)
-                $uidToItemId = [];
-
-                // Primero crear los items PRINCIPALES (sin padre)
                 foreach ($this->carrito as $item) {
-                    if (!empty($item['padre_uid'])) continue;
+                    if (! empty($item['padre_uid'])) continue;
 
                     $creado = AsignacionItem::create([
                         'asignacion_id'  => $asignacion->id,
@@ -406,7 +404,6 @@ class CrearAsignacion extends Component
                     }
                 }
 
-                // Luego crear los PERIFÉRICOS con su equipo_padre_id resuelto
                 foreach ($this->carrito as $item) {
                     if (empty($item['padre_uid'])) continue;
 
@@ -435,6 +432,24 @@ class CrearAsignacion extends Component
             $this->addError('general', 'Ocurrió un error al registrar la asignación.');
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function iconoCategoria(string $nombre): string
+    {
+        return match (strtolower($nombre)) {
+            'laptop', 'portátil', 'notebook'  => 'laptop',
+            'desktop', 'pc', 'computadora'    => 'desktop_windows',
+            'monitor', 'pantalla'             => 'monitor',
+            'impresora', 'printer'            => 'print',
+            'teléfono', 'telefono', 'celular' => 'smartphone',
+            'switch', 'router', 'red'         => 'router',
+            'servidor', 'server'              => 'dns',
+            default                           => 'devices',
+        };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function render()
     {

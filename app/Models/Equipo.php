@@ -37,6 +37,11 @@ class Equipo extends Model
         'creado_por',         // FK al usuario que registró el equipo
     ];
 
+    protected $casts = [
+        'fecha_adquisicion' => 'date',
+        'fecha_garantia_fin' => 'date',
+    ];
+
     // ── Regla de negocio: la categoría no puede cambiar tras la creación ─────
     protected static function booted(): void
     {

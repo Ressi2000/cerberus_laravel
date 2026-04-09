@@ -2,178 +2,260 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $titulo ?? 'Planilla' }} — Cerberus</title>
     <style>
-        /* ── Reset y tipografía ─────────────────────────────────────────────── */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ── Reset ──────────────────────────────────────────────────────────── */
+        * { margin:0; padding:0; box-sizing:border-box; }
 
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
             font-size: 9pt;
             color: #1a1a2e;
             background: #ffffff;
-            line-height: 1.4;
+            line-height: 1.45;
         }
 
-        /* ── Layout de página ───────────────────────────────────────────────── */
+        /* ── Página ─────────────────────────────────────────────────────────── */
         .page {
-            padding: 18mm 18mm 22mm 18mm;
-            min-height: 100vh;
+            padding: 14mm 16mm 22mm 16mm;
         }
 
-        /* ── Encabezado corporativo ─────────────────────────────────────────── */
+        /* ══════════════════════════════════════════════════════════════════════
+           ENCABEZADO CORPORATIVO
+        ══════════════════════════════════════════════════════════════════════ */
+
         .header {
-            border-bottom: 2.5pt solid #1E3A8A;
-            padding-bottom: 10pt;
-            margin-bottom: 14pt;
-        }
-
-        .header-inner {
             display: table;
             width: 100%;
+            border-bottom: 3pt solid #1E3A8A;
+            padding-bottom: 10pt;
+            margin-bottom: 4pt;
         }
 
-        .header-logo {
+        .header-logo-cell {
             display: table-cell;
-            width: 90pt;
+            width: 75pt;
             vertical-align: middle;
         }
 
-        .header-logo img {
-            width: 80pt;
+        .header-logo-cell img {
+            width: 62pt;
             height: auto;
         }
 
-        .header-titles {
+        .header-center-cell {
             display: table-cell;
             vertical-align: middle;
             text-align: center;
+            padding: 0 8pt;
         }
 
-        .header-titles .grupo {
-            font-size: 7pt;
+        .header-grupo {
+            font-size: 6.5pt;
             font-weight: bold;
             color: #1E3A8A;
-            letter-spacing: 1pt;
+            letter-spacing: 1.2pt;
             text-transform: uppercase;
+            margin-bottom: 2pt;
         }
 
-        .header-titles .empresa {
-            font-size: 14pt;
+        .header-empresa {
+            font-size: 13pt;
             font-weight: bold;
-            color: #1a1a2e;
+            color: #0D1B2A;
             line-height: 1.2;
         }
 
-        .header-titles .gerencia {
-            font-size: 8pt;
+        .header-gerencia {
+            font-size: 7.5pt;
             color: #374151;
-            margin-top: 2pt;
+            margin-top: 3pt;
         }
 
-        .header-badge {
+        .header-badge-cell {
             display: table-cell;
-            width: 90pt;
+            width: 75pt;
             vertical-align: middle;
             text-align: right;
         }
 
-        .header-badge .badge-box {
+        .header-badge {
+            display: inline-block;
             background: #1E3A8A;
             color: #ffffff;
-            font-size: 7pt;
+            font-size: 6.5pt;
             font-weight: bold;
+            letter-spacing: 0.5pt;
             text-align: center;
-            padding: 4pt 8pt;
+            padding: 5pt 8pt;
             border-radius: 4pt;
             text-transform: uppercase;
-            letter-spacing: 0.5pt;
-            display: inline-block;
+            line-height: 1.4;
         }
 
-        /* ── Título del documento ───────────────────────────────────────────── */
+        /* ── Código de documento bajo el header ─────────────────────────────── */
+        .doc-meta {
+            display: table;
+            width: 100%;
+            margin-top: 6pt;
+            margin-bottom: 14pt;
+        }
+
+        .doc-meta-left {
+            display: table-cell;
+            font-size: 7.5pt;
+            color: #64748B;
+        }
+
+        .doc-meta-right {
+            display: table-cell;
+            text-align: right;
+            font-size: 7.5pt;
+            color: #64748B;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+           TÍTULO DEL DOCUMENTO
+        ══════════════════════════════════════════════════════════════════════ */
+
         .doc-title {
-            text-align: center;
-            font-size: 11pt;
+            font-size: 13pt;
             font-weight: bold;
             color: #1E3A8A;
+            text-align: center;
             margin-bottom: 12pt;
-            padding-bottom: 6pt;
-            border-bottom: 0.5pt solid #CBD5E1;
+            letter-spacing: 0.3pt;
         }
 
-        /* ── Sección: etiqueta + contenido ─────────────────────────────────── */
+        .doc-subtitle {
+            font-size: 8pt;
+            color: #64748B;
+            text-align: center;
+            margin-top: -10pt;
+            margin-bottom: 14pt;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+           SECCIONES
+        ══════════════════════════════════════════════════════════════════════ */
+
         .section {
-            margin-bottom: 12pt;
+            margin-bottom: 14pt;
+            border: 0.5pt solid #CBD5E1;
+            border-radius: 5pt;
+            overflow: hidden;
         }
 
         .section-title {
+            background: #1E3A8A;
+            color: #ffffff;
             font-size: 8pt;
             font-weight: bold;
-            color: #1E3A8A;
-            text-transform: uppercase;
             letter-spacing: 0.8pt;
-            background: #EFF6FF;
-            padding: 4pt 8pt;
-            border-left: 3pt solid #1E3A8A;
-            margin-bottom: 8pt;
+            text-transform: uppercase;
+            padding: 5pt 10pt;
         }
 
-        /* ── Grid de campos ─────────────────────────────────────────────────── */
+        .section-title.area {
+            background: #0F6E56;
+        }
+
+        .section-title.devolucion {
+            background: #92400E;
+        }
+
+        .section-title.egreso {
+            background: #6B21A8;
+        }
+
+        /* ── Grilla de campos ───────────────────────────────────────────────── */
         .fields-grid {
-            display: table;
-            width: 100%;
-            border-collapse: collapse;
+            padding: 8pt 10pt;
         }
 
         .fields-row {
-            display: table-row;
+            display: table;
+            width: 100%;
+            border-bottom: 0.3pt solid #E2E8F0;
+        }
+
+        .fields-row:last-child {
+            border-bottom: none;
         }
 
         .field-cell {
             display: table-cell;
-            padding: 3pt 0;
-            vertical-align: top;
             width: 50%;
+            padding: 4pt 6pt 4pt 0;
+            vertical-align: top;
         }
 
         .field-cell.full {
             width: 100%;
+            display: table-cell;
         }
 
         .field-label {
-            font-size: 7.5pt;
-            color: #6B7280;
+            font-size: 7pt;
             font-weight: bold;
+            color: #1E3A8A;
             text-transform: uppercase;
-            letter-spacing: 0.3pt;
+            letter-spacing: 0.4pt;
+            margin-bottom: 1.5pt;
         }
 
         .field-value {
             font-size: 9pt;
             color: #1a1a2e;
             font-weight: bold;
-            margin-top: 1pt;
         }
 
-        /* ── Tabla de datos ─────────────────────────────────────────────────── */
+        /* ── Badge de tipo de receptor ──────────────────────────────────────── */
+        .receptor-badge {
+            display: inline-block;
+            font-size: 6.5pt;
+            font-weight: bold;
+            letter-spacing: 0.5pt;
+            text-transform: uppercase;
+            padding: 2pt 7pt;
+            border-radius: 10pt;
+            margin-bottom: 6pt;
+        }
+
+        .receptor-badge.usuario {
+            background: #DBEAFE;
+            color: #1E40AF;
+            border: 0.5pt solid #93C5FD;
+        }
+
+        .receptor-badge.area {
+            background: #D1FAE5;
+            color: #065F46;
+            border: 0.5pt solid #6EE7B7;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+           TABLA DE EQUIPOS
+        ══════════════════════════════════════════════════════════════════════ */
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 4pt;
+        }
+
+        .data-table thead tr {
+            background: #1E3A8A;
         }
 
         .data-table thead th {
-            background: #1E3A8A;
             color: #ffffff;
             font-size: 7.5pt;
             font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 0.4pt;
             padding: 5pt 8pt;
             text-align: left;
-            border: none;
+            letter-spacing: 0.3pt;
+            white-space: nowrap;
         }
 
         .data-table tbody tr:nth-child(even) {
@@ -202,200 +284,226 @@
             font-weight: bold;
         }
 
-        /* ── Atributos EAV ──────────────────────────────────────────────────── */
-        .attrs-list {
-            font-size: 8pt;
-            color: #374151;
-            margin-top: 3pt;
-        }
-
-        .attr-item {
-            display: inline;
-        }
-
-        .attr-label {
+        /* ── Código interno resaltado en tabla ──────────────────────────────── */
+        .cod-interno {
             font-weight: bold;
             color: #1E3A8A;
+            font-size: 8.5pt;
         }
 
-        /* ── Periféricos anidados ───────────────────────────────────────────── */
-        .sub-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 4pt;
-            background: #F8FAFC;
+        /* ── Fila de atributos EAV (debajo de cada equipo) ──────────────────── */
+        .eav-row td {
+            background: #EFF6FF !important;
+            border-bottom: 0.3pt solid #BFDBFE !important;
+            padding: 3pt 8pt 3pt 20pt !important;
+            font-size: 7.5pt !important;
+            color: #374151 !important;
         }
 
-        .sub-table thead th {
-            background: #374151;
-            color: #ffffff;
+        .eav-pill {
+            display: inline-block;
+            background: #DBEAFE;
+            color: #1E40AF;
             font-size: 7pt;
-            padding: 3pt 8pt;
-            text-align: left;
+            font-weight: bold;
+            border-radius: 3pt;
+            padding: 1pt 4pt;
+            margin-right: 4pt;
         }
 
-        .sub-table tbody td {
-            font-size: 7.5pt;
-            padding: 3pt 8pt;
-            color: #374151;
-            border-bottom: 0.2pt solid #E2E8F0;
+        /* ── Periférico (fila anidada) ──────────────────────────────────────── */
+        .periferico-row td {
+            background: #FEFCE8 !important;
+            border-bottom: 0.3pt solid #FDE68A !important;
+            padding: 4pt 8pt 4pt 22pt !important;
+            font-size: 8pt !important;
+            color: #78350F !important;
         }
 
-        /* ── Bloque de firma ────────────────────────────────────────────────── */
+        .periferico-prefix {
+            color: #92400E;
+            font-weight: bold;
+            margin-right: 4pt;
+        }
+
+        /* ── Periférico devuelto (en tabla de devolución) ───────────────────── */
+        .periferico-row.devuelto td {
+            background: #F1F5F9 !important;
+            color: #94A3B8 !important;
+            text-decoration: line-through;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+           OBSERVACIONES
+        ══════════════════════════════════════════════════════════════════════ */
+
+        .obs-box {
+            margin-top: 8pt;
+            padding: 7pt 10pt;
+            background: #FFFBEB;
+            border: 0.5pt solid #FDE68A;
+            border-radius: 4pt;
+            font-size: 8.5pt;
+            color: #78350F;
+        }
+
+        .obs-label {
+            font-weight: bold;
+            font-size: 7pt;
+            color: #92400E;
+            text-transform: uppercase;
+            letter-spacing: 0.4pt;
+            margin-bottom: 3pt;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
+           FIRMAS
+        ══════════════════════════════════════════════════════════════════════ */
+
         .firmas {
-            margin-top: 28pt;
+            margin-top: 30pt;
             display: table;
             width: 100%;
+            border-top: 0.5pt solid #CBD5E1;
+            padding-top: 16pt;
         }
 
         .firma-cell {
             display: table-cell;
             text-align: center;
-            width: 50%;
-            padding: 0 20pt;
+            width: 33.33%;
+            padding: 0 12pt;
+        }
+
+        .firma-espacio {
+            height: 32pt;
         }
 
         .firma-linea {
-            border-top: 1pt solid #374151;
-            margin-bottom: 4pt;
+            border-top: 1pt solid #1E3A8A;
+            margin-bottom: 5pt;
+        }
+
+        .firma-nombre {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #1a1a2e;
+            margin-bottom: 2pt;
         }
 
         .firma-label {
-            font-size: 8pt;
-            font-weight: bold;
-            color: #374151;
+            font-size: 7pt;
+            color: #64748B;
             text-transform: uppercase;
             letter-spacing: 0.5pt;
         }
 
-        /* ── Pie de página ──────────────────────────────────────────────────── */
-        .footer {
+        /* ══════════════════════════════════════════════════════════════════════
+           FOOTER DE PÁGINA
+        ══════════════════════════════════════════════════════════════════════ */
+
+        .page-footer {
             position: fixed;
-            bottom: 10mm;
-            left: 18mm;
-            right: 18mm;
+            bottom: 8mm;
+            left: 16mm;
+            right: 16mm;
             border-top: 0.5pt solid #CBD5E1;
-            padding-top: 5pt;
-        }
-
-        .footer-inner {
+            padding-top: 4pt;
             display: table;
-            width: 100%;
+            width: calc(100% - 32mm);
         }
 
-        .footer-left {
+        .page-footer-left {
             display: table-cell;
-            font-size: 7pt;
-            color: #6B7280;
-            vertical-align: middle;
+            font-size: 6.5pt;
+            color: #94A3B8;
         }
 
-        .footer-center {
+        .page-footer-right {
             display: table-cell;
-            font-size: 7pt;
-            color: #6B7280;
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        .footer-right {
-            display: table-cell;
-            font-size: 7pt;
-            color: #6B7280;
             text-align: right;
-            vertical-align: middle;
+            font-size: 6.5pt;
+            color: #94A3B8;
         }
 
-        /* ── Utilidades ─────────────────────────────────────────────────────── */
+        /* ══════════════════════════════════════════════════════════════════════
+           BADGES DE ESTADO
+        ══════════════════════════════════════════════════════════════════════ */
+
         .badge {
             display: inline-block;
-            padding: 1.5pt 6pt;
-            border-radius: 3pt;
             font-size: 7pt;
             font-weight: bold;
+            border-radius: 3pt;
+            padding: 1.5pt 5pt;
             text-transform: uppercase;
+            letter-spacing: 0.3pt;
         }
 
-        .badge-activa   { background: #D1FAE5; color: #065F46; }
-        .badge-cerrada  { background: #F3F4F6; color: #6B7280; }
-        .badge-devuelto { background: #FEF3C7; color: #92400E; }
+        .badge-activa { background: #D1FAE5; color: #065F46; }
+        .badge-cerrada { background: #F1F5F9; color: #475569; }
+        .badge-devuelto { background: #FEF9C3; color: #713F12; }
+        .badge-pendiente { background: #FEE2E2; color: #991B1B; }
 
-        .divider {
-            border: none;
-            border-top: 0.5pt solid #E2E8F0;
-            margin: 10pt 0;
-        }
-
-        .text-muted { color: #6B7280; }
-        .text-blue  { color: #1E3A8A; }
-        .font-bold  { font-weight: bold; }
-        .text-right { text-align: right; }
-        .text-center { text-align: center; }
-        .mb-4 { margin-bottom: 4pt; }
-        .mb-8 { margin-bottom: 8pt; }
     </style>
 </head>
 <body>
 
-{{-- Pie de página fijo (aparece en todas las páginas) --}}
-<div class="footer">
-    <div class="footer-inner">
-        <div class="footer-left">
-            {{ $codigoDoc ?? '' }} &nbsp;|&nbsp; Grupo de Empresas Sindoni
-        </div>
-        <div class="footer-center">
-            Gerencia Corporativa de Tecnología · Servicios Tecnológicos
-        </div>
-        <div class="footer-right">
-            Página <span class="pagenum"></span>
-        </div>
-    </div>
-</div>
-
 <div class="page">
 
-    {{-- Encabezado corporativo --}}
+    {{-- ── ENCABEZADO ─────────────────────────────────────────────────────── --}}
     <div class="header">
-        <div class="header-inner">
-            <div class="header-logo">
-                {{-- Logo corporativo --}}
-                @php
-                    $logoPath = public_path('images/logo-sindoni.png');
-                    $logoBase64 = file_exists($logoPath)
-                        ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
-                        : null;
-                @endphp
-                @if ($logoBase64)
-                    <img src="{{ $logoBase64 }}" alt="Grupo Sindoni">
-                @endif
+        <div class="header-logo-cell">
+            @php
+                $logoPath = public_path('images/cerberus.png');
+                $logoBase64 = file_exists($logoPath)
+                    ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+                    : null;
+            @endphp
+            @if ($logoBase64)
+                <img src="{{ $logoBase64 }}" alt="Cerberus">
+            @endif
+        </div>
+        <div class="header-center-cell">
+            <div class="header-grupo">Grupo de Empresas Sindoni</div>
+            <div class="header-empresa">
+                {{ $empresaSede ?? '—' }}
             </div>
-            <div class="header-titles">
-                <div class="grupo">Grupo de Empresas Sindoni</div>
-                <div class="empresa">{{ $empresaSede ?? ($asignacion->empresa->nombre ?? $usuario->empresaNomina->nombre ?? 'Cerberus') }}</div>
-                <div class="gerencia">Gerencia Corporativa de Tecnología — Servicios Tecnológicos</div>
-            </div>
-            <div class="header-badge">
-                <div class="badge-box">Servicios<br>Tecnológicos</div>
-            </div>
+            <div class="header-gerencia">Gerencia Corporativa de Tecnología — Servicios Tecnológicos</div>
+        </div>
+        <div class="header-badge-cell">
+            <div class="header-badge">Servicios<br>Tecnológicos</div>
         </div>
     </div>
 
-    {{-- Contenido de la planilla --}}
+    {{-- ── Meta del documento ──────────────────────────────────────────────── --}}
+    <div class="doc-meta">
+        <div class="doc-meta-left">
+            Código: <strong>{{ $codigoDoc ?? '—' }}</strong>
+            &nbsp;·&nbsp;
+            Uso: Actividades Inherentes al Cargo
+        </div>
+        <div class="doc-meta-right">
+            Generado: <strong>{{ $fecha ?? now()->format('d/m/Y') }}</strong>
+        </div>
+    </div>
+
+    {{-- ── Contenido de cada planilla ──────────────────────────────────────── --}}
     @yield('contenido')
 
-    {{-- Firmas --}}
-    <div class="firmas">
-        <div class="firma-cell">
-            <div class="firma-linea"></div>
-            <div class="firma-label">Firma del Técnico</div>
+    {{-- ── Firmas ───────────────────────────────────────────────────────────── --}}
+    @yield('firmas')
+
+    {{-- ── Footer de página ────────────────────────────────────────────────── --}}
+    <div class="page-footer">
+        <div class="page-footer-left">
+            Cerberus 2.0 — Sistema de Inventario y Asignaciones Tecnológicas
         </div>
-        <div class="firma-cell">
-            <div class="firma-linea"></div>
-            <div class="firma-label">Firma del Trabajador</div>
+        <div class="page-footer-right">
+            {{ $codigoDoc ?? '' }} · {{ $fecha ?? now()->format('d/m/Y') }}
         </div>
     </div>
 
 </div>
-
 </body>
 </html>
