@@ -27,11 +27,6 @@ return new class extends Migration
     // Tablas maestras a transformar
     // ─────────────────────────────────────────────────────────────────────────
     private array $tablas = [
-        'categorias_equipos',
-        'estados_equipos',
-        'ubicaciones',
-        'cargos',
-        'departamentos',
         'empresas'
     ];
 

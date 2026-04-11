@@ -5,17 +5,26 @@ namespace App\Livewire\Configuracion\Departamentos;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * DepartamentoModal — v2
+ *
+ * Correcciones:
+ *  - unique solo valida contra departamentos ACTIVOS.
+ *  - Si al crear existe uno inactivo con el mismo nombre, lo reactiva.
+ *  - Select de empresa solo muestra empresas ACTIVAS.
+ */
 class DepartamentoModal extends Component
 {
     public bool   $open           = false;
     public ?int   $departamentoId = null;
     public string $nombre         = '';
     public string $descripcion    = '';
-    public string $empresa_id     = ''; // '' = global
+    public string $empresa_id     = '';
 
     #[On('openDepartamentoCrear')]
     public function abrirCrear(): void
@@ -29,24 +38,29 @@ class DepartamentoModal extends Component
     public function abrirEditar(int $id): void
     {
         $d = Departamento::findOrFail($id);
-
         $this->departamentoId = $d->id;
         $this->nombre         = $d->nombre;
         $this->descripcion    = $d->descripcion ?? '';
         $this->empresa_id     = (string) ($d->empresa_id ?? '');
-
         $this->resetValidation();
         $this->open = true;
     }
 
+    // ── Validación ────────────────────────────────────────────────────────────
+
     protected function rules(): array
     {
-        $unique = $this->departamentoId
-            ? "unique:departamentos,nombre,{$this->departamentoId}"
-            : 'unique:departamentos,nombre';
+        if ($this->departamentoId) {
+            $uniqueRule = Rule::unique('departamentos', 'nombre')
+                ->ignore($this->departamentoId)
+                ->where('activo', true);
+        } else {
+            $uniqueRule = Rule::unique('departamentos', 'nombre')
+                ->where('activo', true);
+        }
 
         return [
-            'nombre'      => "required|string|max:255|{$unique}",
+            'nombre'      => ['required', 'string', 'max:255', $uniqueRule],
             'descripcion' => 'nullable|string|max:500',
             'empresa_id'  => 'nullable|exists:empresas,id',
         ];
@@ -56,17 +70,22 @@ class DepartamentoModal extends Component
     {
         return [
             'nombre.required'   => 'El nombre es obligatorio.',
-            'nombre.unique'     => 'Ya existe un departamento con ese nombre.',
+            'nombre.unique'     => 'Ya existe un departamento activo con ese nombre.',
             'nombre.max'        => 'Máximo 255 caracteres.',
             'empresa_id.exists' => 'La empresa seleccionada no es válida.',
         ];
     }
 
+    // ── Computed ──────────────────────────────────────────────────────────────
+
+    /** Solo empresas ACTIVAS */
     #[Computed]
     public function empresas()
     {
-        return Empresa::orderBy('nombre')->pluck('nombre', 'id');
+        return Empresa::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
     }
+
+    // ── Guardar ───────────────────────────────────────────────────────────────
 
     public function guardar(): void
     {
@@ -74,17 +93,28 @@ class DepartamentoModal extends Component
 
         try {
             $data = [
-                'nombre'      => $this->nombre,
-                'descripcion' => $this->descripcion ?: null,
-                'empresa_id'  => $this->empresa_id  ?: null,
+                'nombre'      => trim($this->nombre),
+                'descripcion' => trim($this->descripcion) ?: null,
+                'empresa_id'  => $this->empresa_id ?: null,
             ];
 
             if ($this->departamentoId) {
                 Departamento::findOrFail($this->departamentoId)->update($data);
                 $msg = "Departamento «{$this->nombre}» actualizado.";
             } else {
-                Departamento::create($data);
-                $msg = "Departamento «{$this->nombre}» creado.";
+                // Verificar si existe inactivo con el mismo nombre (y misma empresa)
+                $inactivo = Departamento::where('nombre', trim($this->nombre))
+                    ->where('empresa_id', $this->empresa_id ?: null)
+                    ->where('activo', false)
+                    ->first();
+
+                if ($inactivo) {
+                    $inactivo->update(array_merge($data, ['activo' => true]));
+                    $msg = "Departamento «{$this->nombre}» reactivado.";
+                } else {
+                    Departamento::create(array_merge($data, ['activo' => true]));
+                    $msg = "Departamento «{$this->nombre}» creado.";
+                }
             }
 
             $this->close();

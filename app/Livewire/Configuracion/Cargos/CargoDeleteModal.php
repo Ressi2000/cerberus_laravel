@@ -16,37 +16,51 @@ class CargoDeleteModal extends Component
     #[On('openCargoEliminar')]
     public function abrir(int $id): void
     {
-        $this->cargo         = Cargo::withCount('usuarios')->findOrFail($id);
+        $this->cargo         = Cargo::withCount([
+            'usuarios' => fn($q) => $q->where('estado', 'Activo'),
+        ])->findOrFail($id);
+
         $this->totalUsuarios = $this->cargo->usuarios_count;
         $this->open          = true;
     }
 
-    public function eliminar(): void
+    public function desactivar(): void
     {
         if (! $this->cargo) return;
 
         if ($this->totalUsuarios > 0) {
-            $this->dispatch(
-                'toast',
-                type: 'error',
-                message: "No se puede eliminar: tiene {$this->totalUsuarios} usuario(s) asociado(s)."
-            );
+            $this->dispatch('toast', type: 'error',
+                message: "No se puede desactivar: tiene {$this->totalUsuarios} usuario(s) activo(s) con este cargo.");
             $this->close();
             return;
         }
 
         try {
             $nombre = $this->cargo->nombre;
-            $this->cargo->delete(); // SoftDelete
+            $this->cargo->update(['activo' => false]);
 
             $this->close();
             $this->dispatch('cargoEliminado');
-            $this->dispatch('toast', type: 'success', message: "Cargo «{$nombre}» eliminado.");
-
+            $this->dispatch('toast', type: 'success', message: "Cargo «{$nombre}» desactivado.");
         } catch (\Exception $e) {
-            Log::error('CargoDeleteModal@eliminar: ' . $e->getMessage());
-            $this->dispatch('toast', type: 'error', message: 'Error al eliminar el cargo.');
+            Log::error('CargoDeleteModal@desactivar: ' . $e->getMessage());
+            $this->dispatch('toast', type: 'error', message: 'Error al desactivar el cargo.');
             $this->close();
+        }
+    }
+
+    #[On('reactivarCargo')]
+    public function reactivar(int $id): void
+    {
+        try {
+            $cargo = Cargo::findOrFail($id);
+            $cargo->update(['activo' => true]);
+
+            $this->dispatch('cargoEliminado');
+            $this->dispatch('toast', type: 'success', message: "Cargo «{$cargo->nombre}» reactivado.");
+        } catch (\Exception $e) {
+            Log::error('CargoDeleteModal@reactivar: ' . $e->getMessage());
+            $this->dispatch('toast', type: 'error', message: 'Error al reactivar el cargo.');
         }
     }
 

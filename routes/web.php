@@ -38,13 +38,21 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     })->name('dashboard');
 
     // Exportaciones
-    Route::get('export/usuarios', [ExportController::class, 'usuarios'])->name('export.usuarios');
-    Route::get('export/auditoria', [ExportController::class, 'auditoria'])->name('export.auditoria');
-    Route::get('export/equipos',   [ExportController::class, 'equipos'])->name('export.equipos');
-    Route::get('export/categorias', [ExportController::class, 'categorias'])->name('export.categorias')->middleware(['role:Administrador']);
-    Route::get('export/estados', [ExportController::class, 'estados'])->name('export.estados')->middleware(['role:Administrador']);
-    Route::get('export/atributos', [ExportController::class, 'atributos'])->name('export.atributos')->middleware(['role:Administrador']);
+    Route::get('export/usuarios',      [ExportController::class, 'usuarios'])->name('export.usuarios');
+    Route::get('export/auditoria',     [ExportController::class, 'auditoria'])->name('export.auditoria');
+    Route::get('export/equipos',       [ExportController::class, 'equipos'])->name('export.equipos');
 
+    // Solo Administrador
+    Route::middleware(['role:Administrador'])->group(function () {
+        Route::get('export/categorias',    [ExportController::class, 'categorias'])->name('export.categorias');
+        Route::get('export/estados',       [ExportController::class, 'estados'])->name('export.estados');
+        Route::get('export/atributos',     [ExportController::class, 'atributos'])->name('export.atributos');
+        Route::get('export/ubicaciones',   [ExportController::class, 'ubicaciones'])->name('export.ubicaciones');
+        Route::get('export/cargos',        [ExportController::class, 'cargos'])->name('export.cargos');
+        Route::get('export/departamentos', [ExportController::class, 'departamentos'])->name('export.departamentos');
+        Route::get('export/empresas',      [ExportController::class, 'empresas'])->name('export.empresas');
+    });
+    
     // Perfil del usuario
     Route::get('/profile/actividad', [ProfileController::class, 'profileActivity'])->name('profile.activity');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -79,7 +87,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/ubicaciones', [ConfiguracionController::class, 'ubicaciones'])->name('ubicaciones');
             Route::get('/empresas',    [ConfiguracionController::class, 'empresas'])->name('empresas');
         });
-   
+
     Route::prefix('admin/asignaciones')
         ->name('admin.asignaciones.')
         ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])

@@ -86,7 +86,7 @@ class EditarEquipo extends Component
     #[Computed]
     public function estados()
     {
-        return EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id');
+        return EstadoEquipo::activos()->orderBy('nombre')->pluck('nombre', 'id');
     }
 
     #[Computed]
@@ -96,11 +96,11 @@ class EditarEquipo extends Component
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
-            return Ubicacion::where('empresa_id', $this->equipo->empresa_id)
+            return Ubicacion::where('activo', true)->where('empresa_id', $this->equipo->empresa_id)
                 ->orderBy('nombre')->pluck('nombre', 'id');
         }
 
-        return Ubicacion::where(function ($q) use ($user) {
+        return Ubicacion::where('activo', true)->where(function ($q) use ($user) {
             $q->where('empresa_id', $user->empresa_activa_id)
                 ->orWhere('es_estado', true);
         })

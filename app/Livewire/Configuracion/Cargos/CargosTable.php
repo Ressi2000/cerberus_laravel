@@ -1,4 +1,7 @@
 <?php
+// ════════════════════════════════════════════════════════════════════════════
+// app/Livewire/Configuracion/Cargos/CargosTable.php
+// ════════════════════════════════════════════════════════════════════════════
 
 namespace App\Livewire\Configuracion\Cargos;
 
@@ -14,17 +17,17 @@ class CargosTable extends Component
 {
     use WithPagination;
 
-    public string $search          = '';
-    public string $empresa_id      = '';
-    public string $departamento_id = '';
-    public int    $perPage         = 10;
+    public string $search            = '';
+    public string $empresa_id        = '';
+    public string $departamento_id   = '';
+    public bool   $mostrar_inactivos = false;
+    public int    $perPage           = 10;
 
     public function updated(string $property): void
     {
         if ($property !== 'page') $this->resetPage();
     }
 
-    /** Al cambiar empresa, limpiar departamento para evitar combinaciones inválidas */
     public function updatedEmpresaId(): void
     {
         $this->departamento_id = '';
@@ -33,7 +36,7 @@ class CargosTable extends Component
 
     public function resetFilters(): void
     {
-        $this->reset(['search', 'empresa_id', 'departamento_id']);
+        $this->reset(['search', 'empresa_id', 'departamento_id', 'mostrar_inactivos']);
         $this->resetPage();
     }
 
@@ -46,26 +49,32 @@ class CargosTable extends Component
     #[Computed]
     public function total(): int
     {
-        return Cargo::count();
+        return Cargo::where('activo', true)->count();
     }
 
     #[Computed]
     public function totalGlobales(): int
     {
-        return Cargo::whereNull('empresa_id')->count();
+        return Cargo::where('activo', true)->whereNull('empresa_id')->count();
     }
 
     #[Computed]
     public function totalPorEmpresa(): int
     {
-        return Cargo::whereNotNull('empresa_id')->count();
+        return Cargo::where('activo', true)->whereNotNull('empresa_id')->count();
+    }
+
+    #[Computed]
+    public function totalInactivos(): int
+    {
+        return Cargo::where('activo', false)->count();
     }
 
     #[Computed]
     public function activeFiltersCount(): int
     {
-        return collect([$this->search, $this->empresa_id, $this->departamento_id])
-            ->filter()
+        return collect([$this->search, $this->empresa_id, $this->departamento_id, $this->mostrar_inactivos])
+            ->filter(fn($v) => $v !== '' && $v !== false)
             ->count();
     }
 
@@ -79,19 +88,15 @@ class CargosTable extends Component
         ]);
     }
 
-    /**
-     * Departamentos disponibles en el filtro de la tabla.
-     * Se filtra por empresa seleccionada + globales.
-     */
     #[Computed]
     public function departamentosDisponibles()
     {
-        return Departamento::where(function ($q) {
-                $q->whereNull('empresa_id');
-                if ($this->empresa_id) {
-                    $q->orWhere('empresa_id', $this->empresa_id);
-                }
-            })
+        return Departamento::where('activo', true)
+            ->when($this->empresa_id, fn($q) =>
+                $q->where(fn($q2) =>
+                    $q2->where('empresa_id', $this->empresa_id)->orWhereNull('empresa_id')
+                )
+            )
             ->orderBy('nombre')
             ->pluck('nombre', 'id');
     }
@@ -100,22 +105,18 @@ class CargosTable extends Component
     {
         $cargos = Cargo::query()
             ->with(['empresa', 'departamento'])
-            ->withCount('usuarios')
-            ->when($this->search, fn($q) =>
-                $q->where('nombre', 'like', "%{$this->search}%")
-            )
-            ->when($this->empresa_id, fn($q) =>
-                $q->where('empresa_id', $this->empresa_id)
-            )
-            ->when($this->departamento_id, fn($q) =>
-                $q->where('departamento_id', $this->departamento_id)
-            )
+            ->withCount(['usuarios' => fn($q) => $q->where('estado', 'Activo')])
+            ->when(! $this->mostrar_inactivos, fn($q) => $q->where('activo', true))
+            ->when($this->search, fn($q) => $q->where('nombre', 'like', "%{$this->search}%"))
+            ->when($this->empresa_id, fn($q) => $q->where('empresa_id', $this->empresa_id))
+            ->when($this->departamento_id, fn($q) => $q->where('departamento_id', $this->departamento_id))
+            ->orderByDesc('activo')
             ->orderBy('nombre')
             ->paginate($this->perPage);
 
         return view('livewire.configuracion.cargos.cargos-table', [
-            'cargos'    => $cargos,
-            'empresas'  => Empresa::orderBy('nombre')->pluck('nombre', 'id'),
+            'cargos'   => $cargos,
+            'empresas' => Empresa::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id'),
         ]);
     }
 }

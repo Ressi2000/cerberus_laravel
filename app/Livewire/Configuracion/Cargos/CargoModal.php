@@ -6,16 +6,25 @@ use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * CargoModal — v2
+ *
+ * Correcciones:
+ *  - unique solo valida contra cargos ACTIVOS.
+ *  - Si al crear existe uno inactivo con el mismo nombre, lo reactiva.
+ *  - Selects de empresa y departamento solo muestran registros ACTIVOS.
+ */
 class CargoModal extends Component
 {
-    public bool   $open           = false;
-    public ?int   $cargoId        = null;
-    public string $nombre         = '';
-    public string $empresa_id     = ''; // '' = global
+    public bool   $open            = false;
+    public ?int   $cargoId         = null;
+    public string $nombre          = '';
+    public string $empresa_id      = '';
     public string $departamento_id = '';
 
     #[On('openCargoCrear')]
@@ -30,30 +39,34 @@ class CargoModal extends Component
     public function abrirEditar(int $id): void
     {
         $c = Cargo::findOrFail($id);
-
         $this->cargoId         = $c->id;
         $this->nombre          = $c->nombre;
         $this->empresa_id      = (string) ($c->empresa_id      ?? '');
         $this->departamento_id = (string) ($c->departamento_id ?? '');
-
         $this->resetValidation();
         $this->open = true;
     }
 
-    /** Al cambiar empresa, limpiar departamento para evitar combinaciones inválidas */
     public function updatedEmpresaId(): void
     {
         $this->departamento_id = '';
     }
 
+    // ── Validación ────────────────────────────────────────────────────────────
+
     protected function rules(): array
     {
-        $unique = $this->cargoId
-            ? "unique:cargos,nombre,{$this->cargoId}"
-            : 'unique:cargos,nombre';
+        if ($this->cargoId) {
+            $uniqueRule = Rule::unique('cargos', 'nombre')
+                ->ignore($this->cargoId)
+                ->where('activo', true);
+        } else {
+            $uniqueRule = Rule::unique('cargos', 'nombre')
+                ->where('activo', true);
+        }
 
         return [
-            'nombre'          => "required|string|max:255|{$unique}",
+            'nombre'          => ['required', 'string', 'max:255', $uniqueRule],
             'empresa_id'      => 'nullable|exists:empresas,id',
             'departamento_id' => 'required|exists:departamentos,id',
         ];
@@ -63,7 +76,7 @@ class CargoModal extends Component
     {
         return [
             'nombre.required'          => 'El nombre es obligatorio.',
-            'nombre.unique'            => 'Ya existe un cargo con ese nombre.',
+            'nombre.unique'            => 'Ya existe un cargo activo con ese nombre.',
             'nombre.max'               => 'Máximo 255 caracteres.',
             'empresa_id.exists'        => 'La empresa seleccionada no es válida.',
             'departamento_id.required' => 'Debe seleccionar un departamento.',
@@ -71,21 +84,24 @@ class CargoModal extends Component
         ];
     }
 
+    // ── Computed ──────────────────────────────────────────────────────────────
+
+    /** Solo empresas ACTIVAS */
     #[Computed]
     public function empresas()
     {
-        return Empresa::orderBy('nombre')->pluck('nombre', 'id');
+        return Empresa::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
     }
 
     /**
-     * Departamentos disponibles en el modal.
+     * Departamentos ACTIVOS disponibles.
      * Muestra globales (empresa_id = null) + los de la empresa seleccionada.
-     * Si no hay empresa seleccionada, solo muestra los globales.
      */
     #[Computed]
     public function departamentos()
     {
-        return Departamento::where(function ($q) {
+        return Departamento::where('activo', true)
+            ->where(function ($q) {
                 $q->whereNull('empresa_id');
                 if ($this->empresa_id) {
                     $q->orWhere('empresa_id', $this->empresa_id);
@@ -95,23 +111,35 @@ class CargoModal extends Component
             ->pluck('nombre', 'id');
     }
 
+    // ── Guardar ───────────────────────────────────────────────────────────────
+
     public function guardar(): void
     {
         $this->validate();
 
         try {
             $data = [
-                'nombre'          => $this->nombre,
+                'nombre'          => trim($this->nombre),
                 'empresa_id'      => $this->empresa_id      ?: null,
-                'departamento_id' => $this->departamento_id,
+                'departamento_id' => $this->departamento_id ?: null,
             ];
 
             if ($this->cargoId) {
                 Cargo::findOrFail($this->cargoId)->update($data);
                 $msg = "Cargo «{$this->nombre}» actualizado.";
             } else {
-                Cargo::create($data);
-                $msg = "Cargo «{$this->nombre}» creado.";
+                // Verificar si existe inactivo con el mismo nombre
+                $inactivo = Cargo::where('nombre', trim($this->nombre))
+                    ->where('activo', false)
+                    ->first();
+
+                if ($inactivo) {
+                    $inactivo->update(array_merge($data, ['activo' => true]));
+                    $msg = "Cargo «{$this->nombre}» reactivado.";
+                } else {
+                    Cargo::create(array_merge($data, ['activo' => true]));
+                    $msg = "Cargo «{$this->nombre}» creado.";
+                }
             }
 
             $this->close();

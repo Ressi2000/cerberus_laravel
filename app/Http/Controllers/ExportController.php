@@ -3,21 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Exports\AtributosExport;
-use App\Exports\UsuariosExport;
-use App\Exports\AuditoriaExport;
 use App\Exports\CategoriasExport;
+use App\Exports\CargosExport;
+use App\Exports\DepartamentosExport;
+use App\Exports\EmpresasExport;
 use App\Exports\EquiposExport;
 use App\Exports\EstadosExport;
+use App\Exports\UbicacionesExport;
+use App\Exports\UsuariosExport;
+use App\Exports\AuditoriaExport;
 use App\Models\AtributoEquipo;
 use App\Models\Auditoria;
 use App\Models\CategoriaEquipo;
+use App\Models\Cargo;
+use App\Models\Departamento;
+use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EstadoEquipo;
+use App\Models\Ubicacion;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
-
 class ExportController extends Controller
 {
     // ─────────────────────────────────────────────────────────────────────────
@@ -243,6 +250,115 @@ class ExportController extends Controller
 
         $filename = 'estados_cerberus_' . now()->format('Ymd_His') . '.' . $format;
         return Excel::download(new EstadosExport($query), $filename);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Ubicaciones  (solo Administrador)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function ubicaciones(Request $request)
+    {
+        $format = $request->input('format', 'xlsx');
+        $query  = Ubicacion::with('empresa')
+            ->withCount([
+                'usuarios' => fn($q) => $q->where('estado', 'Activo'),
+                'equipos'  => fn($q) => $q->where('activo', true),
+            ])
+            ->orderBy('nombre');
+
+        if ($request->search) {
+            $query->where(
+                fn($q) =>
+                $q->where('nombre', 'like', "%{$request->search}%")
+                    ->orWhere('descripcion', 'like', "%{$request->search}%")
+            );
+        }
+        if ($request->empresa_id) $query->where('empresa_id', $request->empresa_id);
+        if ($request->es_estado !== null && $request->es_estado !== '') {
+            $query->where('es_estado', (bool) $request->es_estado);
+        }
+
+        return Excel::download(
+            new UbicacionesExport($query),
+            'ubicaciones_cerberus_' . now()->format('Ymd_His') . '.' . $format
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Cargos  (solo Administrador)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function cargos(Request $request)
+    {
+        $format = $request->input('format', 'xlsx');
+        $query  = Cargo::with(['empresa', 'departamento'])
+            ->withCount(['usuarios' => fn($q) => $q->where('estado', 'Activo')])
+            ->orderBy('nombre');
+
+        if ($request->search) {
+            $query->where('nombre', 'like', "%{$request->search}%");
+        }
+        if ($request->empresa_id)      $query->where('empresa_id', $request->empresa_id);
+        if ($request->departamento_id) $query->where('departamento_id', $request->departamento_id);
+
+        return Excel::download(
+            new CargosExport($query),
+            'cargos_cerberus_' . now()->format('Ymd_His') . '.' . $format
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Departamentos  (solo Administrador)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function departamentos(Request $request)
+    {
+        $format = $request->input('format', 'xlsx');
+        $query  = Departamento::with('empresa')
+            ->withCount([
+                'cargos'   => fn($q) => $q->where('activo', true),
+                'usuarios' => fn($q) => $q->where('estado', 'Activo'),
+            ])
+            ->orderBy('nombre');
+
+        if ($request->search) {
+            $query->where(
+                fn($q) =>
+                $q->where('nombre', 'like', "%{$request->search}%")
+                    ->orWhere('descripcion', 'like', "%{$request->search}%")
+            );
+        }
+        if ($request->empresa_id) $query->where('empresa_id', $request->empresa_id);
+        if ($request->tipo === 'global')  $query->whereNull('empresa_id');
+        if ($request->tipo === 'empresa') $query->whereNotNull('empresa_id');
+
+        return Excel::download(
+            new DepartamentosExport($query),
+            'departamentos_cerberus_' . now()->format('Ymd_His') . '.' . $format
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Empresas  (solo Administrador)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function empresas(Request $request)
+    {
+        $format = $request->input('format', 'xlsx');
+        $query  = Empresa::withCount([
+            'usuarios'    => fn($q) => $q->where('estado', 'Activo'),
+            'equipos'     => fn($q) => $q->where('activo', true),
+            'ubicaciones' => fn($q) => $q->where('activo', true),
+        ])->orderBy('nombre');
+
+        if ($request->search) {
+            $query->where(
+                fn($q) =>
+                $q->where('nombre', 'like', "%{$request->search}%")
+                    ->orWhere('rif', 'like', "%{$request->search}%")
+            );
+        }
+
+        return Excel::download(
+            new EmpresasExport($query),
+            'empresas_cerberus_' . now()->format('Ymd_His') . '.' . $format
+        );
     }
 
     // ─────────────────────────────────────────────────────────────────────────

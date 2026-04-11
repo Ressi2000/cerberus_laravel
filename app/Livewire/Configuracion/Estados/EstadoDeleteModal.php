@@ -1,4 +1,7 @@
 <?php
+// ════════════════════════════════════════════════════════════════════════════
+// app/Livewire/Configuracion/Estados/EstadoDeleteModal.php
+// ════════════════════════════════════════════════════════════════════════════
 
 namespace App\Livewire\Configuracion\Estados;
 
@@ -21,30 +24,43 @@ class EstadoDeleteModal extends Component
         $this->open         = true;
     }
 
-    public function eliminar(): void
+    public function desactivar(): void
     {
         if (! $this->estado) return;
 
         if ($this->totalEquipos > 0) {
-            $this->dispatch(
-                'toast',
-                type: 'error',
-                message: "No se puede eliminar: {$this->totalEquipos} equipo(s) usan este estado."
-            );
+            $this->dispatch('toast', type: 'error',
+                message: "No se puede desactivar: {$this->totalEquipos} equipo(s) usan este estado.");
             $this->close();
             return;
         }
 
         try {
             $nombre = $this->estado->nombre;
-            $this->estado->delete();
+            $this->estado->update(['activo' => false]);
+
             $this->close();
             $this->dispatch('estadoEliminado');
-            $this->dispatch('toast', type: 'success', message: "Estado «{$nombre}» eliminado.");
+            $this->dispatch('toast', type: 'success', message: "Estado «{$nombre}» desactivado.");
         } catch (\Exception $e) {
-            Log::error('EstadoDeleteModal@eliminar: ' . $e->getMessage());
-            $this->dispatch('toast', type: 'error', message: 'Error al eliminar el estado.');
+            Log::error('EstadoDeleteModal@desactivar: ' . $e->getMessage());
+            $this->dispatch('toast', type: 'error', message: 'Error al desactivar el estado.');
             $this->close();
+        }
+    }
+
+    #[On('reactivarEstado')]
+    public function reactivar(int $id): void
+    {
+        try {
+            $estado = EstadoEquipo::findOrFail($id);
+            $estado->update(['activo' => true]);
+
+            $this->dispatch('estadoEliminado');
+            $this->dispatch('toast', type: 'success', message: "Estado «{$estado->nombre}» reactivado.");
+        } catch (\Exception $e) {
+            Log::error('EstadoDeleteModal@reactivar: ' . $e->getMessage());
+            $this->dispatch('toast', type: 'error', message: 'Error al reactivar el estado.');
         }
     }
 

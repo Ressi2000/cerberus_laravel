@@ -62,7 +62,7 @@ class Cargo extends Model
  
     public function scopeInactivos(Builder $query): Builder
     {
-        return $query->where('activo', false)->where('activo', true);
+        return $query->where('activo', false);;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

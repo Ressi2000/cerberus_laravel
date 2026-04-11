@@ -5,10 +5,18 @@ namespace App\Livewire\Configuracion\Ubicaciones;
 use App\Models\Empresa;
 use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * UbicacionModal — v2
+ *
+ * Corrección: unique solo valida contra ubicaciones ACTIVAS.
+ * Si al crear existe una inactiva con el mismo nombre y empresa, la reactiva.
+ * Selects de empresa filtran solo empresas ACTIVAS.
+ */
 class UbicacionModal extends Component
 {
     public bool   $open        = false;
@@ -30,25 +38,30 @@ class UbicacionModal extends Component
     public function abrirEditar(int $id): void
     {
         $u = Ubicacion::findOrFail($id);
-
         $this->ubicacionId = $u->id;
         $this->nombre      = $u->nombre;
         $this->descripcion = $u->descripcion ?? '';
         $this->empresa_id  = (string) ($u->empresa_id ?? '');
         $this->es_estado   = (bool) $u->es_estado;
-
         $this->resetValidation();
         $this->open = true;
     }
 
+    // ── Validación ────────────────────────────────────────────────────────────
+
     protected function rules(): array
     {
-        $unique = $this->ubicacionId
-            ? "unique:ubicaciones,nombre,{$this->ubicacionId}"
-            : 'unique:ubicaciones,nombre';
+        if ($this->ubicacionId) {
+            $uniqueRule = Rule::unique('ubicaciones', 'nombre')
+                ->ignore($this->ubicacionId)
+                ->where('activo', true);
+        } else {
+            $uniqueRule = Rule::unique('ubicaciones', 'nombre')
+                ->where('activo', true);
+        }
 
         return [
-            'nombre'      => "required|string|max:255|{$unique}",
+            'nombre'      => ['required', 'string', 'max:255', $uniqueRule],
             'descripcion' => 'nullable|string|max:500',
             'empresa_id'  => 'required|exists:empresas,id',
             'es_estado'   => 'boolean',
@@ -58,19 +71,24 @@ class UbicacionModal extends Component
     protected function messages(): array
     {
         return [
-            'nombre.required'    => 'El nombre es obligatorio.',
-            'nombre.unique'      => 'Ya existe una ubicación con ese nombre.',
-            'nombre.max'         => 'Máximo 255 caracteres.',
-            'empresa_id.required'=> 'Debe seleccionar una empresa.',
-            'empresa_id.exists'  => 'La empresa seleccionada no es válida.',
+            'nombre.required'     => 'El nombre es obligatorio.',
+            'nombre.unique'       => 'Ya existe una ubicación activa con ese nombre.',
+            'nombre.max'          => 'Máximo 255 caracteres.',
+            'empresa_id.required' => 'Debe seleccionar una empresa.',
+            'empresa_id.exists'   => 'La empresa seleccionada no es válida.',
         ];
     }
 
+    // ── Computed ──────────────────────────────────────────────────────────────
+
+    /** Solo empresas ACTIVAS en el select */
     #[Computed]
     public function empresas()
     {
-        return Empresa::orderBy('nombre')->pluck('nombre', 'id');
+        return Empresa::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
     }
+
+    // ── Guardar ───────────────────────────────────────────────────────────────
 
     public function guardar(): void
     {
@@ -78,8 +96,8 @@ class UbicacionModal extends Component
 
         try {
             $data = [
-                'nombre'      => $this->nombre,
-                'descripcion' => $this->descripcion ?: null,
+                'nombre'      => trim($this->nombre),
+                'descripcion' => trim($this->descripcion) ?: null,
                 'empresa_id'  => $this->empresa_id,
                 'es_estado'   => $this->es_estado,
             ];
@@ -88,8 +106,19 @@ class UbicacionModal extends Component
                 Ubicacion::findOrFail($this->ubicacionId)->update($data);
                 $msg = "Ubicación «{$this->nombre}» actualizada.";
             } else {
-                Ubicacion::create($data);
-                $msg = "Ubicación «{$this->nombre}» creada.";
+                // Verificar si existe inactiva con mismo nombre + empresa
+                $inactiva = Ubicacion::where('nombre', trim($this->nombre))
+                    ->where('empresa_id', $this->empresa_id)
+                    ->where('activo', false)
+                    ->first();
+
+                if ($inactiva) {
+                    $inactiva->update(array_merge($data, ['activo' => true]));
+                    $msg = "Ubicación «{$this->nombre}» reactivada.";
+                } else {
+                    Ubicacion::create(array_merge($data, ['activo' => true]));
+                    $msg = "Ubicación «{$this->nombre}» creada.";
+                }
             }
 
             $this->close();

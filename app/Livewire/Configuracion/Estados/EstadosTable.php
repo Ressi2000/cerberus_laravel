@@ -3,7 +3,6 @@
 namespace App\Livewire\Configuracion\Estados;
 
 use App\Models\EstadoEquipo;
-use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -13,8 +12,9 @@ class EstadosTable extends Component
 {
     use WithPagination;
 
-    public string $search  = '';
-    public int    $perPage = 10;
+    public string $search            = '';
+    public bool   $mostrar_inactivos = false;
+    public int    $perPage           = 10;
 
     public function updated(string $property): void
     {
@@ -23,7 +23,7 @@ class EstadosTable extends Component
 
     public function resetFilters(): void
     {
-        $this->reset(['search']);
+        $this->reset(['search', 'mostrar_inactivos']);
         $this->resetPage();
     }
 
@@ -31,26 +31,38 @@ class EstadosTable extends Component
     #[On('estadoEliminado')]
     public function refresh(): void {}
 
-    #[Computed] public function total(): int
+    // ── Stats ─────────────────────────────────────────────────────────────────
+
+    #[Computed]
+    public function total(): int
     {
-        return EstadoEquipo::count();
+        return EstadoEquipo::where('activo', true)->count();
     }
-    #[Computed] public function conEquipos(): int
+
+    #[Computed]
+    public function conEquipos(): int
     {
-        return EstadoEquipo::has('equipos')->count();
+        return EstadoEquipo::where('activo', true)->has('equipos')->count();
     }
-    #[Computed] public function sinEquipos(): int
+
+    #[Computed]
+    public function sinEquipos(): int
     {
-        return EstadoEquipo::doesntHave('equipos')->count();
+        return EstadoEquipo::where('activo', true)->doesntHave('equipos')->count();
+    }
+
+    #[Computed]
+    public function totalInactivos(): int
+    {
+        return EstadoEquipo::where('activo', false)->count();
     }
 
     #[Computed]
     public function activeFiltersCount(): int
     {
-        return collect([$this->search])->filter()->count();
+        return collect([$this->search, $this->mostrar_inactivos])->filter()->count();
     }
 
-    // ── Parámetros de filtro para exportación ─────────────────────────────────
     #[Computed]
     public function filterParams(): array
     {
@@ -62,8 +74,10 @@ class EstadosTable extends Component
     public function render()
     {
         $estados = EstadoEquipo::query()
+            ->when(! $this->mostrar_inactivos, fn($q) => $q->where('activo', true))
             ->when($this->search, fn($q) => $q->where('nombre', 'like', "%{$this->search}%"))
             ->withCount('equipos')
+            ->orderByDesc('activo')
             ->orderBy('nombre')
             ->paginate($this->perPage);
 

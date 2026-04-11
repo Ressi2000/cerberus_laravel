@@ -7,15 +7,16 @@
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
-        ['title' => 'Total',       'value' => $this->total,           'icon' => 'corporate_fare'],
-        ['title' => 'Globales',    'value' => $this->totalGlobales,   'icon' => 'public'],
-        ['title' => 'Por empresa', 'value' => $this->totalPorEmpresa, 'icon' => 'business'],
+        ['title' => 'Total activos',  'value' => $this->total,           'icon' => 'account_tree'],
+        ['title' => 'Globales',       'value' => $this->totalGlobales,   'icon' => 'public'],
+        ['title' => 'Por empresa',    'value' => $this->totalPorEmpresa, 'icon' => 'business'],
+        ['title' => 'Inactivos',      'value' => $this->totalInactivos,  'icon' => 'block'],
     ]" />
 
     {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
     <x-table.crud-header
         title="Departamentos"
-        subtitle="Áreas organizacionales del sistema"
+        subtitle="Áreas organizacionales de las empresas"
         buttonLabel="Nuevo departamento"
         buttonEvent="openDepartamentoCrear">
 
@@ -55,45 +56,77 @@
                     />
                 </div>
 
+                {{-- Toggle: mostrar inactivos --}}
+                <div class="flex items-center gap-3 pt-1">
+                    <button
+                        wire:click="$toggle('mostrar_inactivos')"
+                        role="switch"
+                        aria-checked="{{ $mostrar_inactivos ? 'true' : 'false' }}"
+                        class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full
+                               border-2 border-transparent transition-colors duration-200
+                               {{ $mostrar_inactivos ? 'bg-cerberus-primary' : 'bg-gray-300 dark:bg-cerberus-steel/40' }}">
+                        <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white
+                                     shadow ring-0 transition duration-200
+                                     {{ $mostrar_inactivos ? 'translate-x-4' : 'translate-x-0' }}">
+                        </span>
+                    </button>
+                    <span class="text-sm text-gray-600 dark:text-cerberus-light select-none">
+                        Mostrar inactivos
+                        @if ($this->totalInactivos > 0)
+                            <span class="ml-1 px-1.5 py-0.5 rounded-full text-xs
+                                         bg-gray-100 dark:bg-cerberus-steel/40 text-gray-500 dark:text-cerberus-light">
+                                {{ $this->totalInactivos }}
+                            </span>
+                        @endif
+                    </span>
+                </div>
+
             </div>
         </x-slot>
-
     </x-table.crud-header>
 
     {{-- ── TABLA ───────────────────────────────────────────────────────────── --}}
     <x-table.crud-table
-        :headers="['Nombre', 'Descripción', 'Empresa', 'Cargos', 'Usuarios', 'Acciones']"
+        :headers="['Nombre', 'Estado', 'Empresa', 'Cargos', 'Usuarios', 'Acciones']"
+        export
+        exportRoute="export.departamentos"
+        :filters="$this->filterParams"
         :paginated="$departamentos">
 
         @forelse ($departamentos as $departamento)
             <tr wire:key="dpto-{{ $departamento->id }}"
                 class="border-b border-gray-100 dark:border-cerberus-steel/30
+                       {{ ! $departamento->activo ? 'opacity-60 bg-gray-50 dark:bg-cerberus-dark/30' : '' }}
                        hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
 
                 <td class="px-4 py-3 text-[#1E293B] dark:text-white font-medium text-sm">
                     {{ $departamento->nombre }}
+                    @if ($departamento->descripcion)
+                        <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate max-w-xs">
+                            {{ $departamento->descripcion }}
+                        </p>
+                    @endif
                 </td>
 
-                <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm max-w-xs truncate">
-                    {{ $departamento->descripcion ?? '—' }}
-                </td>
-
+                {{-- Badge activo/inactivo --}}
                 <td class="px-4 py-3">
-                    @if ($departamento->empresa)
+                    @if ($departamento->activo)
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
-                                     bg-[#1E40AF]/10 dark:bg-cerberus-primary/15
-                                     text-[#1E40AF] dark:text-cerberus-accent
-                                     border border-[#1E40AF]/20 dark:border-cerberus-primary/30">
-                            {{ $departamento->empresa->nombre }}
+                                     bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400
+                                     border border-green-200 dark:border-green-500/30">
+                            <span class="material-icons text-xs">check_circle</span> Activo
                         </span>
                     @else
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
-                                     bg-green-50 dark:bg-green-500/15
-                                     text-green-700 dark:text-green-400
-                                     border border-green-200 dark:border-green-500/30">
-                            <span class="material-icons text-xs">public</span> Global
+                                     bg-gray-50 dark:bg-cerberus-steel/20 text-gray-500 dark:text-cerberus-light
+                                     border border-gray-200 dark:border-cerberus-steel/30">
+                            <span class="material-icons text-xs">block</span> Inactivo
                         </span>
                     @endif
+                </td>
+
+                <td class="px-4 py-3 text-gray-600 dark:text-cerberus-light text-sm">
+                    {{ $departamento->empresa?->nombre ?? '—' }}
                 </td>
 
                 <td class="px-4 py-3 text-center text-sm text-gray-600 dark:text-cerberus-light">
@@ -104,30 +137,47 @@
                     {{ $departamento->usuarios_count }}
                 </td>
 
-                <td class="px-4 py-3 text-center">
-                    <x-table.table-actions
-                        :model="$departamento"
-                        viewEvent="openDepartamentoVer"
-                        editEvent="openDepartamentoEditar"
-                        deleteEvent="openDepartamentoEliminar"
-                        deleteLabel="Eliminar"
-                    />
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-1">
+                        @if ($departamento->activo)
+                            <button wire:click="$dispatch('openDepartamentoVer', { id: {{ $departamento->id }} })"
+                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
+                                       hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-cerberus-steel/40 transition"
+                                title="Ver detalle">
+                                <span class="material-icons text-base">visibility</span>
+                            </button>
+                            <button wire:click="$dispatch('openDepartamentoEditar', { id: {{ $departamento->id }} })"
+                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
+                                       hover:text-cerberus-accent hover:bg-cerberus-steel/40 transition"
+                                title="Editar">
+                                <span class="material-icons text-base">edit</span>
+                            </button>
+                            <button wire:click="$dispatch('openDepartamentoEliminar', { id: {{ $departamento->id }} })"
+                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
+                                       hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition"
+                                title="Desactivar">
+                                <span class="material-icons text-base">block</span>
+                            </button>
+                        @else
+                            <button wire:click="$dispatch('reactivarDepartamento', { id: {{ $departamento->id }} })"
+                                wire:confirm="¿Reactivar el departamento «{{ $departamento->nombre }}»?"
+                                class="p-1.5 rounded-lg text-green-500 hover:text-green-400
+                                       hover:bg-green-50 dark:hover:bg-green-900/20 transition"
+                                title="Reactivar">
+                                <span class="material-icons text-base">restart_alt</span>
+                            </button>
+                        @endif
+                    </div>
                 </td>
-
             </tr>
         @empty
             <tr>
                 <td colspan="6" class="px-4 py-12 text-center">
-                    <span class="material-icons text-4xl text-gray-300 dark:text-cerberus-steel block mb-2">
-                        corporate_fare
-                    </span>
-                    <p class="text-gray-500 dark:text-cerberus-steel text-sm">
-                        No hay departamentos registrados.
-                    </p>
+                    <span class="material-icons text-4xl text-gray-300 dark:text-cerberus-steel block mb-2">account_tree</span>
+                    <p class="text-gray-500 dark:text-cerberus-steel text-sm">No hay departamentos registrados.</p>
                 </td>
             </tr>
         @endforelse
 
     </x-table.crud-table>
-
 </div>

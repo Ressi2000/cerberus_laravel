@@ -7,63 +7,58 @@
                         border border-gray-200 dark:border-cerberus-steel rounded-xl shadow-xl">
 
                 <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-                    <span class="material-icons text-red-400">delete</span>
-                    Eliminar ubicación
+                    <span class="material-icons text-yellow-400">block</span>
+                    Desactivar ubicación
                 </h2>
 
                 <p class="text-sm text-gray-600 dark:text-cerberus-light mb-1">
-                    ¿Seguro que deseas eliminar
+                    ¿Deseas desactivar
                     <strong class="text-gray-900 dark:text-white">{{ $ubicacion->nombre }}</strong>?
                 </p>
 
-                @php $hayVinculados = $totalUsuarios > 0 || $totalEquipos > 0; @endphp
-
-                @if ($hayVinculados)
-                    <div class="mt-3 px-4 py-3 bg-red-50 dark:bg-red-900/20
-                                border border-red-200 dark:border-red-700/40
-                                rounded-lg text-sm text-red-700 dark:text-red-400
-                                space-y-1">
+                @if ($totalUsuarios > 0 || $totalEquipos > 0)
+                    <div class="mt-3 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/40
+                                rounded-lg text-sm text-red-700 dark:text-red-400 space-y-1">
                         <div class="flex items-center gap-2 font-medium">
                             <span class="material-icons text-base">warning</span>
-                            No se puede eliminar:
+                            No se puede desactivar: tiene recursos activos.
                         </div>
                         @if ($totalUsuarios > 0)
-                            <p class="pl-6 text-xs">
-                                • <strong>{{ $totalUsuarios }} usuario(s)</strong> tienen esta ubicación como sede física.
-                            </p>
+                            <p class="pl-6 text-xs">• <strong>{{ $totalUsuarios }} usuario(s)</strong> en esta ubicación.</p>
                         @endif
                         @if ($totalEquipos > 0)
-                            <p class="pl-6 text-xs">
-                                • <strong>{{ $totalEquipos }} equipo(s)</strong> están registrados en esta ubicación.
-                            </p>
+                            <p class="pl-6 text-xs">• <strong>{{ $totalEquipos }} equipo(s)</strong> en esta ubicación.</p>
                         @endif
                     </div>
                 @else
-                    <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-1">
-                        Esta acción es reversible desde la administración del sistema.
-                    </p>
+                    <div class="mt-3 px-4 py-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/40
+                                rounded-lg text-sm text-yellow-700 dark:text-yellow-400 flex items-start gap-2">
+                        <span class="material-icons text-base mt-0.5">info</span>
+                        <span>
+                            La ubicación dejará de aparecer en los formularios, pero
+                            <strong>no se eliminará</strong>. Podrás reactivarla desde esta tabla.
+                        </span>
+                    </div>
                 @endif
 
                 <div class="flex justify-end gap-3 mt-5">
                     <button wire:click="close"
-                        class="px-4 py-2 text-sm rounded-lg
-                               bg-gray-100 dark:bg-cerberus-steel/30
-                               text-gray-700 dark:text-white
-                               hover:bg-gray-200 dark:hover:bg-cerberus-steel/50 transition">
+                        class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30
+                               text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-cerberus-steel/50 transition">
                         Cancelar
                     </button>
-                    @if (! $hayVinculados)
-                        <button wire:click="eliminar" wire:loading.attr="disabled"
-                            class="px-4 py-2 text-sm rounded-lg font-medium bg-red-600 hover:bg-red-700
+
+                    @if ($totalUsuarios === 0 && $totalEquipos === 0)
+                        <button wire:click="desactivar" wire:loading.attr="disabled"
+                            class="px-4 py-2 text-sm rounded-lg font-medium bg-yellow-600 hover:bg-yellow-700
                                    text-white transition flex items-center gap-2 disabled:opacity-60">
-                            <span wire:loading.remove wire:target="eliminar" class="material-icons text-sm">delete</span>
-                            <span wire:loading wire:target="eliminar" class="material-icons text-sm animate-spin">refresh</span>
-                            <span wire:loading.remove wire:target="eliminar">Eliminar</span>
-                            <span wire:loading wire:target="eliminar">Eliminando...</span>
+                            <span wire:loading.remove wire:target="desactivar" class="material-icons text-sm">block</span>
+                            <span wire:loading wire:target="desactivar" class="material-icons text-sm animate-spin">refresh</span>
+                            <span wire:loading.remove wire:target="desactivar">Desactivar</span>
+                            <span wire:loading wire:target="desactivar">Desactivando...</span>
                         </button>
                     @endif
                 </div>
-
             </div>
         </div>
     @endif

@@ -186,7 +186,7 @@ class AtributoModal extends Component
     public function render()
     {
         return view('livewire.configuracion.atributos.atributo-modal', [
-            'categorias' => CategoriaEquipo::orderBy('nombre')->pluck('nombre', 'id'),
+            'categorias' => CategoriaEquipo::activos()->orderBy('nombre')->pluck('nombre', 'id'),
         ]);
     }
 }

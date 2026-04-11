@@ -136,11 +136,11 @@ class UsuariosTable extends Component
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
-            return Ubicacion::orderBy('nombre')->pluck('nombre', 'id');
+            return Ubicacion::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
         }
 
         // Analista: solo la ubicación de su empresa activa + foráneos
-        return Ubicacion::where(function ($q) use ($user) {
+        return Ubicacion::where('activo', true)->where(function ($q) use ($user) {
             $q->where('empresa_id', $user->empresa_activa_id)
                 ->orWhere('es_estado', true);
         })

@@ -140,13 +140,14 @@ class EditarUsuario extends Component
     #[Computed]
     public function empresas()
     {
-        return Empresa::orderBy('nombre')->pluck('nombre', 'id');
+        return Empresa::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
     }
 
     #[Computed]
     public function departamentos()
     {
-        return Departamento::where(function ($q) {
+        return Departamento::where('activo', true)
+            ->where(function ($q) {
             $q->whereNull('empresa_id');
             if ($this->empresa_id) {
                 $q->orWhere('empresa_id', $this->empresa_id);
@@ -161,7 +162,8 @@ class EditarUsuario extends Component
     {
         if (! $this->departamento_id) return collect();
 
-        return Cargo::where('departamento_id', $this->departamento_id)
+        return Cargo::where('activo', true)
+            ->where('departamento_id', $this->departamento_id)
             ->where(function ($q) {
                 $q->whereNull('empresa_id');
                 if ($this->empresa_id) {
@@ -179,10 +181,10 @@ class EditarUsuario extends Component
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
-            return Ubicacion::orderBy('nombre')->pluck('nombre', 'id');
+            return Ubicacion::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
         }
 
-        return Ubicacion::where(function ($q) use ($user) {
+        return Ubicacion::where('activo', true)->where(function ($q) use ($user) {
             $q->where('empresa_id', $user->empresa_activa_id)
                 ->orWhere('es_estado', true);
         })

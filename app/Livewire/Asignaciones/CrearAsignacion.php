@@ -94,7 +94,7 @@ class CrearAsignacion extends Component
     #[Computed]
     public function empresasArea()
     {
-        return Empresa::orderBy('nombre')->pluck('nombre', 'id');
+        return Empresa::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
     }
 
     #[Computed]
@@ -102,7 +102,8 @@ class CrearAsignacion extends Component
     {
         if (! $this->area_empresa_id) return collect();
 
-        return Departamento::where('empresa_id', $this->area_empresa_id)
+        return Departamento::where('activo', true)
+            ->where('empresa_id', $this->area_empresa_id)
             ->orderBy('nombre')
             ->pluck('nombre', 'id');
     }
@@ -125,7 +126,7 @@ class CrearAsignacion extends Component
     {
         $actor  = Auth::user();
 
-        $query = Ubicacion::orderBy('nombre');
+        $query = Ubicacion::where('activo', true)->orderBy('nombre');
 
         if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
             $query->where(function ($q) use ($actor) {
@@ -144,7 +145,7 @@ class CrearAsignacion extends Component
         $estadoDisponible = EstadoEquipo::where('nombre', 'Disponible')->value('id');
         $idsEnCarrito     = collect($this->carrito)->pluck('id')->toArray();
 
-        return CategoriaEquipo::where('asignable', true)
+        return CategoriaEquipo::where('activo', true)->where('asignable', true)
             ->whereHas('equipos', function ($q) use ($actor, $estadoDisponible, $idsEnCarrito) {
                 $q->where('activo', true)
                   ->where('estado_id', $estadoDisponible)

@@ -72,13 +72,13 @@ class EquiposTable extends Component
     #[Computed]
     public function categorias()
     {
-        return CategoriaEquipo::orderBy('nombre')->pluck('nombre', 'id');
+        return CategoriaEquipo::activos()->orderBy('nombre')->pluck('nombre', 'id');
     }
 
     #[Computed]
     public function estados()
     {
-        return EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id');
+        return EstadoEquipo::activos()->orderBy('nombre')->pluck('nombre', 'id');
     }
 
     #[Computed]
@@ -88,11 +88,11 @@ class EquiposTable extends Component
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
-            return Ubicacion::orderBy('nombre')->pluck('nombre', 'id');
+            return Ubicacion::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
         }
 
         // Analista: solo la ubicación de su empresa activa + foráneos
-        return Ubicacion::where(function ($q) use ($user) {
+        return Ubicacion::where('activo', true)->where(function ($q) use ($user) {
             $q->where('empresa_id', $user->empresa_activa_id)
                 ->orWhere('es_estado', true);
         })
