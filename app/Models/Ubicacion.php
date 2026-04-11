@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ubicacion extends Model
 {
-    use SoftDeletes, Auditable;
+    use Auditable;
 
     protected $table = 'ubicaciones';
 
@@ -20,11 +19,13 @@ class Ubicacion extends Model
         'descripcion',
         'empresa_id',
         'es_estado', // true = ubicación foránea (visible para todos los analistas)
+        'activo',
     ];
 
     protected $casts = [
         'empresa_id' => 'integer',
         'es_estado'  => 'boolean',
+        'activo'    => 'boolean',
     ];
 
     // ── Relaciones ────────────────────────────────────────────────────────────
@@ -55,7 +56,7 @@ class Ubicacion extends Model
      */
     public function scopeForaneas(Builder $query): Builder
     {
-        return $query->where('es_estado', true);
+        return $query->where('es_estado', true)->where('activo', true);
     }
 
     /**
@@ -63,6 +64,28 @@ class Ubicacion extends Model
      */
     public function scopeLocales(Builder $query): Builder
     {
-        return $query->where('es_estado', false);
+        return $query->where('es_estado', false)->where('activo', true);
+    }
+
+    public function scopeActivos(Builder $query): Builder
+    {
+        return $query->where('activo', true);
+    }
+ 
+    public function scopeInactivos(Builder $query): Builder
+    {
+        return $query->where('activo', false);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+ 
+    public function puedeDesactivarse(): bool
+    {
+        $tieneEquipos  = $this->equipos()->where('activo', true)->exists();
+        $tieneUsuarios = $this->usuarios()->where('estado', 'Activo')->exists();
+ 
+        return ! $tieneEquipos && ! $tieneUsuarios;
     }
 }

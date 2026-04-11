@@ -4,17 +4,32 @@ namespace App\Models;
 
 use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
+/**
+ * Modelo EstadoEquipo
+ *
+ * Tabla maestra — NO usa SoftDeletes.
+ * Control de ciclo de vida mediante campo `activo`.
+ *
+ * Los estados son críticos: "Disponible", "Asignado", "En préstamo", etc.
+ * No deben poder borrarse si tienen equipos asociados.
+ */
 
 class EstadoEquipo extends Model
 {
-    use SoftDeletes, Auditable;
+    use Auditable;
 
     protected $table = 'estados_equipos';
 
     protected $fillable = [
         'nombre',
+        'activo'
+    ];
+
+    protected $casts = [
+        'activo' => 'boolean',
     ];
 
     // ── Constantes de estados del sistema ────────────────────────────────────
@@ -53,12 +68,22 @@ class EstadoEquipo extends Model
     }
 
     /** Estado que indica que el equipo no puede ser usado ni asignado */
-    public function scopeInactivos($query)
+    public function scopeInactivo($query)
     {
         return $query->whereIn('nombre', [
             self::BAJA,
             self::EN_REPARACION,
         ]);
+    }
+
+    public function scopeActivos(Builder $query): Builder
+    {
+        return $query->where('activo', true);
+    }
+ 
+    public function scopeInactivos(Builder $query): Builder
+    {
+        return $query->where('activo', false);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -73,5 +98,10 @@ class EstadoEquipo extends Model
     public function permitePrestamo(): bool
     {
         return $this->nombre === self::DISPONIBLE;
+    }
+
+    public function puedeDesactivarse(): bool
+    {
+        return $this->equipos()->count() === 0;
     }
 }

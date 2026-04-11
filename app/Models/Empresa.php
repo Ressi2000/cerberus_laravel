@@ -6,11 +6,11 @@ use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
 
 class Empresa extends Model
 {
-    use SoftDeletes, Auditable;
+    use Auditable;
 
     protected $table = 'empresas';
 
@@ -19,7 +19,13 @@ class Empresa extends Model
         'rif',
         'direccion',
         'telefono',
+        'activo'
     ];
+
+    protected $casts = [
+        'activo' => 'boolean',
+    ];
+
 
     // ── Relaciones ────────────────────────────────────────────────────────────
 
@@ -60,6 +66,27 @@ class Empresa extends Model
     }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
-    // Con SoftDeletes, Eloquent filtra deleted_at automáticamente en todos
-    // los queries. Para ver eliminadas usar: Empresa::withTrashed()->...
+    /** Solo empresas activas — usar en selects y formularios */
+    public function scopeActivas(Builder $query): Builder
+    {
+        return $query->where('activo', true);
+    }
+
+    /** Solo empresas inactivas — usar en panel de configuración */
+    public function scopeInactivas(Builder $query): Builder
+    {
+        return $query->where('activo', false);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function puedeDesactivarse(): bool
+    {
+        $tieneEquipos  = $this->equipos()->where('activo', true)->exists();
+        $tieneUsuarios = $this->usuarios()->where('estado', 'Activo')->exists();
+ 
+        return ! $tieneEquipos && ! $tieneUsuarios;
+    }
 }

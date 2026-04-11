@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cargo extends Model
 {
-    use SoftDeletes, Auditable;
+    use Auditable;
 
     protected $table = 'cargos';
 
@@ -19,11 +18,13 @@ class Cargo extends Model
         'nombre',
         'empresa_id',      // null = global
         'departamento_id',
+        'activo',
     ];
 
     protected $casts = [
         'empresa_id'      => 'integer',
         'departamento_id' => 'integer',
+        'activo'         => 'boolean',
     ];
 
     // ── Relaciones ────────────────────────────────────────────────────────────
@@ -52,5 +53,24 @@ class Cargo extends Model
     public function scopeGlobales(Builder $query): Builder
     {
         return $query->whereNull('empresa_id');
+    }
+
+    public function scopeActivos(Builder $query): Builder
+    {
+        return $query->where('activo', true);
+    }
+ 
+    public function scopeInactivos(Builder $query): Builder
+    {
+        return $query->where('activo', false)->where('activo', true);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+ 
+    public function puedeDesactivarse(): bool
+    {
+        return $this->usuarios()->where('estado', 'Activo')->count() === 0;
     }
 }
