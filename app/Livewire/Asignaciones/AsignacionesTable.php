@@ -86,7 +86,7 @@ class AsignacionesTable extends Component
             ->orderBy('name');
 
         if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
-            $query->whereHas('empresas', fn ($q) => $q->where('empresa_id', $actor->empresa_activa_id));
+            $query->whereHas('empresaNomina', fn ($q) => $q->where('empresa_id', $actor->empresa_activa_id));
         }
 
         return $query->pluck('name', 'id');

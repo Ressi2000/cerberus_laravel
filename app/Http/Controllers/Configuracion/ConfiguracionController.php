@@ -21,4 +21,24 @@ class ConfiguracionController extends Controller
     {
         return view('configuracion.atributos.atributos');
     }
+
+    public function departamentos()
+    {
+        return view('configuracion.departamentos.departamentos');
+    }
+ 
+    public function cargos()
+    {
+        return view('configuracion.cargos.cargos');
+    }
+ 
+    public function ubicaciones()
+    {
+        return view('configuracion.ubicaciones.ubicaciones');
+    }
+ 
+    public function empresas()
+    {
+        return view('configuracion.empresas.empresas');
+    }
 }

@@ -59,13 +59,13 @@ class Equipo extends Model
     /** Categoría del equipo (Laptop, Desktop, Servidor, etc.) */
     public function categoria()
     {
-        return $this->belongsTo(CategoriaEquipo::class);
+        return $this->belongsTo(CategoriaEquipo::class, 'categoria_id');
     }
 
     /** Estado actual (Disponible, Asignado, En préstamo, etc.) */
     public function estado()
     {
-        return $this->belongsTo(EstadoEquipo::class);
+        return $this->belongsTo(EstadoEquipo::class, 'estado_id');
     }
 
     /** Empresa propietaria del equipo */

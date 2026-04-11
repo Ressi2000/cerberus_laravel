@@ -368,9 +368,9 @@ class CrearAsignacion extends Component
 
                 $empresaId = $actor->hasRole('Administrador')
                     ? ($this->tipo_receptor === 'usuario'
-                        ? User::find($this->usuario_id)?->empresa_activa_id ?? $actor->empresa_activa_id
+                        ? User::find($this->usuario_id)?->ubicacion_id ?? $actor->ubicacion_id
                         : $this->area_empresa_id)
-                    : $actor->empresa_activa_id;
+                    : $actor->ubicacion_id;
 
                 $asignacion = Asignacion::create([
                     'empresa_id'           => $empresaId,

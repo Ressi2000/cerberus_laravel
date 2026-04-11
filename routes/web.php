@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AuditoriaController;
+use App\Http\Controllers\Admin\DepartamentoController;
 use App\Http\Controllers\Asignaciones\AsignacionController;
 use App\Http\Controllers\Usuario\UsuarioController;
 use App\Http\Controllers\Auth\EmpresaSelectorController;
@@ -73,8 +74,12 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/categorias',  [ConfiguracionController::class, 'categorias'])->name('categorias');
             Route::get('/estados',     [ConfiguracionController::class, 'estados'])->name('estados');
             Route::get('/atributos',   [ConfiguracionController::class, 'atributos'])->name('atributos');
+            Route::get('/departamentos', [ConfiguracionController::class, 'departamentos'])->name('departamentos');
+            Route::get('/cargos',      [ConfiguracionController::class, 'cargos'])->name('cargos');
+            Route::get('/ubicaciones', [ConfiguracionController::class, 'ubicaciones'])->name('ubicaciones');
+            Route::get('/empresas',    [ConfiguracionController::class, 'empresas'])->name('empresas');
         });
-
+   
     Route::prefix('admin/asignaciones')
         ->name('admin.asignaciones.')
         ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])

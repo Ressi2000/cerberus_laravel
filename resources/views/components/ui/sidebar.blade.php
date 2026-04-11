@@ -341,6 +341,51 @@
                         <span class="whitespace-nowrap">Atributos EAV</span>
                     </a>
 
+                    <a href="{{ route('admin.configuracion.departamentos') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.departamentos') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.departamentos') ? $ion : $ioff }}">
+                            corporate_fare
+                        </span>
+                        <span class="whitespace-nowrap">Departamentos</span>
+                    </a>
+
+                    <a href="{{ route('admin.configuracion.cargos') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.cargos') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.cargos') ? $ion : $ioff }}">
+                            work
+                        </span>
+                        <span class="whitespace-nowrap">Cargos</span>
+                    </a>
+
+                    <a href="{{ route('admin.configuracion.ubicaciones') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.ubicaciones') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.ubicaciones') ? $ion : $ioff }}">
+                            location_on
+                        </span>
+                        <span class="whitespace-nowrap">Ubicaciones</span>
+                    </a>
+
+                    <a href="{{ route('admin.configuracion.empresas') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.empresas') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.empresas') ? $ion : $ioff }}">
+                            domain
+                        </span>
+                        <span class="whitespace-nowrap">Empresas</span>
+                    </a>
+                    
+
                 </div>
             </div>
         @endrole
