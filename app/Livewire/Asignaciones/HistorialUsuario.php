@@ -126,6 +126,7 @@ class HistorialUsuario extends Component
             'equipo.categoria',
             'equipo.atributosActuales.atributo',
             'asignacion',
+            'asignacion.empresa',
             'hijos.equipo.categoria',
         ])
             ->whereHas('asignacion', fn ($q) =>

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Equipos;
 
+use App\Models\AtributoEquipo;
 use App\Models\Equipo;
 use App\Models\EquipoAtributoValor;
 use App\Models\EstadoEquipo;
@@ -9,11 +10,16 @@ use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class EditarEquipo extends Component
 {
+    use WithFileUploads;
+
     // ── ID del equipo (int = serializable por Livewire entre requests) ────────
     public int $equipoId;
 
@@ -29,6 +35,23 @@ class EditarEquipo extends Component
     // ── Atributos EAV como array plano (serializable por Livewire) ────────────
     public array $atributos = [];
     public array $valores   = [];
+
+    /**
+     * Archivos nuevos para atributos tipo 'file' (upload temporal de Livewire).
+     * Indexado por atributo_id => TemporaryUploadedFile|null
+     *
+     * null = el usuario no subió nada nuevo → conservar archivo actual.
+     */
+    public array $archivos = [];
+
+    /**
+     * Paths actuales de archivos existentes (para mostrarlos en la vista).
+     * Indexado por atributo_id => string|null
+     *
+     * Se carga en mount() y se actualiza tras cada guardado.
+     * Solo es lectura en la vista; no se envía al servidor como upload.
+     */
+    public array $archivosActuales = [];
 
     // ─────────────────────────────────────────────────────────────────────────
     // Mount: recibe el modelo por route-model binding del controller
@@ -68,44 +91,26 @@ class EditarEquipo extends Component
         $valoresActuales = $equipo->atributosActuales->keyBy('atributo_id');
 
         foreach ($this->atributos as $atributo) {
-            $this->valores[$atributo['id']] = $valoresActuales[$atributo['id']]?->valor ?? null;
+            $valorActual = $valoresActuales[$atributo['id']] ?? null;
+
+            if ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
+                // Para tipo file: guardar el path actual para mostrarlo en vista
+                $this->archivosActuales[$atributo['id']] = $valorActual?->valor;
+                $this->archivos[$atributo['id']]         = null; // sin nuevo upload aún
+                $this->valores[$atributo['id']]          = '';   // no usado para file
+            } else {
+                $this->valores[$atributo['id']] = $valorActual?->valor ?? '';
+            }
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Computed Properties — disponibles como variables en el blade
+    // Computed: equipo completo (evita serializar el modelo en propiedades)
     // ─────────────────────────────────────────────────────────────────────────
-
-    /** El equipo fresco desde BD — disponible como $equipo en el blade */
     #[Computed]
     public function equipo(): Equipo
     {
-        return Equipo::with(['categoria', 'estado', 'ubicacion'])->findOrFail($this->equipoId);
-    }
-
-    #[Computed]
-    public function estados()
-    {
-        return EstadoEquipo::activos()->orderBy('nombre')->pluck('nombre', 'id');
-    }
-
-    #[Computed]
-    public function ubicaciones()
-    {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
-        if ($user->hasRole('Administrador')) {
-            return Ubicacion::where('activo', true)->where('empresa_id', $this->equipo->empresa_id)
-                ->orderBy('nombre')->pluck('nombre', 'id');
-        }
-
-        return Ubicacion::where('activo', true)->where(function ($q) use ($user) {
-            $q->where('empresa_id', $user->empresa_activa_id)
-                ->orWhere('es_estado', true);
-        })
-            ->orderBy('nombre')
-            ->pluck('nombre', 'id');
+        return Equipo::findOrFail($this->equipoId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -116,26 +121,38 @@ class EditarEquipo extends Component
         $rules = [
             'estado_id'          => 'required|exists:estados_equipos,id',
             'ubicacion_id'       => 'nullable|exists:ubicaciones,id',
-            'serial'             => 'nullable|string|max:255',
-            'nombre_maquina'     => 'nullable|string|max:255',
+            'serial'             => 'nullable|string|max:100',
+            'nombre_maquina'     => 'nullable|string|max:100',
             'fecha_adquisicion'  => 'nullable|date',
             'fecha_garantia_fin' => 'nullable|date|after_or_equal:fecha_adquisicion',
-            'observaciones'      => 'nullable|string|max:1000',
+            'observaciones'      => 'nullable|string|max:2000',
         ];
 
         foreach ($this->atributos as $atributo) {
-            $tipo = match ($atributo['tipo']) {
-                'integer' => 'integer',
-                'decimal' => 'numeric',
-                'boolean' => 'boolean',
-                'date'    => 'date',
-                'text'    => 'string',
-                default   => 'string|max:500',
-            };
+            $tipo = $atributo['tipo'];
 
-            $rules["valores.{$atributo['id']}"] = $atributo['requerido']
-                ? "required|{$tipo}"
-                : "nullable|{$tipo}";
+            if ($tipo === AtributoEquipo::TIPO_FILE) {
+                // En edición: el archivo nuevo es nullable si ya existe uno actual
+                $tieneActual = ! empty($this->archivosActuales[$atributo['id']]);
+                $regla = ($atributo['requerido'] && ! $tieneActual)
+                    ? 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'
+                    : 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx';
+
+                $rules["archivos.{$atributo['id']}"] = $regla;
+            } else {
+                $tipoRegla = match ($tipo) {
+                    AtributoEquipo::TIPO_INTEGER => 'integer',
+                    AtributoEquipo::TIPO_DECIMAL => 'numeric',
+                    AtributoEquipo::TIPO_BOOLEAN => 'boolean',
+                    AtributoEquipo::TIPO_DATE    => 'date',
+                    AtributoEquipo::TIPO_TEXT    => 'string',
+                    default                      => 'string|max:500',
+                };
+
+                $rules["valores.{$atributo['id']}"] = $atributo['requerido']
+                    ? "required|{$tipoRegla}"
+                    : "nullable|{$tipoRegla}";
+            }
         }
 
         return $rules;
@@ -144,70 +161,133 @@ class EditarEquipo extends Component
     protected function messages(): array
     {
         $messages = [
-            'estado_id.required' => 'Debe seleccionar un estado.',
-            'fecha_garantia_fin.after_or_equal' =>
-            'La garantía no puede ser anterior a la fecha de adquisición.',
+            'estado_id.required'  => 'Debe seleccionar un estado.',
+            'fecha_garantia_fin.after_or_equal' => 'La garantía no puede ser anterior a la fecha de adquisición.',
         ];
 
         foreach ($this->atributos as $atributo) {
-            $messages["valores.{$atributo['id']}.required"] =
-                "El campo «{$atributo['nombre']}» es obligatorio.";
+            if ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
+                $messages["archivos.{$atributo['id']}.required"] =
+                    "El archivo «{$atributo['nombre']}» es obligatorio.";
+                $messages["archivos.{$atributo['id']}.mimes"] =
+                    "El archivo «{$atributo['nombre']}» debe ser PDF, imagen o documento Office.";
+                $messages["archivos.{$atributo['id']}.max"] =
+                    "El archivo «{$atributo['nombre']}» no puede superar 10 MB.";
+            } else {
+                $messages["valores.{$atributo['id']}.required"] =
+                    "El campo «{$atributo['nombre']}» es obligatorio.";
+            }
         }
 
         return $messages;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Actualizar con versionado EAV
+    // Guardar
     // ─────────────────────────────────────────────────────────────────────────
     public function actualizar(): void
     {
-        $equipo = $this->equipo;
-        $this->authorize('update', $equipo);
         $this->validate();
 
         try {
-            DB::transaction(function () use ($equipo) {
+            DB::transaction(function () {
+                $equipo = $this->equipo;
 
-                // ── Datos base del equipo ─────────────────────────────────────────
+                // ── Guardia: no permitir cambio de estado si hay asignación activa ───────
+                $tieneAsignacionActiva = \App\Models\AsignacionItem::where('equipo_id', $this->equipo->id)
+                    ->where('devuelto', false)
+                    ->whereHas('asignacion', fn($q) => $q->where('estado', 'Activa'))
+                    ->exists();
+
+                if ($tieneAsignacionActiva && $this->estado_id != $this->equipo->estado_id) {
+                    $this->addError(
+                        'estado_id',
+                        'No puedes cambiar el estado de un equipo con asignación activa. Realiza la devolución primero.'
+                    );
+                    return;
+                }
+
                 $equipo->update([
                     'estado_id'          => $this->estado_id,
-                    'ubicacion_id'       => $this->ubicacion_id  ?: null,
-                    'serial'             => $this->serial         ?: null,
-                    'nombre_maquina'     => $this->nombre_maquina ?: null,
-                    'fecha_adquisicion'  => $this->fecha_adquisicion  ?: null,
-                    'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
-                    'observaciones'      => $this->observaciones       ?: null,
+                    'ubicacion_id'       => $this->ubicacion_id       ?: null,
+                    'serial'             => $this->serial              ?: null,
+                    'nombre_maquina'     => $this->nombre_maquina      ?: null,
+                    'fecha_adquisicion'  => $this->fecha_adquisicion   ?: null,
+                    'fecha_garantia_fin' => $this->fecha_garantia_fin  ?: null,
+                    'observaciones'      => $this->observaciones        ?: null,
                 ]);
 
-                // ── Versionado EAV: solo registra si el valor realmente cambió ────
-                foreach ($this->valores as $atributoId => $nuevoValor) {
+                foreach ($this->atributos as $atributo) {
+                    $atributoId = $atributo['id'];
 
-                    $valorActual = EquipoAtributoValor::where([
-                        'equipo_id'   => $equipo->id,
-                        'atributo_id' => $atributoId,
-                        'es_actual'   => true,
-                    ])->first();
+                    if ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
+                        // ── Atributo tipo archivo ────────────────────────────
+                        $nuevoArchivo = $this->archivos[$atributoId] ?? null;
+                        if (! $nuevoArchivo) continue; // sin cambio → conservar actual
 
-                    // Sin cambio → no hacer nada
-                    if ($valorActual && (string) $valorActual->valor === (string) $nuevoValor) {
-                        continue;
-                    }
+                        // Marcar versión anterior como histórico
+                        $valorActual = EquipoAtributoValor::where([
+                            'equipo_id'   => $equipo->id,
+                            'atributo_id' => $atributoId,
+                            'es_actual'   => true,
+                        ])->first();
 
-                    // Marcar versión anterior como histórico
-                    if ($valorActual) {
-                        $valorActual->update(['es_actual' => false]);
-                    }
+                        if ($valorActual) {
+                            // Eliminar el archivo físico anterior del storage
+                            if ($valorActual->valor && Storage::disk('public')->exists($valorActual->valor)) {
+                                Storage::disk('public')->delete($valorActual->valor);
+                            }
+                            $valorActual->update(['es_actual' => false]);
+                        }
 
-                    // Crear nueva versión solo si hay valor
-                    if ($nuevoValor !== null && $nuevoValor !== '') {
+                        // Guardar nuevo archivo
+                        $path = $nuevoArchivo->storeAs(
+                            "equipos/archivos/{$equipo->id}",
+                            Str::slug($atributo['nombre']) . '_' . time() . '.' . $nuevoArchivo->getClientOriginalExtension(),
+                            'public'
+                        );
+
                         EquipoAtributoValor::create([
                             'equipo_id'   => $equipo->id,
                             'atributo_id' => $atributoId,
-                            'valor'       => $nuevoValor,
+                            'valor'       => $path,
                             'es_actual'   => true,
                             'creado_por'  => Auth::id(),
                         ]);
+
+                        // Actualizar referencia local para la vista
+                        $this->archivosActuales[$atributoId] = $path;
+                        $this->archivos[$atributoId]         = null;
+                    } else {
+                        // ── Atributo tipo texto/número/fecha/etc ─────────────
+                        $nuevoValor = $this->valores[$atributoId] ?? null;
+
+                        $valorActual = EquipoAtributoValor::where([
+                            'equipo_id'   => $equipo->id,
+                            'atributo_id' => $atributoId,
+                            'es_actual'   => true,
+                        ])->first();
+
+                        // Sin cambio → no hacer nada
+                        if ($valorActual && (string) $valorActual->valor === (string) $nuevoValor) {
+                            continue;
+                        }
+
+                        // Marcar anterior como histórico
+                        if ($valorActual) {
+                            $valorActual->update(['es_actual' => false]);
+                        }
+
+                        // Crear nueva versión solo si hay valor
+                        if ($nuevoValor !== null && $nuevoValor !== '') {
+                            EquipoAtributoValor::create([
+                                'equipo_id'   => $equipo->id,
+                                'atributo_id' => $atributoId,
+                                'valor'       => $nuevoValor,
+                                'es_actual'   => true,
+                                'creado_por'  => Auth::id(),
+                            ]);
+                        }
                     }
                 }
             });
@@ -216,7 +296,7 @@ class EditarEquipo extends Component
             $this->redirect(route('admin.equipos.index'), navigate: true);
         } catch (\Exception $e) {
             Log::error('EditarEquipo@actualizar: ' . $e->getMessage());
-            $this->addError('general', 'Ocurrió un error al actualizar el equipo.');
+            $this->addError('general', 'Ocurrió un error al actualizar el equipo. Por favor intenta nuevamente.');
         }
     }
 
@@ -225,6 +305,10 @@ class EditarEquipo extends Component
     // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
-        return view('livewire.equipos.editar-equipo');
+        return view('livewire.equipos.editar-equipo', [
+            'estados'     => EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id'),
+            'ubicaciones' => Ubicacion::where('empresa_id', $this->equipo->empresa_id)
+                ->orderBy('nombre')->pluck('nombre', 'id'),
+        ]);
     }
 }

@@ -59,6 +59,7 @@ class AtributosEditorModal extends Component
         'boolean' => 'Sí / No',
         'date'    => 'Fecha',
         'select'  => 'Lista desplegable',
+        'file'    => 'Archivo adjunto',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -156,7 +157,7 @@ class AtributosEditorModal extends Component
             if ($fila['eliminar']) continue;
 
             $rules["filas.{$i}.nombre"] = 'required|string|max:100';
-            $rules["filas.{$i}.tipo"]   = 'required|in:string,text,integer,decimal,boolean,date,select';
+            $rules["filas.{$i}.tipo"]   = 'required|in:string,text,integer,decimal,boolean,date,select,file';
             $rules["filas.{$i}.orden"]  = 'integer|min:0';
 
             if ($fila['tipo'] === 'select') {
@@ -258,6 +259,17 @@ class AtributosEditorModal extends Component
                 type: 'error',
                 message: 'Ocurrió un error al guardar los atributos.'
             );
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Ajustar propiedades según el tipo seleccionado
+    // ─────────────────────────────────────────────────────────────────────────
+    public function ajustarPorTipo(int $index): void
+    {
+        if ($this->filas[$index]['tipo'] === 'file') {
+            $this->filas[$index]['filtrable'] = false;
+            $this->filas[$index]['visible_en_tabla'] = false;
         }
     }
 

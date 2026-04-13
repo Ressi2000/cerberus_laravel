@@ -91,7 +91,7 @@ class AtributoModal extends Component
         $rules = [
             'categoria_id'     => 'required|exists:categorias_equipos,id',
             'nombre'           => 'required|string|max:100',
-            'tipo'             => 'required|in:string,text,integer,decimal,boolean,date,select',
+            'tipo'             => 'required|in:string,text,integer,decimal,boolean,date,select,file',
             'requerido'        => 'boolean',
             'filtrable'        => 'boolean',
             'visible_en_tabla' => 'boolean',

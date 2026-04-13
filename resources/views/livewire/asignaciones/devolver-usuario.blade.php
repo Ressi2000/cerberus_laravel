@@ -132,7 +132,7 @@
             @endphp
 
             {{-- Separador de asignación (solo si hay más de una) --}}
-            @if ($itemsPorAsignacion->count() > 1)
+            @if ($itemsPorAsignacion->count() >= 1)
                 <div class="px-5 py-2 bg-gray-50 dark:bg-cerberus-dark/60
                             border-b border-gray-100 dark:border-cerberus-steel/30
                             flex items-center gap-2">

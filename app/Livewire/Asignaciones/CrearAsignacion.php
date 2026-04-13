@@ -48,6 +48,7 @@ class CrearAsignacion extends Component
     public string $area_responsable_id  = '';
     public string $fecha_asignacion     = '';
     public string $observaciones        = '';
+    public string $empresa_personal_id  = '';  // solo visible para Admin en asignación personal
 
     // ── Paso 2: Filtros de la grilla ─────────────────────────────────────────
     public string $filtro_categoria  = '';
@@ -82,9 +83,9 @@ class CrearAsignacion extends Component
             ->where('estado', 'Activo')
             ->when(
                 $actor->hasRole('Analista') && $actor->empresa_activa_id,
-                fn ($q) => $q->whereHas('ubicacion', function ($u) use ($actor) {
+                fn($q) => $q->whereHas('ubicacion', function ($u) use ($actor) {
                     $u->where('empresa_id', $actor->empresa_activa_id)
-                      ->orWhere('es_estado', true);
+                        ->orWhere('es_estado', true);
                 })
             )
             ->orderBy('name')
@@ -131,7 +132,7 @@ class CrearAsignacion extends Component
         if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
             $query->where(function ($q) use ($actor) {
                 $q->where('empresa_id', $actor->empresa_activa_id)
-                  ->orWhere('es_estado', true);
+                    ->orWhere('es_estado', true);
             });
         }
 
@@ -148,15 +149,15 @@ class CrearAsignacion extends Component
         return CategoriaEquipo::where('activo', true)->where('asignable', true)
             ->whereHas('equipos', function ($q) use ($actor, $estadoDisponible, $idsEnCarrito) {
                 $q->where('activo', true)
-                  ->where('estado_id', $estadoDisponible)
-                  ->whereNotIn('id', $idsEnCarrito)
-                  ->visiblePara($actor);
+                    ->where('estado_id', $estadoDisponible)
+                    ->whereNotIn('id', $idsEnCarrito)
+                    ->visiblePara($actor);
             })
             ->withCount(['equipos as disponibles_count' => function ($q) use ($actor, $estadoDisponible, $idsEnCarrito) {
                 $q->where('activo', true)
-                  ->where('estado_id', $estadoDisponible)
-                  ->whereNotIn('id', $idsEnCarrito)
-                  ->visiblePara($actor);
+                    ->where('estado_id', $estadoDisponible)
+                    ->whereNotIn('id', $idsEnCarrito)
+                    ->visiblePara($actor);
             }])
             ->orderBy('nombre')
             ->get();
@@ -177,7 +178,7 @@ class CrearAsignacion extends Component
             ->where('activo', true)
             ->where('estado_id', $estadoDisponible)
             ->whereNotIn('id', $idsEnCarrito)
-            ->whereHas('categoria', fn ($q) => $q->where('asignable', true))
+            ->whereHas('categoria', fn($q) => $q->where('asignable', true))
             ->visiblePara($actor);
 
         if ($this->filtro_categoria) {
@@ -195,13 +196,13 @@ class CrearAsignacion extends Component
             $s = $this->filtro_busqueda;
             $query->where(function ($q) use ($s) {
                 $q->where('codigo_interno', 'like', "%{$s}%")
-                  ->orWhere('serial', 'like', "%{$s}%")
-                  ->orWhere('nombre_maquina', 'like', "%{$s}%")
-                  // Búsqueda en atributos EAV (marca, modelo y cualquier otro)
-                  ->orWhereHas('atributosActuales', function ($av) use ($s) {
-                      $av->where('valor', 'like', "%{$s}%")
-                         ->whereHas('atributo', fn ($a) => $a->where('visible_en_tabla', true));
-                  });
+                    ->orWhere('serial', 'like', "%{$s}%")
+                    ->orWhere('nombre_maquina', 'like', "%{$s}%")
+                    // Búsqueda en atributos EAV (marca, modelo y cualquier otro)
+                    ->orWhereHas('atributosActuales', function ($av) use ($s) {
+                        $av->where('valor', 'like', "%{$s}%")
+                            ->whereHas('atributo', fn($a) => $a->where('visible_en_tabla', true));
+                    });
             });
         }
 
@@ -234,7 +235,7 @@ class CrearAsignacion extends Component
     public function itemsPrincipalesCarrito(): array
     {
         return collect($this->carrito)
-            ->filter(fn ($i) => empty($i['padre_uid']))
+            ->filter(fn($i) => empty($i['padre_uid']))
             ->values()
             ->toArray();
     }
@@ -267,8 +268,14 @@ class CrearAsignacion extends Component
         $this->vistaEquipos = $this->vistaEquipos === 'grilla' ? 'lista' : 'grilla';
     }
 
-    public function updatedFiltroBusqueda(): void { $this->resetPage(); }
-    public function updatedFiltroUbicacion(): void { $this->resetPage(); }
+    public function updatedFiltroBusqueda(): void
+    {
+        $this->resetPage();
+    }
+    public function updatedFiltroUbicacion(): void
+    {
+        $this->resetPage();
+    }
     public function updatedAreaEmpresaId(): void
     {
         $this->area_departamento_id = '';
@@ -309,7 +316,7 @@ class CrearAsignacion extends Component
     {
         // Quitar el item y sus hijos
         $this->carrito = collect($this->carrito)
-            ->filter(fn ($i) => $i['uid'] !== $uid && $i['padre_uid'] !== $uid)
+            ->filter(fn($i) => $i['uid'] !== $uid && $i['padre_uid'] !== $uid)
             ->values()
             ->toArray();
     }
@@ -335,6 +342,13 @@ class CrearAsignacion extends Component
                 ['usuario_id' => 'required', 'fecha_asignacion' => 'required|date'],
                 ['usuario_id.required' => 'Selecciona un usuario receptor.']
             );
+            $actor = Auth::user();
+            if ($actor->hasRole('Administrador') && $this->tipo_receptor === 'usuario') {
+                $this->validate(
+                    ['empresa_personal_id' => 'required'],
+                    ['empresa_personal_id.required' => 'Selecciona la empresa para esta asignación.']
+                );
+            }
         } else {
             $this->validate([
                 'area_empresa_id'      => 'required',
@@ -367,11 +381,17 @@ class CrearAsignacion extends Component
         try {
             DB::transaction(function () use ($actor) {
 
-                $empresaId = $actor->hasRole('Administrador')
-                    ? ($this->tipo_receptor === 'usuario'
-                        ? User::find($this->usuario_id)?->ubicacion_id ?? $actor->ubicacion_id
-                        : $this->area_empresa_id)
-                    : $actor->ubicacion_id;
+                if ($actor->hasRole('Administrador')) {
+                    if ($this->tipo_receptor === 'usuario') {
+                        // Si el admin seleccionó empresa explícitamente, úsala; si no, cae a la del usuario
+                        $empresaId = $this->empresa_personal_id
+                            ?: (User::find($this->usuario_id)?->empresa_id ?? $actor->empresa_id);
+                    } else {
+                        $empresaId = $this->area_empresa_id;
+                    }
+                } else {
+                    $empresaId = $actor->empresa_activa_id;
+                }
 
                 $asignacion = Asignacion::create([
                     'empresa_id'           => $empresaId,
@@ -427,7 +447,6 @@ class CrearAsignacion extends Component
 
             session()->flash('success', 'Asignación registrada correctamente.');
             $this->redirect(route('admin.asignaciones.index'), navigate: true);
-
         } catch (\Exception $e) {
             Log::error('CrearAsignacion@confirmar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar la asignación.');

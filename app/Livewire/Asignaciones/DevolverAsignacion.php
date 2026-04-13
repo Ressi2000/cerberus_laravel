@@ -74,6 +74,7 @@ class DevolverAsignacion extends Component
         return AsignacionItem::with([
             'equipo.categoria',
             'padre.equipo',
+            'asignacion.empresa',
             'hijosActivos.equipo.categoria',
         ])
             ->where('asignacion_id', $this->asignacionId)

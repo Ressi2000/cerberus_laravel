@@ -45,6 +45,7 @@ class AtributoEquipo extends Model
     const TIPO_DATE    = 'date';
     const TIPO_TEXT    = 'text';
     const TIPO_SELECT  = 'select';
+    const TIPO_FILE    = 'file';   // ← NUEVO: archivo adjunto (factura, OC, etc.)
 
     /** Lista completa para select/validación */
     const TIPOS = [
@@ -55,6 +56,7 @@ class AtributoEquipo extends Model
         self::TIPO_DATE    => 'Fecha',
         self::TIPO_TEXT    => 'Texto largo',
         self::TIPO_SELECT  => 'Lista de opciones',
+        self::TIPO_FILE    => 'Archivo adjunto',  // ← NUEVO
     ];
 
     // ── Relaciones ────────────────────────────────────────────────────────────
@@ -83,7 +85,8 @@ class AtributoEquipo extends Model
     /** Atributos que aparecen en los filtros de la tabla de equipos */
     public function scopeFiltrables($query)
     {
-        return $query->where('filtrable', true);
+        // Los atributos tipo 'file' NUNCA son filtrables (no tiene sentido buscar por path)
+        return $query->where('filtrable', true)->where('tipo', '!=', self::TIPO_FILE);
     }
 
     /** Atributos que se muestran como columna en el listado de equipos */
@@ -124,9 +127,19 @@ class AtributoEquipo extends Model
         return $this->tipo === self::TIPO_BOOLEAN;
     }
 
+    /** ¿Este atributo es de tipo file? */
+    public function esFile(): bool
+    {
+        return $this->tipo === self::TIPO_FILE;
+    }
+
     /**
      * Retorna la regla de validación Laravel correspondiente al tipo.
      * Usado en CrearEquipo y EditarEquipo para construir las reglas dinámicas.
+     *
+     * NOTA: Para tipo 'file' la validación del objeto UploadedFile se maneja
+     * por separado en los componentes Livewire (array $archivos[]).
+     * Esta regla cubre solo el campo $valores[] que guarda el path.
      */
     public function reglaDeTipo(): string
     {
@@ -136,6 +149,7 @@ class AtributoEquipo extends Model
             self::TIPO_BOOLEAN => 'boolean',
             self::TIPO_DATE    => 'date',
             self::TIPO_TEXT    => 'string',
+            self::TIPO_FILE    => 'nullable|string', // el path se asigna post-upload
             default            => 'string|max:500',
         };
     }

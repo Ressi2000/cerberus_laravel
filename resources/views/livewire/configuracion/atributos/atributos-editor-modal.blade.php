@@ -82,7 +82,7 @@
 
                                 {{-- Tipo --}}
                                 <div>
-                                    <select wire:model.live="filas.{{ $i }}.tipo"
+                                    <select wire:model.live="filas.{{ $i }}.tipo" wire:change="ajustarPorTipo({{ $i }})"
                                         {{ $fila['eliminar'] ? 'disabled' : '' }}
                                         class="w-full rounded-lg px-3 py-1.5 text-sm
                                                bg-white dark:bg-cerberus-dark
@@ -119,10 +119,10 @@
                                 <div class="flex justify-center">
                                     <button wire:click="$set('filas.{{ $i }}.filtrable', {{ $fila['filtrable'] ? 'false' : 'true' }})"
                                         type="button"
-                                        {{ $fila['eliminar'] ? 'disabled' : '' }}
-                                        title="Filtrable"
+                                        {{ ($fila['eliminar'] || $fila['tipo'] === 'file') ? 'disabled' : '' }}
+                                        title="Filtrable{{ $fila['tipo'] === 'file' ? ' (deshabilitado para archivos)' : '' }}"
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition
-                                               {{ $fila['filtrable']
+                                               {{ $fila['filtrable'] && $fila['tipo'] !== 'file'
                                                    ? 'bg-green-50 dark:bg-green-500/15 text-green-600 dark:text-green-400'
                                                    : 'text-gray-300 dark:text-cerberus-steel/40 hover:text-gray-400' }}
                                                disabled:opacity-50 disabled:cursor-not-allowed">
@@ -134,10 +134,10 @@
                                 <div class="flex justify-center">
                                     <button wire:click="$set('filas.{{ $i }}.visible_en_tabla', {{ $fila['visible_en_tabla'] ? 'false' : 'true' }})"
                                         type="button"
-                                        {{ $fila['eliminar'] ? 'disabled' : '' }}
-                                        title="Visible en tabla"
+                                        {{ ($fila['eliminar'] || $fila['tipo'] === 'file') ? 'disabled' : '' }}
+                                        title="Visible en tabla{{ $fila['tipo'] === 'file' ? ' (deshabilitado para archivos)' : '' }}"
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition
-                                               {{ $fila['visible_en_tabla']
+                                               {{ $fila['visible_en_tabla'] && $fila['tipo'] !== 'file'
                                                    ? 'bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400'
                                                    : 'text-gray-300 dark:text-cerberus-steel/40 hover:text-gray-400' }}
                                                disabled:opacity-50 disabled:cursor-not-allowed">

@@ -1,12 +1,13 @@
 <div>
-    @if($open && $equipo)
+    @if ($open && $equipo)
         <div class="fixed inset-0 z-50 flex items-center justify-center">
 
             {{-- Backdrop --}}
             <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" wire:click="close"></div>
 
             {{-- Modal --}}
-            <div class="relative z-50 w-full max-w-3xl mx-4 bg-cerberus-mid border border-cerberus-steel
+            <div
+                class="relative z-50 w-full max-w-3xl mx-4 bg-cerberus-mid border border-cerberus-steel
                         rounded-xl shadow-cerberus max-h-[90vh] flex flex-col">
 
                 {{-- Header --}}
@@ -29,29 +30,112 @@
                             {{ $equipo->codigo_interno }}
                         </span>
 
-                        <span class="px-2 py-0.5 text-xs rounded-full bg-cerberus-primary/20
+                        <span
+                            class="px-2 py-0.5 text-xs rounded-full bg-cerberus-primary/20
                                      border border-cerberus-primary/40 text-cerberus-accent">
                             {{ $equipo->categoria->nombre }}
                         </span>
 
                         <span @class([
                             'px-2 py-0.5 text-xs rounded-full font-medium',
-                            'bg-green-700/30 text-green-300 border border-green-700/40'
-                                => $equipo->estado->nombre === 'Disponible',
-                            'bg-blue-700/30 text-blue-300 border border-blue-700/40'
-                                => $equipo->estado->nombre === 'Asignado',
-                            'bg-yellow-700/30 text-yellow-300 border border-yellow-700/40'
-                                => str_contains($equipo->estado->nombre, 'préstamo') || str_contains($equipo->estado->nombre, 'Prestamo'),
-                            'bg-orange-700/30 text-orange-300 border border-orange-700/40'
-                                => str_contains($equipo->estado->nombre, 'reparación') || str_contains($equipo->estado->nombre, 'Mantenimiento'),
-                            'bg-red-700/30 text-red-300 border border-red-700/40'
-                                => $equipo->estado->nombre === 'Baja',
-                            'bg-cerberus-steel/30 text-cerberus-light border border-cerberus-steel/40'
-                                => true, // fallback
+                            'bg-green-700/30 text-green-300 border border-green-700/40' =>
+                                $equipo->estado->nombre === 'Disponible',
+                            'bg-blue-700/30 text-blue-300 border border-blue-700/40' =>
+                                $equipo->estado->nombre === 'Asignado',
+                            'bg-yellow-700/30 text-yellow-300 border border-yellow-700/40' =>
+                                str_contains($equipo->estado->nombre, 'préstamo') ||
+                                str_contains($equipo->estado->nombre, 'Prestamo'),
+                            'bg-orange-700/30 text-orange-300 border border-orange-700/40' =>
+                                str_contains($equipo->estado->nombre, 'reparación') ||
+                                str_contains($equipo->estado->nombre, 'Mantenimiento'),
+                            'bg-red-700/30 text-red-300 border border-red-700/40' =>
+                                $equipo->estado->nombre === 'Baja',
+                            'bg-cerberus-steel/30 text-cerberus-light border border-cerberus-steel/40' => true, // fallback
                         ])>
                             {{ $equipo->estado->nombre }}
                         </span>
                     </div>
+
+                    {{-- ── ASIGNACIÓN ACTIVA ─────────────────────────────────────────────── --}}
+                    @if ($asignacionActiva)
+                        <div class="bg-blue-900/20 border border-blue-700/40 rounded-xl px-4 py-3 flex flex-col gap-2">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="material-icons text-blue-400 text-base">assignment_ind</span>
+                                <span class="text-xs font-semibold uppercase tracking-wider text-blue-300">
+                                    Equipo asignado actualmente
+                                </span>
+                            </div>
+
+                            @if ($asignacionActiva->asignacion->usuario_id)
+                                {{-- Asignación personal --}}
+                                @php $usuario = $asignacionActiva->asignacion->usuario @endphp
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Asignado a</span>
+                                        <p class="text-white font-medium">{{ $usuario?->name ?? '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Cargo</span>
+                                        <p class="text-white">{{ $usuario?->cargo?->nombre ?? '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Empresa</span>
+                                        <p class="text-white">{{ $usuario?->empresaNomina?->nombre ?? '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Ubicación</span>
+                                        <p class="text-white">{{ $usuario?->ubicacion?->nombre ?? '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Departamento</span>
+                                        <p class="text-white">{{ $usuario?->departamento?->nombre ?? '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Ubicación de la Asignación</span>
+                                        <p class="text-white">
+                                            {{ $asignacionActiva?->asignacion?->empresa?->nombre ?? '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Fecha asignación</span>
+                                        <p class="text-white">
+                                            {{ $asignacionActiva->asignacion->fecha_asignacion?->format('d/m/Y') ?? '—' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            @else
+                                {{-- Asignación a área --}}
+                                <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Asignado a área</span>
+                                        <p class="text-white font-medium">
+                                            {{ $asignacionActiva->asignacion->areaDepartamento?->nombre ?? '—' }}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Empresa del área</span>
+                                        <p class="text-white">
+                                            {{ $asignacionActiva->asignacion->areaEmpresa?->nombre ?? '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Responsable</span>
+                                        <p class="text-white">
+                                            {{ $asignacionActiva->asignacion->areaResponsable?->name ?? '—' }}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-cerberus-steel text-xs">Fecha asignación</span>
+                                        <p class="text-white">
+                                            {{ $asignacionActiva->asignacion->fecha_asignacion?->format('d/m/Y') ?? '—' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="text-xs text-cerberus-steel mt-1">
+                                Analista: <span
+                                    class="text-white">{{ $asignacionActiva->asignacion->analista?->name ?? '—' }}</span>
+                            </div>
+                        </div>
+                    @endif
 
                     {{-- Datos base --}}
                     <div class="bg-cerberus-dark border border-cerberus-steel rounded-xl p-4">
@@ -75,16 +159,14 @@
                             </p>
                             <p>
                                 <span class="font-semibold text-white">Adquisición:</span>
-                                {{ $equipo->fecha_adquisicion
-                                    ? \Carbon\Carbon::parse($equipo->fecha_adquisicion)->format('d/m/Y')
-                                    : '—' }}
+                                {{ $equipo->fecha_adquisicion ? \Carbon\Carbon::parse($equipo->fecha_adquisicion)->format('d/m/Y') : '—' }}
                             </p>
                             <p>
                                 <span class="font-semibold text-white">Garantía hasta:</span>
-                                @if($equipo->fecha_garantia_fin)
+                                @if ($equipo->fecha_garantia_fin)
                                     @php
                                         $garantia = \Carbon\Carbon::parse($equipo->fecha_garantia_fin);
-                                        $vencida  = $garantia->isPast();
+                                        $vencida = $garantia->isPast();
                                     @endphp
                                     <span @class(['text-red-400' => $vencida, 'text-green-400' => !$vencida])>
                                         {{ $garantia->format('d/m/Y') }}
@@ -95,7 +177,7 @@
                                 @endif
                             </p>
                         </div>
-                        @if($equipo->observaciones)
+                        @if ($equipo->observaciones)
                             <p class="mt-3 text-sm text-cerberus-light">
                                 <span class="font-semibold text-white">Observaciones:</span>
                                 {{ $equipo->observaciones }}
@@ -104,18 +186,18 @@
                     </div>
 
                     {{-- Características técnicas actuales --}}
-                    @if($equipo->atributosActuales->count())
+                    @if ($equipo->atributosActuales->count())
                         <div class="bg-cerberus-dark border border-cerberus-steel rounded-xl p-4">
                             <h4 class="text-cerberus-accent font-semibold text-sm mb-3">
                                 Características técnicas
                             </h4>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-cerberus-light">
-                                @foreach($equipo->atributosActuales as $val)
+                                @foreach ($equipo->atributosActuales as $val)
                                     <p>
                                         <span class="font-semibold text-white">
                                             {{ $val->atributo->nombre }}:
                                         </span>
-                                        @if($val->atributo->tipo === 'boolean')
+                                        @if ($val->atributo->tipo === 'boolean')
                                             {{ $val->valor ? 'Sí' : 'No' }}
                                         @else
                                             {{ $val->valor }}
@@ -127,7 +209,7 @@
                     @endif
 
                     {{-- Historial de cambios EAV --}}
-                    @if(count($historial))
+                    @if (count($historial))
                         <div class="bg-cerberus-dark border border-cerberus-steel rounded-xl p-4">
                             <h4 class="text-cerberus-accent font-semibold text-sm mb-3 flex items-center gap-2">
                                 <span class="material-icons text-base">history</span>
@@ -135,20 +217,20 @@
                             </h4>
 
                             <div class="space-y-3">
-                                @foreach($historial as $nombreAtributo => $versiones)
-                                    @if(count($versiones) > 1)
+                                @foreach ($historial as $nombreAtributo => $versiones)
+                                    @if (count($versiones) > 1)
                                         {{-- Solo mostramos atributos que tienen más de 1 versión --}}
                                         <div>
                                             <p class="text-white text-xs font-semibold mb-1">
                                                 {{ $nombreAtributo }}
                                             </p>
                                             <div class="space-y-1 pl-3 border-l border-cerberus-steel/50">
-                                                @foreach($versiones as $version)
+                                                @foreach ($versiones as $version)
                                                     <div class="flex items-center gap-2 text-xs">
                                                         <span @class([
                                                             'w-1.5 h-1.5 rounded-full flex-shrink-0',
                                                             'bg-cerberus-accent' => $version['es_actual'],
-                                                            'bg-cerberus-steel'  => !$version['es_actual'],
+                                                            'bg-cerberus-steel' => !$version['es_actual'],
                                                         ])></span>
                                                         <span @class([
                                                             $version['es_actual']
@@ -177,7 +259,7 @@
                             <span class="font-semibold text-white">Creado:</span>
                             {{ $equipo->created_at?->format('d/m/Y H:i') }}
                         </p>
-                        @if($equipo->updated_at != $equipo->created_at)
+                        @if ($equipo->updated_at != $equipo->created_at)
                             <p class="text-sm text-cerberus-light mt-1">
                                 <span class="font-semibold text-white">Última modificación:</span>
                                 {{ $equipo->updated_at?->format('d/m/Y H:i') }}
@@ -188,7 +270,8 @@
                 </div>
 
                 {{-- Footer --}}
-                <div class="flex justify-between items-center px-6 py-4
+                <div
+                    class="flex justify-between items-center px-6 py-4
                             border-t border-cerberus-steel flex-shrink-0">
                     <a href="{{ route('admin.equipos.edit', $equipo) }}"
                         class="px-4 py-2 text-sm bg-cerberus-primary hover:bg-cerberus-hover

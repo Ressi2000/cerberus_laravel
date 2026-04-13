@@ -78,6 +78,7 @@ class DevolverUsuario extends Component
             'equipo.categoria',
             'asignacion',
             'padre.equipo',
+            'asignacion.empresa',
             'hijosActivos.equipo.categoria',
         ])
             ->whereHas('asignacion', fn ($q) =>
