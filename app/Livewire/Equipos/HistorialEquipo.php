@@ -2,42 +2,60 @@
 
 namespace App\Livewire\Equipos;
 
-use Livewire\Component;
 use App\Models\Equipo;
+use App\Models\AtributoEquipo;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class HistorialEquipo extends Component
 {
+    use WithPagination;
+
     public Equipo $equipo;
 
-    public $historial = [];
+    public string $atributo_id = '';
+    public string $fecha_desde = '';
+    public string $fecha_hasta = '';
 
-    public function mount(Equipo $equipo)
+    public function mount(Equipo $equipo): void
     {
         $this->authorize('view', $equipo);
-
-        $this->equipo = $equipo->load([
-            'categoria',
-            'atributosHistorico.atributo',
-            'atributosHistorico' => function ($query) {
-                $query->with('usuario')->orderByDesc('created_at');
-            }
-        ]);
-
-
-        $this->organizarHistorial();
+        $this->equipo = $equipo->load(['categoria', 'estado', 'ubicacion', 'empresa']);
     }
 
-    private function organizarHistorial()
+    public function updated($property): void
     {
-        $agrupado = $this->equipo->atributosHistorico
-            ->sortByDesc('created_at')
-            ->groupBy('atributo_id');
+        if ($property !== 'page') {
+            $this->resetPage();
+        }
+    }
 
-        $this->historial = $agrupado;
+    public function resetFilters(): void
+    {
+        $this->reset(['atributo_id', 'fecha_desde', 'fecha_hasta']);
+        $this->resetPage();
     }
 
     public function render()
     {
-        return view('livewire.equipos.historial-equipo');
+        // Atributos de la categoría para el filtro
+        $atributos = AtributoEquipo::where('categoria_id', $this->equipo->categoria_id)
+            ->orderBy('orden')
+            ->pluck('nombre', 'id');
+
+        // Historial completo con filtros
+        $historial = $this->equipo
+            ->atributosHistorico()
+            ->with(['atributo', 'usuario'])
+            ->when($this->atributo_id, fn($q) => $q->where('atributo_id', $this->atributo_id))
+            ->when($this->fecha_desde, fn($q) => $q->whereDate('created_at', '>=', $this->fecha_desde))
+            ->when($this->fecha_hasta, fn($q) => $q->whereDate('created_at', '<=', $this->fecha_hasta))
+            ->orderByDesc('created_at')
+            ->paginate(15);
+
+        return view('livewire.equipos.historial-equipo', [
+            'historial' => $historial,
+            'atributos' => $atributos,
+        ]);
     }
 }

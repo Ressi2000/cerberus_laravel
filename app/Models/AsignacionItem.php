@@ -172,4 +172,128 @@ class AsignacionItem extends Model
             $this->asignacion->recalcularEstado();
         });
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Lógica de vinculación padre-hijo post-asignación
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Vincula este item como periférico de otro item principal.
+     *
+     * Permite asociar un periférico (teclado, mouse, monitor, etc.) que llegó
+     * en una asignación distinta a un equipo principal (laptop, desktop) que
+     * ya existe en CUALQUIER asignación activa del mismo receptor.
+     *
+     * Reglas de negocio validadas:
+     *   1. El item padre debe ser principal (equipo_padre_id === null).
+     *   2. El item padre debe estar activo (devuelto = false).
+     *   3. El item padre debe tener el mismo receptor que este item
+     *      (mismo usuario_id o misma combinación área).
+     *   4. Este item no puede ser padre de sí mismo.
+     *   5. Este item no debe estar devuelto.
+     *
+     * @param  AsignacionItem  $itemPadre  El item principal al que se vincula.
+     * @throws \InvalidArgumentException   Si alguna regla de negocio falla.
+     */
+    public function vincularAPadre(AsignacionItem $itemPadre): void
+    {
+        // ── Regla 4: no apuntarse a sí mismo ────────────────────────────────
+        if ($this->id === $itemPadre->id) {
+            throw new \InvalidArgumentException(
+                'Un item no puede ser periférico de sí mismo.'
+            );
+        }
+
+        // ── Regla 5: este item no debe estar devuelto ────────────────────────
+        if ($this->devuelto) {
+            throw new \InvalidArgumentException(
+                'No se puede vincular un item que ya fue devuelto.'
+            );
+        }
+
+        // ── Regla 1: el padre debe ser principal ─────────────────────────────
+        if (! $itemPadre->esPrincipal()) {
+            throw new \InvalidArgumentException(
+                'Solo se puede vincular a un equipo principal. No se permiten periféricos de periféricos.'
+            );
+        }
+
+        // ── Regla 2: el padre debe estar activo ──────────────────────────────
+        if ($itemPadre->devuelto) {
+            throw new \InvalidArgumentException(
+                'No se puede vincular a un equipo que ya fue devuelto.'
+            );
+        }
+
+        // ── Regla 3: mismo receptor ───────────────────────────────────────────
+        // Cargamos las asignaciones con sus datos de receptor para comparar.
+        $asignacionPropia  = $this->asignacion;
+        $asignacionPadre   = $itemPadre->asignacion;
+
+        if (! $this->mismoReceptor($asignacionPropia, $asignacionPadre)) {
+            throw new \InvalidArgumentException(
+                'El equipo principal pertenece a un receptor diferente. Solo puedes vincular periféricos al mismo usuario o área.'
+            );
+        }
+
+        // ── Todo válido: actualizar el vínculo ────────────────────────────────
+        DB::transaction(function () use ($itemPadre) {
+            $this->update(['equipo_padre_id' => $itemPadre->id]);
+        });
+    }
+
+    /**
+     * Desvincula este item de su padre, convirtiéndolo en principal.
+     *
+     * Útil cuando un periférico cambia de equipo principal o se quiere
+     * dejar libre sin devolverlo.
+     *
+     * @throws \InvalidArgumentException Si el item ya es principal o está devuelto.
+     */
+    public function desvincularDePadre(): void
+    {
+        if ($this->esPrincipal()) {
+            throw new \InvalidArgumentException(
+                'Este item ya es un equipo principal, no tiene padre que desvincular.'
+            );
+        }
+
+        if ($this->devuelto) {
+            throw new \InvalidArgumentException(
+                'No se puede modificar un item que ya fue devuelto.'
+            );
+        }
+
+        DB::transaction(function () {
+            $this->update(['equipo_padre_id' => null]);
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Helper privado: comparación de receptores entre dos asignaciones
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Compara si dos asignaciones tienen el mismo receptor.
+     *
+     * Receptor personal : compara usuario_id.
+     * Receptor área      : compara area_empresa_id + area_departamento_id.
+     * Tipos mixtos       : siempre false (personal ≠ área).
+     */
+    private function mismoReceptor(Asignacion $a, Asignacion $b): bool
+    {
+        // Ambas personales → mismo usuario
+        if ($a->tipoReceptor() === 'personal' && $b->tipoReceptor() === 'personal') {
+            return $a->usuario_id === $b->usuario_id;
+        }
+
+        // Ambas de área → misma empresa + mismo departamento
+        if ($a->tipoReceptor() === 'area' && $b->tipoReceptor() === 'area') {
+            return $a->area_empresa_id    === $b->area_empresa_id
+                && $a->area_departamento_id === $b->area_departamento_id;
+        }
+
+        // Tipos mixtos → nunca son el mismo receptor
+        return false;
+    }
 }

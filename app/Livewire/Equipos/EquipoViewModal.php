@@ -53,6 +53,7 @@ class EquipoViewModal extends Component
         $valores = EquipoAtributoValor::with(['atributo', 'usuario'])
             ->where('equipo_id', $equipoId)
             ->orderBy('created_at', 'desc')
+            ->limit(5)
             ->get();
 
         $agrupado = [];

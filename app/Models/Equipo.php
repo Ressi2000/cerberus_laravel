@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
@@ -20,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class Equipo extends Model
 {
-    use SoftDeletes;
+    use Auditable, SoftDeletes;
 
     protected $fillable = [
         'empresa_id',

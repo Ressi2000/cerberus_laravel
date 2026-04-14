@@ -1,11 +1,11 @@
 {{--
-    asignacion-view-modal.blade.php v3
+    asignacion-view-modal.blade.php v4
     ─────────────────────────────────────────────────────────────────────────
-    Cambios v3:
-    - Modal más ancho (max-w-4xl) y más alto (max-h-[92vh]) para ver muchos equipos
-    - Agrega ubicación física del equipo en cada tarjeta de equipo activo
-    - Empresa en badges en la cabecera del usuario
-    - Sede eliminada como campo suelto → integrada en los badges superiores
+    Cambios v4:
+    - Botón "Vincular a equipo principal" en cada item principal activo
+    - Botón "Cambiar equipo principal" en cada periférico (hijo) activo
+    - Ambos despachan openVincularPeriferico con el $item->id correcto
+    - VincularPerifericoModal ya está registrado en asignaciones-table.blade.php
     ─────────────────────────────────────────────────────────────────────────
 --}}
 <div>
@@ -16,7 +16,7 @@
             <div class="fixed inset-0 bg-black/60 backdrop-blur-sm"
                  wire:click="cerrar"></div>
 
-            {{-- Modal — más ancho y más alto --}}
+            {{-- Modal --}}
             <div class="relative z-50 w-full max-w-4xl bg-white dark:bg-cerberus-mid
                         border border-gray-200 dark:border-cerberus-steel
                         rounded-2xl shadow-2xl flex flex-col max-h-[92vh]">
@@ -53,7 +53,7 @@
                                 border border-gray-200 dark:border-cerberus-steel/40
                                 rounded-xl px-5 py-4">
 
-                        {{-- Badges de empresa y sede --}}
+                        {{-- Badges empresa / sede / departamento --}}
                         <div class="flex flex-wrap gap-2 mb-4">
                             @if ($this->usuario->empresaNomina)
                                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium
@@ -108,7 +108,7 @@
 
                     <hr class="border-gray-100 dark:border-cerberus-steel/30">
 
-                    {{-- Equipos activos --}}
+                    {{-- ── Equipos activos ───────────────────────────────────── --}}
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-xs font-semibold uppercase tracking-wider
@@ -136,7 +136,6 @@
                                 </p>
                             </div>
                         @else
-                            {{-- Grid de 2 columnas para aprovechar el ancho extra del modal --}}
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
                                 @foreach ($this->equiposActivos as $item)
                                     @php
@@ -144,25 +143,28 @@
                                             ->filter(fn ($v) => $v->atributo?->visible_en_tabla)
                                             ->sortBy(fn ($v) => $v->atributo?->orden ?? 99)
                                             ->take(3);
+
+                                        $categoriaLower = strtolower($item->equipo?->categoria?->nombre ?? '');
+                                        $icono = match(true) {
+                                            str_contains($categoriaLower, 'laptop')   => 'laptop',
+                                            str_contains($categoriaLower, 'desktop')  => 'desktop_windows',
+                                            str_contains($categoriaLower, 'monitor')  => 'monitor',
+                                            str_contains($categoriaLower, 'impresor') => 'print',
+                                            str_contains($categoriaLower, 'tel')      => 'smartphone',
+                                            str_contains($categoriaLower, 'switch')   => 'router',
+                                            str_contains($categoriaLower, 'servidor') => 'dns',
+                                            default => 'devices',
+                                        };
                                     @endphp
 
                                     <div class="rounded-xl border border-gray-200 dark:border-cerberus-steel/40
                                                 bg-white dark:bg-cerberus-dark overflow-hidden">
 
-                                        {{-- Equipo principal --}}
+                                        {{-- ── Equipo principal ──────────────────────────── --}}
                                         <div class="px-4 py-3">
                                             <div class="flex items-start gap-2 min-w-0">
                                                 <span class="material-icons text-base text-cerberus-accent mt-0.5 flex-shrink-0">
-                                                    {{ match(true) {
-                                                        str_contains(strtolower($item->equipo?->categoria?->nombre ?? ''), 'laptop')   => 'laptop',
-                                                        str_contains(strtolower($item->equipo?->categoria?->nombre ?? ''), 'desktop')  => 'desktop_windows',
-                                                        str_contains(strtolower($item->equipo?->categoria?->nombre ?? ''), 'monitor')  => 'monitor',
-                                                        str_contains(strtolower($item->equipo?->categoria?->nombre ?? ''), 'impresor') => 'print',
-                                                        str_contains(strtolower($item->equipo?->categoria?->nombre ?? ''), 'tel')      => 'smartphone',
-                                                        str_contains(strtolower($item->equipo?->categoria?->nombre ?? ''), 'switch')   => 'router',
-                                                        str_contains(strtolower($item->equipo?->categoria?->nombre ?? ''), 'servidor') => 'dns',
-                                                        default => 'devices',
-                                                    } }}
+                                                    {{ $icono }}
                                                 </span>
                                                 <div class="min-w-0 flex-1">
                                                     <p class="text-sm font-semibold text-gray-900 dark:text-white">
@@ -189,7 +191,7 @@
                                                         </p>
                                                     @endif
 
-                                                    {{-- Ubicación física del equipo --}}
+                                                    {{-- Empresa de la asignación --}}
                                                     @if ($item->asignacion?->empresa)
                                                         <span class="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs
                                                                      bg-gray-100 dark:bg-cerberus-steel/20
@@ -205,30 +207,81 @@
                                                         Asignado: {{ $item->asignacion?->fecha_asignacion?->format('d/m/Y') ?? '—' }}
                                                     </p>
                                                 </div>
+
+                                                {{--
+                                                    ── Botón vincular (equipo principal) ──────────
+                                                    Permite marcar este principal como periférico
+                                                    de otro equipo principal del mismo usuario.
+                                                    Útil cuando: se crea una asignación separada
+                                                    para un equipo que en realidad es accesorio
+                                                    de otro ya existente.
+                                                --}}
+                                                <button
+                                                    wire:click="$dispatch('openVincularPeriferico', { id: {{ $item->id }} })"
+                                                    title="Vincular como periférico de otro equipo"
+                                                    class="flex-shrink-0 p-1.5 rounded-lg transition-colors
+                                                           text-gray-300 dark:text-cerberus-steel/60
+                                                           hover:text-cerberus-primary dark:hover:text-cerberus-accent
+                                                           hover:bg-gray-100 dark:hover:bg-cerberus-steel/20">
+                                                    <span class="material-icons text-base">add_link</span>
+                                                </button>
+
                                             </div>
                                         </div>
 
-                                        {{-- Periféricos --}}
-                                        @if ($item->hijos->where('devuelto', false)->isNotEmpty())
+                                        {{-- ── Periféricos vinculados ────────────────────── --}}
+                                        @php
+                                            $hijosActivos = $item->hijos->where('devuelto', false);
+                                        @endphp
+
+                                        @if ($hijosActivos->isNotEmpty())
                                             <div class="border-t border-gray-100 dark:border-cerberus-steel/30
-                                                        px-4 py-2 bg-gray-50 dark:bg-cerberus-mid/50 space-y-1">
-                                                @foreach ($item->hijos->where('devuelto', false) as $hijo)
-                                                    <p class="text-xs text-gray-500 dark:text-cerberus-steel flex items-center gap-1.5">
-                                                        <span class="material-icons text-xs">subdirectory_arrow_right</span>
-                                                        <span class="font-medium text-gray-700 dark:text-cerberus-light">
+                                                        bg-gray-50 dark:bg-cerberus-mid/50 space-y-0.5 py-2">
+                                                @foreach ($hijosActivos as $hijo)
+                                                    <div class="flex items-center gap-1.5 px-4 py-1 group">
+                                                        <span class="material-icons text-xs text-gray-300 dark:text-cerberus-steel/40 flex-shrink-0">
+                                                            subdirectory_arrow_right
+                                                        </span>
+
+                                                        {{-- Info del periférico --}}
+                                                        <span class="text-xs font-medium text-gray-700 dark:text-cerberus-light">
                                                             {{ $hijo->equipo?->codigo_interno ?? '—' }}
                                                         </span>
-                                                        <span class="text-gray-400 dark:text-cerberus-steel/60">
+                                                        <span class="text-xs text-gray-400 dark:text-cerberus-steel/60">
                                                             {{ $hijo->equipo?->categoria?->nombre ?? '—' }}
-                                                            @if ($hijo->equipo?->serial) · {{ $hijo->equipo->serial }} @endif
+                                                            @if ($hijo->equipo?->serial)
+                                                                · {{ $hijo->equipo->serial }}
+                                                            @endif
                                                         </span>
-                                                        @if ($hijo->equipo?->ubicacion)
-                                                            <span class="ml-auto text-gray-300 dark:text-cerberus-steel/40 flex items-center gap-0.5">
-                                                                <span class="material-icons text-xs">location_on</span>
-                                                                {{ $hijo->equipo->ubicacion->nombre }}
+
+                                                        {{-- Asignación de origen (si es diferente) --}}
+                                                        @if ($hijo->asignacion_id !== $item->asignacion_id)
+                                                            <span class="ml-1 px-1.5 py-0.5 rounded text-xs
+                                                                         bg-yellow-100 dark:bg-yellow-900/20
+                                                                         text-yellow-600 dark:text-yellow-400
+                                                                         border border-yellow-200 dark:border-yellow-700/30"
+                                                                  title="Pertenece a la asignación #{{ $hijo->asignacion_id }}">
+                                                                Asig. #{{ $hijo->asignacion_id }}
                                                             </span>
                                                         @endif
-                                                    </p>
+
+                                                        {{--
+                                                            ── Botón reasignar periférico ──────────────
+                                                            Aparece en hover. Permite cambiar este
+                                                            periférico a otro equipo principal
+                                                            (o desvincularlo) sin devolverlo.
+                                                        --}}
+                                                        <button
+                                                            wire:click="$dispatch('openVincularPeriferico', { id: {{ $hijo->id }} })"
+                                                            title="Cambiar equipo principal de este periférico"
+                                                            class="ml-auto flex-shrink-0 p-1 rounded transition-colors
+                                                                   opacity-0 group-hover:opacity-100
+                                                                   text-gray-300 dark:text-cerberus-steel/40
+                                                                   hover:text-yellow-500 dark:hover:text-yellow-400
+                                                                   hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
+                                                            <span class="material-icons text-sm">cable</span>
+                                                        </button>
+                                                    </div>
                                                 @endforeach
                                             </div>
                                         @endif

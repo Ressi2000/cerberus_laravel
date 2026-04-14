@@ -13,6 +13,7 @@
     {{-- ── Modales ─────────────────────────────────────────────────────────── --}}
     @livewire('asignaciones.asignacion-view-modal')
     @livewire('asignaciones.area-view-modal')
+    @livewire('asignaciones.vincular-periferico-modal')
 
     {{-- ── Stats ───────────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[

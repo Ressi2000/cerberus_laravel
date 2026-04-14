@@ -225,7 +225,7 @@
                     <span class="whitespace-nowrap">Inventario</span>
                 </a>
 
-                @foreach ([['label' => 'Asignaciones', 'icon' => 'assignment_turned_in'], ['label' => 'Préstamos', 'icon' => 'swap_horiz'], ['label' => 'Mantenimientos', 'icon' => 'build']] as $item)
+                @foreach ([['label' => 'Préstamos', 'icon' => 'swap_horiz'], ['label' => 'Mantenimientos', 'icon' => 'build']] as $item)
                     <span
                         class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed
                                   text-gray-500 dark:text-gray-400">

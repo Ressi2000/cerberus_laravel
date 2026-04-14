@@ -40,6 +40,21 @@ class AsignacionViewModal extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Fix 1: escuchar perifericoVinculado e invalidar el cache
+    // ─────────────────────────────────────────────────────────────────────────
+ 
+    /**
+     * Cuando el VincularPerifericoModal confirma o desvincula, emite este evento.
+     * Invalidamos la computed property para que Livewire re-ejecute la query
+     * en el próximo render y el modal muestre los datos actualizados.
+     */
+    #[On('perifericoVinculado')]
+    public function refrescarEquipos(): void
+    {
+        
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     #[Computed]
     public function usuario(): ?User
@@ -56,23 +71,25 @@ class AsignacionViewModal extends Component
     }
 
     /**
-     * Items activos del usuario agrupados por asignación.
-     * Solo items principales; los periféricos van anidados via $item->hijos.
+     * Items activos del usuario: solo principales, hijos anidados via relación.
+     * Se invalida desde refrescarEquipos() tras cada vincular/desvincular.
      */
     #[Computed]
     public function equiposActivos()
     {
-        if (!$this->userId) return collect();
-
+        if (! $this->userId) return collect();
+ 
         return AsignacionItem::with([
             'equipo.categoria',
             'equipo.atributosActuales.atributo',
             'asignacion',
             'asignacion.empresa',
             'hijos.equipo.categoria',
+            'hijos.asignacion',       // ← necesario para mostrar badge "Otra asig."
         ])
-            ->whereHas('asignacion', fn($q) =>
-                $q->where('usuario_id', $this->userId)->where('estado', 'Activa')
+            ->whereHas('asignacion', fn ($q) =>
+                $q->where('usuario_id', $this->userId)
+                  ->where('estado', 'Activa')
             )
             ->where('devuelto', false)
             ->whereNull('equipo_padre_id')

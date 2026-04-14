@@ -73,6 +73,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     // Equipos
     Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
         Route::resource('/equipos', EquipoController::class);
+
     });
 
     // Configuración (solo para Administrador)
