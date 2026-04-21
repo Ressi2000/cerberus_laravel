@@ -35,7 +35,7 @@ class ProfileController extends Controller
             'jefe',
         ]);
 
-        return view('admin.profile.edit', [
+        return view('profile.edit', [
             'user' => $user,
             'auditorias' => $auditorias,
         ]);
@@ -106,7 +106,7 @@ class ProfileController extends Controller
             $query->whereDate('created_at', '<=', $request->hasta);
         }
 
-        return view('admin.profile.activity', [
+        return view('profile.activity', [
             'auditorias' => $query->latest()->paginate(20)->withQueryString(),
         ]);
     }

@@ -62,8 +62,8 @@
             <x-form.input label="Serial" wire:model="serial" placeholder="Ej: SN123456789"
                 hint="Número de serie del fabricante. Debe ser único en el sistema." :error="$errors->first('serial')" />
 
-            <x-form.input label="Hostname / Nombre máquina" wire:model="nombre_maquina" placeholder="Ej: PC-RRHH-01"
-                hint="Nombre de red del equipo en el dominio o red interna." :error="$errors->first('nombre_maquina')" />
+            <x-form.input label="Hostname / Nombre máquina" wire:model="nombre_maquina" placeholder="Ej: WVETSD104"
+                hint="Nombre de red único del equipo. Debe coincidir exactamente con el nombre registrado en el Active Directory. Si ya existe en el sistema, no podrá registrarse." :error="$errors->first('nombre_maquina')" />
 
             @php
                 $asignado = \App\Models\AsignacionItem::where('equipo_id', $this->equipo->id)

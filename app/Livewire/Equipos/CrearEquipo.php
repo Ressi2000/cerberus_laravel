@@ -8,11 +8,13 @@ use App\Models\Equipo;
 use App\Models\EquipoAtributoValor;
 use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
+use App\Services\CodigoInternoService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -109,11 +111,16 @@ class CrearEquipo extends Component
     {
         $rules = [
             'categoria_id'       => 'required|exists:categorias_equipos,id',
-            'codigo_interno'     => 'required|string|max:100|unique:equipos,codigo_interno',
+            // 'codigo_interno'     => 'required|string|max:100|unique:equipos,codigo_interno',
             'estado_id'          => 'required|exists:estados_equipos,id',
             'ubicacion_id'       => 'nullable|exists:ubicaciones,id',
             'serial'             => 'nullable|string|max:100',
-            'nombre_maquina'     => 'nullable|string|max:100',
+            'nombre_maquina'     => [
+                'nullable',
+                'string',
+                'max:100',
+                Rule::unique('equipos', 'nombre_maquina'),
+            ],
             'fecha_adquisicion'  => 'nullable|date',
             'fecha_garantia_fin' => 'nullable|date|after_or_equal:fecha_adquisicion',
             'observaciones'      => 'nullable|string|max:2000',
@@ -149,11 +156,11 @@ class CrearEquipo extends Component
     protected function messages(): array
     {
         $messages = [
-            'categoria_id.required'   => 'Debe seleccionar una categoría.',
-            'codigo_interno.required' => 'El código interno es obligatorio.',
-            'codigo_interno.unique'   => 'Ese código interno ya está en uso.',
-            'estado_id.required'      => 'Debe seleccionar un estado.',
-            'fecha_garantia_fin.after_or_equal' => 'La garantía no puede ser anterior a la fecha de adquisición.',
+            'categoria_id.required'              => 'Debe seleccionar una categoría.',
+            'estado_id.required'                 => 'Debe seleccionar un estado.',
+            'fecha_garantia_fin.after_or_equal'  => 'La garantía no puede ser anterior a la fecha de adquisición.',
+            'serial.unique'                      => 'Ese serial ya está registrado en otro equipo.',
+            'nombre_maquina.unique'              => 'Ese hostname ya existe en el sistema. Verifique en el Active Directory.',
         ];
 
         foreach ($this->atributos as $atributo) {
@@ -176,25 +183,30 @@ class CrearEquipo extends Component
     // ─────────────────────────────────────────────────────────────────────────
     // Guardar
     // ─────────────────────────────────────────────────────────────────────────
-    public function guardar(): void
+    public function guardar(CodigoInternoService $codigos): void
     {
         $this->validate();
 
         try {
-            DB::transaction(function () {
+            DB::transaction(function () use ($codigos) {
 
+                // Paso 1: crear el equipo SIN codigo_interno para obtener el id
                 $equipo = Equipo::create([
                     'empresa_id'         => $this->empresa_id,
                     'categoria_id'       => $this->categoria_id,
                     'estado_id'          => $this->estado_id,
                     'ubicacion_id'       => $this->ubicacion_id ?: null,
-                    'codigo_interno'     => $this->codigo_interno,
                     'serial'             => $this->serial             ?: null,
                     'nombre_maquina'     => $this->nombre_maquina     ?: null,
                     'fecha_adquisicion'  => $this->fecha_adquisicion  ?: null,
                     'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
                     'observaciones'      => $this->observaciones       ?: null,
                     'activo'             => true,
+                ]);
+
+                // Paso 2: ahora que tenemos el id, generamos y asignamos el código
+                $equipo->update([
+                    'codigo_interno' => $codigos->generar($equipo->id),
                 ]);
 
                 foreach ($this->atributos as $atributo) {
@@ -219,7 +231,6 @@ class CrearEquipo extends Component
                             'es_actual'   => true,
                             'creado_por'  => Auth::id(),
                         ]);
-
                     } else {
                         // ── Atributo tipo texto/número/fecha/etc ─────────────
                         $valor = $this->valores[$atributoId] ?? null;
@@ -238,7 +249,6 @@ class CrearEquipo extends Component
 
             session()->flash('success', 'Equipo registrado correctamente.');
             $this->redirect(route('admin.equipos.index'), navigate: true);
-
         } catch (\Exception $e) {
             Log::error('CrearEquipo@guardar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al crear el equipo. Por favor intenta nuevamente.');
@@ -250,11 +260,21 @@ class CrearEquipo extends Component
     // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
+        $user = Auth::user();
+
+        $ubicaciones = $user->hasRole('Administrador')
+            ? Ubicacion::orderBy('nombre')->pluck('nombre', 'id')
+            : Ubicacion::where(function ($q) use ($user) {
+                $q->where('empresa_id', $this->empresa_id)
+                    ->orWhere('es_estado', true);
+            })
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
+
         return view('livewire.equipos.crear-equipo', [
             'categorias'  => CategoriaEquipo::activos()->orderBy('nombre')->pluck('nombre', 'id'),
             'estados'     => EstadoEquipo::orderBy('nombre')->pluck('nombre', 'id'),
-            'ubicaciones' => Ubicacion::where('empresa_id', $this->empresa_id)
-                                ->orderBy('nombre')->pluck('nombre', 'id'),
+            'ubicaciones' => $ubicaciones,
         ]);
     }
 }

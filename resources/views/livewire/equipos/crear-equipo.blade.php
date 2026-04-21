@@ -37,16 +37,23 @@
                     :error="$errors->first('categoria_id')" />
             </div>
 
-            <x-form.input label="Código interno" wire:model="codigo_interno" required placeholder="Ej: EQ-2024-001"
-                hint="Identificador único del equipo en el sistema. Se usa para buscarlo rápidamente y puede estar impreso en una etiqueta o QR."
-                :error="$errors->first('codigo_interno')" />
+            <div>
+                <label class="block text-cerberus-accent text-sm mb-1">Código interno</label>
+                <div
+                    class="w-full bg-cerberus-dark/50 border border-cerberus-steel/40 text-cerberus-light 
+                rounded-lg px-4 py-2 flex items-center gap-2 text-sm">
+                    <span class="material-icons text-base text-cerberus-steel">auto_awesome</span>
+                    <span class="italic">Se asignará automáticamente al guardar (ej: EQ-00042)</span>
+                </div>
+            </div>
 
             <x-form.input label="Serial" wire:model="serial" placeholder="Ej: SN123456789"
                 hint="Número de serie del fabricante. Se encuentra en la etiqueta del equipo o en el BIOS/Sistema."
                 :error="$errors->first('serial')" />
 
-            <x-form.input label="Hostname / Nombre máquina" wire:model="nombre_maquina" placeholder="Ej: PC-RRHH-01"
-                hint="Nombre de red del equipo (hostname). Útil para identificarlo en el dominio o red interna."
+            <x-form.input label="Hostname / Nombre máquina" wire:model.lazy="nombre_maquina"
+                placeholder="Ej: WVETSD104"
+                hint="Nombre de red único del equipo. Debe coincidir exactamente con el nombre registrado en el Active Directory. Si ya existe en el sistema, no podrá registrarse."
                 :error="$errors->first('nombre_maquina')" />
 
             <x-form.select label="Estado" wire:model="estado_id" :options="$estados" required
@@ -259,7 +266,8 @@
                                     <span class="text-red-400">*</span>
                                 @endif
                             </label>
-                            <input type="{{ in_array($atributo['tipo'], ['integer', 'decimal']) ? 'number' : 'text' }}"
+                            <input
+                                type="{{ in_array($atributo['tipo'], ['integer', 'decimal']) ? 'number' : 'text' }}"
                                 wire:model="valores.{{ $atributo['id'] }}"
                                 @if ($atributo['tipo'] === 'decimal') step="0.01" @endif
                                 class="w-full rounded-lg px-4 py-2 text-sm transition

@@ -185,7 +185,8 @@ class UsuariosTable extends Component
                     //  2. Usuarios foráneos (ubicacion.es_estado = true)
                     $q->where(function ($sub) use ($actor) {
                         $sub->where('ubicacion_id', $actor->empresa_activa_id)
-                            ->orWhereHas('ubicacion',
+                            ->orWhereHas(
+                                'ubicacion',
                                 fn($u) => $u->where('es_estado', true)
                             );
                     });
@@ -198,14 +199,15 @@ class UsuariosTable extends Component
             $s = $this->search;
             $query->where(function ($q) use ($s) {
                 $q->where('name',     'like', "%{$s}%")
-                  ->orWhere('email',    'like', "%{$s}%")
-                  ->orWhere('username', 'like', "%{$s}%")
-                  ->orWhere('cedula',   'like', "%{$s}%");
+                    ->orWhere('email',    'like', "%{$s}%")
+                    ->orWhere('username', 'like', "%{$s}%")
+                    ->orWhere('cedula',   'like', "%{$s}%");
             });
         }
 
         if ($this->rol_id) {
-            $query->whereHas('roles',
+            $query->whereHas(
+                'roles',
                 fn($q) => $q->where('id', $this->rol_id)
             );
         }
@@ -237,7 +239,8 @@ class UsuariosTable extends Component
 
         // Filtro: solo foráneos (ubicacion.es_estado = true)
         if ($this->foraneo === '1') {
-            $query->whereHas('ubicacion',
+            $query->whereHas(
+                'ubicacion',
                 fn($q) => $q->where('es_estado', true)
             );
         }
@@ -251,9 +254,20 @@ class UsuariosTable extends Component
             $query->whereDate('created_at', '<=', $this->fecha_hasta);
         }
 
+        // Stats
+        $usuariosActivos = (clone $query)->where('estado', 'Activo')->count();
+        $usuariosInactivos = (clone $query)->where('estado', 'Inactivo')->count();
+        $admins = (clone $query)->whereHas('roles', fn($q) => $q->where('name', 'Administrador'))->count();
+        $Analistas = (clone $query)->whereHas('roles', fn($q) => $q->where('name', 'Analista'))->count();
+
+
         return view('livewire.usuarios.usuarios-table', [
             'usuarios'    => $query->paginate($this->perPage),
-
+            // Stats para mostrar en la vista
+            'usuariosActivos' => $usuariosActivos,
+            'usuariosInactivos' => $usuariosInactivos,
+            'admins' => $admins,
+            'Analistas' => $Analistas,
             // Datos para los selects de filtros
             'roles'       => Role::pluck('name', 'id'),
             'empresas'    => Empresa::pluck('nombre', 'id'),
