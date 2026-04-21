@@ -63,7 +63,10 @@ class UbicacionModal extends Component
         return [
             'nombre'      => ['required', 'string', 'max:255', $uniqueRule],
             'descripcion' => 'nullable|string|max:500',
-            'empresa_id'  => 'required|exists:empresas,id',
+            // Requerido solo si NO es ubicación foránea
+            'empresa_id'  => $this->es_estado
+                ? 'nullable'
+                : 'required|exists:empresas,id',
             'es_estado'   => 'boolean',
         ];
     }
@@ -98,7 +101,7 @@ class UbicacionModal extends Component
             $data = [
                 'nombre'      => trim($this->nombre),
                 'descripcion' => trim($this->descripcion) ?: null,
-                'empresa_id'  => $this->empresa_id,
+                'empresa_id'  => $this->es_estado ? null : ($this->empresa_id ?: null),
                 'es_estado'   => $this->es_estado,
             ];
 
@@ -106,11 +109,17 @@ class UbicacionModal extends Component
                 Ubicacion::findOrFail($this->ubicacionId)->update($data);
                 $msg = "Ubicación «{$this->nombre}» actualizada.";
             } else {
-                // Verificar si existe inactiva con mismo nombre + empresa
-                $inactiva = Ubicacion::where('nombre', trim($this->nombre))
-                    ->where('empresa_id', $this->empresa_id)
-                    ->where('activo', false)
-                    ->first();
+                // ← AQUÍ va el fragmento: al crear, verificar si existe una inactiva
+                $inactivaQuery = Ubicacion::where('nombre', trim($this->nombre))
+                    ->where('activo', false);
+
+                if ($this->es_estado) {
+                    $inactivaQuery->whereNull('empresa_id');
+                } else {
+                    $inactivaQuery->where('empresa_id', $this->empresa_id);
+                }
+
+                $inactiva = $inactivaQuery->first();
 
                 if ($inactiva) {
                     $inactiva->update(array_merge($data, ['activo' => true]));
@@ -124,7 +133,6 @@ class UbicacionModal extends Component
             $this->close();
             $this->dispatch('ubicacionGuardada');
             $this->dispatch('toast', type: 'success', message: $msg);
-
         } catch (\Exception $e) {
             Log::error('UbicacionModal@guardar: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Error al guardar la ubicación.');
