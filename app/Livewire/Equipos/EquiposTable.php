@@ -149,7 +149,6 @@ class EquiposTable extends Component
     // ─────────────────────────────────────────────────────────────────────────
     public function render()
     {
-        $empresaId = Auth::user()->empresa_activa_id ?? Auth::user()->empresa_id;
 
         $query = Equipo::query()
             ->with([

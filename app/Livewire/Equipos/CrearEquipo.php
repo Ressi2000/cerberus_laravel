@@ -265,9 +265,10 @@ class CrearEquipo extends Component
         $ubicaciones = $user->hasRole('Administrador')
             ? Ubicacion::orderBy('nombre')->pluck('nombre', 'id')
             : Ubicacion::where(function ($q) use ($user) {
-                $q->where('empresa_id', $this->empresa_id)
+                $q->where('empresa_id', $user->empresa_activa_id)
                     ->orWhere('es_estado', true);
             })
+            ->whereNot('activo', false)
             ->orderBy('nombre')
             ->pluck('nombre', 'id');
 
