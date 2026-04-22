@@ -144,10 +144,20 @@ class User extends Authenticatable
         }
 
         // Analista
-        if ($actor->hasRole('Analista')) {
+        if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
             return $query->where(function ($q) use ($actor) {
-                $q->where('ubicacion_id', $actor->empresa_activa_id)
-                    ->orWhereHas('ubicacion', fn($u) => $u->where('es_estado', true));
+                // Equipo en una ubicación que pertenece a la empresa activa del analista
+                $q->whereHas(
+                    'ubicacion',
+                    fn($u) =>
+                    $u->where('empresa_id', $actor->empresa_activa_id)
+                )
+                    // O equipo en una ubicación foránea (visible para todos los analistas)
+                    ->orWhereHas(
+                        'ubicacion',
+                        fn($u) =>
+                        $u->where('es_estado', true)
+                    );
             });
         }
 
