@@ -20,14 +20,14 @@ class EquipoPolicy
         if ($user->hasRole('Administrador')) {
             return true;
         }
- 
+
         if ($user->hasRole('Usuario')) {
             return false;
         }
- 
+
         return null;
     }
- 
+
     /**
      * Ver el listado de equipo.
      */
@@ -35,7 +35,7 @@ class EquipoPolicy
     {
         return $user->hasRole('Analista') && (bool) $user->empresa_activa_id;
     }
- 
+
     /**
      * Ver el detalle de un equipo.
      */
@@ -43,7 +43,7 @@ class EquipoPolicy
     {
         return $this->analistaVeEquipo($user, $equipo);
     }
- 
+
     /**
      * Crear un equipo nuevo.
      */
@@ -51,7 +51,7 @@ class EquipoPolicy
     {
         return $user->hasRole('Analista') && (bool) $user->empresa_activa_id;
     }
- 
+
     /**
      * Editar un equipo existente.
      * Un equipo dado de baja (activo = false) no es editable.
@@ -61,7 +61,7 @@ class EquipoPolicy
         if (! $equipo->activo) return false;
         return $this->analistaVeEquipo($user, $equipo);
     }
- 
+
     /**
      * Desactivación lógica: activo = false → "Dado de baja".
      * El equipo permanece en BD para auditoría e historial.
@@ -72,7 +72,7 @@ class EquipoPolicy
         if (! $equipo->activo) return false;
         return $this->analistaVeEquipo($user, $equipo);
     }
- 
+
     /**
      * Eliminación administrativa definitiva (soft delete real / deleted_at).
      * Solo Administrador — cubierto por before(), este método nunca
@@ -82,7 +82,7 @@ class EquipoPolicy
     {
         return false;
     }
- 
+
     /**
      * Restaurar un equipo eliminado.
      * Solo Administrador — cubierto por before().
@@ -106,7 +106,7 @@ class EquipoPolicy
         if (! $user->empresa_activa_id) return false;
 
         // Caso A: equipo ubicado físicamente en la empresa activa
-        if ((int) $equipo->ubicacion_id === (int) $user->empresa_activa_id) {
+        if ($equipo->ubicacion && (int) $equipo->ubicacion->empresa_id === (int) $user->empresa_activa_id) {
             return true;
         }
 
