@@ -164,34 +164,7 @@ class UsuariosTable extends Component
                 'departamento',
                 'cargo',
                 'ubicacion',
-            ])
-            // ── Reglas de visibilidad según rol del actor ─────────────────────
-            ->where(function ($q) use ($actor) {
-
-                if ($actor->hasRole('Administrador')) {
-                    // Admin ve absolutamente todo
-                    return;
-                }
-
-                if ($actor->hasRole('Usuario')) {
-                    // Usuario normal solo se ve a sí mismo
-                    $q->where('id', $actor->id);
-                    return;
-                }
-
-                if ($actor->hasRole('Analista')) {
-                    // Analista ve:
-                    //  1. Usuarios en la misma ubicación física que su empresa activa
-                    //  2. Usuarios foráneos (ubicacion.es_estado = true)
-                    $q->where(function ($sub) use ($actor) {
-                        $sub->where('ubicacion_id', $actor->empresa_activa_id)
-                            ->orWhereHas(
-                                'ubicacion',
-                                fn($u) => $u->where('es_estado', true)
-                            );
-                    });
-                }
-            });
+            ])->visiblePara($actor);
 
         // ── Filtros aplicados por el usuario ──────────────────────────────────
 

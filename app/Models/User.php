@@ -146,13 +146,13 @@ class User extends Authenticatable
         // Analista
         if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
             return $query->where(function ($q) use ($actor) {
-                // Equipo en una ubicación que pertenece a la empresa activa del analista
+                // Usuario en una ubicación que pertenece a la empresa activa del analista
                 $q->whereHas(
                     'ubicacion',
                     fn($u) =>
                     $u->where('empresa_id', $actor->empresa_activa_id)
                 )
-                    // O equipo en una ubicación foránea (visible para todos los analistas)
+                    // O usuario en una ubicación foránea (visible para todos los analistas)
                     ->orWhereHas(
                         'ubicacion',
                         fn($u) =>
