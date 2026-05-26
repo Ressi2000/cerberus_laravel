@@ -321,7 +321,7 @@
         <span class="material-icons text-cerberus-accent text-lg mt-0.5">history</span>
         <p class="text-cerberus-light text-sm">
             Los cambios en las características técnicas quedarán registrados en el
-            <strong class="text-white">historial del equipo</strong>
+            <strong class="text-cerberus-accent">historial del equipo</strong>
             con fecha, hora y usuario responsable.
         </p>
     </div>

@@ -141,7 +141,7 @@
                 <button @click="open = !open"
                     class="flex items-center gap-2 text-sm px-3 py-2 rounded-lg
                            bg-cerberus-mid border border-cerberus-steel
-                           text-cerberus-light hover:text-white transition">
+                           text-cerberus-light hover:text-cerberus-accent transition">
                     <span class="material-icons text-base">view_column</span>
                     Columnas
                     <span class="material-icons text-sm">expand_more</span>
@@ -190,7 +190,7 @@
                     <button @click="open = !open"
                         class="flex items-center gap-2 text-sm px-3 py-2 rounded-lg
                                bg-cerberus-dark border border-cerberus-steel
-                               text-white hover:bg-cerberus-steel transition">
+                               text-cerberus-light hover:text-cerberus-accent transition">
                         <span class="material-icons text-base">file_download</span>
                         Exportar
                         <span class="material-icons text-sm">expand_more</span>
@@ -239,7 +239,7 @@
                 </div>
 
                 <table class="w-full text-sm text-left">
-                    <thead class="bg-cerberus-steel/40 text-gray-200 uppercase text-xs">
+                    <thead class="bg-cerberus-steel/20 text-cerberus-accent uppercase text-xs">
                         <tr>
                             {{-- Código: siempre visible --}}
                             <th class="px-4 py-3 font-semibold tracking-wide">Código</th>
@@ -289,7 +289,7 @@
 
                                 {{-- Código --}}
                                 <td class="px-4 py-3">
-                                    <span class="font-mono text-white text-sm font-semibold">
+                                    <span class="font-mono text-cerberus-light text-sm font-semibold">
                                         {{ $equipo->codigo_interno }}
                                     </span>
                                 </td>
@@ -301,7 +301,7 @@
                                 {{-- Marca / Modelo —— columna combinada --}}
                                 <td x-show="columnas.marca_modelo" class="px-4 py-3 text-sm">
                                     @if ($marcaValor || $modeloValor)
-                                        <span class="text-white font-medium">
+                                        <span class="text-cerberus-light font-medium">
                                             {{ $marcaValor ?? '' }}
                                         </span>
                                         @if ($modeloValor)

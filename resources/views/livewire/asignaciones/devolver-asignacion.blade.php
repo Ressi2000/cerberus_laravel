@@ -28,7 +28,7 @@
                 rounded-xl p-6">
 
         <h2 class="text-sm font-semibold uppercase tracking-wider
-                   text-gray-400 dark:text-cerberus-steel mb-4">
+                   text-gray-500 dark:text-cerberus-steel mb-4">
             Asignación a devolver
         </h2>
 
@@ -45,7 +45,7 @@
                         </span>
                     </div>
                     @if ($this->asignacion->usuario?->cargo)
-                        <p class="text-xs text-gray-400 dark:text-cerberus-steel ml-5 mt-0.5">
+                        <p class="text-xs text-gray-500 dark:text-cerberus-steel ml-5 mt-0.5">
                             {{ $this->asignacion->usuario->cargo->nombre }}
                         </p>
                     @endif
@@ -56,7 +56,7 @@
                             {{ $this->asignacion->areaDepartamento?->nombre ?? '—' }}
                         </span>
                     </div>
-                    <p class="text-xs text-gray-400 dark:text-cerberus-steel ml-5 mt-0.5">
+                    <p class="text-xs text-gray-500 dark:text-cerberus-steel ml-5 mt-0.5">
                         {{ $this->asignacion->areaEmpresa?->nombre ?? '—' }}
                         @if ($this->asignacion->areaResponsable)
                             · Resp: {{ $this->asignacion->areaResponsable->name }}
@@ -145,7 +145,7 @@
 
             <span class="text-xs text-gray-500 dark:text-cerberus-accent">
                 {{ count($seleccionados) }} de {{ $this->todosLosItemsActivos->count() }} seleccionado(s)
-                <span class="text-gray-300 dark:text-cerberus-steel/40 mx-1">·</span>
+                <span class="text-gray-400 dark:text-cerberus-steel/40 mx-1">·</span>
                 {{ $this->todosLosItemsActivos->whereNull('equipo_padre_id')->count() }} principal(es),
                 {{ $this->todosLosItemsActivos->whereNotNull('equipo_padre_id')->count() }} periférico(s)
             </span>
@@ -220,7 +220,7 @@
                                         </span>
                                     </p>
 
-                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                                    <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                                         {{ $item->equipo?->nombre_maquina ?? '—' }}
                                         @if ($item->equipo?->serial)
                                             · S/N: {{ $item->equipo->serial }}
@@ -240,7 +240,7 @@
                                     @if (! $esPeriférico && $item->hijosActivos->isNotEmpty())
                                         <div class="mt-1.5 space-y-0.5">
                                             @foreach ($item->hijosActivos as $hijo)
-                                                <p class="text-xs text-gray-400 dark:text-cerberus-steel/70
+                                                <p class="text-xs text-gray-500 dark:text-cerberus-steel/70
                                                            flex items-center gap-1">
                                                     <span class="material-icons text-xs">subdirectory_arrow_right</span>
                                                     {{ $hijo->equipo?->codigo_interno ?? '—' }}
@@ -290,7 +290,7 @@
                 </div>
 
             @empty
-                <div class="px-6 py-12 text-center text-gray-400 dark:text-cerberus-accent">
+                <div class="px-6 py-12 text-center text-gray-500 dark:text-cerberus-accent">
                     <span class="material-icons text-3xl block mb-2 opacity-40">inventory</span>
                     No hay equipos activos en esta asignación.
                 </div>
@@ -318,7 +318,7 @@
                     Disponible
                 </span>
             @else
-                <span class="text-gray-400 dark:text-cerberus-steel">Ningún equipo seleccionado</span>
+                <span class="text-gray-500 dark:text-cerberus-steel">Ningún equipo seleccionado</span>
             @endif
         </div>
 

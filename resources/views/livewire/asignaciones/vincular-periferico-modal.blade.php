@@ -29,7 +29,7 @@
                             cable
                         </span>
                         <div>
-                            <h2 class="text-white font-semibold text-base leading-tight">
+                            <h2 class="text-cerberus-light font-semibold text-base leading-tight">
                                 Vincular periférico a equipo principal
                             </h2>
                             <p class="text-cerberus-accent text-xs mt-0.5">
@@ -38,7 +38,7 @@
                         </div>
                     </div>
                     <button wire:click="cerrar"
-                            class="text-cerberus-accent hover:text-white transition">
+                            class="text-cerberus-accent hover:text-cerberus-light transition">
                         <span class="material-icons">close</span>
                     </button>
                 </div>
@@ -57,7 +57,7 @@
                                 memory
                             </span>
                             <div>
-                                <p class="text-white font-medium text-sm">
+                                <p class="text-cerberus-light font-medium text-sm">
                                     {{ $item->equipo->categoria->nombre ?? '—' }}
                                     —
                                     {{ $item->equipo->codigo_interno }}
@@ -82,7 +82,7 @@
                                 </span>
                                 <p class="text-yellow-300 text-xs">
                                     Actualmente vinculado a:
-                                    <span class="font-semibold text-white">
+                                    <span class="font-semibold text-cerberus-light">
                                         {{ $item->padre->equipo->categoria->nombre ?? '—' }}
                                         — {{ $item->padre->equipo->codigo_interno }}
                                     </span>
@@ -134,7 +134,7 @@
                                                class="text-cerberus-primary focus:ring-cerberus-primary">
 
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-white text-sm font-medium truncate">
+                                            <p class="text-cerberus-light text-sm font-medium truncate">
                                                 {{ $principal->equipo->categoria->nombre ?? '—' }}
                                                 — {{ $principal->equipo->codigo_interno }}
                                             </p>

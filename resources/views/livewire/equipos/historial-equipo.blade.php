@@ -6,7 +6,7 @@
             <div class="flex items-center gap-3">
                 <span class="material-icons text-cerberus-accent text-2xl">history</span>
                 <div>
-                    <h2 class="text-xl font-bold text-white">
+                    <h2 class="text-xl font-bold text-cerberus-light">
                         Historial de cambios
                     </h2>
                     <p class="text-cerberus-light text-sm mt-0.5">
@@ -21,7 +21,7 @@
 
             <a href="{{ route('admin.equipos.index') }}"
                class="flex items-center gap-2 px-4 py-2 bg-cerberus-dark border border-cerberus-steel
-                      text-cerberus-light hover:text-white rounded-lg text-sm transition">
+                      text-cerberus-light hover:text-cerberus-accent rounded-lg text-sm transition">
                 <span class="material-icons text-sm">arrow_back</span>
                 Volver al listado
             </a>
@@ -31,19 +31,19 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-5">
             <div class="bg-cerberus-dark rounded-lg p-3 border border-cerberus-steel">
                 <p class="text-xs text-cerberus-light mb-1">Estado</p>
-                <p class="text-white font-semibold text-sm">{{ $equipo->estado->nombre ?? '—' }}</p>
+                <p class="text-cerberus-light font-semibold text-sm">{{ $equipo->estado->nombre ?? '—' }}</p>
             </div>
             <div class="bg-cerberus-dark rounded-lg p-3 border border-cerberus-steel">
                 <p class="text-xs text-cerberus-light mb-1">Ubicación</p>
-                <p class="text-white font-semibold text-sm">{{ $equipo->ubicacion->nombre ?? '—' }}</p>
+                <p class="text-cerberus-light font-semibold text-sm">{{ $equipo->ubicacion->nombre ?? '—' }}</p>
             </div>
             <div class="bg-cerberus-dark rounded-lg p-3 border border-cerberus-steel">
                 <p class="text-xs text-cerberus-light mb-1">Empresa</p>
-                <p class="text-white font-semibold text-sm">{{ $equipo->empresa->nombre ?? '—' }}</p>
+                <p class="text-cerberus-light font-semibold text-sm">{{ $equipo->empresa->nombre ?? '—' }}</p>
             </div>
             <div class="bg-cerberus-dark rounded-lg p-3 border border-cerberus-steel">
                 <p class="text-xs text-cerberus-light mb-1">Serial</p>
-                <p class="text-white font-semibold text-sm">{{ $equipo->serial ?? '—' }}</p>
+                <p class="text-cerberus-light font-semibold text-sm">{{ $equipo->serial ?? '—' }}</p>
             </div>
         </div>
     </div>
@@ -56,7 +56,7 @@
             <div>
                 <label class="block text-cerberus-accent text-xs mb-1">Atributo</label>
                 <select wire:model.live="atributo_id"
-                    class="bg-cerberus-dark border border-cerberus-steel text-white text-sm rounded-lg px-3 py-2
+                    class="bg-cerberus-dark border border-cerberus-steel text-cerberus-light text-sm rounded-lg px-3 py-2
                            focus:ring-2 focus:ring-cerberus-primary outline-none transition min-w-[180px]">
                     <option value="">Todos los atributos</option>
                     @foreach($atributos as $id => $nombre)
@@ -69,7 +69,7 @@
             <div>
                 <label class="block text-cerberus-accent text-xs mb-1">Desde</label>
                 <input type="date" wire:model.live="fecha_desde"
-                    class="bg-cerberus-dark border border-cerberus-steel text-white text-sm rounded-lg px-3 py-2
+                    class="bg-cerberus-dark border border-cerberus-steel text-cerberus-light text-sm rounded-lg px-3 py-2
                            focus:ring-2 focus:ring-cerberus-primary outline-none transition">
             </div>
 
@@ -77,7 +77,7 @@
             <div>
                 <label class="block text-cerberus-accent text-xs mb-1">Hasta</label>
                 <input type="date" wire:model.live="fecha_hasta"
-                    class="bg-cerberus-dark border border-cerberus-steel text-white text-sm rounded-lg px-3 py-2
+                    class="bg-cerberus-dark border border-cerberus-steel text-cerberus-light text-sm rounded-lg px-3 py-2
                            focus:ring-2 focus:ring-cerberus-primary outline-none transition">
             </div>
 
@@ -117,7 +117,7 @@
                                        {{ $registro->es_actual ? 'bg-cerberus-primary/5' : '' }}">
 
                                 <td class="px-5 py-3 whitespace-nowrap">
-                                    <span class="text-white">
+                                    <span class="text-cerberus-light">
                                         {{ $registro->created_at?->format('d/m/Y') }}
                                     </span>
                                     <span class="text-cerberus-light text-xs block">
@@ -125,7 +125,7 @@
                                     </span>
                                 </td>
 
-                                <td class="px-5 py-3 font-medium text-white">
+                                <td class="px-5 py-3 font-medium text-cerberus-light">
                                     {{ $registro->atributo?->nombre ?? '—' }}
                                 </td>
 
@@ -139,7 +139,7 @@
                                 <td class="px-5 py-3">
                                     <div class="flex items-center gap-2">
                                         <span class="material-icons text-sm text-cerberus-steel">person</span>
-                                        <span class="text-white">{{ $registro->usuario?->name ?? 'Sistema' }}</span>
+                                        <span class="text-cerberus-light">{{ $registro->usuario?->name ?? 'Sistema' }}</span>
                                     </div>
                                 </td>
 

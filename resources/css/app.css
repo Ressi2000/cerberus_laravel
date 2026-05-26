@@ -2,18 +2,69 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===================================================================
+   CERBERUS — Tokens de color adaptativos
+   Los colores cerberus-* cambian automáticamente entre modos.
+   Las variables deben estar en formato "R G B" (sin rgb()) para
+   que Tailwind pueda usarlas con modificadores de opacidad (/20, /40…)
+   =================================================================== */
+
+:root {
+  /* ── Modo CLARO — estilo Flowbite / Tailwind UI ─────────────────
+   *
+   * Filosofía: grises neutros puros como Flowbite.
+   * Fondos sutiles, cards blancas, texto gris oscuro, azul solo
+   * en elementos interactivos (botones, activos, focus).
+   *
+   *   Fondo página  ░░░  #F3F4F6  gray-100
+   *   Cards/panel   ███  #FFFFFF  blanco puro
+   *   Bordes         ──  #E5E7EB  gray-200
+   *   Labels         ▓▓  #374151  gray-700
+   *   Texto secund.  ▓▓  #6B7280  gray-500
+   *   Hover filas   ░░░  #F9FAFB  gray-50
+   * ─────────────────────────────────────────────────────────────── */
+  --cerberus-dark:    243 244 246;   /* #F3F4F6  gray-100 — fondo de página    */
+  --cerberus-mid:     255 255 255;   /* #FFFFFF  white   — cards y paneles     */
+  --cerberus-steel:   156 163 175;   /* #9CA3AF  gray-400 — bordes / iconos    */
+  --cerberus-accent:  75  85  99;    /* #4B5563  gray-600 — labels, headings   */
+  --cerberus-light:   55  65  81;    /* #374151  gray-700 — texto datos/cuerpo */
+  --cerberus-primary: 30  64  175;   /* #1E40AF  blue-700 — primario           */
+  --cerberus-hover:   30  58  138;   /* #1E3A8A  blue-800 — hover              */
+  --cerberus-darkest: 249 250 251;   /* #F9FAFB  gray-50  — hover de filas     */
+
+  /* ── Sombra estilo Tailwind UI ──────────────────────────────────── */
+  --shadow-cerberus: 0 1px 3px 0   rgba(0, 0, 0, 0.10),
+                     0 1px 2px -1px rgba(0, 0, 0, 0.10);
+}
+
+.dark {
+  /* ── Modo OSCURO — paleta Cerberus original ─────────────────────── */
+  --cerberus-dark:    13  27  42;    /* #0D1B2A  */
+  --cerberus-mid:     27  38  59;    /* #1B263B  */
+  --cerberus-steel:   65  90  119;   /* #415A77  */
+  --cerberus-accent:  119 141 169;   /* #778DA9  */
+  --cerberus-light:   169 214 229;   /* #A9D6E5  */
+  --cerberus-primary: 30  64  175;   /* #1E40AF  */
+  --cerberus-hover:   30  58  138;   /* #1E3A8A  */
+  --cerberus-darkest: 10  21  32;    /* #0a1520  */
+
+  /* ── Sombra más profunda en modo oscuro ────────────────────────── */
+  --shadow-cerberus: 0 4px 12px rgba(0, 0, 0, 0.30);
+}
+
+/* ── Sombra Cerberus (adaptable al tema) ────────────────────────── */
+@layer utilities {
+  .shadow-cerberus {
+    box-shadow: var(--shadow-cerberus);
+  }
+}
+
 /* ===== Animaciones personalizadas para Cerberus ===== */
 
 /* Fade-in suave */
 @keyframes fade-in {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
   animation: fade-in 1s ease-out forwards;
@@ -21,40 +72,17 @@
 
 /* Slide-in lateral */
 @keyframes slide-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-40px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  0%   { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
 }
 .animate-slide-in {
   animation: slide-in 0.8s ease-out forwards;
 }
 
 /* Aparece con retardo */
-.animate-delay-200 {
-  animation-delay: 0.2s;
-}
-.animate-delay-400 {
-  animation-delay: 0.4s;
-}
-.animate-delay-600 {
-  animation-delay: 0.6s;
-}
-
-/* --- Animaciones personalizadas Cerberus --- */
-
-/* Fade-in suave (ya existente, la reutilizamos) */
-@keyframes fade-in {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-  animation: fade-in 1s ease-out forwards;
-}
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+.animate-delay-600 { animation-delay: 0.6s; }
 
 /* Estado inicial oculto para scroll reveal */
 .reveal {
@@ -66,4 +94,3 @@
   opacity: 1;
   transform: translateY(0);
 }
-

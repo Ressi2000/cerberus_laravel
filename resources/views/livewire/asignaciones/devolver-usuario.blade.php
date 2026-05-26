@@ -38,7 +38,7 @@
                 <p class="text-sm font-semibold text-gray-900 dark:text-white">
                     {{ $this->usuario->name }}
                 </p>
-                <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">
+                <p class="text-xs text-gray-500 dark:text-cerberus-steel truncate">
                     {{ $this->usuario->empresaNomina?->nombre ?? '—' }}
                     · {{ $this->usuario->cargo?->nombre ?? '—' }}
                     · Ficha: {{ $this->usuario->ficha ?? '—' }}
@@ -104,9 +104,9 @@
                     Seleccionar todos
                 </span>
             </label>
-            <span class="text-xs text-gray-400 dark:text-cerberus-steel">
+            <span class="text-xs text-gray-500 dark:text-cerberus-steel">
                 {{ count($seleccionados) }} de {{ $this->todosLosItemsActivos->count() }} seleccionado(s)
-                <span class="text-gray-300 dark:text-cerberus-steel/40 mx-1">·</span>
+                <span class="text-gray-400 dark:text-cerberus-steel/40 mx-1">·</span>
                 {{ $this->todosLosItemsActivos->whereNull('equipo_padre_id')->count() }} principal(es),
                 {{ $this->todosLosItemsActivos->whereNotNull('equipo_padre_id')->count() }} periférico(s)
             </span>
@@ -136,7 +136,7 @@
                 <div class="px-5 py-2 bg-gray-50 dark:bg-cerberus-dark/60
                             border-b border-gray-100 dark:border-cerberus-steel/30
                             flex items-center gap-2">
-                    <span class="material-icons text-xs text-gray-400 dark:text-cerberus-steel">assignment</span>
+                    <span class="material-icons text-xs text-gray-500 dark:text-cerberus-steel">assignment</span>
                     <span class="text-xs text-gray-500 dark:text-cerberus-accent font-medium">
                         Asignación #{{ $asignacionId }}
                         · {{ $primeraAsignacion?->fecha_asignacion?->format('d/m/Y') ?? '—' }}
@@ -205,7 +205,7 @@
                                             </span>
                                         </p>
 
-                                        <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                                        <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                                             {{ $item->equipo?->nombre_maquina ?? '—' }}
                                             @if ($item->equipo?->serial)
                                                 · S/N: {{ $item->equipo->serial }}
@@ -225,7 +225,7 @@
                                         @if (! $esPeriférico && $item->hijosActivos->isNotEmpty())
                                             <div class="mt-1.5 space-y-0.5">
                                                 @foreach ($item->hijosActivos as $hijo)
-                                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel/70
+                                                    <p class="text-xs text-gray-500 dark:text-cerberus-steel/70
                                                                flex items-center gap-1">
                                                         <span class="material-icons text-xs">subdirectory_arrow_right</span>
                                                         {{ $hijo->equipo?->codigo_interno ?? '—' }}
@@ -280,10 +280,10 @@
 
         @empty
             <div class="px-5 py-12 text-center">
-                <span class="material-icons text-4xl text-gray-200 dark:text-cerberus-steel/30 block mb-2">
+                <span class="material-icons text-4xl text-gray-500 dark:text-cerberus-steel/30 block mb-2">
                     inventory
                 </span>
-                <p class="text-sm text-gray-400 dark:text-cerberus-steel">
+                <p class="text-sm text-gray-500 dark:text-cerberus-steel">
                     Este usuario no tiene equipos activos.
                 </p>
             </div>
@@ -310,7 +310,7 @@
                     Disponible
                 </span>
             @else
-                <span class="text-gray-400 dark:text-cerberus-steel">Ningún equipo seleccionado</span>
+                <span class="text-gray-500 dark:text-cerberus-steel">Ningún equipo seleccionado</span>
             @endif
         </div>
 

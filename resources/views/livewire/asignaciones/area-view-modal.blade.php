@@ -34,14 +34,14 @@
                             <p class="text-base font-semibold text-gray-900 dark:text-white truncate">
                                 {{ $this->asignacion->areaDepartamento?->nombre ?? '—' }}
                             </p>
-                            <p class="text-xs text-gray-400 dark:text-cerberus-steel">
+                            <p class="text-xs text-gray-500 dark:text-cerberus-steel">
                                 {{ $this->asignacion->areaEmpresa?->nombre ?? '—' }}
                                 · Área común · Asignación #{{ $this->asignacion->id }}
                             </p>
                         </div>
                     </div>
                     <button wire:click="cerrar"
-                            class="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-white
+                            class="p-1.5 rounded-lg text-gray-500 hover:text-gray-600 dark:hover:text-white
                                    hover:bg-gray-200 dark:hover:bg-cerberus-steel/40 transition flex-shrink-0 ml-3">
                         <span class="material-icons text-xl">close</span>
                     </button>
@@ -56,7 +56,7 @@
                         <div class="col-span-2 sm:col-span-1 rounded-xl px-4 py-3
                                     bg-gray-50 dark:bg-cerberus-dark
                                     border border-gray-200 dark:border-cerberus-steel/40">
-                            <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-0.5">Empresa del área</p>
+                            <p class="text-xs text-gray-500 dark:text-cerberus-steel mb-0.5">Empresa del área</p>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $this->asignacion->areaEmpresa?->nombre ?? '—' }}
                             </p>
@@ -65,7 +65,7 @@
                         <div class="col-span-2 sm:col-span-1 rounded-xl px-4 py-3
                                     bg-gray-50 dark:bg-cerberus-dark
                                     border border-gray-200 dark:border-cerberus-steel/40">
-                            <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-0.5">Departamento</p>
+                            <p class="text-xs text-gray-500 dark:text-cerberus-steel mb-0.5">Departamento</p>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $this->asignacion->areaDepartamento?->nombre ?? '—' }}
                             </p>
@@ -74,12 +74,12 @@
                         <div class="col-span-2 rounded-xl px-4 py-3
                                     bg-gray-50 dark:bg-cerberus-dark
                                     border border-gray-200 dark:border-cerberus-steel/40">
-                            <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-0.5">Responsable del área</p>
+                            <p class="text-xs text-gray-500 dark:text-cerberus-steel mb-0.5">Responsable del área</p>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $this->asignacion->areaResponsable?->name ?? '—' }}
                             </p>
                             @if ($this->asignacion->areaResponsable?->cargo)
-                                <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                                <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                                     {{ $this->asignacion->areaResponsable->cargo->nombre }}
                                 </p>
                             @endif
@@ -88,7 +88,7 @@
                         <div class="rounded-xl px-4 py-3
                                     bg-gray-50 dark:bg-cerberus-dark
                                     border border-gray-200 dark:border-cerberus-steel/40">
-                            <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-0.5">Fecha de asignación</p>
+                            <p class="text-xs text-gray-500 dark:text-cerberus-steel mb-0.5">Fecha de asignación</p>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $this->asignacion->fecha_asignacion?->format('d/m/Y') ?? '—' }}
                             </p>
@@ -97,7 +97,7 @@
                         <div class="rounded-xl px-4 py-3
                                     bg-gray-50 dark:bg-cerberus-dark
                                     border border-gray-200 dark:border-cerberus-steel/40">
-                            <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-0.5">Analista</p>
+                            <p class="text-xs text-gray-500 dark:text-cerberus-steel mb-0.5">Analista</p>
                             <p class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $this->asignacion->analista?->name ?? '—' }}
                             </p>
@@ -108,7 +108,7 @@
                     {{-- Equipos activos --}}
                     <div>
                         <h3 class="text-xs font-semibold uppercase tracking-wider
-                                   text-gray-400 dark:text-cerberus-steel mb-2 flex items-center gap-2">
+                                   text-gray-500 dark:text-cerberus-steel mb-2 flex items-center gap-2">
                             <span class="material-icons text-base text-emerald-500">devices</span>
                             Equipos activos
                             <span class="px-1.5 py-0.5 rounded-full text-xs
@@ -144,7 +144,7 @@
                                                     · {{ $item->equipo?->categoria?->nombre ?? '—' }}
                                                 </span>
                                             </p>
-                                            <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                                            <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                                                 {{ $item->equipo?->nombre_maquina ?? '—' }}
                                                 @if($item->equipo?->serial)
                                                     · S/N: {{ $item->equipo->serial }}
@@ -157,7 +157,7 @@
                                                     ->take(3);
                                             @endphp
                                             @if($attrs && $attrs->isNotEmpty())
-                                                <p class="text-xs text-gray-400 dark:text-cerberus-steel/70 mt-0.5">
+                                                <p class="text-xs text-gray-500 dark:text-cerberus-steel/70 mt-0.5">
                                                     {{ $attrs->map(fn($v) => $v->atributo->nombre . ': ' . $v->valor)->implode(' · ') }}
                                                 </p>
                                             @endif
@@ -173,7 +173,7 @@
                                             <p class="text-xs text-gray-500 dark:text-cerberus-steel flex items-center gap-1.5">
                                                 <span class="material-icons text-xs">subdirectory_arrow_right</span>
                                                 {{ $hijo->equipo?->codigo_interno ?? '—' }}
-                                                <span class="text-gray-400 dark:text-cerberus-steel/60">
+                                                <span class="text-gray-500 dark:text-cerberus-steel/60">
                                                     {{ $hijo->equipo?->categoria?->nombre ?? '—' }}
                                                     @if($hijo->equipo?->serial) · {{ $hijo->equipo->serial }} @endif
                                                 </span>
@@ -187,7 +187,7 @@
                             <div class="flex items-center gap-3 px-4 py-4 rounded-xl
                                         bg-gray-50 dark:bg-cerberus-dark/50
                                         border border-dashed border-gray-200 dark:border-cerberus-steel/40
-                                        text-gray-400 dark:text-cerberus-steel text-sm">
+                                        text-gray-500 dark:text-cerberus-steel text-sm">
                                 <span class="material-icons text-xl opacity-40">inbox</span>
                                 No hay equipos activos en esta área.
                             </div>

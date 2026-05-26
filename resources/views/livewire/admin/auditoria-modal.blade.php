@@ -16,7 +16,7 @@
                     <div class="flex items-center gap-3">
                         <span class="material-icons text-cerberus-accent text-2xl">manage_search</span>
                         <div>
-                            <h2 class="text-white font-bold text-lg leading-tight">Detalle de auditoría</h2>
+                            <h2 class="text-cerberus-light font-bold text-lg leading-tight">Detalle de auditoría</h2>
                             <p class="text-cerberus-light text-xs mt-0.5">
                                 Tabla:
                                 <span class="text-cerberus-accent font-mono">{{ $logTabla }}</span>
@@ -24,7 +24,7 @@
                             </p>
                         </div>
                     </div>
-                    <button wire:click="cerrar" class="text-cerberus-light hover:text-white transition shrink-0 mt-0.5">
+                    <button wire:click="cerrar" class="text-cerberus-light hover:text-cerberus-accent transition shrink-0 mt-0.5">
                         <span class="material-icons">close</span>
                     </button>
                 </div>
@@ -34,12 +34,12 @@
 
                     <div>
                         <p class="text-cerberus-light text-xs mb-0.5">Fecha</p>
-                        <p class="text-white font-medium">{{ $logFecha }}</p>
+                        <p class="text-cerberus-light font-medium">{{ $logFecha }}</p>
                     </div>
 
                     <div>
                         <p class="text-cerberus-light text-xs mb-0.5">Usuario</p>
-                        <p class="text-white font-medium">{{ $logUsuario }}</p>
+                        <p class="text-cerberus-light font-medium">{{ $logUsuario }}</p>
                     </div>
 
                     <div>
@@ -49,7 +49,7 @@
 
                     <div>
                         <p class="text-cerberus-light text-xs mb-0.5">ID Registro</p>
-                        <p class="text-white font-mono">#{{ $logRegistroId }}</p>
+                        <p class="text-cerberus-light font-mono">#{{ $logRegistroId }}</p>
                     </div>
 
                 </div>
@@ -60,7 +60,7 @@
                     {{-- ── CREAR: muestra valores iniciales del registro ──────────── --}}
                     @if (!empty($valoresCreacion))
                         <div>
-                            <h3 class="text-white text-sm font-semibold mb-3 flex items-center gap-2">
+                            <h3 class="text-cerberus-light text-sm font-semibold mb-3 flex items-center gap-2">
                                 <span class="material-icons text-green-400 text-base">add_circle</span>
                                 Registro creado con los siguientes valores
                             </h3>
@@ -70,7 +70,7 @@
                                     <div
                                         class="grid grid-cols-2 gap-2 px-4 py-2.5 hover:bg-cerberus-darkest/50 transition text-sm">
                                         <span class="text-cerberus-light">{{ $fila['etiqueta'] }}</span>
-                                        <span class="text-white break-words">
+                                        <span class="text-cerberus-light break-words">
                                             @if (!$fila['valor'] || $fila['valor'] === '—')
                                                 <span class="text-cerberus-light/40 italic">—</span>
                                             @else
@@ -86,7 +86,7 @@
                     {{-- ── ELIMINAR: valores que tenía el registro ─────────────────── --}}
                     @if (!empty($valoresEliminacion))
                         <div>
-                            <h3 class="text-white text-sm font-semibold mb-3 flex items-center gap-2">
+                            <h3 class="text-cerberus-light text-sm font-semibold mb-3 flex items-center gap-2">
                                 <span class="material-icons text-red-400 text-base">delete</span>
                                 Registro eliminado — valores que tenía
                             </h3>
@@ -112,7 +112,7 @@
                     {{-- ── ACTUALIZAR: tabla de diff antes/después ─────────────────── --}}
                     @if (!empty($cambiosResueltos))
                         <div>
-                            <h3 class="text-white text-sm font-semibold mb-3 flex items-center gap-2">
+                            <h3 class="text-cerberus-light text-sm font-semibold mb-3 flex items-center gap-2">
                                 <span class="material-icons text-yellow-400 text-base">compare_arrows</span>
                                 {{ count($cambiosResueltos) }} campo(s) modificado(s)
                             </h3>
@@ -185,7 +185,7 @@
                 <div class="px-6 py-4 border-t border-cerberus-steel flex justify-end">
                     <button wire:click="cerrar"
                         class="px-4 py-2 rounded-lg bg-cerberus-dark border border-cerberus-steel
-                           text-cerberus-light hover:text-white hover:border-cerberus-primary
+                           text-cerberus-light hover:text-cerberus-accent hover:border-cerberus-primary
                            transition text-sm">
                         Cerrar
                     </button>

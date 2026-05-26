@@ -17,22 +17,24 @@ export default {
         extend: {
             colors: {
                 cerberus: {
-                    // ── Modo oscuro ──────────────────────────────────────────
-                    dark:     '#0D1B2A',
-                    mid:      '#1B263B',
-                    steel:    '#415A77',
-                    accent:   '#778DA9',
-                    light:    '#A9D6E5',
-                    primary:  '#1E40AF',
-                    hover:    '#1E3A8A',
+                    // ── Tokens adaptativos (CSS variables — cambian con :root/.dark) ──
+                    // Formato "R G B" para soportar modificadores de opacidad (/20, /40…)
+                    dark:     'rgb(var(--cerberus-dark)    / <alpha-value>)',
+                    mid:      'rgb(var(--cerberus-mid)     / <alpha-value>)',
+                    steel:    'rgb(var(--cerberus-steel)   / <alpha-value>)',
+                    accent:   'rgb(var(--cerberus-accent)  / <alpha-value>)',
+                    light:    'rgb(var(--cerberus-light)   / <alpha-value>)',
+                    primary:  'rgb(var(--cerberus-primary) / <alpha-value>)',
+                    hover:    'rgb(var(--cerberus-hover)   / <alpha-value>)',
+                    darkest:  'rgb(var(--cerberus-darkest) / <alpha-value>)',
 
-                    // ── Modo claro ───────────────────────────────────────────
-                    lightbase: '#E2E8F0',  // fondo general
-                    lightcard: '#FFFFFF',  // cards / panels
-                    textdark:  '#1E293B',  // texto principal
-                    textsoft:  '#475569',  // texto secundario
-                    border:    '#CBD5E1',  // bordes y divisores
-                    blue:      '#3B82F6',  // acento celeste
+                    // ── Colores estáticos de utilidad ─────────────────────────────
+                    lightbase: '#E2E8F0',
+                    lightcard: '#FFFFFF',
+                    textdark:  '#1E293B',
+                    textsoft:  '#475569',
+                    border:    '#CBD5E1',
+                    blue:      '#3B82F6',
                     success:   '#16A34A',
                     error:     '#DC2626',
                     warning:   '#FACC15',
@@ -40,9 +42,6 @@ export default {
             },
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
-            },
-            boxShadow: {
-                cerberus: '0 4px 12px rgba(0, 0, 0, 0.2)',
             },
         },
     },
