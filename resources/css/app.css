@@ -2,18 +2,57 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===================================================================
+   CERBERUS — Tokens de color adaptativos
+   Los colores cerberus-* cambian automáticamente entre modos.
+   Las variables deben estar en formato "R G B" (sin rgb()) para
+   que Tailwind pueda usarlas con modificadores de opacidad (/20, /40…)
+   =================================================================== */
+
+:root {
+  /* ── Modo CLARO — paleta Cerberus ──────────────────────────────── */
+  --cerberus-dark:    240 244 248;   /* #F0F4F8  fondo de página      */
+  --cerberus-mid:     255 255 255;   /* #FFFFFF  cards / paneles       */
+  --cerberus-steel:   148 163 184;   /* #94A3B8  bordes, iconos tenues */
+  --cerberus-accent:  30  58  95;    /* #1E3A5F  texto acento navy     */
+  --cerberus-light:   51  65  85;    /* #334155  texto cuerpo          */
+  --cerberus-primary: 30  64  175;   /* #1E40AF  azul primario         */
+  --cerberus-hover:   30  58  138;   /* #1E3A8A  hover primario        */
+  --cerberus-darkest: 226 232 240;   /* #E2E8F0  hover de filas        */
+
+  /* ── Sombra ligera en modo claro ───────────────────────────────── */
+  --shadow-cerberus: 0 1px 3px rgba(15, 23, 42, 0.06),
+                     0 4px 8px  rgba(15, 23, 42, 0.10);
+}
+
+.dark {
+  /* ── Modo OSCURO — paleta Cerberus original ─────────────────────── */
+  --cerberus-dark:    13  27  42;    /* #0D1B2A  */
+  --cerberus-mid:     27  38  59;    /* #1B263B  */
+  --cerberus-steel:   65  90  119;   /* #415A77  */
+  --cerberus-accent:  119 141 169;   /* #778DA9  */
+  --cerberus-light:   169 214 229;   /* #A9D6E5  */
+  --cerberus-primary: 30  64  175;   /* #1E40AF  */
+  --cerberus-hover:   30  58  138;   /* #1E3A8A  */
+  --cerberus-darkest: 10  21  32;    /* #0a1520  */
+
+  /* ── Sombra más profunda en modo oscuro ────────────────────────── */
+  --shadow-cerberus: 0 4px 12px rgba(0, 0, 0, 0.30);
+}
+
+/* ── Sombra Cerberus (adaptable al tema) ────────────────────────── */
+@layer utilities {
+  .shadow-cerberus {
+    box-shadow: var(--shadow-cerberus);
+  }
+}
+
 /* ===== Animaciones personalizadas para Cerberus ===== */
 
 /* Fade-in suave */
 @keyframes fade-in {
-  0% {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 .animate-fade-in {
   animation: fade-in 1s ease-out forwards;
@@ -21,40 +60,17 @@
 
 /* Slide-in lateral */
 @keyframes slide-in {
-  0% {
-    opacity: 0;
-    transform: translateX(-40px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  0%   { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
 }
 .animate-slide-in {
   animation: slide-in 0.8s ease-out forwards;
 }
 
 /* Aparece con retardo */
-.animate-delay-200 {
-  animation-delay: 0.2s;
-}
-.animate-delay-400 {
-  animation-delay: 0.4s;
-}
-.animate-delay-600 {
-  animation-delay: 0.6s;
-}
-
-/* --- Animaciones personalizadas Cerberus --- */
-
-/* Fade-in suave (ya existente, la reutilizamos) */
-@keyframes fade-in {
-  0% { opacity: 0; transform: translateY(10px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-.animate-fade-in {
-  animation: fade-in 1s ease-out forwards;
-}
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+.animate-delay-600 { animation-delay: 0.6s; }
 
 /* Estado inicial oculto para scroll reveal */
 .reveal {
@@ -66,4 +82,3 @@
   opacity: 1;
   transform: translateY(0);
 }
-

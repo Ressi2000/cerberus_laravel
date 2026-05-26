@@ -9,14 +9,14 @@
             <div class="relative z-50 w-full max-w-md mx-4 p-6 bg-cerberus-mid border border-cerberus-steel
                         rounded-xl shadow-cerberus">
 
-                <h2 class="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+                <h2 class="text-xl font-semibold text-cerberus-light mb-2 flex items-center gap-2">
                     <span class="material-icons text-red-400">do_not_disturb_on</span>
                     Dar de baja equipo
                 </h2>
 
                 <p class="text-cerberus-light text-sm mb-1">
                     ¿Seguro que deseas dar de baja el equipo
-                    <strong class="text-white font-mono">{{ $equipo->codigo_interno }}</strong>?
+                    <strong class="text-cerberus-light font-mono">{{ $equipo->codigo_interno }}</strong>?
                 </p>
 
                 <p class="text-cerberus-steel text-xs mb-5">
@@ -31,7 +31,7 @@
                             flex items-center gap-3 text-sm">
                     <span class="material-icons text-cerberus-accent">devices</span>
                     <div>
-                        <p class="text-white font-medium">{{ $equipo->categoria->nombre }}</p>
+                        <p class="text-cerberus-light font-medium">{{ $equipo->categoria->nombre }}</p>
                         <p class="text-cerberus-light text-xs">
                             Serial: {{ $equipo->serial ?? '—' }}
                             · Estado actual: {{ $equipo->estado->nombre }}

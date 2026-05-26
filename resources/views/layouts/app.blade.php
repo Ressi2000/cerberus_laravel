@@ -79,7 +79,7 @@
     @livewireStyles
 </head>
 
-<body class="bg-gray-100 dark:bg-cerberus-dark text-[#1E293B] dark:text-gray-100 antialiased"
+<body class="bg-cerberus-dark text-[#1E293B] dark:text-gray-100 antialiased"
       x-data="cerberusDarkMode()"
       :class="{ 'dark': isDark }">
 
