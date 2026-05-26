@@ -33,14 +33,14 @@
                             <h2 class="text-base font-bold text-gray-900 dark:text-white">
                                 {{ $this->usuario->name }}
                             </h2>
-                            <p class="text-xs text-gray-400 dark:text-cerberus-steel">
+                            <p class="text-xs text-gray-500 dark:text-cerberus-steel">
                                 {{ $this->usuario->cargo?->nombre ?? '—' }}
                                 · Ficha: {{ $this->usuario->ficha ?? '—' }}
                             </p>
                         </div>
                     </div>
                     <button wire:click="cerrar"
-                            class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
+                            class="text-gray-500 hover:text-gray-600 dark:hover:text-white transition">
                         <span class="material-icons">close</span>
                     </button>
                 </div>
@@ -86,19 +86,19 @@
 
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
                             <div>
-                                <p class="text-xs text-gray-400 dark:text-cerberus-steel">Cédula</p>
+                                <p class="text-xs text-gray-500 dark:text-cerberus-steel">Cédula</p>
                                 <p class="text-sm font-medium text-gray-900 dark:text-white">
                                     {{ $this->usuario->cedula ?? '—' }}
                                 </p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-400 dark:text-cerberus-steel">Ficha</p>
+                                <p class="text-xs text-gray-500 dark:text-cerberus-steel">Ficha</p>
                                 <p class="text-sm font-medium text-gray-900 dark:text-white">
                                     {{ $this->usuario->ficha ?? '—' }}
                                 </p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-400 dark:text-cerberus-steel">Supervisor</p>
+                                <p class="text-xs text-gray-500 dark:text-cerberus-steel">Supervisor</p>
                                 <p class="text-sm font-medium text-gray-900 dark:text-white">
                                     {{ $this->usuario->jefe?->name ?? '—' }}
                                 </p>
@@ -112,7 +112,7 @@
                     <div>
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-xs font-semibold uppercase tracking-wider
-                                       text-gray-400 dark:text-cerberus-steel flex items-center gap-1.5">
+                                       text-gray-500 dark:text-cerberus-steel flex items-center gap-1.5">
                                 <span class="material-icons text-sm text-emerald-500">devices</span>
                                 Equipos asignados actualmente
                             </h3>
@@ -128,10 +128,10 @@
                                         bg-gray-50 dark:bg-cerberus-dark/50
                                         border border-dashed border-gray-200 dark:border-cerberus-steel/40
                                         rounded-xl">
-                                <span class="material-icons text-4xl text-gray-200 dark:text-cerberus-steel/30 mb-2">
+                                <span class="material-icons text-4xl text-gray-500 dark:text-cerberus-steel/30 mb-2">
                                     inventory_2
                                 </span>
-                                <p class="text-sm text-gray-400 dark:text-cerberus-steel">
+                                <p class="text-sm text-gray-500 dark:text-cerberus-steel">
                                     Sin equipos asignados en este momento.
                                 </p>
                             </div>
@@ -169,13 +169,13 @@
                                                 <div class="min-w-0 flex-1">
                                                     <p class="text-sm font-semibold text-gray-900 dark:text-white">
                                                         {{ $item->equipo?->codigo_interno ?? '—' }}
-                                                        <span class="font-normal text-gray-400 dark:text-cerberus-steel text-xs ml-1">
+                                                        <span class="font-normal text-gray-500 dark:text-cerberus-steel text-xs ml-1">
                                                             {{ $item->equipo?->categoria?->nombre ?? '—' }}
                                                         </span>
                                                     </p>
 
                                                     @if ($item->equipo?->nombre_maquina || $item->equipo?->serial)
-                                                        <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                                                        <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                                                             {{ $item->equipo?->nombre_maquina ?? '' }}
                                                             @if ($item->equipo?->serial)
                                                                 @if ($item->equipo?->nombre_maquina) · @endif
@@ -186,7 +186,7 @@
 
                                                     {{-- Atributos EAV visibles --}}
                                                     @if ($atributos && $atributos->isNotEmpty())
-                                                        <p class="text-xs text-gray-400 dark:text-cerberus-steel/70 mt-1">
+                                                        <p class="text-xs text-gray-500 dark:text-cerberus-steel/70 mt-1">
                                                             {{ $atributos->map(fn ($v) => $v->atributo?->nombre . ': ' . $v->valor)->implode(' · ') }}
                                                         </p>
                                                     @endif
@@ -203,7 +203,7 @@
                                                     @endif
 
                                                     {{-- Fecha de asignación --}}
-                                                    <p class="text-xs text-gray-300 dark:text-cerberus-steel/50 mt-1">
+                                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel/50 mt-1">
                                                         Asignado: {{ $item->asignacion?->fecha_asignacion?->format('d/m/Y') ?? '—' }}
                                                     </p>
                                                 </div>
@@ -220,7 +220,7 @@
                                                     wire:click="$dispatch('openVincularPeriferico', { id: {{ $item->id }} })"
                                                     title="Vincular como periférico de otro equipo"
                                                     class="flex-shrink-0 p-1.5 rounded-lg transition-colors
-                                                           text-gray-300 dark:text-cerberus-steel/60
+                                                           text-gray-400 dark:text-cerberus-steel/60
                                                            hover:text-cerberus-primary dark:hover:text-cerberus-accent
                                                            hover:bg-gray-100 dark:hover:bg-cerberus-steel/20">
                                                     <span class="material-icons text-base">add_link</span>
@@ -239,7 +239,7 @@
                                                         bg-gray-50 dark:bg-cerberus-mid/50 space-y-0.5 py-2">
                                                 @foreach ($hijosActivos as $hijo)
                                                     <div class="flex items-center gap-1.5 px-4 py-1 group">
-                                                        <span class="material-icons text-xs text-gray-300 dark:text-cerberus-steel/40 flex-shrink-0">
+                                                        <span class="material-icons text-xs text-gray-400 dark:text-cerberus-steel/40 flex-shrink-0">
                                                             subdirectory_arrow_right
                                                         </span>
 
@@ -247,7 +247,7 @@
                                                         <span class="text-xs font-medium text-gray-700 dark:text-cerberus-light">
                                                             {{ $hijo->equipo?->codigo_interno ?? '—' }}
                                                         </span>
-                                                        <span class="text-xs text-gray-400 dark:text-cerberus-steel/60">
+                                                        <span class="text-xs text-gray-500 dark:text-cerberus-steel/60">
                                                             {{ $hijo->equipo?->categoria?->nombre ?? '—' }}
                                                             @if ($hijo->equipo?->serial)
                                                                 · {{ $hijo->equipo->serial }}
@@ -276,7 +276,7 @@
                                                             title="Cambiar equipo principal de este periférico"
                                                             class="ml-auto flex-shrink-0 p-1 rounded transition-colors
                                                                    opacity-0 group-hover:opacity-100
-                                                                   text-gray-300 dark:text-cerberus-steel/40
+                                                                   text-gray-400 dark:text-cerberus-steel/40
                                                                    hover:text-yellow-500 dark:hover:text-yellow-400
                                                                    hover:bg-yellow-50 dark:hover:bg-yellow-900/20">
                                                             <span class="material-icons text-sm">cable</span>

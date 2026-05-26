@@ -150,12 +150,12 @@
                             class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition
                                    {{ $categoria->atributos_count > 0
                                        ? 'bg-cerberus-primary/20 text-cerberus-accent hover:bg-cerberus-primary/30 border border-cerberus-primary/30'
-                                       : 'bg-gray-50 dark:bg-cerberus-steel/10 text-gray-400 dark:text-cerberus-steel hover:bg-cerberus-steel/20 border border-dashed border-gray-300 dark:border-cerberus-steel/30' }}">
+                                       : 'bg-gray-50 dark:bg-cerberus-steel/10 text-gray-500 dark:text-cerberus-steel hover:bg-cerberus-steel/20 border border-dashed border-gray-300 dark:border-cerberus-steel/30' }}">
                             <span class="material-icons text-xs">tune</span>
                             {{ $categoria->atributos_count }}
                         </button>
                     @else
-                        <span class="text-gray-400 dark:text-cerberus-steel text-xs">{{ $categoria->atributos_count }}</span>
+                        <span class="text-gray-500 dark:text-cerberus-steel text-xs">{{ $categoria->atributos_count }}</span>
                     @endif
                 </td>
 
@@ -172,7 +172,7 @@
                             {{-- Ver --}}
                             <button
                                 wire:click="$dispatch('openCategoriaVer', { id: {{ $categoria->id }} })"
-                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
+                                class="p-1.5 rounded-lg text-gray-500 dark:text-cerberus-light
                                        hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-cerberus-steel/40 transition"
                                 title="Ver detalle">
                                 <span class="material-icons text-base">visibility</span>
@@ -180,7 +180,7 @@
                             {{-- Editar --}}
                             <button
                                 wire:click="$dispatch('openCategoriaEditar', { id: {{ $categoria->id }} })"
-                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
+                                class="p-1.5 rounded-lg text-gray-500 dark:text-cerberus-light
                                        hover:text-cerberus-accent hover:bg-cerberus-steel/40 transition"
                                 title="Editar">
                                 <span class="material-icons text-base">edit</span>
@@ -188,7 +188,7 @@
                             {{-- Desactivar --}}
                             <button
                                 wire:click="$dispatch('openCategoriaEliminar', { id: {{ $categoria->id }} })"
-                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
+                                class="p-1.5 rounded-lg text-gray-500 dark:text-cerberus-light
                                        hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition"
                                 title="Desactivar">
                                 <span class="material-icons text-base">block</span>
@@ -211,7 +211,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-400 dark:text-cerberus-steel">
+                <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-cerberus-steel">
                     No se encontraron categorías.
                 </td>
             </tr>

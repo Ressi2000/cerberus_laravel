@@ -31,15 +31,15 @@
                         · Ficha: {{ $this->usuario->ficha ?? '—' }}
                     </p>
                     <div class="flex gap-3 mt-2 flex-wrap">
-                        <span class="text-xs text-gray-400 dark:text-cerberus-steel flex items-center gap-1">
+                        <span class="text-xs text-gray-500 dark:text-cerberus-steel flex items-center gap-1">
                             <span class="material-icons text-xs">business</span>
                             {{ $this->usuario->empresaNomina?->nombre ?? '—' }}
                         </span>
-                        <span class="text-xs text-gray-400 dark:text-cerberus-steel flex items-center gap-1">
+                        <span class="text-xs text-gray-500 dark:text-cerberus-steel flex items-center gap-1">
                             <span class="material-icons text-xs">location_on</span>
                             {{ $this->usuario->ubicacion?->nombre ?? '—' }}
                         </span>
-                        <span class="text-xs text-gray-400 dark:text-cerberus-steel flex items-center gap-1">
+                        <span class="text-xs text-gray-500 dark:text-cerberus-steel flex items-center gap-1">
                             <span class="material-icons text-xs">supervisor_account</span>
                             {{ $this->usuario->jefe?->name ?? '—' }}
                         </span>
@@ -102,7 +102,7 @@
     <section>
         <h3
             class="text-sm font-semibold uppercase tracking-wider
-                   text-gray-400 dark:text-cerberus-steel mb-3
+                   text-gray-500 dark:text-cerberus-steel mb-3
                    flex items-center gap-2">
             <span class="material-icons text-base text-emerald-500">devices</span>
             Equipos asignados actualmente
@@ -119,7 +119,7 @@
                 class="flex items-center gap-3 px-5 py-4 rounded-xl
                         bg-gray-50 dark:bg-cerberus-dark/50
                         border border-dashed border-gray-200 dark:border-cerberus-steel/40
-                        text-gray-400 dark:text-cerberus-steel text-sm">
+                        text-gray-500 dark:text-cerberus-steel text-sm">
                 <span class="material-icons text-2xl opacity-40">inbox</span>
                 Sin equipos activos en este momento.
             </div>
@@ -144,18 +144,18 @@
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-gray-900 dark:text-white">
                                         {{ $item->equipo?->codigo_interno ?? '—' }}
-                                        <span class="font-normal text-gray-400 dark:text-cerberus-steel">
+                                        <span class="font-normal text-gray-500 dark:text-cerberus-steel">
                                             · {{ $item->equipo?->categoria?->nombre ?? '—' }}
                                         </span>
                                     </p>
-                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                                    <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                                         {{ $item->equipo?->nombre_maquina ?? '—' }}
                                         @if ($item->equipo?->serial)
                                             · S/N: {{ $item->equipo->serial }}
                                         @endif
                                     </p>
                                     @if ($atributos && $atributos->isNotEmpty())
-                                        <p class="text-xs text-gray-400 dark:text-cerberus-steel/70 mt-0.5">
+                                        <p class="text-xs text-gray-500 dark:text-cerberus-steel/70 mt-0.5">
                                             {{ $atributos->map(fn($v) => $v->atributo->nombre . ': ' . $v->valor)->implode(' · ') }}
                                         </p>
                                     @endif
@@ -205,7 +205,7 @@
 
             <h3
                 class="text-sm font-semibold uppercase tracking-wider
-                       text-gray-400 dark:text-cerberus-steel flex items-center gap-2">
+                       text-gray-500 dark:text-cerberus-steel flex items-center gap-2">
                 <span class="material-icons text-base text-purple-500">history</span>
                 Historial de asignaciones
             </h3>
@@ -260,7 +260,7 @@
                 class="flex items-center gap-3 px-5 py-4 rounded-xl
                         bg-gray-50 dark:bg-cerberus-dark/50
                         border border-dashed border-gray-200 dark:border-cerberus-steel/40
-                        text-gray-400 dark:text-cerberus-steel text-sm">
+                        text-gray-500 dark:text-cerberus-steel text-sm">
                 <span class="material-icons text-2xl opacity-40">history</span>
                 Sin asignaciones para los filtros seleccionados.
             </div>
@@ -287,7 +287,7 @@
                                             : 'bg-gray-100 dark:bg-cerberus-steel/20 border-2 border-gray-300 dark:border-cerberus-steel/50' }}">
                                 <span
                                     class="material-icons text-base
-                                             {{ $asignacion->estado === 'Activa' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400 dark:text-cerberus-steel' }}">
+                                             {{ $asignacion->estado === 'Activa' ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-cerberus-steel' }}">
                                     {{ $asignacion->estado === 'Activa' ? 'devices' : 'lock' }}
                                 </span>
                             </div>
@@ -308,11 +308,11 @@
                                         <span class="text-sm font-medium text-gray-900 dark:text-white truncate">
                                             {{ $asignacion->fecha_asignacion?->format('d/m/Y') ?? '—' }}
                                         </span>
-                                        <span class="text-xs text-gray-400 dark:text-cerberus-steel hidden sm:block">
+                                        <span class="text-xs text-gray-500 dark:text-cerberus-steel hidden sm:block">
                                             {{ $asignacion->empresa?->nombre ?? '—' }}
                                             · Analista: {{ $asignacion->analista?->name ?? '—' }}
                                         </span>
-                                        <span class="text-xs text-gray-300 dark:text-cerberus-steel/50">
+                                        <span class="text-xs text-gray-400 dark:text-cerberus-steel/50">
                                             {{ $asignacion->items->count() }} equipo(s)
                                         </span>
                                     </div>
@@ -321,7 +321,7 @@
                                         {{-- Botones planillas --}}
                                         <a href="{{ route('admin.asignaciones.planilla.asignacion', $asignacion) }}"
                                             target="_blank" @click.stop title="Planilla de asignación"
-                                            class="p-1 rounded text-gray-400 hover:text-cerberus-primary dark:hover:text-cerberus-accent transition">
+                                            class="p-1 rounded text-gray-500 hover:text-cerberus-primary dark:hover:text-cerberus-accent transition">
                                             <span class="material-icons text-sm">download</span>
                                         </a>
 
@@ -335,7 +335,7 @@
 
                                         {{-- Chevron accordion --}}
                                         <span
-                                            class="material-icons text-base text-gray-400 dark:text-cerberus-steel transition-transform duration-200"
+                                            class="material-icons text-base text-gray-500 dark:text-cerberus-steel transition-transform duration-200"
                                             :class="open ? 'rotate-180' : ''">
                                             expand_more
                                         </span>
@@ -357,7 +357,7 @@
                                             <span
                                                 class="material-icons text-base mt-0.5 flex-shrink-0
                                                          {{ $item->devuelto
-                                                             ? 'text-gray-300 dark:text-cerberus-steel/40'
+                                                             ? 'text-gray-400 dark:text-cerberus-steel/40'
                                                              : ($esPeriférico
                                                                  ? 'text-cerberus-primary/40 dark:text-cerberus-accent/50'
                                                                  : 'text-emerald-500 dark:text-emerald-400') }}">
@@ -368,13 +368,13 @@
                                                 <p
                                                     class="text-sm
                                                            {{ $item->devuelto
-                                                               ? 'text-gray-400 dark:text-cerberus-steel line-through'
+                                                               ? 'text-gray-500 dark:text-cerberus-steel line-through'
                                                                : ($esPeriférico
                                                                    ? 'text-gray-600 dark:text-cerberus-light'
                                                                    : 'text-gray-900 dark:text-white') }}">
                                                     {{ $item->equipo?->codigo_interno ?? '—' }}
                                                     <span
-                                                        class="font-normal text-gray-400 dark:text-cerberus-steel text-xs">
+                                                        class="font-normal text-gray-500 dark:text-cerberus-steel text-xs">
                                                         · {{ $item->equipo?->categoria?->nombre ?? '—' }}
                                                     </span>
                                                     @if ($esPeriférico)
@@ -385,7 +385,7 @@
                                                     @endif
                                                 </p>
                                                 @if ($item->devuelto)
-                                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel">
+                                                    <p class="text-xs text-gray-500 dark:text-cerberus-steel">
                                                         Dev. {{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}
                                                         @if ($item->devueltoPor)
                                                             · {{ $item->devueltoPor->name }}
@@ -407,7 +407,7 @@
             {{-- Paginación del timeline --}}
             @if ($this->asignaciones->hasPages())
                 <div class="mt-4 flex items-center justify-between gap-3">
-                    <p class="text-xs text-gray-400 dark:text-cerberus-steel">
+                    <p class="text-xs text-gray-500 dark:text-cerberus-steel">
                         Mostrando {{ $this->asignaciones->firstItem() }}–{{ $this->asignaciones->lastItem() }}
                         de {{ $this->asignaciones->total() }} asignaciones
                     </p>

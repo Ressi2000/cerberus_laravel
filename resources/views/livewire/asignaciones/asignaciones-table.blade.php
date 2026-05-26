@@ -161,7 +161,7 @@
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                     {{ $usuario->name }}
                                 </p>
-                                <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">
+                                <p class="text-xs text-gray-500 dark:text-cerberus-steel truncate">
                                     {{ $usuario->cedula ?? '—' }} · Ficha: {{ $usuario->ficha ?? '—' }}
                                 </p>
                             </div>
@@ -172,7 +172,7 @@
                         <p class="text-sm text-gray-900 dark:text-white">
                             {{ $usuario->empresaNomina?->nombre ?? '—' }}
                         </p>
-                        <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                        <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                             {{ $usuario->cargo?->nombre ?? '—' }}
                         </p>
                     </td>
@@ -260,7 +260,7 @@
             @empty
                 <tr>
                     <td colspan="6" class="px-4 py-16 text-center">
-                        <span class="material-icons text-5xl text-gray-200 dark:text-cerberus-steel/30 block mb-3">people</span>
+                        <span class="material-icons text-5xl text-gray-500 dark:text-cerberus-steel/30 block mb-3">people</span>
                         <p class="text-sm text-gray-500 dark:text-cerberus-accent">
                             {{ $search ? 'Sin resultados para "' . $search . '"' : 'Ningún usuario con equipos asignados.' }}
                         </p>
@@ -292,7 +292,7 @@
                                 <p class="text-sm font-semibold text-gray-900 dark:text-white">
                                     {{ $asignacion->areaDepartamento?->nombre ?? '—' }}
                                 </p>
-                                <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                                <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                                     {{ $asignacion->areaEmpresa?->nombre ?? '—' }}
                                 </p>
                             </div>
@@ -303,7 +303,7 @@
                         <p class="text-sm text-gray-900 dark:text-white">
                             {{ $asignacion->areaResponsable?->name ?? '—' }}
                         </p>
-                        <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-0.5">
+                        <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
                             {{ $asignacion->areaResponsable?->cargo?->nombre ?? '—' }}
                         </p>
                     </td>
@@ -375,7 +375,7 @@
             @empty
                 <tr>
                     <td colspan="6" class="px-4 py-16 text-center">
-                        <span class="material-icons text-5xl text-gray-200 dark:text-cerberus-steel/30 block mb-3">meeting_room</span>
+                        <span class="material-icons text-5xl text-gray-500 dark:text-cerberus-steel/30 block mb-3">meeting_room</span>
                         <p class="text-sm text-gray-500 dark:text-cerberus-accent">
                             {{ $search ? 'Sin resultados para "' . $search . '"' : 'Sin asignaciones a áreas comunes.' }}
                         </p>
@@ -403,7 +403,7 @@
                     {{-- Receptor --}}
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-2">
-                            <span class="material-icons text-base text-gray-400 dark:text-cerberus-steel flex-shrink-0">
+                            <span class="material-icons text-base text-gray-500 dark:text-cerberus-steel flex-shrink-0">
                                 {{ $asignacion->usuario_id ? 'person' : 'corporate_fare' }}
                             </span>
                             <div class="min-w-0">
@@ -411,11 +411,11 @@
                                     {{ $asignacion->receptorNombre() }}
                                 </p>
                                 @if ($asignacion->usuario?->cargo)
-                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">
+                                    <p class="text-xs text-gray-500 dark:text-cerberus-steel truncate">
                                         {{ $asignacion->usuario->cargo->nombre }}
                                     </p>
                                 @elseif ($asignacion->areaEmpresa)
-                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">
+                                    <p class="text-xs text-gray-500 dark:text-cerberus-steel truncate">
                                         {{ $asignacion->areaEmpresa->nombre }}
                                     </p>
                                 @endif
@@ -496,7 +496,7 @@
             @empty
                 <tr>
                     <td colspan="7" class="px-4 py-16 text-center">
-                        <span class="material-icons text-5xl text-gray-200 dark:text-cerberus-steel/30 block mb-3">lock</span>
+                        <span class="material-icons text-5xl text-gray-500 dark:text-cerberus-steel/30 block mb-3">lock</span>
                         <p class="text-sm text-gray-500 dark:text-cerberus-accent">
                             {{ $search ? 'Sin resultados para "' . $search . '"' : 'No hay asignaciones cerradas.' }}
                         </p>
