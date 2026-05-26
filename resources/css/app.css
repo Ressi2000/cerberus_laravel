@@ -25,9 +25,9 @@
    * ─────────────────────────────────────────────────────────────── */
   --cerberus-dark:    243 244 246;   /* #F3F4F6  gray-100 — fondo de página    */
   --cerberus-mid:     255 255 255;   /* #FFFFFF  white   — cards y paneles     */
-  --cerberus-steel:   229 231 235;   /* #E5E7EB  gray-200 — bordes             */
-  --cerberus-accent:  55  65  81;    /* #374151  gray-700 — labels y headings  */
-  --cerberus-light:   107 114 128;   /* #6B7280  gray-500 — texto secundario   */
+  --cerberus-steel:   156 163 175;   /* #9CA3AF  gray-400 — bordes / iconos    */
+  --cerberus-accent:  75  85  99;    /* #4B5563  gray-600 — labels, headings   */
+  --cerberus-light:   55  65  81;    /* #374151  gray-700 — texto datos/cuerpo */
   --cerberus-primary: 30  64  175;   /* #1E40AF  blue-700 — primario           */
   --cerberus-hover:   30  58  138;   /* #1E3A8A  blue-800 — hover              */
   --cerberus-darkest: 249 250 251;   /* #F9FAFB  gray-50  — hover de filas     */
