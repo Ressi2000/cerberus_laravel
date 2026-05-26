@@ -10,30 +10,31 @@
    =================================================================== */
 
 :root {
-  /* ── Modo CLARO — paleta Cerberus "Blue Steel" ─────────────────── */
-  /*
-   * Filosofía: fondo azul-gris visible → cards blancas que resaltan
-   * → texto navy rico. No es todo blanco: hay profundidad y carácter.
+  /* ── Modo CLARO — estilo Flowbite / Tailwind UI ─────────────────
    *
-   *   Fondo página  ▓▓▓  #C8D8EC  azul acero claro
-   *   Cards / panel ░░░  #FFFFFF  blanco — contrasta con el fondo
-   *   Bordes         ──  #9BB3CF  azul-gris, bien visibles
-   *   Texto acento  ███  #1E3A72  navy oscuro para labels / iconos
-   *   Texto cuerpo  ▓▓▓  #2C4878  navy medio para contenido
-   *   Hover filas   ▒▒▒  #B8CEEA  azul más profundo que el fondo
-   */
-  --cerberus-dark:    200 216 236;   /* #C8D8EC  fondo de página — azul acero  */
-  --cerberus-mid:     255 255 255;   /* #FFFFFF  cards y paneles — blanco puro  */
-  --cerberus-steel:   155 179 207;   /* #9BB3CF  bordes y separadores           */
-  --cerberus-accent:  30  58  114;   /* #1E3A72  texto acento, etiquetas        */
-  --cerberus-light:   44  72  120;   /* #2C4878  texto cuerpo en paneles        */
-  --cerberus-primary: 30  64  175;   /* #1E40AF  azul primario (sin cambios)    */
-  --cerberus-hover:   30  58  138;   /* #1E3A8A  hover primario (sin cambios)   */
-  --cerberus-darkest: 184 206 234;   /* #B8CEEA  hover filas — más profundo     */
+   * Filosofía: grises neutros puros como Flowbite.
+   * Fondos sutiles, cards blancas, texto gris oscuro, azul solo
+   * en elementos interactivos (botones, activos, focus).
+   *
+   *   Fondo página  ░░░  #F3F4F6  gray-100
+   *   Cards/panel   ███  #FFFFFF  blanco puro
+   *   Bordes         ──  #E5E7EB  gray-200
+   *   Labels         ▓▓  #374151  gray-700
+   *   Texto secund.  ▓▓  #6B7280  gray-500
+   *   Hover filas   ░░░  #F9FAFB  gray-50
+   * ─────────────────────────────────────────────────────────────── */
+  --cerberus-dark:    243 244 246;   /* #F3F4F6  gray-100 — fondo de página    */
+  --cerberus-mid:     255 255 255;   /* #FFFFFF  white   — cards y paneles     */
+  --cerberus-steel:   229 231 235;   /* #E5E7EB  gray-200 — bordes             */
+  --cerberus-accent:  55  65  81;    /* #374151  gray-700 — labels y headings  */
+  --cerberus-light:   107 114 128;   /* #6B7280  gray-500 — texto secundario   */
+  --cerberus-primary: 30  64  175;   /* #1E40AF  blue-700 — primario           */
+  --cerberus-hover:   30  58  138;   /* #1E3A8A  blue-800 — hover              */
+  --cerberus-darkest: 249 250 251;   /* #F9FAFB  gray-50  — hover de filas     */
 
-  /* ── Sombra azulada sutil en modo claro ────────────────────────── */
-  --shadow-cerberus: 0 1px 4px  rgba(20, 45, 100, 0.08),
-                     0 4px 16px rgba(20, 45, 100, 0.13);
+  /* ── Sombra estilo Tailwind UI ──────────────────────────────────── */
+  --shadow-cerberus: 0 1px 3px 0   rgba(0, 0, 0, 0.10),
+                     0 1px 2px -1px rgba(0, 0, 0, 0.10);
 }
 
 .dark {
