@@ -37,10 +37,11 @@ class EditarUsuario extends Component
     public int $usuarioId;
 
     // ── Datos personales ──────────────────────────────────────────────────────
-    public string $name     = '';
-    public string $username = '';
-    public string $cedula   = '';
-    public string $ficha    = '';
+    public string $name          = '';
+    public string $username      = '';
+    public string $cedula_tipo   = 'V';
+    public string $cedula_numero = '';
+    public string $ficha         = '';
     public string $telefono = '';
     public string $email    = '';
     public $foto            = null;
@@ -77,10 +78,18 @@ class EditarUsuario extends Component
         $this->authorize('update', $u);
 
         // Datos personales
-        $this->name       = $u->name;
-        $this->username   = $u->username;
-        $this->cedula     = $u->cedula     ?? '';
-        $this->ficha      = $u->ficha      ?? '';
+        $this->name     = $u->name;
+        $this->username = $u->username;
+        $this->ficha    = $u->ficha ?? '';
+
+        // Parsear cédula en tipo y número: "V-12345678" → tipo="V", numero="12345678"
+        if ($u->cedula && preg_match('/^([VvEe])-(\d+)$/', $u->cedula, $m)) {
+            $this->cedula_tipo   = strtoupper($m[1]);
+            $this->cedula_numero = $m[2];
+        } else {
+            $this->cedula_tipo   = 'V';
+            $this->cedula_numero = $u->cedula ?? '';
+        }
         $this->telefono   = $u->telefono   ?? '';
         $this->email      = $u->email      ?? '';
         $this->fotoActual = $u->foto;
@@ -261,12 +270,16 @@ class EditarUsuario extends Component
                 'max:50',
                 Rule::unique('users', 'username')->ignore($id)
             ],
-            'cedula'          => [
+            'cedula_tipo'   => 'required|in:V,E',
+            'cedula_numero' => [
                 'required',
-                'string',
-                'max:15',
-                'regex:/^[VvEe]-\d{6,9}$/',
-                Rule::unique('users', 'cedula')->ignore($id)
+                'digits_between:6,9',
+                function ($attribute, $value, $fail) use ($id) {
+                    $cedula = strtoupper($this->cedula_tipo) . '-' . $value;
+                    if (\App\Models\User::where('cedula', $cedula)->where('id', '!=', $id)->exists()) {
+                        $fail('Esa cédula ya está registrada en el sistema.');
+                    }
+                },
             ],
             'ficha'           => [
                 'required',
@@ -294,13 +307,14 @@ class EditarUsuario extends Component
     protected function messages(): array
     {
         return [
-            'name.required'         => 'El nombre completo es obligatorio.',
-            'username.required'     => 'El nombre de usuario es obligatorio.',
-            'username.unique'       => 'Ese nombre de usuario ya está en uso.',
-            'cedula.required'       => 'La cédula es obligatoria.',
-            'cedula.unique'         => 'Esa cédula ya está registrada.',
-            'cedula.regex'          => 'La cédula debe tener el formato V-12345678 o E-12345678.',
-            'ficha.required'        => 'La ficha de nómina es obligatoria.',
+            'name.required'               => 'El nombre completo es obligatorio.',
+            'username.required'           => 'El nombre de usuario es obligatorio.',
+            'username.unique'             => 'Ese nombre de usuario ya está en uso.',
+            'cedula_tipo.required'        => 'Debe seleccionar el tipo de cédula (V o E).',
+            'cedula_tipo.in'              => 'El tipo de cédula debe ser V o E.',
+            'cedula_numero.required'      => 'El número de cédula es obligatorio.',
+            'cedula_numero.digits_between'=> 'El número de cédula debe tener entre 6 y 9 dígitos.',
+            'ficha.required'              => 'La ficha de nómina es obligatoria.',
             'ficha.unique'          => 'Esa ficha ya está registrada.',
             'email.required'        => 'El correo electrónico es obligatorio.',
             'empresa_id.required'   => 'Debe seleccionar la empresa de nómina.',
@@ -356,7 +370,7 @@ class EditarUsuario extends Component
                 'telefono'        => $this->telefono        ?: null,
                 'foto'            => $fotoPath,
                 'ficha'           => $this->ficha,
-                'cedula'          => strtoupper($this->cedula),
+                'cedula'          => strtoupper($this->cedula_tipo) . '-' . $this->cedula_numero,
             ];
 
             if ($actor->hasRole('Administrador')) {

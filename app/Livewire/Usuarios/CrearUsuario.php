@@ -34,10 +34,11 @@ class CrearUsuario extends Component
     use WithFileUploads;
 
     // ── Datos personales ──────────────────────────────────────────────────────
-    public string $name     = '';
-    public string $username = '';
-    public string $cedula   = '';   // Formato: V-12345678 o E-12345678
-    public string $ficha    = '';   // Código numérico de nómina
+    public string $name         = '';
+    public string $username     = '';
+    public string $cedula_tipo  = 'V'; // V o E
+    public string $cedula_numero = ''; // Solo dígitos
+    public string $ficha        = '';  // Código numérico de nómina
     public string $telefono = '';
     public string $email    = '';
     public $foto            = null; // Livewire WithFileUploads
@@ -194,17 +195,20 @@ class CrearUsuario extends Component
     {
         return [
             // Personales
-            'name'     => 'required|string|max:255',
-            'username' => 'required|string|max:50|unique:users,username',
-            'cedula'   => [
+            'name'          => 'required|string|max:255',
+            'username'      => 'required|string|max:50|unique:users,username',
+            'cedula_tipo'   => 'required|in:V,E',
+            'cedula_numero' => [
                 'required',
-                'string',
-                'max:15',
-                'unique:users,cedula',
-                // Formato: V-12345678 o E-12345678
-                'regex:/^[VvEe]-\d{6,9}$/',
+                'digits_between:6,9',
+                function ($attribute, $value, $fail) {
+                    $cedula = strtoupper($this->cedula_tipo) . '-' . $value;
+                    if (\App\Models\User::where('cedula', $cedula)->exists()) {
+                        $fail('Esa cédula ya está registrada en el sistema.');
+                    }
+                },
             ],
-            'ficha'    => 'required|string|max:50|unique:users,ficha',
+            'ficha'         => 'required|string|max:50|unique:users,ficha',
             'telefono' => 'nullable|string|max:20',
             'email'    => 'required|email|max:255',
             'foto'     => 'nullable|image|max:5120',
@@ -227,13 +231,14 @@ class CrearUsuario extends Component
     protected function messages(): array
     {
         return [
-            'name.required'          => 'El nombre completo es obligatorio.',
-            'username.required'      => 'El nombre de usuario es obligatorio.',
-            'username.unique'        => 'Ese nombre de usuario ya está en uso.',
-            'cedula.required'        => 'La cédula es obligatoria.',
-            'cedula.unique'          => 'Esa cédula ya está registrada en el sistema.',
-            'cedula.regex'           => 'La cédula debe tener el formato V-12345678 o E-12345678.',
-            'ficha.required'         => 'La ficha de nómina es obligatoria.',
+            'name.required'               => 'El nombre completo es obligatorio.',
+            'username.required'           => 'El nombre de usuario es obligatorio.',
+            'username.unique'             => 'Ese nombre de usuario ya está en uso.',
+            'cedula_tipo.required'        => 'Debe seleccionar el tipo de cédula (V o E).',
+            'cedula_tipo.in'              => 'El tipo de cédula debe ser V o E.',
+            'cedula_numero.required'      => 'El número de cédula es obligatorio.',
+            'cedula_numero.digits_between'=> 'El número de cédula debe tener entre 6 y 9 dígitos.',
+            'ficha.required'              => 'La ficha de nómina es obligatoria.',
             'ficha.unique'           => 'Esa ficha ya está registrada.',
             'email.required'         => 'El correo electrónico es obligatorio.',
             'email.email'            => 'El correo electrónico no tiene un formato válido.',
@@ -288,7 +293,7 @@ class CrearUsuario extends Component
                 'telefono'          => $this->telefono           ?: null,
                 'foto'              => $fotoPath,
                 'ficha'             => $this->ficha,
-                'cedula'            => strtoupper($this->cedula), // Normalizar a mayúsculas V-/E-
+                'cedula'            => strtoupper($this->cedula_tipo) . '-' . $this->cedula_numero,
             ]);
 
             // Asignar rol

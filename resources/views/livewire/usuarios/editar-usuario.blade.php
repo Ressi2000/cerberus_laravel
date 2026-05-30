@@ -121,14 +121,45 @@
                         :error="$errors->first('username')"
                     />
 
-                    <x-form.input
-                        label="Cédula"
-                        wire:model="cedula"
-                        required
-                        placeholder="Ej: V-12345678"
-                        hint="Cédula de identidad con prefijo: V- para venezolanos, E- para extranjeros. Ejemplo: V-12345678"
-                        :error="$errors->first('cedula')"
-                    />
+                    {{-- Campo cédula: tipo (V/E) + número separados --}}
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">
+                            Cédula <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex items-stretch gap-0">
+                            <select wire:model="cedula_tipo"
+                                    class="rounded-l-lg border border-r-0 border-gray-300 dark:border-cerberus-steel
+                                           bg-gray-50 dark:bg-cerberus-dark
+                                           text-gray-700 dark:text-cerberus-light
+                                           text-sm px-3 py-2 focus:outline-none focus:ring-1
+                                           focus:ring-cerberus-primary focus:border-cerberus-primary">
+                                <option value="V">V</option>
+                                <option value="E">E</option>
+                            </select>
+                            <span class="flex items-center px-2 bg-gray-100 dark:bg-cerberus-steel/30
+                                         border border-x-0 border-gray-300 dark:border-cerberus-steel
+                                         text-gray-500 dark:text-cerberus-light text-sm select-none">-</span>
+                            <input type="text"
+                                   wire:model="cedula_numero"
+                                   placeholder="12345678"
+                                   maxlength="9"
+                                   inputmode="numeric"
+                                   class="flex-1 rounded-r-lg border border-l-0 border-gray-300 dark:border-cerberus-steel
+                                          bg-white dark:bg-cerberus-dark
+                                          text-gray-900 dark:text-white
+                                          text-sm px-3 py-2 focus:outline-none focus:ring-1
+                                          focus:ring-cerberus-primary focus:border-cerberus-primary">
+                        </div>
+                        <p class="mt-1 text-xs text-gray-400 dark:text-cerberus-steel">
+                            V para venezolanos, E para extranjeros. Solo los dígitos, sin guion.
+                        </p>
+                        @error('cedula_tipo')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                        @error('cedula_numero')
+                            <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
+                        @enderror
+                    </div>
 
                     <x-form.input
                         label="Ficha"

@@ -209,6 +209,7 @@
                         viewEvent="openUserView"
                         deleteEvent="openUserDelete"
                         deleteLabel="Inactivar"
+                        deleteIcon="person_off"
                         :policy="$u"
                     />
                 </td>
