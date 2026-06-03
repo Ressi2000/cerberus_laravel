@@ -37,12 +37,14 @@ class UsuarioDeleteModal extends Component
         $this->authorize('delete', $this->user);
 
         try {
+            $nombre = $this->user->name;
+
             $this->user->estado = 'Inactivo';
             $this->user->registrarAuditoria('INACTIVAR');
             $this->user->saveQuietly();
 
             $this->cerrar();
-            $this->dispatch('toast', type: 'success', message: "Usuario «{$this->user->name}» inactivado correctamente.");
+            $this->dispatch('toast', type: 'success', message: "Usuario «{$nombre}» inactivado correctamente.");
             $this->dispatch('usuarioActualizado');
         } catch (\Exception $e) {
             Log::error('Error inactivando usuario: ' . $e->getMessage());
@@ -55,12 +57,14 @@ class UsuarioDeleteModal extends Component
         $this->authorize('update', $this->user);
 
         try {
+            $nombre = $this->user->name;
+
             $this->user->estado = 'Activo';
             $this->user->registrarAuditoria('REACTIVAR');
             $this->user->saveQuietly();
 
             $this->cerrar();
-            $this->dispatch('toast', type: 'success', message: "Usuario «{$this->user->name}» activado correctamente.");
+            $this->dispatch('toast', type: 'success', message: "Usuario «{$nombre}» activado correctamente.");
             $this->dispatch('usuarioActualizado');
         } catch (\Exception $e) {
             Log::error('Error activando usuario: ' . $e->getMessage());
