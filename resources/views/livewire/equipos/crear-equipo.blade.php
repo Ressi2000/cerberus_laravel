@@ -47,15 +47,6 @@
                 </div>
             </div>
 
-            <x-form.input label="Serial" wire:model="serial" placeholder="Ej: SN123456789"
-                hint="Número de serie del fabricante. Se encuentra en la etiqueta del equipo o en el BIOS/Sistema."
-                :error="$errors->first('serial')" />
-
-            <x-form.input label="Hostname / Nombre máquina" wire:model.lazy="nombre_maquina"
-                placeholder="Ej: WVETSD104"
-                hint="Nombre de red único del equipo. Debe coincidir exactamente con el nombre registrado en el Active Directory. Si ya existe en el sistema, no podrá registrarse."
-                :error="$errors->first('nombre_maquina')" />
-
             <x-form.select label="Estado" wire:model="estado_id" :options="$estados" required
                 hint="Estado operativo actual. Al crear un equipo nuevo normalmente se registra como Disponible."
                 :error="$errors->first('estado_id')" />

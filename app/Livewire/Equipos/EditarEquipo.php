@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -27,8 +26,6 @@ class EditarEquipo extends Component
     // ── Datos base editables ──────────────────────────────────────────────────
     public string $estado_id          = '';
     public string $ubicacion_id       = '';
-    public string $serial             = '';
-    public string $nombre_maquina     = '';
     public string $fecha_adquisicion  = '';
     public string $fecha_garantia_fin = '';
     public string $observaciones      = '';
@@ -69,8 +66,6 @@ class EditarEquipo extends Component
         // Hidratar campos base
         $this->estado_id          = (string) ($equipo->estado_id ?? '');
         $this->ubicacion_id       = (string) ($equipo->ubicacion_id ?? '');
-        $this->serial             = $equipo->serial          ?? '';
-        $this->nombre_maquina     = $equipo->nombre_maquina  ?? '';
         $this->fecha_adquisicion  = $equipo->fecha_adquisicion  ?? '';
         $this->fecha_garantia_fin = $equipo->fecha_garantia_fin ?? '';
         $this->observaciones      = $equipo->observaciones    ?? '';
@@ -122,18 +117,6 @@ class EditarEquipo extends Component
         $rules = [
             'estado_id'          => 'required|exists:estados_equipos,id',
             'ubicacion_id'       => 'nullable|exists:ubicaciones,id',
-            'serial'             => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('equipos', 'serial')->ignore($this->equipoId),
-            ],
-            'nombre_maquina'     => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('equipos', 'nombre_maquina')->ignore($this->equipoId),
-            ],
             'fecha_adquisicion'  => 'nullable|date',
             'fecha_garantia_fin' => 'nullable|date|after_or_equal:fecha_adquisicion',
             'observaciones'      => 'nullable|string|max:2000',
@@ -174,8 +157,6 @@ class EditarEquipo extends Component
         $messages = [
             'estado_id.required'                 => 'Debe seleccionar un estado.',
             'fecha_garantia_fin.after_or_equal'  => 'La garantía no puede ser anterior a la fecha de adquisición.',
-            'serial.unique'                      => 'Ese serial ya está registrado en otro equipo.',
-            'nombre_maquina.unique'              => 'Ese hostname ya existe en el sistema. Verifique en el Active Directory.',
         ];
 
         foreach ($this->atributos as $atributo) {
@@ -223,8 +204,6 @@ class EditarEquipo extends Component
                 $equipo->update([
                     'estado_id'          => $this->estado_id,
                     'ubicacion_id'       => $this->ubicacion_id       ?: null,
-                    'serial'             => $this->serial              ?: null,
-                    'nombre_maquina'     => $this->nombre_maquina      ?: null,
                     'fecha_adquisicion'  => $this->fecha_adquisicion   ?: null,
                     'fecha_garantia_fin' => $this->fecha_garantia_fin  ?: null,
                     'observaciones'      => $this->observaciones        ?: null,

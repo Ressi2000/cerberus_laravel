@@ -32,4 +32,13 @@ class EquipoController extends Controller
 
         return view('equipos.historial-equipo', compact('equipo'));
     }
+
+    public function etiqueta(Equipo $equipo)
+    {
+        $this->authorize('view', $equipo);
+
+        $equipo->load(['categoria', 'empresa', 'ubicacion']);
+
+        return view('equipos.etiqueta', compact('equipo'));
+    }
 }

@@ -14,7 +14,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -28,8 +27,6 @@ class CrearEquipo extends Component
     public string $estado_id          = '';
     public string $ubicacion_id       = '';
     public string $codigo_interno     = '';
-    public string $serial             = '';
-    public string $nombre_maquina     = '';
     public string $fecha_adquisicion  = '';
     public string $fecha_garantia_fin = '';
     public string $observaciones      = '';
@@ -114,13 +111,6 @@ class CrearEquipo extends Component
             // 'codigo_interno'     => 'required|string|max:100|unique:equipos,codigo_interno',
             'estado_id'          => 'required|exists:estados_equipos,id',
             'ubicacion_id'       => 'nullable|exists:ubicaciones,id',
-            'serial'             => 'nullable|string|max:100',
-            'nombre_maquina'     => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('equipos', 'nombre_maquina'),
-            ],
             'fecha_adquisicion'  => 'nullable|date',
             'fecha_garantia_fin' => 'nullable|date|after_or_equal:fecha_adquisicion',
             'observaciones'      => 'nullable|string|max:2000',
@@ -159,8 +149,6 @@ class CrearEquipo extends Component
             'categoria_id.required'              => 'Debe seleccionar una categoría.',
             'estado_id.required'                 => 'Debe seleccionar un estado.',
             'fecha_garantia_fin.after_or_equal'  => 'La garantía no puede ser anterior a la fecha de adquisición.',
-            'serial.unique'                      => 'Ese serial ya está registrado en otro equipo.',
-            'nombre_maquina.unique'              => 'Ese hostname ya existe en el sistema. Verifique en el Active Directory.',
         ];
 
         foreach ($this->atributos as $atributo) {
@@ -196,8 +184,6 @@ class CrearEquipo extends Component
                     'categoria_id'       => $this->categoria_id,
                     'estado_id'          => $this->estado_id,
                     'ubicacion_id'       => $this->ubicacion_id ?: null,
-                    'serial'             => $this->serial             ?: null,
-                    'nombre_maquina'     => $this->nombre_maquina     ?: null,
                     'fecha_adquisicion'  => $this->fecha_adquisicion  ?: null,
                     'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
                     'observaciones'      => $this->observaciones       ?: null,

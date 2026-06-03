@@ -69,8 +69,6 @@ class EquiposExport implements FromIterator, ShouldAutoSize
         $encabezadosFijos = [
             'Código interno',
             'Categoría',
-            'Serial',
-            'Nombre máquina',
             'Estado',
             'Activo',
             'Empresa',
@@ -92,8 +90,6 @@ class EquiposExport implements FromIterator, ShouldAutoSize
             $fila = [
                 $equipo->codigo_interno,
                 $equipo->categoria?->nombre          ?? '—',
-                $equipo->serial                      ?? '—',
-                $equipo->nombre_maquina              ?? '—',
                 $equipo->estado?->nombre             ?? '—',
                 $equipo->activo ? 'Activo' : 'Baja lógica',
                 $equipo->empresa?->nombre            ?? '—',

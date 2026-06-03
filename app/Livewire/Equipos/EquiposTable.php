@@ -10,6 +10,7 @@ use App\Models\Ubicacion;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -100,6 +101,9 @@ class EquiposTable extends Component
             ->pluck('nombre', 'id');
     }
 
+    #[On('equipoActualizado')]
+    public function onEquipoActualizado(): void { }
+
     #[Computed]
     public function atributosFiltrables(): Collection
     {
@@ -107,6 +111,18 @@ class EquiposTable extends Component
 
         return AtributoEquipo::where('categoria_id', $this->categoria_id)
             ->where('filtrable', true)
+            ->orderBy('orden')
+            ->get();
+    }
+
+    #[Computed]
+    public function atributosVisiblesTabla(): Collection
+    {
+        if (! $this->categoria_id) return collect();
+
+        return AtributoEquipo::where('categoria_id', $this->categoria_id)
+            ->where('visible_en_tabla', true)
+            ->where('tipo', '!=', AtributoEquipo::TIPO_FILE)
             ->orderBy('orden')
             ->get();
     }
@@ -166,8 +182,6 @@ class EquiposTable extends Component
             $s = $this->search;
             $query->where(function ($q) use ($s) {
                 $q->where('codigo_interno', 'like', "%{$s}%")
-                    ->orWhere('serial', 'like', "%{$s}%")
-                    ->orWhere('nombre_maquina', 'like', "%{$s}%")
                     ->orWhereHas(
                         'atributosActuales',
                         fn($sub) =>
@@ -218,23 +232,53 @@ class EquiposTable extends Component
         }
 
         // Stats
-        $baseQuery       = clone $query;
-        $total           = (clone $baseQuery)->count();
-        $totalActivos    = (clone $baseQuery)->where('activo', true)->count();
-        $garantiaVencida = (clone $baseQuery)
+        $baseQuery        = clone $query;
+        $total            = (clone $baseQuery)->count();
+        $totalActivos     = (clone $baseQuery)->where('activo', true)->count();
+        $garantiaVencida  = (clone $baseQuery)
             ->whereNotNull('fecha_garantia_fin')
             ->where('fecha_garantia_fin', '<', now()->toDateString())
             ->count();
-        $enMantenimiento = (clone $baseQuery)
+        $garantiaProxima  = (clone $baseQuery)
+            ->whereNotNull('fecha_garantia_fin')
+            ->where('fecha_garantia_fin', '>=', now()->toDateString())
+            ->where('fecha_garantia_fin', '<=', now()->addDays(30)->toDateString())
+            ->count();
+        $enMantenimiento  = (clone $baseQuery)
             ->whereHas('estado', fn($q) => $q->where('nombre', 'like', '%reparaci%'))
             ->count();
 
+        // EAV columns visible en tabla (para el selector dinámico de columnas)
+        $atributosVT = $this->atributosVisiblesTabla;
+        $eavCols = $atributosVT->map(fn($a) => [
+            'key'     => 'eav_' . $a->id,
+            'label'   => $a->nombre,
+            'visible' => true,
+            'id'      => $a->id,
+        ])->values()->toArray();
+
+        // EAV data para las celdas: equipoId → [key → valor]
+        $equiposPagina = $query->latest()->paginate($this->perPage);
+        $eavData = [];
+        if (count($eavCols) > 0) {
+            foreach ($equiposPagina->items() as $equipo) {
+                $eavData[$equipo->id] = [];
+                foreach ($eavCols as $col) {
+                    $val = $equipo->atributosActuales->firstWhere('atributo_id', $col['id']);
+                    $eavData[$equipo->id][$col['key']] = $val?->valor ?? null;
+                }
+            }
+        }
+
         return view('livewire.equipos.equipos-table', [
-            'equipos'         => $query->latest()->paginate($this->perPage),
-            'total'           => $total,
-            'totalActivos'    => $totalActivos,
-            'garantiaVencida' => $garantiaVencida,
-            'enMantenimiento' => $enMantenimiento,
+            'equipos'          => $equiposPagina,
+            'total'            => $total,
+            'totalActivos'     => $totalActivos,
+            'garantiaVencida'  => $garantiaVencida,
+            'garantiaProxima'  => $garantiaProxima,
+            'enMantenimiento'  => $enMantenimiento,
+            'eavCols'          => $eavCols,
+            'eavData'          => $eavData,
         ]);
     }
 }
