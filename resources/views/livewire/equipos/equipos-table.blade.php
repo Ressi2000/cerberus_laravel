@@ -441,13 +441,13 @@
 
         </div>
 
+    {{-- Bridge: atributos EAV visibles en tabla (PHP → Alpine) --}}
+    <template id="eav-cols-data">{{ json_encode($eavCols) }}</template>
+    <template id="eav-rows-data">{{ json_encode($eavData) }}</template>
+
 </div>
 
-{{-- ── Bridge: atributos EAV visibles en tabla (PHP → Alpine) ─────────────── --}}
-<template id="eav-cols-data">{{ json_encode($eavCols) }}</template>
-<template id="eav-rows-data">{{ json_encode($eavData) }}</template>
-
-{{-- ── Alpine: columnas visibles con localStorage ─────────────────────────── --}}
+@script
 <script>
     function equiposColumnas() {
         return {
@@ -504,3 +504,4 @@
         }
     }
 </script>
+@endscript
