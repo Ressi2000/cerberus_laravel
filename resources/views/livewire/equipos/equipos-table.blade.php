@@ -258,11 +258,13 @@
                             <th x-show="columnas.activo" class="px-4 py-3 font-semibold tracking-wide">Condición</th>
                             <th x-show="columnas.creado" class="px-4 py-3 font-semibold tracking-wide">Creado</th>
 
-                            {{-- Columnas EAV dinámicas --}}
-                            <template x-for="col in eavCols" :key="col.key">
-                                <th x-show="columnas[col.key]" class="px-4 py-3 font-semibold tracking-wide"
-                                    x-text="col.label"></th>
-                            </template>
+                            {{-- Columnas EAV dinámicas (Blade las renderiza, Alpine controla visibilidad) --}}
+                            @foreach ($eavCols as $col)
+                                <th x-show="columnas['{{ $col['key'] }}'] ?? false"
+                                    class="px-4 py-3 font-semibold tracking-wide">
+                                    {{ $col['label'] }}
+                                </th>
+                            @endforeach
 
                             {{-- Acciones: siempre visible --}}
                             <th class="px-4 py-3 text-center font-semibold tracking-wide">Acciones</th>
@@ -375,11 +377,17 @@
                                     {{ $equipo->created_at->format('d/m/Y') }}
                                 </td>
 
-                                {{-- Celdas EAV dinámicas --}}
-                                <template x-for="col in eavCols" :key="col.key">
-                                    <td x-show="columnas[col.key]" class="px-4 py-3 text-cerberus-light text-sm"
-                                        x-text="eavData['{{ $equipo->id }}']?.[col.key] ?? '—'"></td>
-                                </template>
+                                {{-- Celdas EAV dinámicas (valor renderizado por Blade) --}}
+                                @foreach ($eavCols as $col)
+                                    @php
+                                        $eavVal = $equipo->atributosActuales
+                                            ->firstWhere('atributo_id', $col['id']);
+                                    @endphp
+                                    <td x-show="columnas['{{ $col['key'] }}'] ?? false"
+                                        class="px-4 py-3 text-cerberus-light text-sm">
+                                        {{ $eavVal?->valor ?? '—' }}
+                                    </td>
+                                @endforeach
 
                                 <td class="px-4 py-3 text-center">
                                     <x-table.table-actions :model="$equipo" :editUrl="route('admin.equipos.edit', $equipo)" :viewUrl="route('admin.equipos.show', $equipo)"
@@ -441,9 +449,6 @@
 
         </div>
 
-    {{-- Bridge: atributos EAV visibles en tabla (PHP → Alpine) --}}
-    <template id="eav-cols-data">{{ json_encode($eavCols) }}</template>
-    <template id="eav-rows-data">{{ json_encode($eavData) }}</template>
 
 </div>
 
@@ -451,17 +456,15 @@
 <script>
     window.equiposColumnas = function() {
         return {
-            eavCols: [],
-            eavData: {},
             columnas: {
-                categoria:   true,
+                categoria:    true,
                 marca_modelo: true,
-                estado:      true,
-                ubicacion:   true,
-                garantia:    false,
-                adquisicion: false,
-                activo:      true,
-                creado:      false,
+                estado:       true,
+                ubicacion:    true,
+                garantia:     false,
+                adquisicion:  false,
+                activo:       true,
+                creado:       false,
             },
             columnLabels: {
                 categoria:    'Categoría',
@@ -474,29 +477,30 @@
                 creado:       'Fecha creación',
             },
             init() {
-                // Cargar columnas EAV dinámicas desde el bridge PHP
-                try {
-                    const rawCols = document.getElementById('eav-cols-data')?.textContent
-                    if (rawCols) {
-                        this.eavCols = JSON.parse(rawCols)
-                        this.eavCols.forEach(col => {
-                            if (!(col.key in this.columnas)) {
-                                this.columnas[col.key]     = col.visible
-                                this.columnLabels[col.key] = col.label
-                            }
-                        })
-                    }
-                    const rawRows = document.getElementById('eav-rows-data')?.textContent
-                    if (rawRows) this.eavData = JSON.parse(rawRows)
-                } catch (e) { /* ignorar JSON inválido */ }
+                // Registrar columnas EAV ya presentes al montar (categoria_id vacío → array vacío)
+                this.syncEavCols(this.$wire.eavColsForAlpine)
 
-                // Restaurar preferencias guardadas
+                // Cuando el usuario cambia la categoría, Livewire actualiza eavColsForAlpine
+                // y $wire.$watch lo propaga aquí para añadir/reflejar las nuevas columnas
+                this.$wire.$watch('eavColsForAlpine', (newCols) => {
+                    this.syncEavCols(newCols)
+                })
+
+                // Restaurar preferencias guardadas en localStorage
                 const saved = localStorage.getItem('cerberus_equipos_columnas')
                 if (saved) {
-                    try {
-                        this.columnas = { ...this.columnas, ...JSON.parse(saved) }
-                    } catch (e) { /* ignorar JSON inválido */ }
+                    try { this.columnas = { ...this.columnas, ...JSON.parse(saved) } }
+                    catch (e) {}
                 }
+            },
+            // Añade al selector las columnas EAV que aún no están registradas
+            syncEavCols(cols) {
+                (cols || []).forEach(col => {
+                    if (!(col.key in this.columnas)) {
+                        this.columnas[col.key]     = col.visible   // default: visible
+                        this.columnLabels[col.key] = col.label
+                    }
+                })
             },
             save() {
                 localStorage.setItem('cerberus_equipos_columnas', JSON.stringify(this.columnas))

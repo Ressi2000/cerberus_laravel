@@ -39,6 +39,9 @@ class EquiposTable extends Component
 
     public array $filtros = [];
 
+    // Expuesto como propiedad Livewire para que Alpine lo vigile via $wire.$watch
+    public array $eavColsForAlpine = [];
+
     // ─────────────────────────────────────────────────────────────────────────
     public function updated(string $property): void
     {
@@ -49,6 +52,7 @@ class EquiposTable extends Component
     {
         $this->filtros = [];
         $this->resetPage();
+        $this->refreshEavCols();
     }
 
     public function resetFilters(): void
@@ -65,6 +69,25 @@ class EquiposTable extends Component
             'filtros',
         ]);
         $this->resetPage();
+        $this->refreshEavCols();
+    }
+
+    private function refreshEavCols(): void
+    {
+        if (! $this->categoria_id) {
+            $this->eavColsForAlpine = [];
+            return;
+        }
+
+        $this->eavColsForAlpine = $this->atributosVisiblesTabla
+            ->map(fn($a) => [
+                'key'     => 'eav_' . $a->id,
+                'label'   => $a->nombre,
+                'visible' => true,
+                'id'      => $a->id,
+            ])
+            ->values()
+            ->toArray();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -248,37 +271,18 @@ class EquiposTable extends Component
             ->whereHas('estado', fn($q) => $q->where('nombre', 'like', '%reparaci%'))
             ->count();
 
-        // EAV columns visible en tabla (para el selector dinámico de columnas)
-        $atributosVT = $this->atributosVisiblesTabla;
-        $eavCols = $atributosVT->map(fn($a) => [
-            'key'     => 'eav_' . $a->id,
-            'label'   => $a->nombre,
-            'visible' => true,
-            'id'      => $a->id,
-        ])->values()->toArray();
-
-        // EAV data para las celdas: equipoId → [key → valor]
-        $equiposPagina = $query->latest()->paginate($this->perPage);
-        $eavData = [];
-        if (count($eavCols) > 0) {
-            foreach ($equiposPagina->items() as $equipo) {
-                $eavData[$equipo->id] = [];
-                foreach ($eavCols as $col) {
-                    $val = $equipo->atributosActuales->firstWhere('atributo_id', $col['id']);
-                    $eavData[$equipo->id][$col['key']] = $val?->valor ?? null;
-                }
-            }
-        }
+        // $eavColsForAlpine se mantiene actualizado por refreshEavCols()
+        // Lo pasamos a Blade para renderizar los <th> y <td> EAV estáticos
+        $eavCols = $this->eavColsForAlpine;
 
         return view('livewire.equipos.equipos-table', [
-            'equipos'          => $equiposPagina,
-            'total'            => $total,
-            'totalActivos'     => $totalActivos,
-            'garantiaVencida'  => $garantiaVencida,
-            'garantiaProxima'  => $garantiaProxima,
-            'enMantenimiento'  => $enMantenimiento,
-            'eavCols'          => $eavCols,
-            'eavData'          => $eavData,
+            'equipos'         => $query->latest()->paginate($this->perPage),
+            'total'           => $total,
+            'totalActivos'    => $totalActivos,
+            'garantiaVencida' => $garantiaVencida,
+            'garantiaProxima' => $garantiaProxima,
+            'enMantenimiento' => $enMantenimiento,
+            'eavCols'         => $eavCols,
         ]);
     }
 }
