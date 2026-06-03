@@ -29,8 +29,6 @@ class Equipo extends Model
         'estado_id',
         'ubicacion_id',
         'codigo_interno',
-        'serial',
-        'nombre_maquina',
         'fecha_adquisicion',
         'fecha_garantia_fin',
         'activo',

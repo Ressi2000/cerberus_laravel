@@ -33,8 +33,7 @@
                     <div>
                         <p class="text-cerberus-light font-medium">{{ $equipo->categoria->nombre }}</p>
                         <p class="text-cerberus-light text-xs">
-                            Serial: {{ $equipo->serial ?? '—' }}
-                            · Estado actual: {{ $equipo->estado->nombre }}
+                            Estado actual: {{ $equipo->estado->nombre }}
                         </p>
                     </div>
                 </div>

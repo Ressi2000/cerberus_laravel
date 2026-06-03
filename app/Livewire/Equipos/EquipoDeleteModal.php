@@ -55,6 +55,7 @@ class EquipoDeleteModal extends Component
 
         try {
             $estadoBaja = EstadoEquipo::where('nombre', 'Dado de baja')->value('id');
+            $codigo     = $this->equipo->codigo_interno;
 
             $this->equipo->update([
                 'activo'    => false,
@@ -62,14 +63,11 @@ class EquipoDeleteModal extends Component
             ]);
 
             $this->close();
-            $this->dispatch('equipoDesactivado');
-
-            session()->flash('success', 'Equipo dado de baja correctamente.');
-
-            $this->redirect(route('admin.equipos.index'), navigate: true);
+            $this->dispatch('toast', type: 'success', message: "Equipo «{$codigo}» dado de baja correctamente.");
+            $this->dispatch('equipoActualizado');
         } catch (\Exception $e) {
             Log::error('Error desactivando equipo: ' . $e->getMessage());
-            session()->flash('error', 'Ocurrió un error al dar de baja el equipo.');
+            $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al dar de baja el equipo.');
             $this->close();
         }
     }

@@ -6,10 +6,11 @@
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
-        ['title' => 'Total equipos', 'value' => $total, 'icon' => 'inventory_2'],
-        ['title' => 'Activos', 'value' => $totalActivos, 'icon' => 'check_circle'],
-        ['title' => 'Garantía vencida', 'value' => $garantiaVencida, 'icon' => 'warning'],
-        ['title' => 'En mantenimiento', 'value' => $enMantenimiento, 'icon' => 'build'],
+        ['title' => 'Total equipos',       'value' => $total,              'icon' => 'inventory_2'],
+        ['title' => 'Activos',             'value' => $totalActivos,       'icon' => 'check_circle'],
+        ['title' => 'Garantía vencida',    'value' => $garantiaVencida,    'icon' => 'warning'],
+        ['title' => 'Vence en 30 días',    'value' => $garantiaProxima,    'icon' => 'schedule'],
+        ['title' => 'En mantenimiento',    'value' => $enMantenimiento,    'icon' => 'build'],
     ]" />
 
     {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
@@ -35,8 +36,8 @@
 
                 {{-- FILA 1: Búsqueda — ancho completo --}}
                 <x-form.input label="Buscar" wire:model.live.500ms="search"
-                    placeholder="Código interno, serial, hostname..."
-                    hint="Busca por código interno, número de serie o nombre de máquina (hostname)." />
+                    placeholder="Código interno, atributos técnicos..."
+                    hint="Busca por código interno o valores de características técnicas (marca, modelo, RAM, etc.)." />
 
                 {{-- FILA 2: Selects principales en grid de 3 columnas --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
@@ -249,9 +250,6 @@
                             <th x-show="columnas.marca_modelo" class="px-4 py-3 font-semibold tracking-wide">Marca /
                                 Modelo</th>
                             <th x-show="columnas.estado" class="px-4 py-3 font-semibold tracking-wide">Estado</th>
-                            <th x-show="columnas.serial" class="px-4 py-3 font-semibold tracking-wide">Serial</th>
-                            <th x-show="columnas.nombre_maquina" class="px-4 py-3 font-semibold tracking-wide">
-                                Hostname</th>
                             <th x-show="columnas.ubicacion" class="px-4 py-3 font-semibold tracking-wide">Ubicación
                             </th>
                             <th x-show="columnas.garantia" class="px-4 py-3 font-semibold tracking-wide">Garantía</th>
@@ -321,14 +319,6 @@
                                     </span>
                                 </td>
 
-                                <td x-show="columnas.serial" class="px-4 py-3 text-cerberus-light text-sm font-mono">
-                                    {{ $equipo->serial ?? '—' }}
-                                </td>
-
-                                <td x-show="columnas.nombre_maquina" class="px-4 py-3 text-cerberus-light text-sm">
-                                    {{ $equipo->nombre_maquina ?? '—' }}
-                                </td>
-
                                 <td x-show="columnas.ubicacion" class="px-4 py-3 text-cerberus-light text-sm">
                                     {{ $equipo->ubicacion?->nombre ?? '—' }}
                                 </td>
@@ -336,11 +326,18 @@
                                 <td x-show="columnas.garantia" class="px-4 py-3 text-sm">
                                     @if ($equipo->fecha_garantia_fin)
                                         @php
-                                            $vencida = \Carbon\Carbon::parse($equipo->fecha_garantia_fin)->isPast();
+                                            $garantiaDate = \Carbon\Carbon::parse($equipo->fecha_garantia_fin);
+                                            $vencida      = $garantiaDate->isPast();
+                                            $proxima      = !$vencida && $garantiaDate->diffInDays(now()) <= 30;
                                         @endphp
-                                        <span class="{{ $vencida ? 'text-red-400' : 'text-green-400' }}">
-                                            {{ \Carbon\Carbon::parse($equipo->fecha_garantia_fin)->format('d/m/Y') }}
-                                        </span>
+                                        <div class="flex items-center gap-1">
+                                            <span class="{{ $vencida ? 'text-red-400' : ($proxima ? 'text-yellow-400' : 'text-green-400') }}">
+                                                {{ $garantiaDate->format('d/m/Y') }}
+                                            </span>
+                                            @if ($proxima)
+                                                <span class="material-icons text-yellow-400 text-sm" title="Vence en menos de 30 días">warning</span>
+                                            @endif
+                                        </div>
                                     @else
                                         <span class="text-cerberus-steel">—</span>
                                     @endif
@@ -390,6 +387,19 @@
                                                     Historial completo
                                                 </a>
                                             </li>
+                                            <li>
+                                                <a href="{{ route('admin.equipos.etiqueta', $equipo) }}" target="_blank"
+                                                    @click="close()"
+                                                    class="flex items-center gap-3 px-4 py-2.5 w-full
+                                              text-gray-600 dark:text-cerberus-light
+                                              hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                              hover:text-amber-600 dark:hover:text-amber-400
+                                              transition-colors duration-100">
+                                                    <span
+                                                        class="material-icons text-base text-amber-500">qr_code_2</span>
+                                                    Imprimir etiqueta
+                                                </a>
+                                            </li>
                                         </x-slot>
                                     </x-table.table-actions>
                                 </td>
@@ -398,7 +408,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="12" class="px-4 py-12 text-center text-cerberus-light">
+                                <td colspan="20" class="px-4 py-12 text-center text-cerberus-light">
                                     <span class="material-icons text-4xl block mb-2 text-cerberus-steel">
                                         devices_other
                                     </span>
@@ -419,48 +429,38 @@
 
         </div>
 
+
 </div>
 
-{{-- ── Alpine: columnas visibles con localStorage ─────────────────────────── --}}
+@script
 <script>
-    function equiposColumnas() {
+    window.equiposColumnas = function() {
         return {
             columnas: {
-                categoria: true,
-                marca_modelo: true, // ← nuevo: Marca / Modelo (EAV)
-                estado: true,
-                serial: true,
-                nombre_maquina: false,
-                ubicacion: true,
-                garantia: false,
-                adquisicion: false,
-                activo: true,
-                creado: false,
+                categoria:    true,
+                marca_modelo: true,
+                estado:       true,
+                ubicacion:    true,
+                garantia:     false,
+                adquisicion:  false,
+                activo:       true,
+                creado:       false,
             },
             columnLabels: {
-                categoria: 'Categoría',
-                marca_modelo: 'Marca / Modelo', // ← nuevo
-                estado: 'Estado',
-                serial: 'Serial',
-                nombre_maquina: 'Hostname',
-                ubicacion: 'Ubicación',
-                garantia: 'Fecha garantía',
-                adquisicion: 'Fecha adquisición',
-                activo: 'Condición',
-                creado: 'Fecha creación',
+                categoria:    'Categoría',
+                marca_modelo: 'Marca / Modelo',
+                estado:       'Estado',
+                ubicacion:    'Ubicación',
+                garantia:     'Fecha garantía',
+                adquisicion:  'Fecha adquisición',
+                activo:       'Condición',
+                creado:       'Fecha creación',
             },
             init() {
                 const saved = localStorage.getItem('cerberus_equipos_columnas')
                 if (saved) {
-                    try {
-                        // Merge: conserva nuevas claves con su default si no estaban guardadas
-                        this.columnas = {
-                            ...this.columnas,
-                            ...JSON.parse(saved)
-                        }
-                    } catch (e) {
-                        /* ignorar JSON inválido */
-                    }
+                    try { this.columnas = { ...this.columnas, ...JSON.parse(saved) } }
+                    catch (e) {}
                 }
             },
             save() {
@@ -469,3 +469,4 @@
         }
     }
 </script>
+@endscript
