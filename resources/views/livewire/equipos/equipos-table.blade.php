@@ -449,7 +449,7 @@
 
 @script
 <script>
-    function equiposColumnas() {
+    window.equiposColumnas = function() {
         return {
             eavCols: [],
             eavData: {},
