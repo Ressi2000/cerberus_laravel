@@ -250,13 +250,13 @@ class CrearEquipo extends Component
         $user = Auth::user();
 
         $ubicaciones = $user->hasRole('Administrador')
-            ? Ubicacion::orderBy('nombre')->pluck('nombre', 'id')
+            ? Ubicacion::orderBy('es_estado')->orderBy('nombre')->pluck('nombre', 'id')
             : Ubicacion::where(function ($q) use ($user) {
                 $q->where('empresa_id', $user->empresa_activa_id)
                     ->orWhere('es_estado', true);
             })
             ->whereNot('activo', false)
-            ->orderBy('nombre')
+            ->orderBy('es_estado')->orderBy('nombre')
             ->pluck('nombre', 'id');
 
         return view('livewire.equipos.crear-equipo', [
