@@ -39,9 +39,6 @@ class EquiposTable extends Component
 
     public array $filtros = [];
 
-    // Expuesto como propiedad Livewire para que Alpine lo vigile via $wire.$watch
-    public array $eavColsForAlpine = [];
-
     // ─────────────────────────────────────────────────────────────────────────
     public function updated(string $property): void
     {
@@ -52,7 +49,6 @@ class EquiposTable extends Component
     {
         $this->filtros = [];
         $this->resetPage();
-        $this->refreshEavCols();
     }
 
     public function resetFilters(): void
@@ -69,25 +65,6 @@ class EquiposTable extends Component
             'filtros',
         ]);
         $this->resetPage();
-        $this->refreshEavCols();
-    }
-
-    private function refreshEavCols(): void
-    {
-        if (! $this->categoria_id) {
-            $this->eavColsForAlpine = [];
-            return;
-        }
-
-        $this->eavColsForAlpine = $this->atributosVisiblesTabla
-            ->map(fn($a) => [
-                'key'     => 'eav_' . $a->id,
-                'label'   => $a->nombre,
-                'visible' => true,
-                'id'      => $a->id,
-            ])
-            ->values()
-            ->toArray();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -134,18 +111,6 @@ class EquiposTable extends Component
 
         return AtributoEquipo::where('categoria_id', $this->categoria_id)
             ->where('filtrable', true)
-            ->orderBy('orden')
-            ->get();
-    }
-
-    #[Computed]
-    public function atributosVisiblesTabla(): Collection
-    {
-        if (! $this->categoria_id) return collect();
-
-        return AtributoEquipo::where('categoria_id', $this->categoria_id)
-            ->where('visible_en_tabla', true)
-            ->where('tipo', '!=', AtributoEquipo::TIPO_FILE)
             ->orderBy('orden')
             ->get();
     }
@@ -271,10 +236,6 @@ class EquiposTable extends Component
             ->whereHas('estado', fn($q) => $q->where('nombre', 'like', '%reparaci%'))
             ->count();
 
-        // $eavColsForAlpine se mantiene actualizado por refreshEavCols()
-        // Lo pasamos a Blade para renderizar los <th> y <td> EAV estáticos
-        $eavCols = $this->eavColsForAlpine;
-
         return view('livewire.equipos.equipos-table', [
             'equipos'         => $query->latest()->paginate($this->perPage),
             'total'           => $total,
@@ -282,7 +243,6 @@ class EquiposTable extends Component
             'garantiaVencida' => $garantiaVencida,
             'garantiaProxima' => $garantiaProxima,
             'enMantenimiento' => $enMantenimiento,
-            'eavCols'         => $eavCols,
         ]);
     }
 }

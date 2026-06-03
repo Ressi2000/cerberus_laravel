@@ -258,14 +258,6 @@
                             <th x-show="columnas.activo" class="px-4 py-3 font-semibold tracking-wide">Condición</th>
                             <th x-show="columnas.creado" class="px-4 py-3 font-semibold tracking-wide">Creado</th>
 
-                            {{-- Columnas EAV dinámicas (Blade las renderiza, Alpine controla visibilidad) --}}
-                            @foreach ($eavCols as $col)
-                                <th x-show="columnas['{{ $col['key'] }}'] ?? false"
-                                    class="px-4 py-3 font-semibold tracking-wide">
-                                    {{ $col['label'] }}
-                                </th>
-                            @endforeach
-
                             {{-- Acciones: siempre visible --}}
                             <th class="px-4 py-3 text-center font-semibold tracking-wide">Acciones</th>
                         </tr>
@@ -377,18 +369,6 @@
                                     {{ $equipo->created_at->format('d/m/Y') }}
                                 </td>
 
-                                {{-- Celdas EAV dinámicas (valor renderizado por Blade) --}}
-                                @foreach ($eavCols as $col)
-                                    @php
-                                        $eavVal = $equipo->atributosActuales
-                                            ->firstWhere('atributo_id', $col['id']);
-                                    @endphp
-                                    <td x-show="columnas['{{ $col['key'] }}'] ?? false"
-                                        class="px-4 py-3 text-cerberus-light text-sm">
-                                        {{ $eavVal?->valor ?? '—' }}
-                                    </td>
-                                @endforeach
-
                                 <td class="px-4 py-3 text-center">
                                     <x-table.table-actions :model="$equipo" :editUrl="route('admin.equipos.edit', $equipo)" :viewUrl="route('admin.equipos.show', $equipo)"
                                         viewEvent="openEquipoView" deleteEvent="openEquipoDelete"
@@ -477,30 +457,11 @@
                 creado:       'Fecha creación',
             },
             init() {
-                // Registrar columnas EAV ya presentes al montar (categoria_id vacío → array vacío)
-                this.syncEavCols(this.$wire.eavColsForAlpine)
-
-                // Cuando el usuario cambia la categoría, Livewire actualiza eavColsForAlpine
-                // y $wire.$watch lo propaga aquí para añadir/reflejar las nuevas columnas
-                this.$wire.$watch('eavColsForAlpine', (newCols) => {
-                    this.syncEavCols(newCols)
-                })
-
-                // Restaurar preferencias guardadas en localStorage
                 const saved = localStorage.getItem('cerberus_equipos_columnas')
                 if (saved) {
                     try { this.columnas = { ...this.columnas, ...JSON.parse(saved) } }
                     catch (e) {}
                 }
-            },
-            // Añade al selector las columnas EAV que aún no están registradas
-            syncEavCols(cols) {
-                (cols || []).forEach(col => {
-                    if (!(col.key in this.columnas)) {
-                        this.columnas[col.key]     = col.visible   // default: visible
-                        this.columnLabels[col.key] = col.label
-                    }
-                })
             },
             save() {
                 localStorage.setItem('cerberus_equipos_columnas', JSON.stringify(this.columnas))
