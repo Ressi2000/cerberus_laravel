@@ -188,6 +188,7 @@ class CrearEquipo extends Component
                     'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
                     'observaciones'      => $this->observaciones       ?: null,
                     'activo'             => true,
+                    'creado_por'         => Auth::id(),
                 ]);
 
                 // Paso 2: ahora que tenemos el id, generamos y asignamos el código
