@@ -37,7 +37,7 @@ class EquipoController extends Controller
     {
         $this->authorize('view', $equipo);
 
-        $equipo->load(['categoria', 'empresa', 'ubicacion']);
+        $equipo->load(['categoria']);
 
         return view('equipos.etiqueta', compact('equipo'));
     }
