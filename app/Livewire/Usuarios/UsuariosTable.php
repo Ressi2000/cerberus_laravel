@@ -238,7 +238,7 @@ class UsuariosTable extends Component
         $usuariosActivos = (clone $query)->where('estado', 'Activo')->count();
         $usuariosInactivos = (clone $query)->where('estado', 'Inactivo')->count();
         $admins = (clone $query)->whereHas('roles', fn($q) => $q->where('name', 'Administrador'))->count();
-        $Analistas = (clone $query)->whereHas('roles', fn($q) => $q->where('name', 'Analista'))->count();
+        $analistas = (clone $query)->whereHas('roles', fn($q) => $q->where('name', 'Analista'))->count();
 
 
         return view('livewire.usuarios.usuarios-table', [
@@ -247,7 +247,7 @@ class UsuariosTable extends Component
             'usuariosActivos' => $usuariosActivos,
             'usuariosInactivos' => $usuariosInactivos,
             'admins' => $admins,
-            'Analistas' => $Analistas,
+            'analistas' => $analistas,
             // Datos para los selects de filtros
             'roles'       => Role::pluck('name', 'id'),
             'empresas'    => Empresa::pluck('nombre', 'id'),
