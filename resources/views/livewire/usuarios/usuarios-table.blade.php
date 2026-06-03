@@ -208,7 +208,8 @@
                         :editUrl="route('admin.usuarios.edit', $u)"
                         viewEvent="openUserView"
                         deleteEvent="openUserDelete"
-                        deleteLabel="Inactivar"
+                        :deleteLabel="$u->estado === 'Activo' ? 'Inactivar' : 'Activar'"
+                        :deleteIcon="$u->estado === 'Activo' ? 'person_off' : 'person'"
                         :policy="$u"
                     />
                 </td>

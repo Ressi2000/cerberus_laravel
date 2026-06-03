@@ -9,46 +9,72 @@ use Illuminate\Support\Facades\Log;
 
 class UsuarioDeleteModal extends Component
 {
-    public $open = false;
-    public ?User $user = null;
+    public bool $open    = false;
+    public ?int $userId  = null;
+    public ?User $user   = null;
 
-    protected $listeners = ['openUserDelete'];
-
-    public function openUserDelete($id)
+    #[On('openUserDelete')]
+    public function openUserDelete(int $id): void
     {
-        $this->user = User::findOrFail($id);
-        $this->open = true;
+        $this->user   = User::findOrFail($id);
+        $this->userId = $id;
+        $this->open   = true;
     }
 
-    public function delete()
+    public function confirmar(): void
     {
-        if (! $this->user) {
-            return;
+        if (! $this->user) return;
+
+        if ($this->user->estado === 'Activo') {
+            $this->inactivar();
+        } else {
+            $this->activar();
         }
-
-        return $this->destroy($this->user);
     }
 
-    public function destroy(User $usuario)
+    private function inactivar(): void
     {
-        $this->authorize('delete', $usuario);
+        $this->authorize('delete', $this->user);
 
         try {
-            $usuario->update(['estado' => 'Inactivo']);
-            $this->close();
+            $nombre = $this->user->name;
 
-            $this->dispatch('userDeleted');
+            $this->user->estado = 'Inactivo';
+            $this->user->registrarAuditoria('INACTIVAR');
+            $this->user->saveQuietly();
 
-            return redirect()->route('admin.usuarios.index')->with('success', 'Usuario inactivado correctamente.');
+            $this->cerrar();
+            $this->dispatch('toast', type: 'success', message: "Usuario «{$nombre}» inactivado correctamente.");
+            $this->dispatch('usuarioActualizado');
         } catch (\Exception $e) {
             Log::error('Error inactivando usuario: ' . $e->getMessage());
-            return redirect()->route('admin.usuarios.index')->with('error', 'Ocurrió un error al inactivar el usuario.');
+            $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al inactivar el usuario.');
         }
     }
 
-    public function close()
+    private function activar(): void
     {
-        $this->reset(['open', 'user']);
+        $this->authorize('update', $this->user);
+
+        try {
+            $nombre = $this->user->name;
+
+            $this->user->estado = 'Activo';
+            $this->user->registrarAuditoria('REACTIVAR');
+            $this->user->saveQuietly();
+
+            $this->cerrar();
+            $this->dispatch('toast', type: 'success', message: "Usuario «{$nombre}» activado correctamente.");
+            $this->dispatch('usuarioActualizado');
+        } catch (\Exception $e) {
+            Log::error('Error activando usuario: ' . $e->getMessage());
+            $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al activar el usuario.');
+        }
+    }
+
+    public function cerrar(): void
+    {
+        $this->reset(['open', 'user', 'userId']);
     }
 
     public function render()

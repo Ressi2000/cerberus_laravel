@@ -19,7 +19,18 @@ trait Auditable
         });
 
         static::updated(function ($model) {
-            $model->registrarAuditoria('EDITAR');
+            $changes = array_diff_key($model->getChanges(), ['updated_at' => null]);
+
+            // Cambio de estado puntual (sin otros campos modificados)
+            if (array_keys($changes) === ['estado']) {
+                match ($changes['estado']) {
+                    'Inactivo' => $model->registrarAuditoria('INACTIVAR'),
+                    'Activo'   => $model->registrarAuditoria('REACTIVAR'),
+                    default    => $model->registrarAuditoria('EDITAR'),
+                };
+            } else {
+                $model->registrarAuditoria('EDITAR');
+            }
         });
 
         static::deleted(function ($model) {

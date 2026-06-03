@@ -6,7 +6,6 @@
         ['label' => 'Actividad'],
     ]" />
 
-    <x-form.success />
     
     {{-- LIVEWIRE TABLE --}}
     @livewire('admin.auditoria-table', ['isProfileView' => true])

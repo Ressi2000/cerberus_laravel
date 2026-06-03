@@ -6,7 +6,6 @@
         ['label' => 'Departamentos','url' => '#'],
     ]" />
 
-    <x-form.success />
 
     @livewire('configuracion.departamentos.departamento-view-modal')
     @livewire('configuracion.departamentos.departamento-modal')

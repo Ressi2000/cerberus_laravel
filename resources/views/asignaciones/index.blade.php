@@ -5,7 +5,6 @@
         ['label' => 'Asignaciones', 'url' => '#'],
     ]" />
 
-    <x-form.success />
 
     @livewire('asignaciones.asignaciones-table')
 

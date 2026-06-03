@@ -12,6 +12,7 @@ use App\Models\Cargo;
 use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -72,6 +73,12 @@ class UsuariosTable extends Component
     // ─────────────────────────────────────────────────────────────────────────
     // Limpiar todos los filtros
     // ─────────────────────────────────────────────────────────────────────────
+    #[On('usuarioActualizado')]
+    public function onUsuarioActualizado(): void
+    {
+        // Re-render con datos frescos al activar/inactivar desde el modal
+    }
+
     public function resetFilters(): void
     {
         $this->reset([

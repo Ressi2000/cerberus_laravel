@@ -47,6 +47,7 @@
     'viewEvent'   => null,
     'deleteEvent' => null,
     'deleteLabel' => 'Eliminar',
+    'deleteIcon'  => 'delete',
     'policy'      => null,
     'rowId'       => null,
 ])
@@ -189,7 +190,7 @@
                                        text-red-600 dark:text-red-400
                                        hover:bg-red-50 dark:hover:bg-red-500/10
                                        transition-colors duration-100">
-                                <span class="material-icons text-base">delete</span>
+                                <span class="material-icons text-base">{{ $deleteIcon }}</span>
                                 {{ $deleteLabel }}
                             </button>
                         </li>
@@ -203,7 +204,7 @@
                                    text-red-600 dark:text-red-400
                                    hover:bg-red-50 dark:hover:bg-red-500/10
                                    transition-colors duration-100">
-                            <span class="material-icons text-base">delete</span>
+                            <span class="material-icons text-base">{{ $deleteIcon }}</span>
                             {{ $deleteLabel }}
                         </button>
                     </li>
