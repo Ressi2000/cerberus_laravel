@@ -134,6 +134,7 @@
                                    class="flex-1 rounded-r-lg border border-l-0 border-gray-300 dark:border-cerberus-steel
                                           bg-white dark:bg-cerberus-dark
                                           text-gray-900 dark:text-white
+                                          placeholder:text-gray-400 dark:placeholder:text-cerberus-steel
                                           text-sm px-3 py-2 focus:outline-none focus:ring-1
                                           focus:ring-cerberus-primary focus:border-cerberus-primary">
                         </div>
