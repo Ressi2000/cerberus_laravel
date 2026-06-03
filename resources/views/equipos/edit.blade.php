@@ -7,7 +7,6 @@
         ['label' => 'Editar Equipo', 'url' => '#'],
     ]" />
 
-    <x-form.success />
 
     @livewire('equipos.editar-equipo', ['equipo' => $equipo])
 

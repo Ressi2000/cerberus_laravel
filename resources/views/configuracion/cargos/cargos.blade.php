@@ -6,7 +6,6 @@
         ['label' => 'Cargos','url' => '#'],
     ]" />
 
-    <x-form.success />
 
     @livewire('configuracion.cargos.cargo-view-modal')
     @livewire('configuracion.cargos.cargo-modal')

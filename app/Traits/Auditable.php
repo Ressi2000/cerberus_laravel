@@ -21,9 +21,13 @@ trait Auditable
         static::updated(function ($model) {
             $changes = array_diff_key($model->getChanges(), ['updated_at' => null]);
 
-            // Inactivación puntual: solo cambió estado a Inactivo
-            if (array_keys($changes) === ['estado'] && ($changes['estado'] ?? null) === 'Inactivo') {
-                $model->registrarAuditoria('INACTIVAR');
+            // Cambio de estado puntual (sin otros campos modificados)
+            if (array_keys($changes) === ['estado']) {
+                match ($changes['estado']) {
+                    'Inactivo' => $model->registrarAuditoria('INACTIVAR'),
+                    'Activo'   => $model->registrarAuditoria('REACTIVAR'),
+                    default    => $model->registrarAuditoria('EDITAR'),
+                };
             } else {
                 $model->registrarAuditoria('EDITAR');
             }

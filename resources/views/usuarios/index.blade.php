@@ -7,8 +7,6 @@
         ['label' => 'Usuarios', 'url' => route('admin.usuarios.index')],
     ]" />
     
-    <x-form.success />
-    
     {{-- LIVEWIRE TABLE --}}
     @livewire('usuarios.usuarios-table')
 

@@ -5,6 +5,5 @@
         ['label' => 'Usuarios',           'url' => route('admin.usuarios.index')],
         ['label' => 'Editar'],
     ]" />
-    <x-form.success />
     @livewire('usuarios.editar-usuario', ['usuarioId' => $usuario->id])
 </x-app-layout>

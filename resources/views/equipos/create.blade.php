@@ -7,7 +7,6 @@
         ['label' => 'Crear Equipo', 'url' => '#'],
     ]" />
 
-    <x-form.success />
 
     @livewire('equipos.crear-equipo')
 

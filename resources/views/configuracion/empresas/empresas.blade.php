@@ -6,7 +6,6 @@
         ['label' => 'Empresas',     'url' => '#'],
     ]" />
 
-    <x-form.success />
 
     @livewire('configuracion.empresas.empresa-view-modal')
     @livewire('configuracion.empresas.empresa-modal')

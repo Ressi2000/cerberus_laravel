@@ -5,6 +5,5 @@
         ['label' => 'Usuarios',           'url' => route('admin.usuarios.index')],
         ['label' => 'Crear'],
     ]" />
-    <x-form.success />
     @livewire('usuarios.crear-usuario')
 </x-app-layout>

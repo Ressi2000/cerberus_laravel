@@ -6,7 +6,6 @@
         ['label' => 'Ubicaciones',  'url' => '#'],
     ]" />
 
-    <x-form.success />
 
     @livewire('configuracion.ubicaciones.ubicacion-view-modal')
     @livewire('configuracion.ubicaciones.ubicacion-modal')

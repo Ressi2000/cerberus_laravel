@@ -15,6 +15,7 @@
         'PASSWORD_RESET'       => 'bg-yellow-400/10 text-yellow-400 ring-yellow-500/20',
         'CAMBIO_EMPRESA_ACTIVA'=> 'bg-teal-400/10 text-teal-400 ring-teal-500/20',
         'INACTIVAR'            => 'bg-orange-400/10 text-orange-400 ring-orange-500/20',
+        'REACTIVAR'            => 'bg-teal-400/10 text-teal-400 ring-teal-500/20',
     ];
 
     $class = $map[$accion] ?? 'bg-yellow-400/10 text-yellow-400 ring-yellow-500/20';
@@ -33,6 +34,7 @@
         'PASSWORD_RESET'       => 'Reset pwd',
         'CAMBIO_EMPRESA_ACTIVA'=> 'Cambio empresa',
         'INACTIVAR'            => 'Inactivar',
+        'REACTIVAR'            => 'Reactivar',
     ];
 
     $label = $labels[$accion] ?? ucfirst(strtolower($accion));

@@ -6,7 +6,6 @@
         ['label' => 'Auditoría', 'url' => route('admin.auditoria.index')],
     ]" />
 
-    <x-form.success />
     
     {{-- LIVEWIRE TABLE --}}
     @livewire('admin.auditoria-table')
