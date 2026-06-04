@@ -116,6 +116,36 @@ class EquiposTable extends Component
     }
 
     #[Computed]
+    public function atributosVisibles(): Collection
+    {
+        if (! $this->categoria_id) return collect();
+
+        return AtributoEquipo::where('categoria_id', $this->categoria_id)
+            ->where('visible_en_tabla', true)
+            ->where('tipo', '!=', AtributoEquipo::TIPO_FILE)
+            ->orderBy('orden')
+            ->get();
+    }
+
+    #[Computed]
+    public function headers(): array
+    {
+        if (! $this->categoria_id) {
+            return ['Código', 'Categoría', 'Estado', 'Ubicación', 'Condición', 'Acciones'];
+        }
+
+        $eav = $this->atributosVisibles
+            ->map(fn($a) => ['label' => $a->nombre, 'key' => 'attr_' . $a->id])
+            ->toArray();
+
+        return array_merge(
+            ['Código', 'Estado', 'Ubicación', 'Condición'],
+            $eav,
+            ['Acciones']
+        );
+    }
+
+    #[Computed]
     public function activeFiltersCount(): int
     {
         return collect([
