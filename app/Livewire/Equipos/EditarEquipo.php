@@ -288,7 +288,7 @@ class EditarEquipo extends Component
             $this->redirect(route('admin.equipos.index'), navigate: true);
         } catch (\Exception $e) {
             Log::error('EditarEquipo@actualizar: ' . $e->getMessage());
-            $this->addError('general', 'Ocurrió un error al actualizar el equipo. Por favor intenta nuevamente.');
+            $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al actualizar el equipo. Por favor intenta nuevamente.');
         }
     }
 
