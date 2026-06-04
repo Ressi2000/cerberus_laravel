@@ -3,7 +3,7 @@
         ['label' => 'Dashboard',          'url' => route('dashboard')],
         ['label' => 'Gestión de Usuarios','url' => '#'],
         ['label' => 'Usuarios',           'url' => route('admin.usuarios.index')],
-        ['label' => 'Editar'],
+        ['label' => 'Editar Usuario'],
     ]" />
     @livewire('usuarios.editar-usuario', ['usuarioId' => $usuario->id])
 </x-app-layout>

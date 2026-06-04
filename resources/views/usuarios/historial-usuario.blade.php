@@ -1,9 +1,13 @@
-<x-app-layout title="Crear Usuario" header="Gestión de Usuarios">
+<x-app-layout title="Historial del Usuario" header="Gestión de Usuarios">
+
     <x-ui.breadcrumb :items="[
         ['label' => 'Dashboard',          'url' => route('dashboard')],
         ['label' => 'Gestión de Usuarios','url' => '#'],
         ['label' => 'Usuarios',           'url' => route('admin.usuarios.index')],
-        ['label' => 'Crear Usuario'],
+        ['label' => $usuario->name,       'url' => '#'],
+        ['label' => 'Historial',          'url' => '#'],
     ]" />
-    @livewire('usuarios.crear-usuario')
+
+    @livewire('usuarios.historial-usuario', ['usuario' => $usuario])
+
 </x-app-layout>

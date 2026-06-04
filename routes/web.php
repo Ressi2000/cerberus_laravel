@@ -63,6 +63,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     // Usuarios
     Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
         Route::resource('/usuarios', UsuarioController::class);
+        Route::get('/usuarios/{usuario}/historial', [UsuarioController::class, 'historial'])->name('usuarios.historial');
     });
 
     // Auditoria

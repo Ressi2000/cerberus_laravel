@@ -211,7 +211,21 @@
                         :deleteLabel="$u->estado === 'Activo' ? 'Inactivar' : 'Activar'"
                         :deleteIcon="$u->estado === 'Activo' ? 'person_off' : 'person'"
                         :policy="$u"
-                    />
+                    >
+                        <x-slot name="acciones">
+                            <li>
+                                <a href="{{ route('admin.usuarios.historial', $u) }}"
+                                   wire:navigate
+                                   @click="close()"
+                                   class="flex items-center gap-3 px-4 py-2.5 w-full
+                                          text-cerberus-light hover:bg-cerberus-steel/20
+                                          hover:text-purple-400 transition-colors duration-100">
+                                    <span class="material-icons text-base text-purple-400">history</span>
+                                    Historial
+                                </a>
+                            </li>
+                        </x-slot>
+                    </x-table.table-actions>
                 </td>
 
             </tr>
