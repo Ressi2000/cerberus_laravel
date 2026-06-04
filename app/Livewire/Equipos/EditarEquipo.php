@@ -66,8 +66,8 @@ class EditarEquipo extends Component
         // Hidratar campos base
         $this->estado_id          = (string) ($equipo->estado_id ?? '');
         $this->ubicacion_id       = (string) ($equipo->ubicacion_id ?? '');
-        $this->fecha_adquisicion  = $equipo->fecha_adquisicion  ?? '';
-        $this->fecha_garantia_fin = $equipo->fecha_garantia_fin ?? '';
+        $this->fecha_adquisicion  = $equipo->fecha_adquisicion  ? $equipo->fecha_adquisicion->format('Y-m-d')  : '';
+        $this->fecha_garantia_fin = $equipo->fecha_garantia_fin ? $equipo->fecha_garantia_fin->format('Y-m-d') : '';
         $this->observaciones      = $equipo->observaciones    ?? '';
 
         // Atributos de la categoría como array plano
