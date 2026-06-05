@@ -71,6 +71,17 @@ class CrearTraslado extends Component
         return $query->get(['id', 'nombre', 'es_estado']);
     }
 
+    /** Opciones para x-form.select [id => 'nombre (foránea)'] */
+    #[Computed]
+    public function ubicacionesOpciones(): array
+    {
+        return $this->ubicaciones
+            ->mapWithKeys(fn($ub) => [
+                $ub->id => $ub->nombre . ($ub->es_estado ? ' (foránea)' : '')
+            ])
+            ->toArray();
+    }
+
     #[Computed]
     public function usuarios()
     {
@@ -88,10 +99,25 @@ class CrearTraslado extends Component
             ->get(['id', 'name', 'cedula']);
     }
 
+    /** Opciones para x-form.select [id => 'Nombre (cédula)'] */
+    #[Computed]
+    public function usuariosOpciones(): array
+    {
+        return $this->usuarios
+            ->mapWithKeys(fn($u) => [$u->id => $u->name . ($u->cedula ? ' — ' . $u->cedula : '')])
+            ->toArray();
+    }
+
     #[Computed]
     public function empresas()
     {
         return \App\Models\Empresa::where('activo', true)->orderBy('nombre')->get(['id', 'nombre']);
+    }
+
+    #[Computed]
+    public function empresasOpciones(): array
+    {
+        return $this->empresas->pluck('nombre', 'id')->toArray();
     }
 
     // ─────────────────────────────────────────────────────────────────────────

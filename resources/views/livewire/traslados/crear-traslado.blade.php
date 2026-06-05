@@ -48,75 +48,64 @@
 
             {{-- Empresa (solo Admin) --}}
             @role('Administrador')
-                <div>
-                    <x-form.select label="Empresa" wire:model.live="empresa_id" required>
-                        <option value="">— Selecciona empresa —</option>
-                        @foreach ($this->empresas as $emp)
-                            <option value="{{ $emp->id }}">{{ $emp->nombre }}</option>
-                        @endforeach
-                    </x-form.select>
-                    @error('empresa_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
+                <x-form.select
+                    label="Empresa"
+                    wire:model.live="empresa_id"
+                    :options="$this->empresasOpciones"
+                    placeholder="— Selecciona empresa —"
+                    :error="$errors->first('empresa_id')"
+                    required
+                />
             @endrole
 
             {{-- Ubicaciones origen / destino --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <x-form.select label="Ubicación de origen" wire:model.live="ubicacion_origen_id" required>
-                        <option value="">— Selecciona origen —</option>
-                        @foreach ($this->ubicaciones as $ub)
-                            <option value="{{ $ub->id }}">
-                                {{ $ub->nombre }}{{ $ub->es_estado ? ' (foránea)' : '' }}
-                            </option>
-                        @endforeach
-                    </x-form.select>
-                    @error('ubicacion_origen_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <x-form.select label="Ubicación de destino" wire:model.live="ubicacion_destino_id" required>
-                        <option value="">— Selecciona destino —</option>
-                        @foreach ($this->ubicaciones as $ub)
-                            <option value="{{ $ub->id }}">
-                                {{ $ub->nombre }}{{ $ub->es_estado ? ' (foránea)' : '' }}
-                            </option>
-                        @endforeach
-                    </x-form.select>
-                    @error('ubicacion_destino_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
+                <x-form.select
+                    label="Ubicación de origen"
+                    wire:model.live="ubicacion_origen_id"
+                    :options="$this->ubicacionesOpciones"
+                    placeholder="— Selecciona origen —"
+                    :error="$errors->first('ubicacion_origen_id')"
+                    required
+                />
+                <x-form.select
+                    label="Ubicación de destino"
+                    wire:model.live="ubicacion_destino_id"
+                    :options="$this->ubicacionesOpciones"
+                    placeholder="— Selecciona destino —"
+                    :error="$errors->first('ubicacion_destino_id')"
+                    required
+                />
             </div>
 
             {{-- Motivo --}}
-            <div>
-                <x-form.textarea
-                    label="Motivo del traslado"
-                    wire:model.live="motivo"
-                    rows="3"
-                    placeholder="Describe el motivo del traslado de equipos..."
-                    required
-                />
-                @error('motivo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-            </div>
+            <x-form.textarea
+                label="Motivo del traslado"
+                wire:model.live="motivo"
+                rows="3"
+                placeholder="Describe el motivo del traslado de equipos..."
+                :error="$errors->first('motivo')"
+                required
+            />
 
             {{-- Quién recibe / quién autoriza --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <x-form.select label="Recibe" wire:model.live="recibe_id" required>
-                        <option value="">— Selecciona quien recibe —</option>
-                        @foreach ($this->usuarios as $u)
-                            <option value="{{ $u->id }}">{{ $u->name }}</option>
-                        @endforeach
-                    </x-form.select>
-                    @error('recibe_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <x-form.select label="Autoriza" wire:model.live="autoriza_id" required>
-                        <option value="">— Selecciona quien autoriza —</option>
-                        @foreach ($this->usuarios as $u)
-                            <option value="{{ $u->id }}">{{ $u->name }}</option>
-                        @endforeach
-                    </x-form.select>
-                    @error('autoriza_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                </div>
+                <x-form.select
+                    label="Recibe"
+                    wire:model.live="recibe_id"
+                    :options="$this->usuariosOpciones"
+                    placeholder="— Selecciona quien recibe —"
+                    :error="$errors->first('recibe_id')"
+                    required
+                />
+                <x-form.select
+                    label="Autoriza"
+                    wire:model.live="autoriza_id"
+                    :options="$this->usuariosOpciones"
+                    placeholder="— Selecciona quien autoriza —"
+                    :error="$errors->first('autoriza_id')"
+                    required
+                />
             </div>
 
             {{-- Fecha y observaciones --}}

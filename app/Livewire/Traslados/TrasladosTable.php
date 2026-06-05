@@ -81,6 +81,12 @@ class TrasladosTable extends Component
         return $query->get(['id', 'nombre']);
     }
 
+    #[Computed]
+    public function ubicacionesOpciones(): array
+    {
+        return $this->ubicaciones->pluck('nombre', 'id')->toArray();
+    }
+
     public function limpiarFiltros(): void
     {
         $this->busqueda          = '';

@@ -20,19 +20,19 @@
                 {{-- Filtros secundarios --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
-                    <x-form.select label="Origen" wire:model.live="filtro_origen">
-                        <option value="">Todas las ubicaciones</option>
-                        @foreach ($this->ubicaciones as $ub)
-                            <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
-                        @endforeach
-                    </x-form.select>
+                    <x-form.select
+                        label="Origen"
+                        wire:model.live="filtro_origen"
+                        :options="$this->ubicacionesOpciones"
+                        placeholder="Todas las ubicaciones"
+                    />
 
-                    <x-form.select label="Destino" wire:model.live="filtro_destino">
-                        <option value="">Todas las ubicaciones</option>
-                        @foreach ($this->ubicaciones as $ub)
-                            <option value="{{ $ub->id }}">{{ $ub->nombre }}</option>
-                        @endforeach
-                    </x-form.select>
+                    <x-form.select
+                        label="Destino"
+                        wire:model.live="filtro_destino"
+                        :options="$this->ubicacionesOpciones"
+                        placeholder="Todas las ubicaciones"
+                    />
 
                     <x-form.input type="date" label="Fecha desde" wire:model.live="filtro_fecha_desde" />
                     <x-form.input type="date" label="Fecha hasta" wire:model.live="filtro_fecha_hasta" />
