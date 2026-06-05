@@ -253,8 +253,13 @@ class AtributoModal extends Component
             $this->close();
             $this->dispatch('atributoGuardado');
             $this->dispatch('toast', type: 'success', message: $msg);
-        } catch (\Exception $e) {
-            Log::error('AtributoModal@guardar: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::error('AtributoModal@guardar: ' . $e->getMessage(), [
+                'file'  => $e->getFile() . ':' . $e->getLine(),
+                'tipo'  => $this->tipo,
+                'data'  => $data ?? [],
+                'trace' => $e->getTraceAsString(),
+            ]);
             $this->dispatch('toast', type: 'error', message: 'Error al guardar el atributo.');
         }
     }
