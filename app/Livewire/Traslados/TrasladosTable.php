@@ -6,6 +6,7 @@ use App\Models\Traslado;
 use App\Models\Ubicacion;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -84,6 +85,20 @@ class TrasladosTable extends Component
     public function ubicacionesOpciones(): array
     {
         return $this->ubicaciones->pluck('nombre', 'id')->toArray();
+    }
+
+    #[On('eliminarTraslado')]
+    public function eliminarTraslado(int $id): void
+    {
+        $this->authorize('delete', Traslado::class);
+
+        $traslado = Traslado::findOrFail($id);
+        $this->authorize('delete', $traslado);
+
+        $traslado->delete();
+
+        session()->flash('success', "Traslado {$traslado->numero} eliminado.");
+        unset($this->traslados);
     }
 
     public function limpiarFiltros(): void

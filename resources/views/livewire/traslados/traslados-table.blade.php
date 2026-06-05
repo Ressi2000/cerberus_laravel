@@ -120,25 +120,44 @@
 
                 {{-- Acciones --}}
                 <td class="px-4 py-3 whitespace-nowrap text-right">
-                    <div class="flex items-center justify-end gap-1">
-                        <a href="{{ route('admin.traslados.show', $traslado) }}"
-                            title="Ver detalle"
-                            class="w-8 h-8 rounded-lg flex items-center justify-center
-                                   text-gray-400 dark:text-cerberus-steel
-                                   hover:bg-gray-100 dark:hover:bg-cerberus-steel/20
-                                   hover:text-gray-700 dark:hover:text-white transition">
-                            <span class="material-icons text-base">visibility</span>
-                        </a>
-                        <a href="{{ route('admin.traslados.planilla', $traslado) }}"
-                            target="_blank"
-                            title="Descargar planilla PDF"
-                            class="w-8 h-8 rounded-lg flex items-center justify-center
-                                   text-gray-400 dark:text-cerberus-steel
-                                   hover:bg-red-50 dark:hover:bg-red-900/20
-                                   hover:text-red-600 dark:hover:text-red-400 transition">
-                            <span class="material-icons text-base">picture_as_pdf</span>
-                        </a>
-                    </div>
+                    <x-table.table-actions
+                        :model="$traslado"
+                        :policy="$traslado"
+                        deleteEvent="eliminarTraslado"
+                        deleteLabel="Eliminar traslado"
+                        deleteIcon="delete_forever">
+
+                        <x-slot name="acciones">
+                            <li>
+                                <a href="{{ route('admin.traslados.show', $traslado) }}"
+                                    @click="close()"
+                                    class="flex items-center gap-3 px-4 py-2.5 w-full
+                                           text-gray-600 dark:text-cerberus-light
+                                           hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                           hover:text-[#1E40AF] dark:hover:text-white
+                                           transition-colors duration-100">
+                                    <span class="material-icons text-base text-[#1E40AF]/70 dark:text-cerberus-accent">
+                                        visibility
+                                    </span>
+                                    Ver detalle
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ route('admin.traslados.planilla', $traslado) }}"
+                                    target="_blank"
+                                    @click="close()"
+                                    class="flex items-center gap-3 px-4 py-2.5 w-full
+                                           text-gray-600 dark:text-cerberus-light
+                                           hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                           hover:text-red-600 dark:hover:text-red-400
+                                           transition-colors duration-100">
+                                    <span class="material-icons text-base text-red-500">picture_as_pdf</span>
+                                    Descargar planilla
+                                </a>
+                            </li>
+                        </x-slot>
+
+                    </x-table.table-actions>
                 </td>
 
             </tr>
