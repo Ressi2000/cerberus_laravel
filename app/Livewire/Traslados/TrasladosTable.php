@@ -87,17 +87,9 @@ class TrasladosTable extends Component
         return $this->ubicaciones->pluck('nombre', 'id')->toArray();
     }
 
-    #[On('eliminarTraslado')]
-    public function eliminarTraslado(int $id): void
+    #[On('trasladoEliminado')]
+    public function refrescar(): void
     {
-        $this->authorize('delete', Traslado::class);
-
-        $traslado = Traslado::findOrFail($id);
-        $this->authorize('delete', $traslado);
-
-        $traslado->delete();
-
-        session()->flash('success', "Traslado {$traslado->numero} eliminado.");
         unset($this->traslados);
     }
 

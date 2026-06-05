@@ -1,5 +1,8 @@
 <div class="space-y-6">
 
+    {{-- ── Modal de confirmación de eliminación ───────────────────────────── --}}
+    <livewire:traslados.traslado-delete-modal />
+
     {{-- ── Header ──────────────────────────────────────────────────────────── --}}
     <x-table.crud-header
         title="Traslados"
