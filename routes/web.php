@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\DepartamentoController;
 use App\Http\Controllers\Asignaciones\AsignacionController;
+use App\Http\Controllers\Traslados\TrasladoController;
 use App\Http\Controllers\Usuario\UsuarioController;
 use App\Http\Controllers\Auth\EmpresaSelectorController;
 use App\Http\Controllers\Configuracion\ConfiguracionController;
@@ -106,6 +107,16 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/{asignacion}/planilla/asignacion', [AsignacionController::class, 'planillaAsignacion'])->name('planilla.asignacion');
             Route::get('/{asignacion}/planilla/devolucion', [AsignacionController::class, 'planillaDevolucion'])->name('planilla.devolucion');
             Route::get('/planilla/egreso/{usuario}',        [AsignacionController::class, 'planillaEgreso'])->name('planilla.egreso');
+        });
+    // Traslados
+    Route::prefix('admin/traslados')
+        ->name('admin.traslados.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/',            [TrasladoController::class, 'index'])->name('index');
+            Route::get('/crear',       [TrasladoController::class, 'create'])->name('create');
+            Route::get('/{traslado}',  [TrasladoController::class, 'show'])->name('show');
+            Route::get('/{traslado}/planilla', [TrasladoController::class, 'planilla'])->name('planilla');
         });
 });
 

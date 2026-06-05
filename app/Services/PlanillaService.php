@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Asignacion;
+use App\Models\Traslado;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -108,6 +109,33 @@ class PlanillaService
         $pdf = Pdf::loadView('planillas.devolucion', [
             'asignacion' => $asignacion,
             'fecha'      => now()->format('d/m/Y'),
+        ]);
+
+        return $pdf->setPaper('letter', 'portrait');
+    }
+
+    /**
+     * Planilla de Traslado (DC-ST-FO-11)
+     * Genera el formato de salida/traslado de activos tecnológicos.
+     * Se puede generar múltiples veces sin efectos secundarios.
+     */
+    public function traslado(Traslado $traslado): \Barryvdh\DomPDF\PDF
+    {
+        $traslado->load([
+            'empresa',
+            'ubicacionOrigen',
+            'ubicacionDestino',
+            'recibe',
+            'autoriza',
+            'realizadoPor',
+            'items.equipo.categoria',
+            'items.equipo.estado',
+            'items.equipo.atributosActuales.atributo',
+        ]);
+
+        $pdf = Pdf::loadView('planillas.traslado', [
+            'traslado' => $traslado,
+            'fecha'    => now()->format('d/m/Y'),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');

@@ -270,6 +270,16 @@
             @include('components.ui._sidebar-tooltip', ['label' => 'Asignaciones'])
         </a>
 
+        @php $traslOpen = $active('admin.traslados.*'); @endphp
+
+        <a href="{{ route('admin.traslados.index') }}" class="{{ $li }} {{ $traslOpen ? $on : $off }}">
+            <span
+                class="material-icons text-xl flex-shrink-0
+                  {{ $traslOpen ? $ion : $ioff }}">local_shipping</span>
+            <span class="sidebar-label text-sm font-medium whitespace-nowrap">Traslados</span>
+            @include('components.ui._sidebar-tooltip', ['label' => 'Traslados'])
+        </a>
+
         {{-- ── CONFIGURACIÓN (colapsable, solo Administrador) ─────────────── --}}
         @role('Administrador')
             @php $cfgOpen = $active('admin.configuracion.*'); @endphp
