@@ -189,9 +189,8 @@ class EquiposTable extends Component
                 'categoria',
                 'estado',
                 'ubicacion',
-                // Cargamos TODOS los atributos actuales (marca, modelo, RAM, etc.)
-                // en una sola query para evitar N+1. El blade los accede por slug.
                 'atributosActuales.atributo',
+                'grupoInstancias', // para atributos tipo 'group'
             ])
             ->visiblePara(Auth::user());
 

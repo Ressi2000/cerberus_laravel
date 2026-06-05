@@ -132,4 +132,12 @@ class Equipo extends Model
     {
         return $this->hasMany(EquipoAtributoValor::class);
     }
+
+    /** Instancias de atributos tipo 'group' (multi-valor, e.g., múltiples discos) */
+    public function grupoInstancias()
+    {
+        return $this->hasMany(EquipoAtributoGrupoInstancia::class)
+                    ->orderBy('atributo_id')
+                    ->orderBy('orden');
+    }
 }

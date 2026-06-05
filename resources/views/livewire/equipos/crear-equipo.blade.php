@@ -130,8 +130,15 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
                 @foreach ($atributos as $atributo)
+                    {{-- ── Tipo GROUP ────────────────────────────────────────── --}}
+                    @if ($atributo['tipo'] === 'group')
+                        @include('livewire.equipos.partials._eav-campo-group', [
+                            'atributo' => $atributo,
+                            'modo'     => 'crear',
+                        ])
+
                     {{-- ── Tipo FILE ─────────────────────────────────────────── --}}
-                    @if ($atributo['tipo'] === 'file')
+                    @elseif ($atributo['tipo'] === 'file')
                         <div class="md:col-span-2">
                             @include('livewire.equipos.partials._eav-campo-file', [
                                 'atributo' => $atributo,

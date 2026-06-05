@@ -101,13 +101,15 @@
                 <td class="px-4 py-3">
                     @php
                         $badge = [
-                            'string' => ['Texto', 'text_fields', 'blue'],
-                            'text' => ['Texto +', 'notes', 'blue'],
-                            'integer' => ['Entero', 'tag', 'purple'],
-                            'decimal' => ['Decimal', 'tag', 'purple'],
-                            'boolean' => ['Sí/No', 'toggle_on', 'green'],
-                            'date' => ['Fecha', 'calendar_today', 'yellow'],
-                            'select' => ['Lista', 'list', 'orange'],
+                            'string'  => ['Texto',   'text_fields',    'blue'],
+                            'text'    => ['Texto +',  'notes',          'blue'],
+                            'integer' => ['Entero',   'tag',            'purple'],
+                            'decimal' => ['Decimal',  'tag',            'purple'],
+                            'boolean' => ['Sí/No',    'toggle_on',      'green'],
+                            'date'    => ['Fecha',    'calendar_today', 'yellow'],
+                            'select'  => ['Lista',    'list',           'orange'],
+                            'file'    => ['Archivo',  'attach_file',    'gray'],
+                            'group'   => ['Grupo',    'layers',         'indigo'],
                         ][$atributo->tipo] ?? [$atributo->tipo, 'help', 'gray'];
                         $colors = [
                             'blue' =>
@@ -120,8 +122,10 @@
                                 'bg-yellow-50 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-500/30',
                             'orange' =>
                                 'bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/30',
-                            'gray' =>
+                            'gray'   =>
                                 'bg-gray-50 dark:bg-cerberus-steel/10 text-gray-500 dark:text-cerberus-steel border-gray-200 dark:border-cerberus-steel/30',
+                            'indigo' =>
+                                'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30',
                         ][$badge[2]];
                     @endphp
                     <span

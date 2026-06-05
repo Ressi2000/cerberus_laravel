@@ -33,7 +33,7 @@
                         <x-form.input
                             label="Nombre del atributo"
                             wire:model="nombre"
-                            placeholder="Ej: RAM (GB), Procesador, IMEI..."
+                            placeholder="Ej: RAM (GB), Disco duro, Procesador..."
                             :error="$errors->first('nombre')"
                             required
                         />
@@ -70,7 +70,7 @@
                         />
                     </div>
 
-                    {{-- Opciones para tipo 'select' --}}
+                    {{-- ── Opciones para tipo 'select' ─────────────────────────── --}}
                     @if ($tipo === 'select')
                         <div class="border border-gray-200 dark:border-cerberus-steel/50 rounded-xl p-4 space-y-3">
                             <div class="flex items-center justify-between">
@@ -120,6 +120,143 @@
                                 <p class="text-sm text-gray-400 dark:text-cerberus-steel italic text-center py-2">
                                     Pulsa «Agregar opción» para comenzar.
                                 </p>
+                            @endforelse
+                        </div>
+                    @endif
+
+                    {{-- ── Sub-campos para tipo 'group' ────────────────────────── --}}
+                    @if ($tipo === 'group')
+                        <div class="border border-indigo-200 dark:border-indigo-500/30 rounded-xl overflow-hidden">
+                            <div class="flex items-center justify-between px-4 py-3
+                                        bg-indigo-50 dark:bg-indigo-500/10">
+                                <div>
+                                    <p class="text-sm font-medium text-indigo-800 dark:text-indigo-300">
+                                        Sub-campos del grupo <span class="text-red-400">*</span>
+                                    </p>
+                                    <p class="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">
+                                        Define los campos que tendrá cada instancia (ej: Tipo, Capacidad, Marca).
+                                    </p>
+                                </div>
+                                <button wire:click="agregarSubCampo" type="button"
+                                    class="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg
+                                           text-indigo-700 dark:text-indigo-300
+                                           bg-indigo-100 dark:bg-indigo-500/20
+                                           hover:bg-indigo-200 dark:hover:bg-indigo-500/30 transition">
+                                    <span class="material-icons text-sm">add</span>
+                                    Sub-campo
+                                </button>
+                            </div>
+
+                            @error('subCampos')
+                                <div class="px-4 py-2 bg-red-50 dark:bg-red-500/10">
+                                    <p class="text-red-500 text-xs">{{ $message }}</p>
+                                </div>
+                            @enderror
+
+                            @forelse ($subCampos as $si => $sc)
+                                <div wire:key="sc-{{ $sc['id'] }}"
+                                     class="border-t border-gray-100 dark:border-cerberus-steel/30 p-4 space-y-3">
+                                    <div class="flex items-center gap-2">
+                                        <span class="material-icons text-gray-400 dark:text-cerberus-steel text-sm">
+                                            drag_handle
+                                        </span>
+                                        <p class="text-xs font-semibold text-gray-500 dark:text-cerberus-light uppercase tracking-wide">
+                                            Sub-campo #{{ $si + 1 }}
+                                        </p>
+                                        <button wire:click="eliminarSubCampo('{{ $sc['id'] }}')" type="button"
+                                            class="ml-auto p-1 text-red-400 hover:text-red-500
+                                                   hover:bg-red-50 dark:hover:bg-red-500/10 rounded transition">
+                                            <span class="material-icons text-sm">delete</span>
+                                        </button>
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {{-- Nombre del sub-campo --}}
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-cerberus-accent mb-1">
+                                                Nombre <span class="text-red-400">*</span>
+                                            </label>
+                                            <input wire:model="subCampos.{{ $si }}.nombre"
+                                                type="text"
+                                                placeholder="Ej: Tipo, Capacidad, Marca..."
+                                                class="w-full rounded-lg px-3 py-1.5 text-sm
+                                                       bg-white dark:bg-cerberus-dark
+                                                       border border-gray-300 dark:border-cerberus-steel
+                                                       text-gray-900 dark:text-white
+                                                       placeholder-gray-400 dark:placeholder-gray-500
+                                                       focus:outline-none focus:ring-2
+                                                       focus:ring-[#1E40AF]/30 focus:border-[#1E40AF]
+                                                       dark:focus:ring-cerberus-primary/30 dark:focus:border-cerberus-primary
+                                                       @error('subCampos.'.$si.'.nombre') border-red-400 @enderror">
+                                            @error('subCampos.'.$si.'.nombre')
+                                                <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                            @enderror
+                                        </div>
+
+                                        {{-- Tipo del sub-campo --}}
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-cerberus-accent mb-1">
+                                                Tipo <span class="text-red-400">*</span>
+                                            </label>
+                                            <select wire:model.live="subCampos.{{ $si }}.tipo"
+                                                class="w-full rounded-lg px-3 py-1.5 text-sm
+                                                       bg-white dark:bg-cerberus-dark
+                                                       border border-gray-300 dark:border-cerberus-steel
+                                                       text-gray-900 dark:text-white
+                                                       focus:outline-none focus:ring-2
+                                                       focus:ring-[#1E40AF]/30 focus:border-[#1E40AF]
+                                                       dark:focus:ring-cerberus-primary/30 dark:focus:border-cerberus-primary">
+                                                @foreach ($tiposSub as $val => $label)
+                                                    <option value="{{ $val }}">{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    {{-- Opciones si el sub-campo es select --}}
+                                    @if (($sc['tipo'] ?? 'string') === 'select')
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-cerberus-accent mb-1">
+                                                Opciones <span class="text-gray-400">(una por línea)</span>
+                                            </label>
+                                            <textarea wire:model="subCampos.{{ $si }}.opciones_raw"
+                                                rows="3"
+                                                placeholder="HDD&#10;SSD&#10;NVMe"
+                                                class="w-full rounded-lg px-3 py-1.5 text-sm resize-none
+                                                       bg-white dark:bg-cerberus-dark
+                                                       border border-gray-300 dark:border-cerberus-steel
+                                                       text-gray-900 dark:text-white
+                                                       placeholder-gray-400 dark:placeholder-gray-500
+                                                       focus:outline-none focus:ring-2
+                                                       focus:ring-[#1E40AF]/30 focus:border-[#1E40AF]
+                                                       dark:focus:ring-cerberus-primary/30 dark:focus:border-cerberus-primary">
+                                            </textarea>
+                                        </div>
+                                    @endif
+
+                                    {{-- Requerido toggle --}}
+                                    <div class="flex items-center gap-3">
+                                        <button wire:click="$set('subCampos.{{ $si }}.requerido', {{ $sc['requerido'] ? 'false' : 'true' }})"
+                                            type="button"
+                                            class="relative inline-flex h-5 w-9 flex-shrink-0 items-center
+                                                   rounded-full transition-colors
+                                                   {{ $sc['requerido'] ? 'bg-[#1E40AF]' : 'bg-gray-300 dark:bg-cerberus-steel' }}">
+                                            <span class="inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow
+                                                         transition-transform {{ $sc['requerido'] ? 'translate-x-4' : 'translate-x-1' }}">
+                                            </span>
+                                        </button>
+                                        <span class="text-xs text-gray-600 dark:text-cerberus-light">Obligatorio</span>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="py-8 text-center">
+                                    <span class="material-icons text-3xl text-gray-300 dark:text-cerberus-steel block mb-1">
+                                        add_circle_outline
+                                    </span>
+                                    <p class="text-sm text-gray-400 dark:text-cerberus-steel">
+                                        Pulsa «Sub-campo» para definir los campos de cada instancia.
+                                    </p>
+                                </div>
                             @endforelse
                         </div>
                     @endif

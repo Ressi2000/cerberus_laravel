@@ -257,7 +257,19 @@
                         @endphp
                         <td x-show="columnas['attr_{{ $attr->id }}'] ?? true"
                             class="px-4 py-3 text-cerberus-light text-sm">
-                            @if ($attr->tipo === 'boolean')
+                            @if ($attr->tipo === 'group')
+                                @php $count = $equipo->grupoInstancias->where('atributo_id', $attr->id)->count(); @endphp
+                                @if ($count > 0)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
+                                                 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400
+                                                 border border-indigo-200 dark:border-indigo-500/30">
+                                        <span class="material-icons text-xs">layers</span>
+                                        {{ $count }}
+                                    </span>
+                                @else
+                                    —
+                                @endif
+                            @elseif ($attr->tipo === 'boolean')
                                 {{ $val !== null ? ($val ? 'Sí' : 'No') : '—' }}
                             @elseif ($attr->tipo === 'date' && $val)
                                 {{ \Carbon\Carbon::parse($val)->format('d/m/Y') }}
