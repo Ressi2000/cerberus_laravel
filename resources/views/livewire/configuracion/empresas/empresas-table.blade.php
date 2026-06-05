@@ -133,37 +133,34 @@
                     {{ $empresa->ubicaciones_count }}
                 </td>
 
-                <td class="px-4 py-3">
-                    <div class="flex items-center gap-1">
-                        @if ($empresa->activo)
-                            <button wire:click="$dispatch('openEmpresaVer', { id: {{ $empresa->id }} })"
-                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
-                                       hover:text-gray-700 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-cerberus-steel/40 transition"
-                                title="Ver detalle">
-                                <span class="material-icons text-base">visibility</span>
-                            </button>
-                            <button wire:click="$dispatch('openEmpresaEditar', { id: {{ $empresa->id }} })"
-                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
-                                       hover:text-cerberus-accent hover:bg-cerberus-steel/40 transition"
-                                title="Editar">
-                                <span class="material-icons text-base">edit</span>
-                            </button>
-                            <button wire:click="$dispatch('openEmpresaEliminar', { id: {{ $empresa->id }} })"
-                                class="p-1.5 rounded-lg text-gray-400 dark:text-cerberus-light
-                                       hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition"
-                                title="Desactivar">
-                                <span class="material-icons text-base">block</span>
-                            </button>
-                        @else
-                            <button wire:click="$dispatch('reactivarEmpresa', { id: {{ $empresa->id }} })"
-                                wire:confirm="¿Reactivar la empresa «{{ $empresa->nombre }}»?"
-                                class="p-1.5 rounded-lg text-green-500 hover:text-green-400
-                                       hover:bg-green-50 dark:hover:bg-green-900/20 transition"
-                                title="Reactivar">
-                                <span class="material-icons text-base">restart_alt</span>
-                            </button>
-                        @endif
-                    </div>
+                <td class="px-4 py-3 text-center">
+                    @if ($empresa->activo)
+                        <x-table.table-actions
+                            :model="$empresa"
+                            viewEvent="openEmpresaVer"
+                            editEvent="openEmpresaEditar"
+                            deleteEvent="openEmpresaEliminar"
+                            deleteLabel="Desactivar"
+                            deleteIcon="block" />
+                    @else
+                        <x-table.table-actions :model="$empresa">
+                            <x-slot name="acciones">
+                                <li>
+                                    <button wire:click="$dispatch('reactivarEmpresa', { id: {{ $empresa->id }} })"
+                                            wire:confirm="¿Reactivar la empresa «{{ $empresa->nombre }}»?"
+                                            @click="close()"
+                                            class="flex items-center gap-3 px-4 py-2.5 w-full
+                                                   text-gray-600 dark:text-cerberus-light
+                                                   hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                                   hover:text-green-600 dark:hover:text-green-400
+                                                   transition-colors duration-100">
+                                        <span class="material-icons text-base text-green-500">restart_alt</span>
+                                        Reactivar
+                                    </button>
+                                </li>
+                            </x-slot>
+                        </x-table.table-actions>
+                    @endif
                 </td>
             </tr>
         @empty

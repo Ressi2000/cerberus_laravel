@@ -132,12 +132,22 @@
                         <tr class="bg-gray-50 dark:bg-cerberus-dark/40
                                    border-b border-gray-200 dark:border-cerberus-steel/40">
                             @foreach ($headers as $h)
-                                <th scope="col"
-                                    class="px-4 py-3 text-xs font-semibold uppercase tracking-wider
-                                           text-gray-500 dark:text-cerberus-accent
-                                           whitespace-nowrap">
-                                    {{ $h }}
-                                </th>
+                                @if(is_array($h))
+                                    <th scope="col"
+                                        x-show="columnas['{{ $h['key'] }}'] ?? true"
+                                        class="px-4 py-3 text-xs font-semibold uppercase tracking-wider
+                                               text-gray-500 dark:text-cerberus-accent
+                                               whitespace-nowrap">
+                                        {{ $h['label'] }}
+                                    </th>
+                                @else
+                                    <th scope="col"
+                                        class="px-4 py-3 text-xs font-semibold uppercase tracking-wider
+                                               text-gray-500 dark:text-cerberus-accent
+                                               whitespace-nowrap">
+                                        {{ $h }}
+                                    </th>
+                                @endif
                             @endforeach
                         </tr>
                     </thead>

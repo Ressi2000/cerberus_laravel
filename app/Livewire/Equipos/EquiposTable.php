@@ -89,7 +89,7 @@ class EquiposTable extends Component
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
-            return Ubicacion::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
+            return Ubicacion::where('activo', true)->orderBy('es_estado')->orderBy('nombre')->pluck('nombre', 'id');
         }
 
         // Analista: solo la ubicación de su empresa activa + foráneos
@@ -97,7 +97,7 @@ class EquiposTable extends Component
             $q->where('empresa_id', $user->empresa_activa_id)
                 ->orWhere('es_estado', true);
         })
-            ->orderBy('nombre')
+            ->orderBy('es_estado')->orderBy('nombre')
             ->pluck('nombre', 'id');
     }
 
@@ -113,6 +113,36 @@ class EquiposTable extends Component
             ->where('filtrable', true)
             ->orderBy('orden')
             ->get();
+    }
+
+    #[Computed]
+    public function atributosVisibles(): Collection
+    {
+        if (! $this->categoria_id) return collect();
+
+        return AtributoEquipo::where('categoria_id', $this->categoria_id)
+            ->where('visible_en_tabla', true)
+            ->where('tipo', '!=', AtributoEquipo::TIPO_FILE)
+            ->orderBy('orden')
+            ->get();
+    }
+
+    #[Computed]
+    public function headers(): array
+    {
+        if (! $this->categoria_id) {
+            return ['Código', 'Categoría', 'Estado', 'Ubicación', 'Condición', 'Acciones'];
+        }
+
+        $eav = $this->atributosVisibles
+            ->map(fn($a) => ['label' => $a->nombre, 'key' => 'attr_' . $a->id])
+            ->toArray();
+
+        return array_merge(
+            ['Código', 'Estado', 'Ubicación', 'Condición'],
+            $eav,
+            ['Acciones']
+        );
     }
 
     #[Computed]
@@ -159,9 +189,8 @@ class EquiposTable extends Component
                 'categoria',
                 'estado',
                 'ubicacion',
-                // Cargamos TODOS los atributos actuales (marca, modelo, RAM, etc.)
-                // en una sola query para evitar N+1. El blade los accede por slug.
                 'atributosActuales.atributo',
+                'grupoInstancias', // para atributos tipo 'group'
             ])
             ->visiblePara(Auth::user());
 

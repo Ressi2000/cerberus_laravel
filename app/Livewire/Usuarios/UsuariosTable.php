@@ -143,7 +143,7 @@ class UsuariosTable extends Component
         $user = Auth::user();
 
         if ($user->hasRole('Administrador')) {
-            return Ubicacion::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
+            return Ubicacion::where('activo', true)->orderBy('es_estado')->orderBy('nombre')->pluck('nombre', 'id');
         }
 
         // Analista: solo la ubicación de su empresa activa + foráneos
@@ -151,7 +151,7 @@ class UsuariosTable extends Component
             $q->where('empresa_id', $user->empresa_activa_id)
                 ->orWhere('es_estado', true);
         })
-            ->orderBy('nombre')
+            ->orderBy('es_estado')->orderBy('nombre')
             ->pluck('nombre', 'id');
     }
 

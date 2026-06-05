@@ -6,11 +6,6 @@
         ['label' => 'Ubicaciones',  'url' => '#'],
     ]" />
 
-
-    @livewire('configuracion.ubicaciones.ubicacion-view-modal')
-    @livewire('configuracion.ubicaciones.ubicacion-modal')
-    @livewire('configuracion.ubicaciones.ubicacion-delete-modal')
-
     @livewire('configuracion.ubicaciones.ubicaciones-table')
 
 </x-app-layout>

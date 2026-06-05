@@ -5,6 +5,7 @@ namespace App\Livewire\Equipos;
 use App\Models\AtributoEquipo;
 use App\Models\CategoriaEquipo;
 use App\Models\Equipo;
+use App\Models\EquipoAtributoGrupoInstancia;
 use App\Models\EquipoAtributoValor;
 use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
@@ -31,19 +32,21 @@ class CrearEquipo extends Component
     public string $fecha_garantia_fin = '';
     public string $observaciones      = '';
 
-    // ── Atributos EAV (array plano serializable) ──────────────────────────────
+    // ── Atributos EAV simples ─────────────────────────────────────────────────
     public array $atributos = [];
     public array $valores   = [];
 
     /**
      * Archivos temporales para atributos tipo 'file'.
      * Indexado por atributo_id => TemporaryUploadedFile|null
-     *
-     * Se mantiene SEPARADO de $valores porque Livewire serializa $valores
-     * como strings, y los objetos TemporaryUploadedFile no son strings.
-     * Al guardar, subimos el archivo, obtenemos el path y lo metemos en $valores.
      */
     public array $archivos = [];
+
+    /**
+     * Instancias de atributos tipo 'group'.
+     * Estructura: [$atributoId => [ [sub_campo_id => valor, ...], ... ]]
+     */
+    public array $grupoInstancias = [];
 
     // ── Empresa del equipo ────────────────────────────────────────────────────
     public int $empresa_id;
@@ -54,12 +57,8 @@ class CrearEquipo extends Component
     public function mount(): void
     {
         $user = Auth::user();
-
-        // Prioridad: empresa activa (analista) → empresa de nómina
         $this->empresa_id = (int) ($user->empresa_activa_id ?? $user->empresa_id);
-
-        // Estado inicial: Disponible
-        $this->estado_id = (string) (EstadoEquipo::where('nombre', 'Disponible')->value('id') ?? '');
+        $this->estado_id  = (string) (EstadoEquipo::where('nombre', 'Disponible')->value('id') ?? '');
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -74,9 +73,10 @@ class CrearEquipo extends Component
     private function cargarAtributos(string $categoriaId): void
     {
         if (! $categoriaId) {
-            $this->atributos = [];
-            $this->valores   = [];
-            $this->archivos  = [];
+            $this->atributos      = [];
+            $this->valores        = [];
+            $this->archivos       = [];
+            $this->grupoInstancias = [];
             return;
         }
 
@@ -84,20 +84,48 @@ class CrearEquipo extends Component
             ->orderBy('orden')
             ->get()
             ->map(fn($a) => [
-                'id'        => $a->id,
-                'nombre'    => $a->nombre,
-                'tipo'      => $a->tipo,
-                'requerido' => (bool) $a->requerido,
-                'opciones'  => $a->opciones ?? [],
+                'id'         => $a->id,
+                'nombre'     => $a->nombre,
+                'tipo'       => $a->tipo,
+                'requerido'  => (bool) $a->requerido,
+                'opciones'   => $a->opciones ?? [],
+                'sub_campos' => $a->sub_campos ?? [],
             ])
             ->toArray();
 
-        // Inicializar valores y archivos vacíos
-        $this->valores  = [];
-        $this->archivos = [];
+        $this->valores        = [];
+        $this->archivos       = [];
+        $this->grupoInstancias = [];
+
         foreach ($this->atributos as $atributo) {
-            $this->valores[$atributo['id']]  = '';
-            $this->archivos[$atributo['id']] = null;
+            if ($atributo['tipo'] === AtributoEquipo::TIPO_GROUP) {
+                $this->grupoInstancias[$atributo['id']] = [];
+            } else {
+                $this->valores[$atributo['id']]  = '';
+                $this->archivos[$atributo['id']] = null;
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Gestión de instancias de grupo
+    // ─────────────────────────────────────────────────────────────────────────
+    public function agregarInstanciaGrupo(int $atributoId): void
+    {
+        $atributo = collect($this->atributos)->firstWhere('id', $atributoId);
+        if (! $atributo || $atributo['tipo'] !== AtributoEquipo::TIPO_GROUP) return;
+
+        $instancia = [];
+        foreach ($atributo['sub_campos'] as $sc) {
+            $instancia[$sc['id']] = '';
+        }
+        $this->grupoInstancias[$atributoId][] = $instancia;
+    }
+
+    public function eliminarInstanciaGrupo(int $atributoId, int $index): void
+    {
+        if (isset($this->grupoInstancias[$atributoId][$index])) {
+            array_splice($this->grupoInstancias[$atributoId], $index, 1);
         }
     }
 
@@ -108,7 +136,6 @@ class CrearEquipo extends Component
     {
         $rules = [
             'categoria_id'       => 'required|exists:categorias_equipos,id',
-            // 'codigo_interno'     => 'required|string|max:100|unique:equipos,codigo_interno',
             'estado_id'          => 'required|exists:estados_equipos,id',
             'ubicacion_id'       => 'nullable|exists:ubicaciones,id',
             'fecha_adquisicion'  => 'nullable|date',
@@ -119,8 +146,11 @@ class CrearEquipo extends Component
         foreach ($this->atributos as $atributo) {
             $tipo = $atributo['tipo'];
 
-            if ($tipo === AtributoEquipo::TIPO_FILE) {
-                // Validar el objeto de archivo temporal, no el valor de texto
+            if ($tipo === AtributoEquipo::TIPO_GROUP) {
+                if ($atributo['requerido']) {
+                    $rules["grupoInstancias.{$atributo['id']}"] = 'required|array|min:1';
+                }
+            } elseif ($tipo === AtributoEquipo::TIPO_FILE) {
                 $rules["archivos.{$atributo['id']}"] = $atributo['requerido']
                     ? 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'
                     : 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx';
@@ -133,7 +163,6 @@ class CrearEquipo extends Component
                     AtributoEquipo::TIPO_TEXT    => 'string',
                     default                      => 'string|max:500',
                 };
-
                 $rules["valores.{$atributo['id']}"] = $atributo['requerido']
                     ? "required|{$tipoRegla}"
                     : "nullable|{$tipoRegla}";
@@ -146,13 +175,18 @@ class CrearEquipo extends Component
     protected function messages(): array
     {
         $messages = [
-            'categoria_id.required'              => 'Debe seleccionar una categoría.',
-            'estado_id.required'                 => 'Debe seleccionar un estado.',
-            'fecha_garantia_fin.after_or_equal'  => 'La garantía no puede ser anterior a la fecha de adquisición.',
+            'categoria_id.required'             => 'Debe seleccionar una categoría.',
+            'estado_id.required'                => 'Debe seleccionar un estado.',
+            'fecha_garantia_fin.after_or_equal' => 'La garantía no puede ser anterior a la fecha de adquisición.',
         ];
 
         foreach ($this->atributos as $atributo) {
-            if ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
+            if ($atributo['tipo'] === AtributoEquipo::TIPO_GROUP) {
+                $messages["grupoInstancias.{$atributo['id']}.required"] =
+                    "Debe agregar al menos un «{$atributo['nombre']}».";
+                $messages["grupoInstancias.{$atributo['id']}.min"] =
+                    "Debe agregar al menos un «{$atributo['nombre']}».";
+            } elseif ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
                 $messages["archivos.{$atributo['id']}.required"] =
                     "El archivo «{$atributo['nombre']}» es obligatorio.";
                 $messages["archivos.{$atributo['id']}.mimes"] =
@@ -178,7 +212,6 @@ class CrearEquipo extends Component
         try {
             DB::transaction(function () use ($codigos) {
 
-                // Paso 1: crear el equipo SIN codigo_interno para obtener el id
                 $equipo = Equipo::create([
                     'empresa_id'         => $this->empresa_id,
                     'categoria_id'       => $this->categoria_id,
@@ -188,9 +221,9 @@ class CrearEquipo extends Component
                     'fecha_garantia_fin' => $this->fecha_garantia_fin ?: null,
                     'observaciones'      => $this->observaciones       ?: null,
                     'activo'             => true,
+                    'creado_por'         => Auth::id(),
                 ]);
 
-                // Paso 2: ahora que tenemos el id, generamos y asignamos el código
                 $equipo->update([
                     'codigo_interno' => $codigos->generar($equipo->id),
                 ]);
@@ -198,12 +231,26 @@ class CrearEquipo extends Component
                 foreach ($this->atributos as $atributo) {
                     $atributoId = $atributo['id'];
 
-                    if ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
+                    if ($atributo['tipo'] === AtributoEquipo::TIPO_GROUP) {
+                        // ── Atributo tipo grupo ──────────────────────────────
+                        $instancias = $this->grupoInstancias[$atributoId] ?? [];
+                        $orden = 0;
+                        foreach ($instancias as $instancia) {
+                            $hasValue = collect($instancia)->filter(fn($v) => $v !== '' && $v !== null)->isNotEmpty();
+                            if (! $hasValue) continue;
+
+                            EquipoAtributoGrupoInstancia::create([
+                                'equipo_id'   => $equipo->id,
+                                'atributo_id' => $atributoId,
+                                'valores'     => $instancia,
+                                'orden'       => $orden++,
+                            ]);
+                        }
+                    } elseif ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
                         // ── Atributo tipo archivo ────────────────────────────
                         $archivo = $this->archivos[$atributoId] ?? null;
                         if (! $archivo) continue;
 
-                        // Guardar en storage/app/public/equipos/archivos/{equipo_id}/
                         $path = $archivo->storeAs(
                             "equipos/archivos/{$equipo->id}",
                             Str::slug($atributo['nombre']) . '_' . time() . '.' . $archivo->getClientOriginalExtension(),
@@ -213,7 +260,7 @@ class CrearEquipo extends Component
                         EquipoAtributoValor::create([
                             'equipo_id'   => $equipo->id,
                             'atributo_id' => $atributoId,
-                            'valor'       => $path,  // almacenamos el path relativo
+                            'valor'       => $path,
                             'es_actual'   => true,
                             'creado_por'  => Auth::id(),
                         ]);
@@ -237,7 +284,7 @@ class CrearEquipo extends Component
             $this->redirect(route('admin.equipos.index'), navigate: true);
         } catch (\Exception $e) {
             Log::error('CrearEquipo@guardar: ' . $e->getMessage());
-            $this->addError('general', 'Ocurrió un error al crear el equipo. Por favor intenta nuevamente.');
+            $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al crear el equipo. Por favor intenta nuevamente.');
         }
     }
 
@@ -249,13 +296,13 @@ class CrearEquipo extends Component
         $user = Auth::user();
 
         $ubicaciones = $user->hasRole('Administrador')
-            ? Ubicacion::orderBy('nombre')->pluck('nombre', 'id')
+            ? Ubicacion::orderBy('es_estado')->orderBy('nombre')->pluck('nombre', 'id')
             : Ubicacion::where(function ($q) use ($user) {
                 $q->where('empresa_id', $user->empresa_activa_id)
                     ->orWhere('es_estado', true);
             })
             ->whereNot('activo', false)
-            ->orderBy('nombre')
+            ->orderBy('es_estado')->orderBy('nombre')
             ->pluck('nombre', 'id');
 
         return view('livewire.equipos.crear-equipo', [

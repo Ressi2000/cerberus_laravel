@@ -54,6 +54,16 @@ class UsuarioController extends Controller
     }
 
     /**
+     * Vista de historial de cambios del usuario (auditoria).
+     */
+    public function historial(User $usuario)
+    {
+        $this->authorize('view', $usuario);
+
+        return view('usuarios.historial-usuario', compact('usuario'));
+    }
+
+    /**
      * Inactivar usuario (soft delete lógico).
      * El store() y update() ya no existen aquí — los maneja Livewire.
      */

@@ -4,6 +4,7 @@ namespace App\Livewire\Equipos;
 
 use App\Models\AtributoEquipo;
 use App\Models\Equipo;
+use App\Models\EquipoAtributoGrupoInstancia;
 use App\Models\EquipoAtributoValor;
 use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
@@ -20,7 +21,6 @@ class EditarEquipo extends Component
 {
     use WithFileUploads;
 
-    // ── ID del equipo (int = serializable por Livewire entre requests) ────────
     public int $equipoId;
 
     // ── Datos base editables ──────────────────────────────────────────────────
@@ -30,29 +30,29 @@ class EditarEquipo extends Component
     public string $fecha_garantia_fin = '';
     public string $observaciones      = '';
 
-    // ── Atributos EAV como array plano (serializable por Livewire) ────────────
+    // ── Atributos EAV simples ─────────────────────────────────────────────────
     public array $atributos = [];
     public array $valores   = [];
 
     /**
-     * Archivos nuevos para atributos tipo 'file' (upload temporal de Livewire).
-     * Indexado por atributo_id => TemporaryUploadedFile|null
-     *
-     * null = el usuario no subió nada nuevo → conservar archivo actual.
+     * Archivos nuevos para atributos tipo 'file'.
+     * null = sin cambio → conservar archivo actual.
      */
     public array $archivos = [];
 
     /**
-     * Paths actuales de archivos existentes (para mostrarlos en la vista).
-     * Indexado por atributo_id => string|null
-     *
-     * Se carga en mount() y se actualiza tras cada guardado.
-     * Solo es lectura en la vista; no se envía al servidor como upload.
+     * Paths actuales de archivos existentes (solo lectura en vista).
      */
     public array $archivosActuales = [];
 
+    /**
+     * Instancias de atributos tipo 'group'.
+     * [$atributoId => [ [sub_campo_id => valor, ...], ... ]]
+     */
+    public array $grupoInstancias = [];
+
     // ─────────────────────────────────────────────────────────────────────────
-    // Mount: recibe el modelo por route-model binding del controller
+    // Mount
     // ─────────────────────────────────────────────────────────────────────────
     public function mount(Equipo $equipo): void
     {
@@ -60,53 +60,85 @@ class EditarEquipo extends Component
 
         $this->equipoId = $equipo->id;
 
-        // Cargar relaciones necesarias
         $equipo->load(['categoria.atributos', 'atributosActuales.atributo']);
 
-        // Hidratar campos base
         $this->estado_id          = (string) ($equipo->estado_id ?? '');
         $this->ubicacion_id       = (string) ($equipo->ubicacion_id ?? '');
-        $this->fecha_adquisicion  = $equipo->fecha_adquisicion  ?? '';
-        $this->fecha_garantia_fin = $equipo->fecha_garantia_fin ?? '';
-        $this->observaciones      = $equipo->observaciones    ?? '';
+        $this->fecha_adquisicion  = $equipo->fecha_adquisicion  ? $equipo->fecha_adquisicion->format('Y-m-d')  : '';
+        $this->fecha_garantia_fin = $equipo->fecha_garantia_fin ? $equipo->fecha_garantia_fin->format('Y-m-d') : '';
+        $this->observaciones      = $equipo->observaciones ?? '';
 
-        // Atributos de la categoría como array plano
+        // Atributos de la categoría como array plano (incluye sub_campos para group)
         $this->atributos = $equipo->categoria->atributos()
             ->orderBy('orden')
             ->get()
             ->map(fn($a) => [
-                'id'        => $a->id,
-                'nombre'    => $a->nombre,
-                'tipo'      => $a->tipo,
-                'requerido' => (bool) $a->requerido,
-                'opciones'  => $a->opciones ?? [],
+                'id'         => $a->id,
+                'nombre'     => $a->nombre,
+                'tipo'       => $a->tipo,
+                'requerido'  => (bool) $a->requerido,
+                'opciones'   => $a->opciones ?? [],
+                'sub_campos' => $a->sub_campos ?? [],
             ])
             ->toArray();
 
         // Valores actuales indexados por atributo_id
         $valoresActuales = $equipo->atributosActuales->keyBy('atributo_id');
 
-        foreach ($this->atributos as $atributo) {
-            $valorActual = $valoresActuales[$atributo['id']] ?? null;
+        // Instancias de grupo existentes
+        $instanciasGrupo = EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
+            ->orderBy('atributo_id')
+            ->orderBy('orden')
+            ->get()
+            ->groupBy('atributo_id');
 
-            if ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
-                // Para tipo file: guardar el path actual para mostrarlo en vista
-                $this->archivosActuales[$atributo['id']] = $valorActual?->valor;
-                $this->archivos[$atributo['id']]         = null; // sin nuevo upload aún
-                $this->valores[$atributo['id']]          = '';   // no usado para file
+        foreach ($this->atributos as $atributo) {
+            $atributoId = $atributo['id'];
+
+            if ($atributo['tipo'] === AtributoEquipo::TIPO_GROUP) {
+                $this->grupoInstancias[$atributoId] = $instanciasGrupo->get($atributoId, collect())
+                    ->map(fn($i) => $i->valores)
+                    ->values()
+                    ->toArray();
+            } elseif ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
+                $this->archivosActuales[$atributoId] = $valoresActuales[$atributoId]?->valor;
+                $this->archivos[$atributoId]         = null;
+                $this->valores[$atributoId]          = '';
             } else {
-                $this->valores[$atributo['id']] = $valorActual?->valor ?? '';
+                $this->valores[$atributoId] = $valoresActuales[$atributoId]?->valor ?? '';
             }
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Computed: equipo completo (evita serializar el modelo en propiedades)
+    // Computed
     // ─────────────────────────────────────────────────────────────────────────
     #[Computed]
     public function equipo(): Equipo
     {
         return Equipo::findOrFail($this->equipoId);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Gestión de instancias de grupo
+    // ─────────────────────────────────────────────────────────────────────────
+    public function agregarInstanciaGrupo(int $atributoId): void
+    {
+        $atributo = collect($this->atributos)->firstWhere('id', $atributoId);
+        if (! $atributo || $atributo['tipo'] !== AtributoEquipo::TIPO_GROUP) return;
+
+        $instancia = [];
+        foreach ($atributo['sub_campos'] as $sc) {
+            $instancia[$sc['id']] = '';
+        }
+        $this->grupoInstancias[$atributoId][] = $instancia;
+    }
+
+    public function eliminarInstanciaGrupo(int $atributoId, int $index): void
+    {
+        if (isset($this->grupoInstancias[$atributoId][$index])) {
+            array_splice($this->grupoInstancias[$atributoId], $index, 1);
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -123,16 +155,18 @@ class EditarEquipo extends Component
         ];
 
         foreach ($this->atributos as $atributo) {
-            $tipo = $atributo['tipo'];
+            $tipo       = $atributo['tipo'];
+            $atributoId = $atributo['id'];
 
-            if ($tipo === AtributoEquipo::TIPO_FILE) {
-                // En edición: el archivo nuevo es nullable si ya existe uno actual
-                $tieneActual = ! empty($this->archivosActuales[$atributo['id']]);
-                $regla = ($atributo['requerido'] && ! $tieneActual)
+            if ($tipo === AtributoEquipo::TIPO_GROUP) {
+                if ($atributo['requerido']) {
+                    $rules["grupoInstancias.{$atributoId}"] = 'required|array|min:1';
+                }
+            } elseif ($tipo === AtributoEquipo::TIPO_FILE) {
+                $tieneActual = ! empty($this->archivosActuales[$atributoId]);
+                $rules["archivos.{$atributoId}"] = ($atributo['requerido'] && ! $tieneActual)
                     ? 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx'
                     : 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,webp,doc,docx,xls,xlsx';
-
-                $rules["archivos.{$atributo['id']}"] = $regla;
             } else {
                 $tipoRegla = match ($tipo) {
                     AtributoEquipo::TIPO_INTEGER => 'integer',
@@ -142,8 +176,7 @@ class EditarEquipo extends Component
                     AtributoEquipo::TIPO_TEXT    => 'string',
                     default                      => 'string|max:500',
                 };
-
-                $rules["valores.{$atributo['id']}"] = $atributo['requerido']
+                $rules["valores.{$atributoId}"] = $atributo['requerido']
                     ? "required|{$tipoRegla}"
                     : "nullable|{$tipoRegla}";
             }
@@ -155,12 +188,17 @@ class EditarEquipo extends Component
     protected function messages(): array
     {
         $messages = [
-            'estado_id.required'                 => 'Debe seleccionar un estado.',
-            'fecha_garantia_fin.after_or_equal'  => 'La garantía no puede ser anterior a la fecha de adquisición.',
+            'estado_id.required'                => 'Debe seleccionar un estado.',
+            'fecha_garantia_fin.after_or_equal' => 'La garantía no puede ser anterior a la fecha de adquisición.',
         ];
 
         foreach ($this->atributos as $atributo) {
-            if ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
+            if ($atributo['tipo'] === AtributoEquipo::TIPO_GROUP) {
+                $messages["grupoInstancias.{$atributo['id']}.required"] =
+                    "Debe agregar al menos un «{$atributo['nombre']}».";
+                $messages["grupoInstancias.{$atributo['id']}.min"] =
+                    "Debe agregar al menos un «{$atributo['nombre']}».";
+            } elseif ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
                 $messages["archivos.{$atributo['id']}.required"] =
                     "El archivo «{$atributo['nombre']}» es obligatorio.";
                 $messages["archivos.{$atributo['id']}.mimes"] =
@@ -187,7 +225,7 @@ class EditarEquipo extends Component
             DB::transaction(function () {
                 $equipo = $this->equipo;
 
-                // ── Guardia: no permitir cambio de estado si hay asignación activa ───────
+                // Guardia: no cambiar estado si hay asignación activa
                 $tieneAsignacionActiva = \App\Models\AsignacionItem::where('equipo_id', $this->equipo->id)
                     ->where('devuelto', false)
                     ->whereHas('asignacion', fn($q) => $q->where('estado', 'Activa'))
@@ -212,12 +250,29 @@ class EditarEquipo extends Component
                 foreach ($this->atributos as $atributo) {
                     $atributoId = $atributo['id'];
 
-                    if ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
-                        // ── Atributo tipo archivo ────────────────────────────
-                        $nuevoArchivo = $this->archivos[$atributoId] ?? null;
-                        if (! $nuevoArchivo) continue; // sin cambio → conservar actual
+                    if ($atributo['tipo'] === AtributoEquipo::TIPO_GROUP) {
+                        // ── Grupo: borrar y recrear instancias ───────────────
+                        EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
+                            ->where('atributo_id', $atributoId)
+                            ->delete();
 
-                        // Marcar versión anterior como histórico
+                        $orden = 0;
+                        foreach ($this->grupoInstancias[$atributoId] ?? [] as $instancia) {
+                            $hasValue = collect($instancia)->filter(fn($v) => $v !== '' && $v !== null)->isNotEmpty();
+                            if (! $hasValue) continue;
+
+                            EquipoAtributoGrupoInstancia::create([
+                                'equipo_id'   => $equipo->id,
+                                'atributo_id' => $atributoId,
+                                'valores'     => $instancia,
+                                'orden'       => $orden++,
+                            ]);
+                        }
+                    } elseif ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {
+                        // ── Archivo ──────────────────────────────────────────
+                        $nuevoArchivo = $this->archivos[$atributoId] ?? null;
+                        if (! $nuevoArchivo) continue;
+
                         $valorActual = EquipoAtributoValor::where([
                             'equipo_id'   => $equipo->id,
                             'atributo_id' => $atributoId,
@@ -225,14 +280,12 @@ class EditarEquipo extends Component
                         ])->first();
 
                         if ($valorActual) {
-                            // Eliminar el archivo físico anterior del storage
                             if ($valorActual->valor && Storage::disk('public')->exists($valorActual->valor)) {
                                 Storage::disk('public')->delete($valorActual->valor);
                             }
                             $valorActual->update(['es_actual' => false]);
                         }
 
-                        // Guardar nuevo archivo
                         $path = $nuevoArchivo->storeAs(
                             "equipos/archivos/{$equipo->id}",
                             Str::slug($atributo['nombre']) . '_' . time() . '.' . $nuevoArchivo->getClientOriginalExtension(),
@@ -247,11 +300,10 @@ class EditarEquipo extends Component
                             'creado_por'  => Auth::id(),
                         ]);
 
-                        // Actualizar referencia local para la vista
                         $this->archivosActuales[$atributoId] = $path;
                         $this->archivos[$atributoId]         = null;
                     } else {
-                        // ── Atributo tipo texto/número/fecha/etc ─────────────
+                        // ── Texto / número / fecha / etc ─────────────────────
                         $nuevoValor = $this->valores[$atributoId] ?? null;
 
                         $valorActual = EquipoAtributoValor::where([
@@ -260,17 +312,14 @@ class EditarEquipo extends Component
                             'es_actual'   => true,
                         ])->first();
 
-                        // Sin cambio → no hacer nada
                         if ($valorActual && (string) $valorActual->valor === (string) $nuevoValor) {
                             continue;
                         }
 
-                        // Marcar anterior como histórico
                         if ($valorActual) {
                             $valorActual->update(['es_actual' => false]);
                         }
 
-                        // Crear nueva versión solo si hay valor
                         if ($nuevoValor !== null && $nuevoValor !== '') {
                             EquipoAtributoValor::create([
                                 'equipo_id'   => $equipo->id,
@@ -288,7 +337,7 @@ class EditarEquipo extends Component
             $this->redirect(route('admin.equipos.index'), navigate: true);
         } catch (\Exception $e) {
             Log::error('EditarEquipo@actualizar: ' . $e->getMessage());
-            $this->addError('general', 'Ocurrió un error al actualizar el equipo. Por favor intenta nuevamente.');
+            $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al actualizar el equipo. Por favor intenta nuevamente.');
         }
     }
 
@@ -300,13 +349,13 @@ class EditarEquipo extends Component
         $user = Auth::user();
 
         $ubicaciones = $user->hasRole('Administrador')
-            ? Ubicacion::orderBy('nombre')->pluck('nombre', 'id')
+            ? Ubicacion::orderBy('es_estado')->orderBy('nombre')->pluck('nombre', 'id')
             : Ubicacion::where(function ($q) use ($user) {
                 $q->where('empresa_id', $user->empresa_activa_id)
                     ->orWhere('es_estado', true);
             })
             ->whereNot('activo', false)
-            ->orderBy('nombre')
+            ->orderBy('es_estado')->orderBy('nombre')
             ->pluck('nombre', 'id');
 
         return view('livewire.equipos.editar-equipo', [

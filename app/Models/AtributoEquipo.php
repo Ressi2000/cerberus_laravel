@@ -23,7 +23,8 @@ class AtributoEquipo extends Model
         'filtrable',
         'visible_en_tabla',
         'orden',
-        'opciones', // JSON — solo aplica cuando tipo = 'select'
+        'opciones',    // JSON — solo aplica cuando tipo = 'select'
+        'sub_campos',  // JSON — solo aplica cuando tipo = 'group'
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class AtributoEquipo extends Model
         'visible_en_tabla' => 'boolean',
         'orden'            => 'integer',
         'opciones'         => 'array',
+        'sub_campos'       => 'array',
     ];
 
     // ── Tipos de atributo disponibles ────────────────────────────────────────
@@ -45,7 +47,8 @@ class AtributoEquipo extends Model
     const TIPO_DATE    = 'date';
     const TIPO_TEXT    = 'text';
     const TIPO_SELECT  = 'select';
-    const TIPO_FILE    = 'file';   // ← NUEVO: archivo adjunto (factura, OC, etc.)
+    const TIPO_FILE    = 'file';
+    const TIPO_GROUP   = 'group'; // ← Grupo de sub-campos multi-instancia (ej: discos, RAM sticks)
 
     /** Lista completa para select/validación */
     const TIPOS = [
@@ -56,7 +59,8 @@ class AtributoEquipo extends Model
         self::TIPO_DATE    => 'Fecha',
         self::TIPO_TEXT    => 'Texto largo',
         self::TIPO_SELECT  => 'Lista de opciones',
-        self::TIPO_FILE    => 'Archivo adjunto',  // ← NUEVO
+        self::TIPO_FILE    => 'Archivo adjunto',
+        self::TIPO_GROUP   => 'Grupo de campos',
     ];
 
     // ── Relaciones ────────────────────────────────────────────────────────────
@@ -78,6 +82,13 @@ class AtributoEquipo extends Model
     {
         return $this->hasMany(EquipoAtributoValor::class, 'atributo_id')
                     ->where('es_actual', true);
+    }
+
+    /** Instancias multi-valor (solo aplica cuando tipo = 'group') */
+    public function instanciasGrupo(): HasMany
+    {
+        return $this->hasMany(EquipoAtributoGrupoInstancia::class, 'atributo_id')
+                    ->orderBy('orden');
     }
 
     // ── Scopes ────────────────────────────────────────────────────────────────
@@ -131,6 +142,12 @@ class AtributoEquipo extends Model
     public function esFile(): bool
     {
         return $this->tipo === self::TIPO_FILE;
+    }
+
+    /** ¿Este atributo es un grupo de sub-campos multi-instancia? */
+    public function esGrupo(): bool
+    {
+        return $this->tipo === self::TIPO_GROUP;
     }
 
     /**
