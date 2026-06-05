@@ -60,6 +60,16 @@ class AtributosEditorModal extends Component
         'date'    => 'Fecha',
         'select'  => 'Lista desplegable',
         'file'    => 'Archivo adjunto',
+        'group'   => 'Grupo de campos',
+    ];
+
+    public const TIPOS_SUB_CAMPO = [
+        'string'  => 'Texto corto',
+        'integer' => 'Número entero',
+        'decimal' => 'Número decimal',
+        'boolean' => 'Sí / No',
+        'date'    => 'Fecha',
+        'select'  => 'Lista desplegable',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -89,6 +99,13 @@ class AtributosEditorModal extends Component
             'visible_en_tabla' => (bool) $a->visible_en_tabla,
             'orden'            => (int) $a->orden,
             'opciones_raw'     => implode("\n", $a->opciones ?? []),
+            'sub_campos_data'  => collect($a->sub_campos ?? [])->map(fn($sc) => [
+                'id'           => $sc['id'] ?? Str::uuid()->toString(),
+                'nombre'       => $sc['nombre'] ?? '',
+                'tipo'         => $sc['tipo'] ?? 'string',
+                'opciones_raw' => implode("\n", $sc['opciones'] ?? []),
+                'requerido'    => (bool) ($sc['requerido'] ?? false),
+            ])->values()->toArray(),
             'tiene_valores'    => $a->valores_count > 0,
             'eliminar'         => false,
         ])->values()->toArray();
@@ -119,6 +136,7 @@ class AtributosEditorModal extends Component
             'visible_en_tabla' => true,
             'orden'            => $siguienteOrden,
             'opciones_raw'     => '',
+            'sub_campos_data'  => [],
             'tiene_valores'    => false,
             'eliminar'         => false,
         ];
@@ -145,6 +163,30 @@ class AtributosEditorModal extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Sub-campos (tipo group)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function agregarSubCampo(int $filaIndex): void
+    {
+        $this->filas[$filaIndex]['sub_campos_data'][] = [
+            'id'           => Str::uuid()->toString(),
+            'nombre'       => '',
+            'tipo'         => 'string',
+            'opciones_raw' => '',
+            'requerido'    => false,
+        ];
+    }
+
+    public function eliminarSubCampo(int $filaIndex, string $subCampoId): void
+    {
+        $this->filas[$filaIndex]['sub_campos_data'] = array_values(
+            array_filter(
+                $this->filas[$filaIndex]['sub_campos_data'],
+                fn($sc) => $sc['id'] !== $subCampoId
+            )
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Guardar en bloque — upsert + eliminaciones controladas
     // ─────────────────────────────────────────────────────────────────────────
     public function guardar(): void
@@ -156,12 +198,23 @@ class AtributosEditorModal extends Component
         foreach ($this->filas as $i => $fila) {
             if ($fila['eliminar']) continue;
 
+            $tipos = implode(',', array_keys(AtributoEquipo::TIPOS));
             $rules["filas.{$i}.nombre"] = 'required|string|max:100';
-            $rules["filas.{$i}.tipo"]   = 'required|in:string,text,integer,decimal,boolean,date,select,file';
+            $rules["filas.{$i}.tipo"]   = "required|in:{$tipos}";
             $rules["filas.{$i}.orden"]  = 'integer|min:0';
 
             if ($fila['tipo'] === 'select') {
                 $rules["filas.{$i}.opciones_raw"] = 'required|string';
+            }
+
+            if ($fila['tipo'] === 'group') {
+                $tiposSub = implode(',', array_keys(self::TIPOS_SUB_CAMPO));
+                $rules["filas.{$i}.sub_campos_data"]              = 'required|array|min:1';
+                $rules["filas.{$i}.sub_campos_data.*.nombre"]     = 'required|string|max:100';
+                $rules["filas.{$i}.sub_campos_data.*.tipo"]       = "required|in:{$tiposSub}";
+                $messages["filas.{$i}.sub_campos_data.required"]  = "La fila " . ($i + 1) . " (Grupo) necesita al menos un sub-campo.";
+                $messages["filas.{$i}.sub_campos_data.min"]       = "La fila " . ($i + 1) . " (Grupo) necesita al menos un sub-campo.";
+                $messages["filas.{$i}.sub_campos_data.*.nombre.required"] = "Cada sub-campo de la fila " . ($i + 1) . " necesita un nombre.";
             }
 
             $messages["filas.{$i}.nombre.required"]      = "La fila " . ($i + 1) . " necesita un nombre.";
@@ -197,12 +250,32 @@ class AtributosEditorModal extends Component
 
                     if ($fila['eliminar']) continue; // nueva marcada eliminar → ignorar
 
-                    // ── Preparar opciones ────────────────────────────────────
+                    // ── Preparar opciones (select) ───────────────────────────
                     $opciones = null;
                     if ($fila['tipo'] === 'select' && trim($fila['opciones_raw']) !== '') {
                         $opciones = array_values(array_filter(
                             array_map('trim', explode("\n", $fila['opciones_raw']))
                         ));
+                    }
+
+                    // ── Preparar sub-campos (group) ──────────────────────────
+                    $subCampos = null;
+                    if ($fila['tipo'] === 'group') {
+                        $subCampos = array_values(array_map(function ($sc) {
+                            $opciones = [];
+                            if ($sc['tipo'] === 'select') {
+                                $opciones = array_values(array_filter(
+                                    array_map('trim', explode("\n", $sc['opciones_raw'] ?? ''))
+                                ));
+                            }
+                            return [
+                                'id'        => $sc['id'],
+                                'nombre'    => trim($sc['nombre']),
+                                'tipo'      => $sc['tipo'],
+                                'opciones'  => $opciones,
+                                'requerido' => (bool) $sc['requerido'],
+                            ];
+                        }, $fila['sub_campos_data'] ?? []));
                     }
 
                     $data = [
@@ -215,6 +288,7 @@ class AtributosEditorModal extends Component
                         'visible_en_tabla' => $fila['visible_en_tabla'],
                         'orden'            => (int) $fila['orden'],
                         'opciones'         => $opciones,
+                        'sub_campos'       => $subCampos,
                     ];
 
                     // ── Actualizar o crear ───────────────────────────────────
@@ -267,9 +341,16 @@ class AtributosEditorModal extends Component
     // ─────────────────────────────────────────────────────────────────────────
     public function ajustarPorTipo(int $index): void
     {
-        if ($this->filas[$index]['tipo'] === 'file') {
-            $this->filas[$index]['filtrable'] = false;
+        $tipo = $this->filas[$index]['tipo'];
+
+        if ($tipo === 'file' || $tipo === 'group') {
+            $this->filas[$index]['filtrable']        = false;
             $this->filas[$index]['visible_en_tabla'] = false;
+        }
+
+        // Limpiar sub_campos_data si cambian a otro tipo
+        if ($tipo !== 'group') {
+            $this->filas[$index]['sub_campos_data'] = [];
         }
     }
 
@@ -284,6 +365,8 @@ class AtributosEditorModal extends Component
     
     public function render()
     {
-        return view('livewire.configuracion.atributos.atributos-editor-modal');
+        return view('livewire.configuracion.atributos.atributos-editor-modal', [
+            'tiposSub' => self::TIPOS_SUB_CAMPO,
+        ]);
     }
 }

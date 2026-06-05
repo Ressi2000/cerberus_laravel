@@ -116,13 +116,14 @@
                                 </div>
 
                                 {{-- Toggle: Filtrable --}}
+                                @php $noFiltrable = $fila['eliminar'] || in_array($fila['tipo'], ['file','group']); @endphp
                                 <div class="flex justify-center">
                                     <button wire:click="$set('filas.{{ $i }}.filtrable', {{ $fila['filtrable'] ? 'false' : 'true' }})"
                                         type="button"
-                                        {{ ($fila['eliminar'] || $fila['tipo'] === 'file') ? 'disabled' : '' }}
-                                        title="Filtrable{{ $fila['tipo'] === 'file' ? ' (deshabilitado para archivos)' : '' }}"
+                                        {{ $noFiltrable ? 'disabled' : '' }}
+                                        title="Filtrable{{ in_array($fila['tipo'],['file','group']) ? ' (deshabilitado para este tipo)' : '' }}"
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition
-                                               {{ $fila['filtrable'] && $fila['tipo'] !== 'file'
+                                               {{ $fila['filtrable'] && !$noFiltrable
                                                    ? 'bg-green-50 dark:bg-green-500/15 text-green-600 dark:text-green-400'
                                                    : 'text-gray-300 dark:text-cerberus-steel/40 hover:text-gray-400' }}
                                                disabled:opacity-50 disabled:cursor-not-allowed">
@@ -131,13 +132,14 @@
                                 </div>
 
                                 {{-- Toggle: Visible en tabla --}}
+                                @php $noVisible = $fila['eliminar'] || in_array($fila['tipo'], ['file','group']); @endphp
                                 <div class="flex justify-center">
                                     <button wire:click="$set('filas.{{ $i }}.visible_en_tabla', {{ $fila['visible_en_tabla'] ? 'false' : 'true' }})"
                                         type="button"
-                                        {{ ($fila['eliminar'] || $fila['tipo'] === 'file') ? 'disabled' : '' }}
-                                        title="Visible en tabla{{ $fila['tipo'] === 'file' ? ' (deshabilitado para archivos)' : '' }}"
+                                        {{ $noVisible ? 'disabled' : '' }}
+                                        title="Visible en tabla{{ in_array($fila['tipo'],['file','group']) ? ' (deshabilitado para este tipo)' : '' }}"
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition
-                                               {{ $fila['visible_en_tabla'] && $fila['tipo'] !== 'file'
+                                               {{ $fila['visible_en_tabla'] && !$noVisible
                                                    ? 'bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400'
                                                    : 'text-gray-300 dark:text-cerberus-steel/40 hover:text-gray-400' }}
                                                disabled:opacity-50 disabled:cursor-not-allowed">
@@ -198,6 +200,111 @@
                                 </div>
 
                             </div>
+
+                            {{-- Panel de sub-campos para tipo 'group' --}}
+                            @if ($fila['tipo'] === 'group' && !$fila['eliminar'])
+                                <div class="px-3 pb-3 pt-0 border-t border-indigo-100 dark:border-indigo-500/20">
+                                    <div class="flex items-center justify-between mt-2 mb-2">
+                                        <label class="text-xs font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
+                                            <span class="material-icons text-xs align-middle">layers</span>
+                                            Sub-campos del grupo <span class="text-red-400 ml-0.5">*</span>
+                                        </label>
+                                        <button wire:click="agregarSubCampo({{ $i }})" type="button"
+                                            class="flex items-center gap-1 text-xs px-2 py-1 rounded-lg
+                                                   text-indigo-700 dark:text-indigo-300
+                                                   bg-indigo-50 dark:bg-indigo-500/15
+                                                   hover:bg-indigo-100 dark:hover:bg-indigo-500/25 transition">
+                                            <span class="material-icons text-sm">add</span>
+                                            Sub-campo
+                                        </button>
+                                    </div>
+
+                                    @error('filas.'.$i.'.sub_campos_data')
+                                        <p class="text-red-500 text-xs mb-1">{{ $message }}</p>
+                                    @enderror
+
+                                    @forelse ($fila['sub_campos_data'] as $si => $sc)
+                                        <div wire:key="sc-{{ $fila['uid'] }}-{{ $sc['id'] }}"
+                                             class="flex items-start gap-2 p-2 mb-1.5 rounded-lg
+                                                    bg-indigo-50/50 dark:bg-indigo-500/5
+                                                    border border-indigo-100 dark:border-indigo-500/20">
+
+                                            {{-- Nombre sub-campo --}}
+                                            <div class="flex-1 min-w-0">
+                                                <input wire:model="filas.{{ $i }}.sub_campos_data.{{ $si }}.nombre"
+                                                    type="text"
+                                                    placeholder="Nombre (ej: Tipo, Capacidad...)"
+                                                    class="w-full rounded px-2 py-1 text-xs
+                                                           bg-white dark:bg-cerberus-dark
+                                                           border border-gray-300 dark:border-cerberus-steel
+                                                           text-gray-900 dark:text-white
+                                                           placeholder-gray-400 dark:placeholder-gray-500
+                                                           focus:outline-none focus:ring-1
+                                                           focus:ring-indigo-400 focus:border-indigo-400
+                                                           @error('filas.'.$i.'.sub_campos_data.'.$si.'.nombre') border-red-400 @enderror">
+                                                @error('filas.'.$i.'.sub_campos_data.'.$si.'.nombre')
+                                                    <p class="text-red-500 text-xs mt-0.5">{{ $message }}</p>
+                                                @enderror
+                                            </div>
+
+                                            {{-- Tipo sub-campo --}}
+                                            <div class="w-36 flex-shrink-0">
+                                                <select wire:model.live="filas.{{ $i }}.sub_campos_data.{{ $si }}.tipo"
+                                                    class="w-full rounded px-2 py-1 text-xs
+                                                           bg-white dark:bg-cerberus-dark
+                                                           border border-gray-300 dark:border-cerberus-steel
+                                                           text-gray-900 dark:text-white
+                                                           focus:outline-none focus:ring-1
+                                                           focus:ring-indigo-400 focus:border-indigo-400">
+                                                    @foreach ($tiposSub as $val => $label)
+                                                        <option value="{{ $val }}">{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+
+                                            {{-- Opciones si sub-campo es select --}}
+                                            @if (($sc['tipo'] ?? 'string') === 'select')
+                                                <div class="w-40 flex-shrink-0">
+                                                    <textarea wire:model="filas.{{ $i }}.sub_campos_data.{{ $si }}.opciones_raw"
+                                                        rows="2"
+                                                        placeholder="Op1&#10;Op2"
+                                                        class="w-full rounded px-2 py-1 text-xs resize-none
+                                                               bg-white dark:bg-cerberus-dark
+                                                               border border-gray-300 dark:border-cerberus-steel
+                                                               text-gray-900 dark:text-white
+                                                               placeholder-gray-400 dark:placeholder-gray-500
+                                                               focus:outline-none focus:ring-1
+                                                               focus:ring-indigo-400 focus:border-indigo-400">
+                                                    </textarea>
+                                                </div>
+                                            @endif
+
+                                            {{-- Toggle requerido --}}
+                                            <button wire:click="$set('filas.{{ $i }}.sub_campos_data.{{ $si }}.requerido', {{ $sc['requerido'] ? 'false' : 'true' }})"
+                                                type="button"
+                                                title="{{ $sc['requerido'] ? 'Requerido' : 'Opcional' }}"
+                                                class="w-6 h-6 flex-shrink-0 mt-0.5 rounded flex items-center justify-center transition
+                                                       {{ $sc['requerido']
+                                                           ? 'bg-[#1E40AF]/15 text-[#1E40AF] dark:bg-cerberus-primary/20 dark:text-cerberus-accent'
+                                                           : 'text-gray-300 dark:text-cerberus-steel/40 hover:text-gray-400' }}">
+                                                <span class="material-icons text-sm">{{ $sc['requerido'] ? 'star' : 'star_border' }}</span>
+                                            </button>
+
+                                            {{-- Eliminar sub-campo --}}
+                                            <button wire:click="eliminarSubCampo({{ $i }}, '{{ $sc['id'] }}')"
+                                                type="button"
+                                                class="w-6 h-6 flex-shrink-0 mt-0.5 rounded flex items-center justify-center
+                                                       text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition">
+                                                <span class="material-icons text-sm">close</span>
+                                            </button>
+                                        </div>
+                                    @empty
+                                        <p class="text-xs text-gray-400 dark:text-cerberus-steel italic py-1">
+                                            Pulsa «Sub-campo» para definir los campos de cada instancia.
+                                        </p>
+                                    @endforelse
+                                </div>
+                            @endif
 
                             {{-- Panel de opciones para tipo 'select' --}}
                             @if ($fila['tipo'] === 'select' && !$fila['eliminar'])
