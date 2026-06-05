@@ -41,9 +41,8 @@ class TrasladosTable extends Component
             'ubicacionDestino',
             'recibe',
             'autoriza',
-            'realizadoPor',
-            'items',
         ])
+            ->withCount('items')
             ->visiblePara($actor)
             ->when($this->busqueda, function ($q) {
                 $s = $this->busqueda;
