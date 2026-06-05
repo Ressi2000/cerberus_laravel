@@ -63,17 +63,19 @@
                 <x-form.select
                     label="Ubicación de origen"
                     wire:model.live="ubicacion_origen_id"
-                    :options="$this->ubicacionesOpciones"
+                    :options="$this->ubicacionesOrigenOpciones"
                     placeholder="— Selecciona origen —"
                     :error="$errors->first('ubicacion_origen_id')"
+                    hint="Solo las ubicaciones que puedes gestionar."
                     required
                 />
                 <x-form.select
                     label="Ubicación de destino"
                     wire:model.live="ubicacion_destino_id"
-                    :options="$this->ubicacionesOpciones"
+                    :options="$this->ubicacionesDestinoOpciones"
                     placeholder="— Selecciona destino —"
                     :error="$errors->first('ubicacion_destino_id')"
+                    hint="Puede ser cualquier sede del sistema."
                     required
                 />
             </div>
@@ -158,13 +160,13 @@
                         <div>
                             <span class="text-gray-500 dark:text-cerberus-steel">Origen:</span>
                             <span class="font-medium text-gray-900 dark:text-white ml-1">
-                                {{ $this->ubicaciones->firstWhere('id', $ubicacion_origen_id)?->nombre ?? '—' }}
+                                {{ $this->ubicacionesOrigen->firstWhere('id', $ubicacion_origen_id)?->nombre ?? '—' }}
                             </span>
                         </div>
                         <div>
                             <span class="text-gray-500 dark:text-cerberus-steel">Destino:</span>
                             <span class="font-medium text-gray-900 dark:text-white ml-1">
-                                {{ $this->ubicaciones->firstWhere('id', $ubicacion_destino_id)?->nombre ?? '—' }}
+                                {{ $this->ubicacionesDestino->firstWhere('id', $ubicacion_destino_id)?->nombre ?? '—' }}
                             </span>
                         </div>
                         <div>

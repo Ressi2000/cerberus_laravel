@@ -54,8 +54,9 @@ class CrearTraslado extends Component
     // Datos para Paso 1
     // ─────────────────────────────────────────────────────────────────────────
 
+    /** Ubicaciones de origen: solo las visibles para el analista (donde puede gestionar equipos) */
     #[Computed]
-    public function ubicaciones()
+    public function ubicacionesOrigen()
     {
         $actor = Auth::user();
 
@@ -71,11 +72,27 @@ class CrearTraslado extends Component
         return $query->get(['id', 'nombre', 'es_estado']);
     }
 
-    /** Opciones para x-form.select [id => 'nombre (foránea)'] */
+    /** Ubicaciones de destino: todas las activas (el traslado puede ir a cualquier sede) */
     #[Computed]
-    public function ubicacionesOpciones(): array
+    public function ubicacionesDestino()
     {
-        return $this->ubicaciones
+        return Ubicacion::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'es_estado']);
+    }
+
+    #[Computed]
+    public function ubicacionesOrigenOpciones(): array
+    {
+        return $this->ubicacionesOrigen
+            ->mapWithKeys(fn($ub) => [
+                $ub->id => $ub->nombre . ($ub->es_estado ? ' (foránea)' : '')
+            ])
+            ->toArray();
+    }
+
+    #[Computed]
+    public function ubicacionesDestinoOpciones(): array
+    {
+        return $this->ubicacionesDestino
             ->mapWithKeys(fn($ub) => [
                 $ub->id => $ub->nombre . ($ub->es_estado ? ' (foránea)' : '')
             ])
