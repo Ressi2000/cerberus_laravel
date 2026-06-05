@@ -6,11 +6,6 @@
         ['label' => 'Cargos','url' => '#'],
     ]" />
 
-
-    @livewire('configuracion.cargos.cargo-view-modal')
-    @livewire('configuracion.cargos.cargo-modal')
-    @livewire('configuracion.cargos.cargo-delete-modal')
-
     @livewire('configuracion.cargos.cargos-table')
 
 </x-app-layout>
