@@ -30,6 +30,7 @@ class AtributoModal extends Component
         'boolean' => 'Sí / No',
         'date'    => 'Fecha',
         'select'  => 'Lista desplegable',
+        'file'    => 'Archivo adjunto',
     ];
 
     #[On('openAtributoCrear')]
