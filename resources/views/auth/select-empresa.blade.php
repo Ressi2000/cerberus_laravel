@@ -8,7 +8,12 @@
         <form method="POST" action="{{ route('empresa.select.store') }}">
             @csrf
 
-            <select name="empresa_id" required class="w-full border rounded px-3 py-2">
+            <select name="empresa_id" required
+                class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2
+                       bg-white dark:bg-[#1B263B]
+                       text-gray-900 dark:text-gray-100
+                       focus:outline-none focus:ring-2 focus:ring-[#1E40AF] dark:focus:ring-[#A9D6E5]
+                       transition">
                 @foreach ($empresas as $empresa)
                     <option value="{{ $empresa->id }}">
                         {{ $empresa->nombre }}

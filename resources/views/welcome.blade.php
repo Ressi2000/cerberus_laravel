@@ -66,10 +66,22 @@
                 <span class="text-[#1E40AF] dark:text-[#A9D6E5]">inventario tecnológico</span>
             </h2>
             <p class="text-gray-700 dark:text-gray-300 text-lg animate-fade-in animate-delay-400">
-                Cerberus 2.0 es un sistema integral para controlar y administrar equipos, software, licencias,
-                asignaciones, préstamos y mantenimientos en un entorno multiempresa, con trazabilidad completa y control
-                por roles.
+                Cerberus 2.0 centraliza el control de activos tecnológicos en un entorno multiempresa: asignaciones,
+                préstamos, traslados y auditoría completa, con acceso diferenciado por roles.
             </p>
+
+            <!-- Badges de características clave -->
+            <div class="flex flex-wrap justify-center lg:justify-start gap-2 animate-fade-in animate-delay-500">
+                @foreach(['Multiempresa', 'Control por roles', 'Atributos dinámicos', 'Trazabilidad total', 'Exportación Excel & PDF'] as $badge)
+                    <span class="px-3 py-1 text-xs font-medium rounded-full
+                                 bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10
+                                 text-[#1E40AF] dark:text-[#A9D6E5]
+                                 border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20">
+                        {{ $badge }}
+                    </span>
+                @endforeach
+            </div>
+
             <div class="flex justify-center lg:justify-start gap-4 mt-6 animate-fade-in animate-delay-600">
                 <a href="{{ route('login') }}"
                 class="px-6 py-3 bg-[#1E40AF] hover:bg-[#1E3A8A]
@@ -78,16 +90,6 @@
                         rounded-md font-semibold transition">
                     Iniciar sesión
                 </a>
-                @if (Route::has('register'))
-                    <a href="{{ route('register') }}"
-                    class="px-6 py-3 border border-[#1E40AF] dark:border-[#A9D6E5]
-                            text-[#1E40AF] dark:text-[#A9D6E5]
-                            hover:bg-[#1E40AF] dark:hover:bg-[#A9D6E5]
-                            hover:text-white dark:hover:text-[#0D1B2A]
-                            rounded-md font-semibold transition">
-                        Registrarse
-                    </a>
-                @endif
             </div>
         </div>
 
@@ -101,21 +103,23 @@
     <!-- FEATURES -->
     <section class="py-16 w-full bg-gray-100 dark:bg-white/5 transition-colors duration-500 reveal">
         <div class="max-w-6xl mx-auto text-center px-6">
-            <h3 class="text-3xl font-semibold mb-10 text-[#1E40AF] dark:text-[#A9D6E5] reveal">
-                Módulos principales
+            <h3 class="text-3xl font-semibold mb-3 text-[#1E40AF] dark:text-[#A9D6E5] reveal">
+                ¿Qué puede hacer Cerberus?
             </h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-10 reveal">Módulos disponibles en la plataforma</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 @foreach ([
-                    ['Inventario de Equipos', 'Registra, clasifica y controla cada activo tecnológico, con estados, ubicaciones, garantías y vida útil.'],
-                    ['Asignaciones y Préstamos', 'Administra asignaciones permanentes o préstamos temporales, con seguimiento de devoluciones y vencimientos.'],
-                    ['Software y Licencias', 'Controla versiones, claves y vigencia de licencias instaladas por equipo o empresa.'],
-                    ['Mantenimientos', 'Registra mantenimientos preventivos y correctivos, costos, fechas y técnicos responsables.'],
-                    ['Movimientos', 'Controla traslados físicos entre ubicaciones o empresas con auditoría completa.'],
-                    ['Auditoría y Seguridad', 'Cada acción se registra con usuario, fecha y cambios realizados, garantizando trazabilidad total.']
-                ] as [$title, $desc])
-                    <div class="p-6 bg-white/40 dark:bg-white/10 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 reveal">
-                        <h4 class="text-xl font-semibold mb-3 text-[#1E40AF] dark:text-[#A9D6E5]">{{ $title }}</h4>
-                        <p class="text-gray-700 dark:text-gray-300 text-sm">{{ $desc }}</p>
+                    ['🖥️', 'Inventario de Equipos', 'Registra y clasifica activos tecnológicos con categorías configurables, estados, ubicaciones y atributos dinámicos por tipo de equipo (RAM, disco, S/N, etc.).'],
+                    ['📋', 'Asignaciones', 'Asigna equipos a usuarios o áreas comunes de forma permanente. Soporta periféricos vinculados al equipo principal con devoluciones independientes.'],
+                    ['🔄', 'Préstamos', 'Gestiona préstamos temporales con fechas de vencimiento, alertas de expiración, renovaciones y seguimiento de devoluciones.'],
+                    ['🚚', 'Traslados', 'Registra movimientos físicos de equipos entre ubicaciones con numeración automática (TRA-YYYY-NNN) y documentación del proceso.'],
+                    ['🔍', 'Auditoría', 'Cada acción queda registrada: quién la realizó, cuándo, y qué cambió. Trazabilidad completa para cumplimiento y control.'],
+                    ['⚙️', 'Configuración', 'Administra categorías, estados, ubicaciones, departamentos, cargos y empresas desde un panel centralizado.'],
+                ] as [$icon, $title, $desc])
+                    <div class="p-6 bg-white/60 dark:bg-white/10 rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-300 reveal text-left">
+                        <div class="text-3xl mb-3">{{ $icon }}</div>
+                        <h4 class="text-lg font-semibold mb-2 text-[#1E40AF] dark:text-[#A9D6E5]">{{ $title }}</h4>
+                        <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed">{{ $desc }}</p>
                     </div>
                 @endforeach
             </div>
@@ -123,23 +127,44 @@
     </section>
 
 
-    <!-- CTA -->
-    <section class="py-20 text-center max-w-5xl mx-auto px-6 reveal">
-        <h3 class="text-3xl font-bold mb-6 text-[#0D1B2A] dark:text-white">
-            Controla tu infraestructura tecnológica con 
-            <span class="text-[#1E40AF] dark:text-[#A9D6E5]">Cerberus</span>
+    <!-- ROLES -->
+    <section class="py-16 max-w-5xl mx-auto px-6 reveal">
+        <h3 class="text-2xl font-semibold text-center mb-10 text-[#0D1B2A] dark:text-white">
+            Acceso diferenciado por <span class="text-[#1E40AF] dark:text-[#A9D6E5]">roles</span>
         </h3>
-        <p class="text-gray-700 dark:text-gray-300 mb-8">
-            Optimiza la administración, aumenta la trazabilidad y simplifica los procesos de soporte con una solución
-            moderna, segura y escalable.
-        </p>
-        <a href="{{ route('register') }}"
-        class="px-8 py-4 bg-[#1E40AF] hover:bg-[#1E3A8A]
-                dark:bg-[#A9D6E5] dark:hover:bg-[#89C2D9]
-                text-white dark:text-[#0D1B2A]
-                rounded-lg font-semibold text-lg transition">
-            Comenzar ahora
-        </a>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            @foreach([
+                ['Administrador', 'Control total del sistema: configuración, usuarios, empresas y todos los datos del inventario.', 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'],
+                ['Analista', 'Gestión operativa de equipos, asignaciones, préstamos y traslados en su contexto de empresa.', 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'],
+                ['Usuario', 'Visualización del inventario asignado y préstamos activos asociados a su perfil.', 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'],
+            ] as [$rol, $desc, $style])
+                <div class="p-5 rounded-xl border {{ $style }} reveal">
+                    <h4 class="font-semibold text-lg mb-2 text-[#0D1B2A] dark:text-white">{{ $rol }}</h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">{{ $desc }}</p>
+                </div>
+            @endforeach
+        </div>
+    </section>
+
+
+    <!-- CTA -->
+    <section class="py-16 text-center max-w-5xl mx-auto px-6 reveal">
+        <div class="bg-[#1E40AF]/5 dark:bg-[#A9D6E5]/5 border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20 rounded-2xl p-10">
+            <h3 class="text-3xl font-bold mb-4 text-[#0D1B2A] dark:text-white">
+                Controla tu infraestructura con
+                <span class="text-[#1E40AF] dark:text-[#A9D6E5]">Cerberus</span>
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-8 max-w-xl mx-auto">
+                Solución moderna, segura y multiempresa para la gestión completa del ciclo de vida de tus activos tecnológicos.
+            </p>
+            <a href="{{ route('login') }}"
+            class="inline-block px-8 py-4 bg-[#1E40AF] hover:bg-[#1E3A8A]
+                    dark:bg-[#A9D6E5] dark:hover:bg-[#89C2D9]
+                    text-white dark:text-[#0D1B2A]
+                    rounded-lg font-semibold text-lg transition shadow-lg">
+                Acceder al sistema
+            </a>
+        </div>
     </section>
 
 
