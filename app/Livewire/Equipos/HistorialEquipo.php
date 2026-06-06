@@ -4,6 +4,7 @@ namespace App\Livewire\Equipos;
 
 use App\Models\Equipo;
 use App\Models\AtributoEquipo;
+use App\Models\TrasladoItem;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -53,9 +54,20 @@ class HistorialEquipo extends Component
             ->orderByDesc('created_at')
             ->paginate(15);
 
+        $traslados = TrasladoItem::with([
+            'traslado.ubicacionOrigen',
+            'traslado.ubicacionDestino',
+            'traslado.recibe',
+            'traslado.realizadoPor',
+        ])
+            ->where('equipo_id', $this->equipo->id)
+            ->orderByDesc('created_at')
+            ->get();
+
         return view('livewire.equipos.historial-equipo', [
             'historial' => $historial,
             'atributos' => $atributos,
+            'traslados' => $traslados,
         ]);
     }
 }

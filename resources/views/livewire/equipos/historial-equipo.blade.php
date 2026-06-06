@@ -173,4 +173,70 @@
 
     </div>
 
+    {{-- ══ HISTORIAL DE TRASLADOS ══════════════════════════════════════════════ --}}
+    @if ($traslados->isNotEmpty())
+        <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl overflow-hidden">
+
+            <div class="px-5 py-4 border-b border-cerberus-steel flex items-center gap-2">
+                <span class="material-icons text-cerberus-accent text-lg">local_shipping</span>
+                <h3 class="text-base font-semibold text-cerberus-light">
+                    Historial de Traslados
+                </h3>
+                <span class="ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold
+                             bg-cerberus-primary/20 text-cerberus-accent">
+                    {{ $traslados->count() }}
+                </span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-cerberus-steel bg-cerberus-dark">
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-cerberus-light">N°</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-cerberus-light">Fecha</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-cerberus-light">Origen</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-cerberus-light">Destino</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-cerberus-light">Recibe</th>
+                            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-cerberus-light">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-cerberus-steel/50">
+                        @foreach ($traslados as $item)
+                            <tr class="hover:bg-cerberus-dark/40 transition-colors">
+                                <td class="px-5 py-3">
+                                    <span class="font-semibold text-cerberus-accent">
+                                        {{ $item->traslado?->numero ?? '—' }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3 text-cerberus-light">
+                                    {{ $item->traslado?->fecha_traslado?->format('d/m/Y') ?? '—' }}
+                                </td>
+                                <td class="px-5 py-3">
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-300">
+                                        {{ $item->traslado?->ubicacionOrigen?->nombre ?? '—' }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3">
+                                    <span class="text-xs px-2 py-0.5 rounded-full bg-blue-900/30 text-blue-300">
+                                        {{ $item->traslado?->ubicacionDestino?->nombre ?? '—' }}
+                                    </span>
+                                </td>
+                                <td class="px-5 py-3 text-cerberus-light">
+                                    {{ $item->traslado?->recibe?->name ?? '—' }}
+                                </td>
+                                <td class="px-5 py-3">
+                                    <a href="{{ route('admin.traslados.show', $item->traslado) }}"
+                                        class="flex items-center gap-1 text-xs text-cerberus-accent hover:underline">
+                                        <span class="material-icons text-sm">visibility</span>
+                                        Ver traslado
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
 </div>
