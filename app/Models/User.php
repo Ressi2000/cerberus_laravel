@@ -130,6 +130,21 @@ class User extends Authenticatable
         )->where('asignacion_items.devuelto', false);
     }
 
+    public function prestamos()
+    {
+        return $this->hasMany(Prestamo::class, 'usuario_id');
+    }
+
+    public function prestamoItemsActivos()
+    {
+        return $this->hasManyThrough(
+            PrestamoItem::class,
+            Prestamo::class,
+            'usuario_id',
+            'prestamo_id'
+        )->where('prestamo_items.devuelto', false);
+    }
+
     // Scope para filtrar usuarios visibles para el actor dado
     public function scopeVisiblePara(Builder $query, User $actor): Builder
     {

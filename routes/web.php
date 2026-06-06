@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\DepartamentoController;
 use App\Http\Controllers\Asignaciones\AsignacionController;
+use App\Http\Controllers\Prestamos\PrestamoController;
 use App\Http\Controllers\Traslados\TrasladoController;
 use App\Http\Controllers\Usuario\UsuarioController;
 use App\Http\Controllers\Auth\EmpresaSelectorController;
@@ -108,6 +109,18 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/{asignacion}/planilla/devolucion', [AsignacionController::class, 'planillaDevolucion'])->name('planilla.devolucion');
             Route::get('/planilla/egreso/{usuario}',        [AsignacionController::class, 'planillaEgreso'])->name('planilla.egreso');
         });
+    // Préstamos
+    Route::prefix('admin/prestamos')
+        ->name('admin.prestamos.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/',                                     [PrestamoController::class, 'index'])->name('index');
+            Route::get('/crear',                               [PrestamoController::class, 'create'])->name('create');
+            Route::get('/{prestamo}/devolver',                 [PrestamoController::class, 'devolver'])->name('devolver');
+            Route::get('/{prestamo}/planilla/prestamo',        [PrestamoController::class, 'planillaPrestamo'])->name('planilla.prestamo');
+            Route::get('/{prestamo}/planilla/devolucion',      [PrestamoController::class, 'planillaDevolucion'])->name('planilla.devolucion');
+        });
+
     // Traslados
     Route::prefix('admin/traslados')
         ->name('admin.traslados.')

@@ -225,22 +225,24 @@
                     <span class="whitespace-nowrap">Inventario</span>
                 </a>
 
-                @foreach ([['label' => 'Préstamos', 'icon' => 'swap_horiz'], ['label' => 'Mantenimientos', 'icon' => 'build']] as $item)
-                    <span
-                        class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed
-                                  text-gray-500 dark:text-gray-400">
-                        <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">
-                            {{ $item['icon'] }}
-                        </span>
-                        <span class="whitespace-nowrap">{{ $item['label'] }}</span>
-                        <span
-                            class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
-                                     bg-amber-100 dark:bg-amber-900/30
-                                     text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
-                            Pronto
-                        </span>
+                <a href="{{ route('admin.prestamos.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.prestamos.*') ? $on : $off }}"
+                    title="Préstamos">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.prestamos.*') ? $ion : $ioff }}">
+                        swap_horiz
                     </span>
-                @endforeach
+                    <span class="whitespace-nowrap">Préstamos</span>
+                </a>
+
+                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
+                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">build</span>
+                    <span class="whitespace-nowrap">Mantenimientos</span>
+                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
+                                 bg-amber-100 dark:bg-amber-900/30
+                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+                        Pronto
+                    </span>
+                </span>
             </div>
         </div>
 
