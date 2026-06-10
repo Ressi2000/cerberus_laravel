@@ -26,11 +26,11 @@
                 <div class="flex flex-wrap gap-4">
 
                     @if (!$isProfileView)
-                        <x-form.select name="usuario_id" label="Usuario" :options="$usuarios" wire:model.live="usuario_id" />
+                        <x-form.select searchable name="usuario_id" label="Usuario" :options="$usuarios" wire:model.live="usuario_id" />
                     @endif
-                    <x-form.select name="accion" label="Acción" :options="$acciones" wire:model.live="accion" />
+                    <x-form.select searchable name="accion" label="Acción" :options="$acciones" wire:model.live="accion" />
 
-                    <x-form.select name="tabla" label="Tabla" :options="$tablas" wire:model.live="tabla" />
+                    <x-form.select searchable name="tabla" label="Tabla" :options="$tablas" wire:model.live="tabla" />
 
                     <x-form.input type="date" name="fecha_desde" label="Desde" wire:model.live="fecha_desde" />
 

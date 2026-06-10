@@ -49,7 +49,7 @@
                     </div>
 
                     @unless ($es_estado)
-                        <x-form.select label="Empresa" :options="$this->empresas" wire:model="empresa_id" :error="$errors->first('empresa_id')" required
+                        <x-form.select searchable label="Empresa" :options="$this->empresas" wire:model="empresa_id" :error="$errors->first('empresa_id')" required
                             hint="Empresa a la que pertenece esta ubicación física." />
                     @else
                         <div

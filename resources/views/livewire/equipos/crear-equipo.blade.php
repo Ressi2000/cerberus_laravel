@@ -32,7 +32,7 @@
 
             {{-- Categoría — ancho completo --}}
             <div class="md:col-span-2">
-                <x-form.select label="Categoría" wire:model.live="categoria_id" :options="$categorias" required
+                <x-form.select searchable label="Categoría" wire:model.live="categoria_id" :options="$categorias" required
                     hint="Tipo de activo tecnológico. Al seleccionar la categoría se cargarán los campos técnicos específicos (RAM, procesador, etc.)."
                     :error="$errors->first('categoria_id')" />
             </div>
@@ -47,11 +47,11 @@
                 </div>
             </div>
 
-            <x-form.select label="Estado" wire:model="estado_id" :options="$estados" required
+            <x-form.select searchable label="Estado" wire:model="estado_id" :options="$estados" required
                 hint="Estado operativo actual. Al crear un equipo nuevo normalmente se registra como Disponible."
                 :error="$errors->first('estado_id')" />
 
-            <x-form.select label="Ubicación" wire:model="ubicacion_id" :options="$ubicaciones"
+            <x-form.select searchable label="Ubicación" wire:model="ubicacion_id" :options="$ubicaciones"
                 hint="Sede o área donde se encuentra físicamente el equipo. Debe pertenecer a la empresa activa."
                 :error="$errors->first('ubicacion_id')" />
 

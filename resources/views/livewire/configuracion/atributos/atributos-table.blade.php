@@ -35,9 +35,9 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <x-form.input label="Buscar" wire:model.live.400ms="search" placeholder="Nombre del atributo..." />
-                    <x-form.select label="Categoría" :options="$categorias" wire:model.live="categoria_id"
+                    <x-form.select searchable label="Categoría" :options="$categorias" wire:model.live="categoria_id"
                         hint="Filtra atributos de una categoría específica." />
-                    <x-form.select label="Tipo de dato" :options="$tipos" wire:model.live="tipo" />
+                    <x-form.select searchable label="Tipo de dato" :options="$tipos" wire:model.live="tipo" />
                 </div>
 
                 {{-- Acceso rápido: editar en bloque por categoría ─────────────── --}}

@@ -76,11 +76,11 @@
                 </div>
             @endif
 
-            <x-form.select label="Estado" wire:model="estado_id" :options="$estados" required
+            <x-form.select searchable label="Estado" wire:model="estado_id" :options="$estados" required
                 hint="Estado operativo actual del equipo. Cambiar el estado queda registrado en la auditoría."
                 :error="$errors->first('estado_id')" />
 
-            <x-form.select label="Ubicación" wire:model="ubicacion_id" :options="$ubicaciones"
+            <x-form.select searchable label="Ubicación" wire:model="ubicacion_id" :options="$ubicaciones"
                 hint="Ubicación física donde se encuentra el equipo." :error="$errors->first('ubicacion_id')" />
 
             <x-form.input type="date" label="Fecha de adquisición" wire:model="fecha_adquisicion"
