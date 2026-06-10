@@ -87,6 +87,17 @@
             </div>
             @endif
 
+            {{-- ── Botón exportar Excel ────────────────────────────────────── --}}
+            @unless(auth()->user()->hasRole('Usuario'))
+            <a href="{{ route('export.dashboard', array_filter(['empresa_id' => $empresaFiltroId])) }}"
+               class="flex items-center gap-2 bg-cerberus-mid border border-cerberus-steel rounded-lg px-3 py-2 text-sm
+                      text-cerberus-accent hover:border-emerald-500/40 hover:text-emerald-400 transition-colors"
+               title="Exportar indicadores del dashboard a Excel">
+                <span class="material-icons text-base">download</span>
+                <span class="hidden sm:inline">Exportar</span>
+            </a>
+            @endunless
+
             {{-- ── Fecha y alerta vencidos ─────────────────────────────────── --}}
             <div class="text-cerberus-accent text-sm font-mono bg-cerberus-mid border border-cerberus-steel rounded-lg px-4 py-2">
                 <span class="material-icons text-xs align-middle mr-1">calendar_today</span>

@@ -40,6 +40,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     })->name('dashboard');
 
     // Exportaciones
+    Route::get('export/dashboard',     [ExportController::class, 'dashboard'])->name('export.dashboard');
     Route::get('export/usuarios',      [ExportController::class, 'usuarios'])->name('export.usuarios');
     Route::get('export/auditoria',     [ExportController::class, 'auditoria'])->name('export.auditoria');
     Route::get('export/equipos',       [ExportController::class, 'equipos'])->name('export.equipos');
