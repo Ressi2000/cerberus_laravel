@@ -394,7 +394,7 @@
                             </span>
                         @endif
                     </div>
-                    <a href="{{ route('equipos.index') }}"
+                     <a href="{{ route('admin.equipos.index') }}"
                        class="text-cerberus-accent hover:text-cerberus-light text-xs flex items-center gap-1 transition-colors">
                         Ver todos <span class="material-icons text-sm">arrow_forward</span>
                     </a>
