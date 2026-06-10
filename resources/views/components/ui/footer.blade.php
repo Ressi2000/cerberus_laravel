@@ -9,7 +9,7 @@
             · Sistema de Inventario y Asignaciones
         </p>
         <p class="text-xs text-gray-400 dark:text-cerberus-steel/60">
-            Laravel 12 · Livewire 3 · Alpine.js
+            Ressi · Henry · Alberto
         </p>
     </div>
 </footer>
