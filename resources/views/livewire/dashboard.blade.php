@@ -2,7 +2,7 @@
     {{-- ══════════════════════════════════════════════════════════════
          HEADER DE BIENVENIDA
     ══════════════════════════════════════════════════════════════════ --}}
-    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
             <h1 class="text-2xl font-bold text-white">
                 Bienvenido, {{ auth()->user()->name }} 👋
@@ -22,21 +22,88 @@
                 @endif
             </p>
         </div>
-        <div class="text-cerberus-accent text-sm font-mono bg-cerberus-mid border border-cerberus-steel rounded-lg px-4 py-2">
-            <span class="material-icons text-xs align-middle mr-1">calendar_today</span>
-            {{ now()->format('d/m/Y') }}
-            @if($prestamosVencidos > 0)
-                <span class="ml-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded px-2 py-0.5 text-xs font-semibold animate-pulse">
-                    ⚠ {{ $prestamosVencidos }} vencido{{ $prestamosVencidos > 1 ? 's' : '' }}
-                </span>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+
+            {{-- ── Selector de empresa (solo Administrador) ──────────────── --}}
+            @if($esAdmin)
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open"
+                        class="flex items-center gap-2 bg-cerberus-mid border rounded-lg px-3 py-2 text-sm transition-colors
+                               {{ $empresaFiltroId
+                                  ? 'border-cerberus-light/50 text-cerberus-light'
+                                  : 'border-cerberus-steel text-cerberus-accent hover:border-cerberus-light/40 hover:text-cerberus-light' }}">
+                    <span class="material-icons text-base">business</span>
+                    <span class="max-w-[160px] truncate">
+                        {{ $empresaSeleccionada?->nombre ?? 'Todas las empresas' }}
+                    </span>
+                    <span class="material-icons text-sm" :class="open ? 'rotate-180' : ''" style="transition:transform 200ms">
+                        expand_more
+                    </span>
+                </button>
+
+                <div x-show="open"
+                     x-cloak
+                     @click.outside="open = false"
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     class="absolute right-0 mt-1 w-64 bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-xl z-50 overflow-hidden">
+
+                    {{-- Opción: todas --}}
+                    <button wire:click="$set('empresaFiltroId', null)"
+                            @click="open = false"
+                            class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors
+                                   {{ !$empresaFiltroId
+                                      ? 'bg-cerberus-light/10 text-cerberus-light font-semibold'
+                                      : 'text-cerberus-accent hover:bg-cerberus-darkest/40 hover:text-white' }}">
+                        <span class="material-icons text-base">public</span>
+                        Todas las empresas
+                        @if(!$empresaFiltroId)
+                            <span class="material-icons text-sm ml-auto text-cerberus-light">check</span>
+                        @endif
+                    </button>
+
+                    <div class="border-t border-cerberus-steel/50 max-h-60 overflow-y-auto">
+                        @foreach($empresas as $empresa)
+                            <button wire:click="$set('empresaFiltroId', {{ $empresa->id }})"
+                                    @click="open = false"
+                                    class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors
+                                           {{ $empresaFiltroId == $empresa->id
+                                              ? 'bg-cerberus-light/10 text-cerberus-light font-semibold'
+                                              : 'text-cerberus-accent hover:bg-cerberus-darkest/40 hover:text-white' }}">
+                                <span class="material-icons text-base text-cerberus-steel">business</span>
+                                <span class="truncate">{{ $empresa->nombre }}</span>
+                                @if($empresaFiltroId == $empresa->id)
+                                    <span class="material-icons text-sm ml-auto text-cerberus-light">check</span>
+                                @endif
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
             @endif
+
+            {{-- ── Fecha y alerta vencidos ─────────────────────────────────── --}}
+            <div class="text-cerberus-accent text-sm font-mono bg-cerberus-mid border border-cerberus-steel rounded-lg px-4 py-2">
+                <span class="material-icons text-xs align-middle mr-1">calendar_today</span>
+                {{ now()->format('d/m/Y') }}
+                @if($prestamosVencidos > 0)
+                    <span class="ml-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded px-2 py-0.5 text-xs font-semibold animate-pulse">
+                        ⚠ {{ $prestamosVencidos }} vencido{{ $prestamosVencidos > 1 ? 's' : '' }}
+                    </span>
+                @endif
+            </div>
         </div>
     </div>
 
     {{-- ══════════════════════════════════════════════════════════════
          TARJETAS DE ESTADÍSTICAS
     ══════════════════════════════════════════════════════════════════ --}}
-    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
 
         {{-- Equipos Activos --}}
         <a href="{{ route('admin.equipos.index') }}"
@@ -109,6 +176,34 @@
             <p class="text-3xl font-bold text-white">{{ number_format($trasladosMes) }}</p>
             <p class="text-cerberus-accent text-xs mt-1">Traslados ({{ now()->isoFormat('MMM') }})</p>
         </a>
+
+        {{-- KPI: Edad Promedio de Equipos --}}
+        <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl p-4 shadow-cerberus">
+            <div class="flex items-start justify-between mb-3">
+                <div class="p-2 rounded-lg bg-indigo-500/15">
+                    <span class="material-icons text-indigo-400 text-xl">schedule</span>
+                </div>
+                @if($edadPromedioAnios !== null)
+                    @php
+                        $semaforo = match(true) {
+                            $edadPromedioAnios < 2  => ['text-emerald-400', 'Nuevo'],
+                            $edadPromedioAnios < 4  => ['text-yellow-400',  'Maduro'],
+                            default                 => ['text-red-400',     'Envejecido'],
+                        };
+                    @endphp
+                    <span class="text-xs font-semibold px-1.5 py-0.5 rounded border
+                                 {{ $semaforo[0] }} border-current bg-current/10">
+                        {{ $semaforo[1] }}
+                    </span>
+                @endif
+            </div>
+            @if($edadPromedioAnios !== null)
+                <p class="text-3xl font-bold text-white">{{ $edadPromedioAnios }}<span class="text-base font-normal text-cerberus-accent ml-1">años</span></p>
+            @else
+                <p class="text-3xl font-bold text-cerberus-steel">—</p>
+            @endif
+            <p class="text-cerberus-accent text-xs mt-1">Edad prom. equipos</p>
+        </div>
 
         {{-- Usuarios Activos --}}
         @unless(auth()->user()->hasRole('Usuario'))
