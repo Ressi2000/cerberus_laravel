@@ -21,14 +21,17 @@
     $hintId  = $fieldId . '-hint';
     $errorId = $fieldId . '-error';
 
-    // Valor inicial para el dropdown searchable
-    $initialValue = old($name, $selected) ?? '';
+    // Valor inicial para el dropdown searchable (garantizar que sea escalar)
+    $rawInitial   = old($name, $selected) ?? '';
+    $initialValue = is_array($rawInitial) ? '' : (string) $rawInitial;
 
-    // Convertir opciones a array indexado para Alpine
-    $optionsForJs = collect($options)->map(fn($label, $value) => [
-        'value' => (string) $value,
-        'label' => (string) $label,
-    ])->values()->toArray();
+    // Convertir opciones a array indexado para Alpine (solo valores escalares)
+    $optionsForJs = collect($options)
+        ->filter(fn($label) => is_scalar($label) || is_null($label))
+        ->map(fn($label, $value) => [
+            'value' => (string) $value,
+            'label' => (string) ($label ?? ''),
+        ])->values()->toArray();
 @endphp
 
 <div class="mb-4">
