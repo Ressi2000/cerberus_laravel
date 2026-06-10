@@ -247,11 +247,19 @@
                 </div>
                 <span class="material-icons text-cerberus-accent">donut_large</span>
             </div>
+
+            {{-- Datos para el chart — re-renderizados por Livewire en cada filtro --}}
+            <span id="chart-estados-data"
+                  data-labels='@json($equiposPorEstado->keys()->values())'
+                  data-values='@json($equiposPorEstado->values()->values())'
+                  class="hidden"></span>
+
             @if($equiposPorEstado->isEmpty())
                 <div class="flex items-center justify-center h-48 text-cerberus-accent text-sm">Sin datos</div>
             @else
                 <div class="flex items-center gap-6">
-                    <div class="flex-shrink-0" style="width:180px;height:180px;">
+                    {{-- wire:ignore evita que Livewire destruya el canvas al re-renderizar --}}
+                    <div wire:ignore class="flex-shrink-0" style="width:180px;height:180px;">
                         <canvas id="chartEstados"></canvas>
                     </div>
                     <div class="flex-1 space-y-2 min-w-0">
@@ -576,31 +584,31 @@
 
     @script
     <script>
-        (function () {
-            const estadosLabels = @json($equiposPorEstado->keys());
-            const estadosData   = @json($equiposPorEstado->values());
+        const palette = [
+            '#A9D6E5', '#5B8FA8', '#1B4F72', '#76D7C4', '#F0B27A',
+            '#EC7063', '#A569BD', '#85C1E9', '#58D68D', '#F7DC6F',
+        ];
 
-            if (!estadosLabels.length) return;
+        let chartEstados = null;
 
-            const palette = [
-                '#A9D6E5', '#5B8FA8', '#1B4F72', '#76D7C4', '#F0B27A',
-                '#EC7063', '#A569BD', '#85C1E9', '#58D68D', '#F7DC6F',
-            ];
-
+        function initChartEstados() {
+            const dataEl = document.getElementById('chart-estados-data');
             const canvas = document.getElementById('chartEstados');
-            if (!canvas) return;
+            if (!dataEl || !canvas) return;
 
-            // Destruir instancia previa si existe (Livewire re-render)
-            const prev = Chart.getChart(canvas);
-            if (prev) prev.destroy();
+            const labels = JSON.parse(dataEl.dataset.labels || '[]');
+            const data   = JSON.parse(dataEl.dataset.values || '[]');
 
-            new Chart(canvas, {
+            if (chartEstados) chartEstados.destroy();
+            if (!labels.length) return;
+
+            chartEstados = new Chart(canvas, {
                 type: 'doughnut',
                 data: {
-                    labels: estadosLabels,
+                    labels,
                     datasets: [{
-                        data: estadosData,
-                        backgroundColor: palette.slice(0, estadosData.length),
+                        data,
+                        backgroundColor: palette.slice(0, data.length),
                         borderWidth: 2,
                         borderColor: '#1B263B',
                         hoverBorderColor: '#ffffff30',
@@ -620,7 +628,14 @@
                     },
                 },
             });
-        })();
+        }
+
+        // Render inicial
+        initChartEstados();
+
+        // Re-render cada vez que Livewire actualice el componente
+        // $wire.$watch se dispara DESPUÉS de que el DOM fue actualizado
+        $wire.$watch('empresaFiltroId', () => initChartEstados());
     </script>
     @endscript
 </div>
