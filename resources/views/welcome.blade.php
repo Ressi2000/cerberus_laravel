@@ -20,8 +20,8 @@
     <header class="w-full px-8 py-5 flex justify-between items-center max-w-7xl mx-auto">
         <div class="flex items-center gap-3">
             <picture>
-                <source srcset="{{ Vite::asset('resources/images/cerberus.png') }}" media="(prefers-color-scheme: light)">
-                <img src="{{ Vite::asset('resources/images/cerberusLight.png') }}" alt="Cerberus Logo" class="h-12 w-auto transition-all duration-500">
+                <source srcset="{{ asset('images/cerberus.png') }}" media="(prefers-color-scheme: light)">
+                <img src="{{ asset('images/cerberusLight.png') }}" alt="Cerberus Logo" class="h-12 w-auto transition-all duration-500">
             </picture>
             <h1 class="text-2xl font-semibold tracking-tight text-[#0D1B2A] dark:text-white">
                 Cerberus <span class="text-[#1E40AF] dark:text-[#A9D6E5]">2.0</span>
@@ -94,7 +94,7 @@
         </div>
 
         <div class="mt-12 lg:mt-0 lg:ml-12 w-full lg:w-1/2 flex justify-center animate-fade-in animate-delay-400">
-            <img src="{{ Vite::asset('resources/images/cerberus.gif') }}" alt="Cerberus Preview"
+            <img src="{{ asset('images/cerberus.gif') }}" alt="Cerberus Preview"
                 class="rounded-2xl shadow-2xl border border-gray-300/40 dark:border-gray-600/30 w-full max-w-md">
         </div>
     </section>

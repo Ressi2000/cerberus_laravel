@@ -28,11 +28,11 @@
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 px-3 w-full min-w-0">
 
                 {{-- Logo modo OSCURO --}}
-                <img src="{{ Vite::asset('resources/images/cerberusLight.png') }}" alt="Cerberus"
+                <img src="{{ asset('images/cerberusLight.png') }}" alt="Cerberus"
                     class="hidden dark:block flex-shrink-0 h-8 w-8 object-contain">
 
                 {{-- Logo modo CLARO --}}
-                <img src="{{ Vite::asset('resources/images/cerberus.png') }}" alt="Cerberus"
+                <img src="{{ asset('images/cerberus.png') }}" alt="Cerberus"
                     class="block dark:hidden flex-shrink-0 h-8 w-8 object-contain">
 
                 {{-- Texto — se oculta con CSS en modo mini --}}
