@@ -60,7 +60,7 @@ class CrearTraslado extends Component
     {
         $actor = Auth::user();
 
-        $query = Ubicacion::where('activo', true)->orderBy('nombre');
+        $query = Ubicacion::where('activo', true)->orderBy('es_estado')->orderBy('nombre');
 
         if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
             $query->where(function ($q) use ($actor) {
@@ -76,7 +76,7 @@ class CrearTraslado extends Component
     #[Computed]
     public function ubicacionesDestino()
     {
-        return Ubicacion::where('activo', true)->orderBy('nombre')->get(['id', 'nombre', 'es_estado']);
+        return Ubicacion::where('activo', true)->orderBy('es_estado')->orderBy('nombre')->get(['id', 'nombre', 'es_estado']);
     }
 
     #[Computed]
