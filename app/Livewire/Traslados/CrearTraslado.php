@@ -246,12 +246,11 @@ class CrearTraslado extends Component
         }
 
         $this->carrito[] = [
-            'id'       => $equipo->id,
-            'codigo'   => $equipo->codigo_interno,
+            'id'        => $equipo->id,
+            'codigo'    => $equipo->codigo_interno,
             'categoria' => $equipo->categoria?->nombre ?? '—',
-            'serial'   => $equipo->serial ?? '—',
-            'maquina'  => $equipo->nombre_maquina ?? '—',
-            'icono'    => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
+            'ubicacion' => $equipo->ubicacion?->nombre ?? '—',
+            'icono'     => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
         ];
 
         unset($this->equiposDisponibles, $this->categorias);
