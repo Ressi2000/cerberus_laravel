@@ -174,13 +174,9 @@
                                                         </span>
                                                     </p>
 
-                                                    @if ($item->equipo?->nombre_maquina || $item->equipo?->serial)
+                                                    @if ($item->equipo?->ubicacion)
                                                         <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
-                                                            {{ $item->equipo?->nombre_maquina ?? '' }}
-                                                            @if ($item->equipo?->serial)
-                                                                @if ($item->equipo?->nombre_maquina) · @endif
-                                                                S/N: {{ $item->equipo->serial }}
-                                                            @endif
+                                                            {{ $item->equipo->ubicacion->nombre }}
                                                         </p>
                                                     @endif
 
@@ -249,9 +245,6 @@
                                                         </span>
                                                         <span class="text-xs text-gray-500 dark:text-cerberus-steel/60">
                                                             {{ $hijo->equipo?->categoria?->nombre ?? '—' }}
-                                                            @if ($hijo->equipo?->serial)
-                                                                · {{ $hijo->equipo->serial }}
-                                                            @endif
                                                         </span>
 
                                                         {{-- Asignación de origen (si es diferente) --}}

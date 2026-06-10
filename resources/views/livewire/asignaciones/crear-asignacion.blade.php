@@ -2,7 +2,7 @@
     livewire/asignaciones/crear-asignacion.blade.php v2
     ─────────────────────────────────────────────────────────────────────────
     B1 — Filtro ampliado:
-         · Buscador ahora cubre código, serial, hostname Y atributos EAV
+         · Buscador cubre código y atributos EAV (marca, modelo, etc.)
          · Nuevo select "Ubicación" junto a los chips de categoría
     B2 — Toggle grilla / lista:
          · Botón par de íconos apps/view_list en la barra de filtros del paso 2
@@ -195,7 +195,7 @@
                                     class="material-icons text-base text-gray-400 dark:text-cerberus-steel">search</span>
                             </span>
                             <input type="text" wire:model.live.400ms="filtro_busqueda"
-                                placeholder="Código, serial, hostname, marca, modelo..."
+                                placeholder="Código, marca, modelo, atributos..."
                                 class="w-full bg-gray-50 dark:bg-cerberus-dark border border-gray-200 dark:border-cerberus-steel/60
                                           text-gray-900 dark:text-white rounded-lg pl-10 pr-4 py-2.5 text-sm
                                           focus:outline-none focus:border-cerberus-primary focus:ring-1 focus:ring-cerberus-primary/30 transition" />
@@ -319,15 +319,6 @@
                                             <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">
                                                 {{ $equipo->categoria?->nombre ?? '—' }}
                                             </p>
-                                            @if ($equipo->nombre_maquina)
-                                                <p class="text-xs text-gray-500 dark:text-cerberus-accent truncate">
-                                                    {{ $equipo->nombre_maquina }}
-                                                </p>
-                                            @endif
-                                            @if ($equipo->serial)
-                                                <p class="text-xs text-gray-400 dark:text-cerberus-steel">S/N:
-                                                    {{ $equipo->serial }}</p>
-                                            @endif
                                             {{-- Atributos EAV visibles --}}
                                             @if ($atvsVisible->isNotEmpty())
                                                 <p class="text-xs text-gray-400 dark:text-cerberus-steel/70 mt-1">
@@ -376,12 +367,6 @@
                                             class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-cerberus-steel uppercase tracking-wider">
                                             Categoría</th>
                                         <th
-                                            class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-cerberus-steel uppercase tracking-wider hidden md:table-cell">
-                                            Hostname</th>
-                                        <th
-                                            class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-cerberus-steel uppercase tracking-wider hidden lg:table-cell">
-                                            Serial</th>
-                                        <th
                                             class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 dark:text-cerberus-steel uppercase tracking-wider hidden lg:table-cell">
                                             Atributos</th>
                                         <th
@@ -409,14 +394,6 @@
                                             </td>
                                             <td class="px-4 py-2.5 text-xs text-gray-500 dark:text-cerberus-accent">
                                                 {{ $equipo->categoria?->nombre ?? '—' }}
-                                            </td>
-                                            <td
-                                                class="px-4 py-2.5 text-xs text-gray-500 dark:text-cerberus-accent hidden md:table-cell">
-                                                {{ $equipo->nombre_maquina ?? '—' }}
-                                            </td>
-                                            <td
-                                                class="px-4 py-2.5 text-xs text-gray-500 dark:text-cerberus-accent hidden lg:table-cell">
-                                                {{ $equipo->serial ?? '—' }}
                                             </td>
                                             <td class="px-4 py-2.5 hidden lg:table-cell">
                                                 @if ($atvsVisible->isNotEmpty())
@@ -518,8 +495,8 @@
                                         </p>
                                         <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">
                                             {{ $item['categoria'] }}
-                                            @if ($item['serial'] !== '—')
-                                                · {{ $item['serial'] }}
+                                            @if (! empty($item['ubicacion']) && $item['ubicacion'] !== '—')
+                                                · {{ $item['ubicacion'] }}
                                             @endif
                                         </p>
                                     </div>

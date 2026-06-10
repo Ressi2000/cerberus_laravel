@@ -149,10 +149,7 @@
                                         </span>
                                     </p>
                                     <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
-                                        {{ $item->equipo?->nombre_maquina ?? '—' }}
-                                        @if ($item->equipo?->serial)
-                                            · S/N: {{ $item->equipo->serial }}
-                                        @endif
+                                        {{ $item->equipo?->ubicacion?->nombre ?? '—' }}
                                     </p>
                                     @if ($atributos && $atributos->isNotEmpty())
                                         <p class="text-xs text-gray-500 dark:text-cerberus-steel/70 mt-0.5">
@@ -184,9 +181,6 @@
                                         <span class="material-icons text-xs">subdirectory_arrow_right</span>
                                         {{ $hijo->equipo?->codigo_interno ?? '—' }}
                                         · {{ $hijo->equipo?->categoria?->nombre ?? '—' }}
-                                        @if ($hijo->equipo?->serial)
-                                            · S/N: {{ $hijo->equipo->serial }}
-                                        @endif
                                     </p>
                                 @endforeach
                             </div>
