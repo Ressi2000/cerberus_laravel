@@ -186,8 +186,6 @@ class CrearTraslado extends Component
             $s = $this->filtro_busqueda;
             $query->where(function ($q) use ($s) {
                 $q->where('codigo_interno', 'like', "%{$s}%")
-                    ->orWhere('serial', 'like', "%{$s}%")
-                    ->orWhere('nombre_maquina', 'like', "%{$s}%")
                     ->orWhereHas('atributosActuales', function ($av) use ($s) {
                         $av->where('valor', 'like', "%{$s}%")
                             ->whereHas('atributo', fn($a) => $a->where('visible_en_tabla', true));
@@ -248,12 +246,11 @@ class CrearTraslado extends Component
         }
 
         $this->carrito[] = [
-            'id'       => $equipo->id,
-            'codigo'   => $equipo->codigo_interno,
+            'id'        => $equipo->id,
+            'codigo'    => $equipo->codigo_interno,
             'categoria' => $equipo->categoria?->nombre ?? '—',
-            'serial'   => $equipo->serial ?? '—',
-            'maquina'  => $equipo->nombre_maquina ?? '—',
-            'icono'    => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
+            'ubicacion' => $equipo->ubicacion?->nombre ?? '—',
+            'icono'     => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
         ];
 
         unset($this->equiposDisponibles, $this->categorias);

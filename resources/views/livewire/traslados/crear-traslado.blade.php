@@ -212,7 +212,7 @@
                     </span>
                     <input type="text"
                         wire:model.live.debounce.300ms="filtro_busqueda"
-                        placeholder="Buscar por código, serial, hostname, marca, modelo..."
+                        placeholder="Buscar por código, marca, modelo, atributos..."
                         class="w-full pl-9 pr-4 py-2 text-sm rounded-lg
                                bg-white dark:bg-cerberus-dark
                                border border-gray-200 dark:border-cerberus-steel
@@ -276,13 +276,6 @@
                                         </button>
                                     </div>
                                     <div class="mt-2 flex flex-wrap gap-1.5">
-                                        @if ($equipo->serial)
-                                            <span class="text-xs px-2 py-0.5 rounded-full
-                                                         bg-gray-100 dark:bg-cerberus-steel/20
-                                                         text-gray-600 dark:text-cerberus-light">
-                                                S/N: {{ $equipo->serial }}
-                                            </span>
-                                        @endif
                                         <span class="text-xs px-2 py-0.5 rounded-full
                                                      {{ $equipo->estado?->nombre === 'Disponible' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' }}">
                                             {{ $equipo->estado?->nombre ?? '—' }}
@@ -341,8 +334,8 @@
                                     </p>
                                     <p class="text-xs text-gray-500 dark:text-cerberus-steel truncate">
                                         {{ $item['categoria'] }}
-                                        @if ($item['serial'] !== '—')
-                                            · {{ $item['serial'] }}
+                                        @if (! empty($item['ubicacion']) && $item['ubicacion'] !== '—')
+                                            · {{ $item['ubicacion'] }}
                                         @endif
                                     </p>
                                 </div>

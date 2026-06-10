@@ -141,7 +141,7 @@
                                 <span class="material-icons text-base text-gray-400 dark:text-cerberus-steel">search</span>
                             </span>
                             <input type="text" wire:model.live.400ms="filtro_busqueda"
-                                placeholder="Código, serial, hostname, marca, modelo..."
+                                placeholder="Código, marca, modelo, atributos..."
                                 class="w-full bg-gray-50 dark:bg-cerberus-dark border border-gray-200 dark:border-cerberus-steel/60
                                        text-gray-900 dark:text-white rounded-lg pl-10 pr-4 py-2.5 text-sm
                                        focus:outline-none focus:border-cerberus-primary focus:ring-1 focus:ring-cerberus-primary/30 transition" />
@@ -217,8 +217,6 @@
                                         <div class="min-w-0">
                                             <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $equipo->codigo_interno }}</p>
                                             <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">{{ $equipo->categoria?->nombre ?? '—' }}</p>
-                                            @if ($equipo->nombre_maquina) <p class="text-xs text-gray-500 truncate">{{ $equipo->nombre_maquina }}</p> @endif
-                                            @if ($equipo->serial) <p class="text-xs text-gray-400">S/N: {{ $equipo->serial }}</p> @endif
                                             @if ($atvsVisible->isNotEmpty())
                                                 <p class="text-xs text-gray-400/70 mt-1">{{ $atvsVisible->map(fn($v) => $v->atributo->nombre . ': ' . $v->valor)->implode(' · ') }}</p>
                                             @endif
@@ -245,8 +243,6 @@
                                     <tr class="border-b border-gray-100 dark:border-cerberus-steel/40 bg-gray-50 dark:bg-cerberus-dark">
                                         <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Código</th>
                                         <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase">Categoría</th>
-                                        <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Hostname</th>
-                                        <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Serial</th>
                                         <th class="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Ubicación</th>
                                         <th class="px-4 py-2.5 text-center text-xs font-semibold text-gray-500 uppercase">Acción</th>
                                     </tr>
@@ -257,8 +253,6 @@
                                         <tr class="hover:bg-gray-50 dark:hover:bg-cerberus-steel/10 transition {{ $estaEnCarrito ? 'bg-cerberus-primary/5' : '' }}">
                                             <td class="px-4 py-2.5 text-sm font-semibold text-gray-900 dark:text-white">{{ $equipo->codigo_interno }}</td>
                                             <td class="px-4 py-2.5 text-xs text-gray-500">{{ $equipo->categoria?->nombre ?? '—' }}</td>
-                                            <td class="px-4 py-2.5 text-xs text-gray-500 hidden md:table-cell">{{ $equipo->nombre_maquina ?? '—' }}</td>
-                                            <td class="px-4 py-2.5 text-xs text-gray-500 hidden lg:table-cell">{{ $equipo->serial ?? '—' }}</td>
                                             <td class="px-4 py-2.5 text-xs text-gray-500 hidden md:table-cell">{{ $equipo->ubicacion?->nombre ?? '—' }}</td>
                                             <td class="px-4 py-2.5 text-center">
                                                 <button type="button" wire:click="agregarAlCarrito({{ $equipo->id }})" @disabled($estaEnCarrito)
@@ -323,7 +317,7 @@
                                     <div class="flex-1 min-w-0">
                                         <p class="text-xs font-medium text-gray-900 dark:text-white truncate">{{ $item['codigo'] }}</p>
                                         <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">
-                                            {{ $item['categoria'] }}@if ($item['serial'] !== '—') · {{ $item['serial'] }} @endif
+                                            {{ $item['categoria'] }}
                                         </p>
                                     </div>
                                     <button type="button" wire:click="quitarDelCarrito('{{ $item['uid'] }}')"

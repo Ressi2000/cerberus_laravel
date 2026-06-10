@@ -24,8 +24,7 @@ use Livewire\WithPagination;
  * Mejoras respecto a v1:
  *
  * B1 — Filtro de búsqueda ampliado:
- *   Antes solo buscaba en codigo_interno, serial y nombre_maquina.
- *   Ahora también busca en atributos EAV (marca, modelo) y ubicación del equipo.
+ *   Busca en codigo_interno y atributos EAV (marca, modelo, serial, hostname, etc.).
  *   Se añade filtro de ubicación como select independiente.
  *
  * B2 — Toggle grilla / lista en el carrito de equipos disponibles:
@@ -190,14 +189,11 @@ class CrearAsignacion extends Component
             $query->where('ubicacion_id', $this->filtro_ubicacion);
         }
 
-        // B1 — Búsqueda ampliada:
-        //   código interno, serial, hostname, + atributos EAV (marca, modelo)
+        // B1 — Búsqueda: código interno + atributos EAV (marca, modelo, serial, hostname, etc.)
         if (strlen($this->filtro_busqueda) >= 2) {
             $s = $this->filtro_busqueda;
             $query->where(function ($q) use ($s) {
                 $q->where('codigo_interno', 'like', "%{$s}%")
-                    ->orWhere('serial', 'like', "%{$s}%")
-                    ->orWhere('nombre_maquina', 'like', "%{$s}%")
                     // Búsqueda en atributos EAV (marca, modelo y cualquier otro)
                     ->orWhereHas('atributosActuales', function ($av) use ($s) {
                         $av->where('valor', 'like', "%{$s}%")
@@ -301,13 +297,12 @@ class CrearAsignacion extends Component
         $uid = uniqid('item_');
 
         $this->carrito[] = [
-            'uid'      => $uid,
-            'id'       => $equipo->id,
-            'codigo'   => $equipo->codigo_interno,
+            'uid'       => $uid,
+            'id'        => $equipo->id,
+            'codigo'    => $equipo->codigo_interno,
             'categoria' => $equipo->categoria?->nombre ?? '—',
-            'serial'   => $equipo->serial ?? '—',
-            'maquina'  => $equipo->nombre_maquina ?? '—',
-            'icono'    => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
+            'ubicacion' => $equipo->ubicacion?->nombre ?? '—',
+            'icono'     => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
             'padre_uid' => '',
         ];
     }

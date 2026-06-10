@@ -62,11 +62,6 @@
                                     —
                                     {{ $item->equipo->codigo_interno }}
                                 </p>
-                                @if($item->equipo->serial)
-                                    <p class="text-cerberus-accent text-xs">
-                                        S/N: {{ $item->equipo->serial }}
-                                    </p>
-                                @endif
                                 <p class="text-cerberus-light text-xs mt-0.5">
                                     Receptor: {{ $item->asignacion->receptorNombre() }}
                                 </p>
@@ -139,16 +134,6 @@
                                                 — {{ $principal->equipo->codigo_interno }}
                                             </p>
                                             <div class="flex items-center gap-3 mt-0.5">
-                                                @if($principal->equipo->serial)
-                                                    <span class="text-cerberus-accent text-xs">
-                                                        S/N: {{ $principal->equipo->serial }}
-                                                    </span>
-                                                @endif
-                                                @if($principal->equipo->nombre_maquina)
-                                                    <span class="text-cerberus-accent text-xs">
-                                                        {{ $principal->equipo->nombre_maquina }}
-                                                    </span>
-                                                @endif
                                                 <span class="text-cerberus-light text-xs">
                                                     Asig. #{{ $principal->asignacion_id }}
                                                 </span>

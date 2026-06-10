@@ -165,28 +165,33 @@
                     </td>
 
                     <td class="px-4 py-3 text-center">
-                        {{-- Buscamos el préstamo activo/vencido más reciente para poder devolver --}}
                         @php
-                            $prestamoActivo = $usuario->prestamos()
+                            $prestamosActivos = $usuario->prestamos()
                                 ->whereIn('estado', ['Activo', 'Vencido'])
                                 ->orderByDesc('fecha_prestamo')
-                                ->first();
+                                ->get();
+                            $prestamoActivo = $prestamosActivos->first();
                         @endphp
                         <x-table.table-actions :modelId="$usuario->id">
                             <x-slot name="acciones">
-                                @if ($prestamoActivo)
-                                    <li>
-                                        <a href="{{ route('admin.prestamos.devolver', $prestamoActivo) }}"
-                                           wire:navigate @click="close()"
-                                           class="flex items-center gap-3 px-4 py-2.5 w-full
-                                                  text-gray-600 dark:text-cerberus-light
-                                                  hover:bg-amber-50 dark:hover:bg-amber-500/10
-                                                  hover:text-amber-600 dark:hover:text-amber-400
-                                                  transition-colors duration-100">
-                                            <span class="material-icons text-base text-amber-500">keyboard_return</span>
-                                            Registrar devolución
-                                        </a>
-                                    </li>
+                                @if ($prestamosActivos->isNotEmpty())
+                                    @foreach ($prestamosActivos as $p)
+                                        <li>
+                                            <a href="{{ route('admin.prestamos.devolver', $p) }}"
+                                               wire:navigate @click="close()"
+                                               class="flex items-center gap-3 px-4 py-2.5 w-full
+                                                      text-gray-600 dark:text-cerberus-light
+                                                      hover:bg-amber-50 dark:hover:bg-amber-500/10
+                                                      hover:text-amber-600 dark:hover:text-amber-400
+                                                      transition-colors duration-100">
+                                                <span class="material-icons text-base text-amber-500">keyboard_return</span>
+                                                Devolver préstamo
+                                                @if ($prestamosActivos->count() > 1)
+                                                    <span class="ml-auto text-xs text-gray-400">{{ \Carbon\Carbon::parse($p->fecha_prestamo)->format('d/m/Y') }}</span>
+                                                @endif
+                                            </a>
+                                        </li>
+                                    @endforeach
                                     <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
                                     <li>
                                         <button wire:click="$dispatch('abrir-renovar', { prestamoId: {{ $prestamoActivo->id }} })"

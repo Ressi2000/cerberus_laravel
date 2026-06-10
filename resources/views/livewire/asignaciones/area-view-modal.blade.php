@@ -145,10 +145,7 @@
                                                 </span>
                                             </p>
                                             <p class="text-xs text-gray-500 dark:text-cerberus-steel mt-0.5">
-                                                {{ $item->equipo?->nombre_maquina ?? '—' }}
-                                                @if($item->equipo?->serial)
-                                                    · S/N: {{ $item->equipo->serial }}
-                                                @endif
+                                                {{ $item->equipo?->ubicacion?->nombre ?? '—' }}
                                             </p>
                                             {{-- Atributos EAV relevantes --}}
                                             @php
@@ -175,7 +172,6 @@
                                                 {{ $hijo->equipo?->codigo_interno ?? '—' }}
                                                 <span class="text-gray-500 dark:text-cerberus-steel/60">
                                                     {{ $hijo->equipo?->categoria?->nombre ?? '—' }}
-                                                    @if($hijo->equipo?->serial) · {{ $hijo->equipo->serial }} @endif
                                                 </span>
                                             </p>
                                         @endforeach
