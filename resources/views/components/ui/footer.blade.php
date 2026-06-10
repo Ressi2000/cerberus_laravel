@@ -9,7 +9,7 @@
             · Sistema de Inventario y Asignaciones
         </p>
         <p class="text-xs text-gray-400 dark:text-cerberus-steel/60">
-            Ressi · Henry · Alberto
+            Re · He · Al
         </p>
     </div>
 </footer>
