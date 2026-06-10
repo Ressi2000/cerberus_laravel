@@ -70,15 +70,7 @@
         </button>
 
         {{-- Notificaciones --}}
-        <button class="relative flex items-center justify-center w-9 h-9 rounded-lg
-                       text-gray-500 dark:text-cerberus-light
-                       hover:bg-gray-100 dark:hover:bg-cerberus-steel/30
-                       hover:text-gray-900 dark:hover:text-white
-                       transition-colors duration-150">
-            <span class="material-icons text-lg">notifications_none</span>
-            <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-red-500
-                         ring-2 ring-white dark:ring-cerberus-mid"></span>
-        </button>
+        <livewire:notificaciones.notification-bell />
 
         {{-- Separador --}}
         <div class="w-px h-5 bg-gray-200 dark:bg-cerberus-steel/40 mx-1"></div>

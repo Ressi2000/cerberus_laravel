@@ -1,0 +1,68 @@
+<?php
+
+namespace App\Notifications;
+
+use App\Models\Traslado;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class TrasladoCreadoNotification extends Notification implements ShouldQueue
+{
+    use Queueable;
+
+    public function __construct(public Traslado $traslado) {}
+
+    public function via(object $notifiable): array
+    {
+        return ['database', 'broadcast', 'mail'];
+    }
+
+    public function toDatabase(object $notifiable): array
+    {
+        $t = $this->traslado;
+        return [
+            'tipo'    => 'traslado_creado',
+            'icono'   => 'swap_horiz',
+            'color'   => 'blue',
+            'titulo'  => 'Traslado registrado',
+            'mensaje' => "Se registró el traslado #{$t->numero} hacia {$t->ubicacionDestino?->nombre}.",
+            'url'     => route('admin.traslados.index'),
+            'meta'    => [
+                'traslado_id' => $t->id,
+                'numero'      => $t->numero,
+                'destino'     => $t->ubicacionDestino?->nombre,
+                'items'       => $t->items()->count(),
+            ],
+        ];
+    }
+
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage($this->toDatabase($notifiable));
+    }
+
+    public function toMail(object $notifiable): MailMessage
+    {
+        $t = $this->traslado;
+        return (new MailMessage)
+            ->subject("Cerberus · Traslado #{$t->numero} registrado")
+            ->view('emails.notificacion', [
+                'titulo'   => 'Traslado registrado',
+                'icono'    => '🔄',
+                'tipo'     => 'info',
+                'etiqueta' => 'Traslado',
+                'mensaje'  => "Se ha registrado el traslado #{$t->numero} en el sistema Cerberus.",
+                'detalles' => [
+                    'Número'  => $t->numero,
+                    'Destino' => $t->ubicacionDestino?->nombre ?? '—',
+                    'Empresa' => $t->empresa?->nombre ?? '—',
+                    'Equipos' => $t->items()->count(),
+                    'Fecha'   => $t->created_at?->format('d/m/Y H:i'),
+                ],
+                'url' => route('admin.traslados.index'),
+            ]);
+    }
+}

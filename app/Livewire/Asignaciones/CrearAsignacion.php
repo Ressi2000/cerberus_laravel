@@ -12,6 +12,7 @@ use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\AsignacionRealizadaNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
@@ -444,6 +445,13 @@ class CrearAsignacion extends Component
                     }
                 }
             });
+
+            // Notificar al usuario asignado (si es personal) y a los admins
+            $notif = new AsignacionRealizadaNotification($asignacion);
+            if ($asignacion->usuario_id) {
+                $asignacion->usuario?->notify($notif);
+            }
+            User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
 
             session()->flash('success', 'Asignación registrada correctamente.');
             $this->redirect(route('admin.asignaciones.index'), navigate: true);

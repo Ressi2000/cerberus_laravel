@@ -64,6 +64,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function receivesBroadcastNotificationsOn(): string
+    {
+        return 'users.' . $this->id;
+    }
+
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new CerberusResetPassword($token));

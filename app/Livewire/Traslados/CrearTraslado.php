@@ -8,6 +8,7 @@ use App\Models\Traslado;
 use App\Models\TrasladoItem;
 use App\Models\Ubicacion;
 use App\Models\User;
+use App\Notifications\TrasladoCreadoNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -350,6 +351,14 @@ class CrearTraslado extends Component
                         ->update(['ubicacion_id' => $this->ubicacion_destino_id]);
                 }
             });
+
+            // Notificar a analistas del destino y admins
+            $notif = new TrasladoCreadoNotification($traslado);
+            $destinoEmpresaId = $traslado->ubicacionDestino?->empresa_id ?? null;
+            if ($destinoEmpresaId) {
+                User::role('Analista')->where('empresa_activa_id', $destinoEmpresaId)->each(fn($u) => $u->notify($notif));
+            }
+            User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
 
             session()->flash('success', 'Traslado registrado correctamente.');
             $this->redirect(route('admin.traslados.index'), navigate: true);
