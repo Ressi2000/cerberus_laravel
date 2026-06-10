@@ -8,13 +8,13 @@
         <form method="POST" action="{{ route('empresa.select.store') }}">
             @csrf
 
-            <select name="empresa_id" required class="w-full border rounded px-3 py-2">
-                @foreach ($empresas as $empresa)
-                    <option value="{{ $empresa->id }}">
-                        {{ $empresa->nombre }}
-                    </option>
-                @endforeach
-            </select>
+            <x-form.select
+                name="empresa_id"
+                placeholder="Seleccione una empresa..."
+                :options="$empresas->pluck('nombre', 'id')->toArray()"
+                required
+                searchable
+            />
 
             <x-auth.primary-button class="mt-4 w-full">
                 Continuar

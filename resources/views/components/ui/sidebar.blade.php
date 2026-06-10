@@ -28,11 +28,11 @@
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 px-3 w-full min-w-0">
 
                 {{-- Logo modo OSCURO --}}
-                <img src="{{ Vite::asset('resources/images/cerberusLight.png') }}" alt="Cerberus"
+                <img src="{{ asset('images/cerberusLight.png') }}" alt="Cerberus"
                     class="hidden dark:block flex-shrink-0 h-8 w-8 object-contain">
 
                 {{-- Logo modo CLARO --}}
-                <img src="{{ Vite::asset('resources/images/cerberus.png') }}" alt="Cerberus"
+                <img src="{{ asset('images/cerberus.png') }}" alt="Cerberus"
                     class="block dark:hidden flex-shrink-0 h-8 w-8 object-contain">
 
                 {{-- Texto — se oculta con CSS en modo mini --}}
@@ -237,6 +237,46 @@
                 <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
                     <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">build</span>
                     <span class="whitespace-nowrap">Mantenimientos</span>
+                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
+                                 bg-amber-100 dark:bg-amber-900/30
+                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+                        Pronto
+                    </span>
+                </span>
+
+                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
+                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">apps</span>
+                    <span class="whitespace-nowrap">Software y Licencias</span>
+                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
+                                 bg-amber-100 dark:bg-amber-900/30
+                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+                        Pronto
+                    </span>
+                </span>
+
+                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
+                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">hourglass_bottom</span>
+                    <span class="whitespace-nowrap">Obsolescencia</span>
+                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
+                                 bg-amber-100 dark:bg-amber-900/30
+                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+                        Pronto
+                    </span>
+                </span>
+
+                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
+                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">storefront</span>
+                    <span class="whitespace-nowrap">Proveedores</span>
+                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
+                                 bg-amber-100 dark:bg-amber-900/30
+                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
+                        Pronto
+                    </span>
+                </span>
+
+                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
+                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">construction</span>
+                    <span class="whitespace-nowrap">En Reparación</span>
                     <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
                                  bg-amber-100 dark:bg-amber-900/30
                                  text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">

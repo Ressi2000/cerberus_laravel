@@ -8,8 +8,8 @@
     {{-- LOGO + TÍTULO --}}
     <div class="flex flex-col items-center mb-8">
         <picture>
-            <source srcset="{{ Vite::asset('resources/images/cerberus.png') }}" media="(prefers-color-scheme: light)">
-            <img src="{{ Vite::asset('resources/images/cerberusLight.png') }}"
+            <source srcset="{{ asset('images/cerberus.png') }}" media="(prefers-color-scheme: light)">
+            <img src="{{ asset('images/cerberusLight.png') }}"
                  alt="Cerberus Logo"
                  class="h-16 w-16 mb-3 transition-all duration-500">
         </picture>

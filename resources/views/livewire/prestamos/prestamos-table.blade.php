@@ -44,8 +44,8 @@
                 />
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <x-form.select label="Empresa"  :options="$this->empresasOpciones"  wire:model.live="empresa_id" />
-                    <x-form.select label="Analista" :options="$this->analistasOpciones" wire:model.live="analista_id" />
+                    <x-form.select searchable label="Empresa"  :options="$this->empresasOpciones"  wire:model.live="empresa_id" />
+                    <x-form.select searchable label="Analista" :options="$this->analistasOpciones" wire:model.live="analista_id" />
                     <x-form.input  type="date" label="Desde" wire:model.live="fecha_desde" />
                     <x-form.input  type="date" label="Hasta" wire:model.live="fecha_hasta" />
                 </div>

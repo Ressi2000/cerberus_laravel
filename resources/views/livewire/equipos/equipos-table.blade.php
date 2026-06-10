@@ -47,9 +47,9 @@
 
                 {{-- FILA 2: selects principales --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
-                    <x-form.select label="Categoría"  :options="$this->categorias"  wire:model.live="categoria_id" />
-                    <x-form.select label="Estado"     :options="$this->estados"     wire:model.live="estado_id" />
-                    <x-form.select label="Ubicación"  :options="$this->ubicaciones" wire:model.live="ubicacion_id" />
+                    <x-form.select searchable label="Categoría"  :options="$this->categorias"  wire:model.live="categoria_id" />
+                    <x-form.select searchable label="Estado"     :options="$this->estados"     wire:model.live="estado_id" />
+                    <x-form.select searchable label="Ubicación"  :options="$this->ubicaciones" wire:model.live="ubicacion_id" />
                 </div>
 
                 {{-- FILA 3: fechas + radios --}}
