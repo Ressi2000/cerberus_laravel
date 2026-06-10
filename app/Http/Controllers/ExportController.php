@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\AtributosExport;
+use App\Exports\DashboardExport;
 use App\Exports\CategoriasExport;
 use App\Exports\CargosExport;
 use App\Exports\DepartamentosExport;
@@ -27,6 +28,20 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 class ExportController extends Controller
 {
+    // ─────────────────────────────────────────────────────────────────────────
+    // Dashboard — Indicadores completos (múltiples hojas)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function dashboard(Request $request)
+    {
+        $empresaId = $request->filled('empresa_id') ? (int) $request->empresa_id : null;
+        $filename  = 'dashboard_cerberus_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(
+            new DashboardExport(Auth::user(), $empresaId),
+            $filename
+        );
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Usuarios
     // ─────────────────────────────────────────────────────────────────────────
