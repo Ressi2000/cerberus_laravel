@@ -116,6 +116,23 @@
             @include('components.ui._sidebar-tooltip', ['label' => 'Dashboard'])
         </a>
 
+        {{-- ── MONITOREOS WEB ─────────────────────────────────────────────── --}}
+        @role('Administrador|Analista')
+        <a href="{{ route('monitoreos') }}" class="{{ $li }} {{ $active('monitoreos') ? $on : $off }}"
+            title="Monitoreos Web">
+            <span class="material-icons text-xl flex-shrink-0 {{ $active('monitoreos') ? $ion : $ioff }}">
+                monitor_heart
+            </span>
+            <span class="sidebar-label text-sm font-medium whitespace-nowrap">
+                Monitoreos
+            </span>
+            <span class="sidebar-badge ml-auto">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+            </span>
+            @include('components.ui._sidebar-tooltip', ['label' => 'Monitoreos Web'])
+        </a>
+        @endrole
+
         {{-- ── USUARIOS (colapsable) ───────────────────────────────────────── --}}
         @php
             $usersOpen = $active('admin.usuarios.*', 'profile.*');
