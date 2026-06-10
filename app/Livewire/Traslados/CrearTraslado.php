@@ -186,8 +186,6 @@ class CrearTraslado extends Component
             $s = $this->filtro_busqueda;
             $query->where(function ($q) use ($s) {
                 $q->where('codigo_interno', 'like', "%{$s}%")
-                    ->orWhere('serial', 'like', "%{$s}%")
-                    ->orWhere('nombre_maquina', 'like', "%{$s}%")
                     ->orWhereHas('atributosActuales', function ($av) use ($s) {
                         $av->where('valor', 'like', "%{$s}%")
                             ->whereHas('atributo', fn($a) => $a->where('visible_en_tabla', true));

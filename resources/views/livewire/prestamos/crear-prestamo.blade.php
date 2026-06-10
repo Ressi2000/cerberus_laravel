@@ -323,7 +323,7 @@
                                     <div class="flex-1 min-w-0">
                                         <p class="text-xs font-medium text-gray-900 dark:text-white truncate">{{ $item['codigo'] }}</p>
                                         <p class="text-xs text-gray-400 dark:text-cerberus-steel truncate">
-                                            {{ $item['categoria'] }}@if ($item['serial'] !== '—') · {{ $item['serial'] }} @endif
+                                            {{ $item['categoria'] }}
                                         </p>
                                     </div>
                                     <button type="button" wire:click="quitarDelCarrito('{{ $item['uid'] }}')"

@@ -152,8 +152,6 @@ class CrearPrestamo extends Component
             $s = $this->filtro_busqueda;
             $query->where(function ($q) use ($s) {
                 $q->where('codigo_interno', 'like', "%{$s}%")
-                  ->orWhere('serial', 'like', "%{$s}%")
-                  ->orWhere('nombre_maquina', 'like', "%{$s}%")
                   ->orWhereHas('atributosActuales', function ($av) use ($s) {
                       $av->where('valor', 'like', "%{$s}%")
                          ->whereHas('atributo', fn($a) => $a->where('visible_en_tabla', true));
@@ -210,6 +208,11 @@ class CrearPrestamo extends Component
 
     public function updatedFiltroBusqueda(): void  { $this->resetPage(); }
     public function updatedFiltroUbicacion(): void { $this->resetPage(); }
+
+    public function toggleVistaEquipos(): void
+    {
+        $this->vistaEquipos = $this->vistaEquipos === 'grilla' ? 'lista' : 'grilla';
+    }
     public function updatedAreaEmpresaId(): void
     {
         $this->area_departamento_id = '';
@@ -237,8 +240,6 @@ class CrearPrestamo extends Component
             'id'        => $equipo->id,
             'codigo'    => $equipo->codigo_interno,
             'categoria' => $equipo->categoria?->nombre ?? '—',
-            'serial'    => $equipo->serial ?? '—',
-            'maquina'   => $equipo->nombre_maquina ?? '—',
             'icono'     => $this->iconoCategoria($equipo->categoria?->nombre ?? ''),
             'padre_uid' => '',
         ];
