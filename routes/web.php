@@ -39,7 +39,13 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         return view('dashboard');
     })->name('dashboard');
 
+    // Monitoreos Web (Grafana embed)
+    Route::get('/monitoreos', function () {
+        return view('monitoreos');
+    })->name('monitoreos')->middleware(['role:Administrador|Analista']);
+
     // Exportaciones
+    Route::get('export/dashboard',     [ExportController::class, 'dashboard'])->name('export.dashboard');
     Route::get('export/usuarios',      [ExportController::class, 'usuarios'])->name('export.usuarios');
     Route::get('export/auditoria',     [ExportController::class, 'auditoria'])->name('export.auditoria');
     Route::get('export/equipos',       [ExportController::class, 'equipos'])->name('export.equipos');
