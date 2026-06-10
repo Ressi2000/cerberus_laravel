@@ -145,6 +145,13 @@ class Dashboard extends Component
             ->limit(5)
             ->get();
 
+        // Despachar datos del donut al JS luego de cada render
+        // (disparado DESPUÉS de que el DOM fue actualizado por Livewire)
+        $this->dispatch('cerberus:chart-estados',
+            labels: $equiposPorEstado->keys()->values()->all(),
+            values: $equiposPorEstado->values()->all(),
+        );
+
         return view('livewire.dashboard', [
             'totalEquipos'           => $totalEquipos,
             'equiposAsignados'       => $equiposAsignados,

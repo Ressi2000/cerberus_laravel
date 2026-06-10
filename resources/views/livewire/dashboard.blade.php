@@ -248,12 +248,6 @@
                 <span class="material-icons text-cerberus-accent">donut_large</span>
             </div>
 
-            {{-- Datos para el chart — re-renderizados por Livewire en cada filtro --}}
-            <span id="chart-estados-data"
-                  data-labels='@json($equiposPorEstado->keys()->values())'
-                  data-values='@json($equiposPorEstado->values()->values())'
-                  class="hidden"></span>
-
             @if($equiposPorEstado->isEmpty())
                 <div class="flex items-center justify-center h-48 text-cerberus-accent text-sm">Sin datos</div>
             @else
@@ -591,51 +585,48 @@
 
         let chartEstados = null;
 
-        function initChartEstados() {
-            const dataEl = document.getElementById('chart-estados-data');
+        // PHP despacha cerberus:chart-estados en cada render() con los datos
+        // ya calculados. $wire.$on se ejecuta DESPUÉS de que el DOM se actualiza,
+        // garantizando sincronía entre datos y canvas.
+        $wire.$on('cerberus:chart-estados', ({ labels, values }) => {
             const canvas = document.getElementById('chartEstados');
-            if (!dataEl || !canvas) return;
+            if (!canvas) return;
 
-            const labels = JSON.parse(dataEl.dataset.labels || '[]');
-            const data   = JSON.parse(dataEl.dataset.values || '[]');
-
-            if (chartEstados) chartEstados.destroy();
-            if (!labels.length) return;
-
-            chartEstados = new Chart(canvas, {
-                type: 'doughnut',
-                data: {
-                    labels,
-                    datasets: [{
-                        data,
-                        backgroundColor: palette.slice(0, data.length),
-                        borderWidth: 2,
-                        borderColor: '#1B263B',
-                        hoverBorderColor: '#ffffff30',
-                    }],
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    cutout: '68%',
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: ctx => ` ${ctx.label}: ${ctx.parsed} equipo${ctx.parsed !== 1 ? 's' : ''}`
-                            }
-                        }
+            if (chartEstados) {
+                chartEstados.data.labels                        = labels;
+                chartEstados.data.datasets[0].data              = values;
+                chartEstados.data.datasets[0].backgroundColor   = palette.slice(0, values.length);
+                chartEstados.update();
+            } else {
+                if (!labels.length) return;
+                chartEstados = new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: palette.slice(0, values.length),
+                            borderWidth: 2,
+                            borderColor: '#1B263B',
+                            hoverBorderColor: '#ffffff30',
+                        }],
                     },
-                },
-            });
-        }
-
-        // Render inicial
-        initChartEstados();
-
-        // Re-render cada vez que Livewire actualice el componente
-        // $wire.$watch se dispara DESPUÉS de que el DOM fue actualizado
-        $wire.$watch('empresaFiltroId', () => initChartEstados());
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: '68%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: ctx => ` ${ctx.label}: ${ctx.parsed} equipo${ctx.parsed !== 1 ? 's' : ''}`
+                                }
+                            }
+                        },
+                    },
+                });
+            }
+        });
     </script>
     @endscript
 </div>
