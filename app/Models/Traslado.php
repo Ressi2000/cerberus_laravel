@@ -25,10 +25,15 @@ class Traslado extends Model
         'realizado_por_id',
         'fecha_traslado',
         'observaciones',
+        'estado',
+        'motivo_reversion',
+        'revertido_por_id',
+        'revertido_at',
     ];
 
     protected $casts = [
         'fecha_traslado' => 'date',
+        'revertido_at'   => 'datetime',
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -68,6 +73,11 @@ class Traslado extends Model
     public function items()
     {
         return $this->hasMany(TrasladoItem::class);
+    }
+
+    public function revertidoPor()
+    {
+        return $this->belongsTo(User::class, 'revertido_por_id');
     }
 
     // ─────────────────────────────────────────────────────────────────────────

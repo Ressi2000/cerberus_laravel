@@ -1,7 +1,8 @@
 <div class="space-y-6">
 
-    {{-- ── Modal de confirmación de eliminación ───────────────────────────── --}}
+    {{-- ── Modales ──────────────────────────────────────────────────────────── --}}
     <livewire:traslados.traslado-delete-modal />
+    <livewire:traslados.revertir-traslado-modal />
 
     {{-- ── Header ──────────────────────────────────────────────────────────── --}}
     <x-table.crud-header
@@ -50,7 +51,7 @@
 
     {{-- ── Tabla ────────────────────────────────────────────────────────────── --}}
     <x-table.crud-table
-        :headers="['N°', 'Fecha', 'Origen → Destino', 'Motivo', 'Equipos', 'Recibe / Autoriza', 'Acciones']"
+        :headers="['N°', 'Fecha', 'Origen → Destino', 'Motivo', 'Equipos', 'Recibe / Autoriza', 'Estado', 'Acciones']"
         :paginated="$this->traslados">
 
         @forelse ($this->traslados as $traslado)
@@ -121,6 +122,23 @@
                     </div>
                 </td>
 
+                {{-- Estado --}}
+                <td class="px-4 py-3 whitespace-nowrap">
+                    @if ($traslado->estado === 'revertido')
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold
+                                     bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400">
+                            <span class="material-icons text-xs">undo</span>
+                            Revertido
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold
+                                     bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                            <span class="material-icons text-xs">check_circle</span>
+                            Activo
+                        </span>
+                    @endif
+                </td>
+
                 {{-- Acciones --}}
                 <td class="px-4 py-3 whitespace-nowrap text-right">
                     <x-table.table-actions
@@ -158,6 +176,21 @@
                                     Descargar planilla
                                 </a>
                             </li>
+                            @can('revertir', $traslado)
+                                <li>
+                                    <button
+                                        wire:click="$dispatch('revertirTraslado', { id: {{ $traslado->id }} })"
+                                        @click="close()"
+                                        class="flex items-center gap-3 px-4 py-2.5 w-full
+                                               text-gray-600 dark:text-cerberus-light
+                                               hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                               hover:text-amber-600 dark:hover:text-amber-400
+                                               transition-colors duration-100">
+                                        <span class="material-icons text-base text-amber-500">undo</span>
+                                        Regresar traslado
+                                    </button>
+                                </li>
+                            @endcan
                         </x-slot>
 
                     </x-table.table-actions>
@@ -166,7 +199,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="px-4 py-16 text-center">
+                <td colspan="8" class="px-4 py-16 text-center">
                     <div class="flex flex-col items-center gap-3">
                         <span class="material-icons text-4xl text-gray-300 dark:text-cerberus-steel/50">
                             local_shipping

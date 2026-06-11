@@ -31,7 +31,17 @@ class TrasladoPolicy
     public function view(User $user, Traslado $traslado): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $traslado->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $traslado->empresa_id;
+    }
+
+    public function revertir(User $user, Traslado $traslado): bool
+    {
+        if ($traslado->estado === 'revertido') {
+            return false;
+        }
+
+        return $user->hasRole('Analista')
+            && (int) $user->empresa_activa_id === (int) $traslado->empresa_id;
     }
 
     public function create(User $user): bool

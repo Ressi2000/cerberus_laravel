@@ -88,6 +88,7 @@ class TrasladosTable extends Component
     }
 
     #[On('trasladoEliminado')]
+    #[On('trasladoRevertido')]
     public function refrescar(): void
     {
         unset($this->traslados);

@@ -106,13 +106,6 @@ class CrearTraslado extends Component
         $actor = Auth::user();
 
         return User::where('estado', 'Activo')
-            ->when(
-                $actor->hasRole('Analista') && $actor->empresa_activa_id,
-                fn($q) => $q->whereHas('ubicacion', function ($u) use ($actor) {
-                    $u->where('empresa_id', $actor->empresa_activa_id)
-                        ->orWhere('es_estado', true);
-                })
-            )
             ->orderBy('name')
             ->get(['id', 'name', 'cedula']);
     }
@@ -316,8 +309,10 @@ class CrearTraslado extends Component
 
         $actor = Auth::user();
 
+        $traslado = null;
+
         try {
-            DB::transaction(function () use ($actor) {
+            DB::transaction(function () use ($actor, &$traslado) {
                 $empresaId = $actor->hasRole('Administrador')
                     ? (int) $this->empresa_id
                     : $actor->empresa_activa_id;
@@ -348,9 +343,6 @@ class CrearTraslado extends Component
                         ->update(['ubicacion_id' => $this->ubicacion_destino_id]);
                 }
             });
-
-            session()->flash('success', 'Traslado registrado correctamente.');
-            $this->redirect(route('admin.traslados.index'), navigate: true);
         } catch (\Exception $e) {
             Log::error('CrearTraslado@confirmar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar el traslado.');
@@ -365,6 +357,9 @@ class CrearTraslado extends Component
             }
             User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
         }, report: true);
+
+        session()->flash('success', 'Traslado registrado correctamente.');
+        $this->redirect(route('admin.traslados.index'), navigate: true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
