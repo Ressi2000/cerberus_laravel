@@ -152,6 +152,16 @@
                     <p class="text-sm text-gray-700 dark:text-cerberus-light">{{ $traslado->observaciones }}</p>
                 </div>
             @endif
+
+            @if ($traslado->estado === 'revertido' && $traslado->motivo_reversion)
+                <div class="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800/40">
+                    <p class="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1 flex items-center gap-1">
+                        <span class="material-icons text-xs">undo</span>
+                        Motivo de la reversión
+                    </p>
+                    <p class="text-sm text-gray-700 dark:text-cerberus-light">{{ $traslado->motivo_reversion }}</p>
+                </div>
+            @endif
         </div>
 
         {{-- Equipos trasladados --}}
