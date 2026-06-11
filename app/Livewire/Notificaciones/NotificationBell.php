@@ -9,8 +9,6 @@ class NotificationBell extends Component
 {
     public int $unreadCount = 0;
 
-    protected $listeners = ['echo-private:users.{authId},Illuminate\\Notifications\\Events\\BroadcastNotificationCreated' => 'onNewNotification'];
-
     public function getListeners(): array
     {
         $id = auth()->id();

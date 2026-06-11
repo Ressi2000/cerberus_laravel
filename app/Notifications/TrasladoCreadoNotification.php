@@ -22,7 +22,8 @@ class TrasladoCreadoNotification extends Notification implements ShouldQueue
 
     public function toDatabase(object $notifiable): array
     {
-        $t = $this->traslado;
+        $t     = $this->traslado;
+        $items = $t->items()->count();
         return [
             'tipo'    => 'traslado_creado',
             'icono'   => 'swap_horiz',
@@ -34,7 +35,7 @@ class TrasladoCreadoNotification extends Notification implements ShouldQueue
                 'traslado_id' => $t->id,
                 'numero'      => $t->numero,
                 'destino'     => $t->ubicacionDestino?->nombre,
-                'items'       => $t->items()->count(),
+                'items'       => $items,
             ],
         ];
     }
@@ -46,7 +47,8 @@ class TrasladoCreadoNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $t = $this->traslado;
+        $t     = $this->traslado;
+        $items = $t->items()->count();
         return (new MailMessage)
             ->subject("Cerberus · Traslado #{$t->numero} registrado")
             ->view('emails.notificacion', [
@@ -59,7 +61,7 @@ class TrasladoCreadoNotification extends Notification implements ShouldQueue
                     'Número'  => $t->numero,
                     'Destino' => $t->ubicacionDestino?->nombre ?? '—',
                     'Empresa' => $t->empresa?->nombre ?? '—',
-                    'Equipos' => $t->items()->count(),
+                    'Equipos' => $items,
                     'Fecha'   => $t->created_at?->format('d/m/Y H:i'),
                 ],
                 'url' => route('admin.traslados.index'),

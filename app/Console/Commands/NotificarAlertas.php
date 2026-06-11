@@ -41,6 +41,15 @@ class NotificarAlertas extends Command
             ->get();
     }
 
+    private function yaNotificadoHoy(User $user, string $type, string $metaKey, int $entityId): bool
+    {
+        return $user->notifications()
+            ->where('type', $type)
+            ->whereDate('created_at', today())
+            ->whereRaw("json_extract(data, '$.meta.{$metaKey}') = ?", [$entityId])
+            ->exists();
+    }
+
     private function notificarPrestamosVencidos(): void
     {
         Prestamo::whereNull('fecha_devolucion_real')
@@ -55,10 +64,12 @@ class NotificarAlertas extends Command
                     : collect();
 
                 foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
-                    $user->notify($notif);
+                    if (! $this->yaNotificadoHoy($user, PrestamoVencidoNotification::class, 'prestamo_id', $prestamo->id)) {
+                        $user->notify($notif);
+                    }
                 }
 
-                $this->line("  ✓ Préstamo vencido #{$prestamo->numero}");
+                $this->line("  ✓ Préstamo vencido #PRE-{$prestamo->id}");
             });
     }
 
@@ -79,10 +90,12 @@ class NotificarAlertas extends Command
                     : collect();
 
                 foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
-                    $user->notify($notif);
+                    if (! $this->yaNotificadoHoy($user, PrestamoProximoAVencerNotification::class, 'prestamo_id', $prestamo->id)) {
+                        $user->notify($notif);
+                    }
                 }
 
-                $this->line("  ✓ Préstamo próximo #{$prestamo->numero} (en {$dias}d)");
+                $this->line("  ✓ Préstamo próximo #PRE-{$prestamo->id} (en {$dias}d)");
             });
     }
 
@@ -102,7 +115,9 @@ class NotificarAlertas extends Command
                     : collect();
 
                 foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
-                    $user->notify($notif);
+                    if (! $this->yaNotificadoHoy($user, GarantiaProximaVencerNotification::class, 'equipo_id', $equipo->id)) {
+                        $user->notify($notif);
+                    }
                 }
 
                 $this->line("  ✓ Garantía {$equipo->nombre} (en {$dias}d)");
@@ -132,7 +147,9 @@ class NotificarAlertas extends Command
                     : collect();
 
                 foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
-                    $user->notify($notif);
+                    if (! $this->yaNotificadoHoy($user, EquipoReparacionExtendidaNotification::class, 'equipo_id', $equipo->id)) {
+                        $user->notify($notif);
+                    }
                 }
 
                 $this->line("  ✓ Reparación extendida: {$equipo->nombre} ({$dias}d)");
