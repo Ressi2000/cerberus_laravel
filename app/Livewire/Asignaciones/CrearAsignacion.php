@@ -446,19 +446,22 @@ class CrearAsignacion extends Component
                 }
             });
 
-            // Notificar al usuario asignado (si es personal) y a los admins
-            $notif = new AsignacionRealizadaNotification($asignacion);
-            if ($asignacion->usuario_id) {
-                $asignacion->usuario?->notify($notif);
-            }
-            User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
-
             session()->flash('success', 'Asignación registrada correctamente.');
             $this->redirect(route('admin.asignaciones.index'), navigate: true);
         } catch (\Exception $e) {
             Log::error('CrearAsignacion@confirmar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar la asignación.');
+            return;
         }
+
+        // Notificaciones fuera del try principal para no bloquear el flujo
+        rescue(function () use ($asignacion) {
+            $notif = new AsignacionRealizadaNotification($asignacion);
+            if ($asignacion->usuario_id) {
+                $asignacion->usuario?->notify($notif);
+            }
+            User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
+        }, report: true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
