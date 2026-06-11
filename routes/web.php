@@ -39,6 +39,11 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         return view('dashboard');
     })->name('dashboard');
 
+    // Notificaciones
+    Route::get('/notificaciones', function () {
+        return view('notificaciones');
+    })->name('notificaciones.index');
+
     // Monitoreos Web (Grafana embed)
     Route::get('/monitoreos', function () {
         return view('monitoreos');

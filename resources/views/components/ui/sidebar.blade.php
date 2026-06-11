@@ -133,6 +133,18 @@
         </a>
         @endrole
 
+        {{-- ── NOTIFICACIONES ─────────────────────────────────────────────── --}}
+        <a href="{{ route('notificaciones.index') }}" wire:navigate
+           class="{{ $li }} {{ $active('notificaciones.index') ? $on : $off }}" title="Notificaciones">
+            <span class="material-icons text-xl flex-shrink-0 {{ $active('notificaciones.index') ? $ion : $ioff }}">
+                notifications
+            </span>
+            <span class="sidebar-label text-sm font-medium whitespace-nowrap">
+                Notificaciones
+            </span>
+            @include('components.ui._sidebar-tooltip', ['label' => 'Notificaciones'])
+        </a>
+
         {{-- ── USUARIOS (colapsable) ───────────────────────────────────────── --}}
         @php
             $usersOpen = $active('admin.usuarios.*', 'profile.*');

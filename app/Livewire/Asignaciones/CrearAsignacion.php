@@ -12,6 +12,7 @@ use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\AsignacionRealizadaNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
@@ -374,7 +375,7 @@ class CrearAsignacion extends Component
         $actor = Auth::user();
 
         try {
-            DB::transaction(function () use ($actor) {
+            $asignacion = DB::transaction(function () use ($actor) {
 
                 if ($actor->hasRole('Administrador')) {
                     if ($this->tipo_receptor === 'usuario') {
@@ -438,6 +439,8 @@ class CrearAsignacion extends Component
                         Equipo::where('id', $item['id'])->update(['estado_id' => $estadoAsignado]);
                     }
                 }
+
+                return $asignacion;
             });
 
             session()->flash('success', 'Asignación registrada correctamente.');
@@ -445,7 +448,17 @@ class CrearAsignacion extends Component
         } catch (\Exception $e) {
             Log::error('CrearAsignacion@confirmar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar la asignación.');
+            return;
         }
+
+        // Notificaciones fuera del try principal para no bloquear el flujo
+        rescue(function () use ($asignacion) {
+            $notif = new AsignacionRealizadaNotification($asignacion);
+            if ($asignacion->usuario_id) {
+                $asignacion->usuario?->notify($notif);
+            }
+            User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
+        }, report: true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

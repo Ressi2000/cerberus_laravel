@@ -8,6 +8,7 @@ use App\Models\Traslado;
 use App\Models\TrasladoItem;
 use App\Models\Ubicacion;
 use App\Models\User;
+use App\Notifications\TrasladoCreadoNotification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -353,7 +354,17 @@ class CrearTraslado extends Component
         } catch (\Exception $e) {
             Log::error('CrearTraslado@confirmar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar el traslado.');
+            return;
         }
+
+        rescue(function () use ($traslado) {
+            $notif = new TrasladoCreadoNotification($traslado);
+            $destinoEmpresaId = $traslado->ubicacionDestino?->empresa_id ?? null;
+            if ($destinoEmpresaId) {
+                User::role('Analista')->where('empresa_activa_id', $destinoEmpresaId)->each(fn($u) => $u->notify($notif));
+            }
+            User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
+        }, report: true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
