@@ -352,20 +352,22 @@ class CrearTraslado extends Component
                 }
             });
 
-            // Notificar a analistas del destino y admins
+            session()->flash('success', 'Traslado registrado correctamente.');
+            $this->redirect(route('admin.traslados.index'), navigate: true);
+        } catch (\Exception $e) {
+            Log::error('CrearTraslado@confirmar: ' . $e->getMessage());
+            $this->addError('general', 'Ocurrió un error al registrar el traslado.');
+            return;
+        }
+
+        rescue(function () use ($traslado) {
             $notif = new TrasladoCreadoNotification($traslado);
             $destinoEmpresaId = $traslado->ubicacionDestino?->empresa_id ?? null;
             if ($destinoEmpresaId) {
                 User::role('Analista')->where('empresa_activa_id', $destinoEmpresaId)->each(fn($u) => $u->notify($notif));
             }
             User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
-
-            session()->flash('success', 'Traslado registrado correctamente.');
-            $this->redirect(route('admin.traslados.index'), navigate: true);
-        } catch (\Exception $e) {
-            Log::error('CrearTraslado@confirmar: ' . $e->getMessage());
-            $this->addError('general', 'Ocurrió un error al registrar el traslado.');
-        }
+        }, report: true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
