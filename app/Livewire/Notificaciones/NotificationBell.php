@@ -24,6 +24,11 @@ class NotificationBell extends Component
         $this->unreadCount = auth()->user()?->unreadNotifications()->count() ?? 0;
     }
 
+    public function refresh(): void
+    {
+        $this->unreadCount = auth()->user()?->unreadNotifications()->count() ?? 0;
+    }
+
     public function onNewNotification(): void
     {
         $this->unreadCount = auth()->user()?->unreadNotifications()->count() ?? 0;

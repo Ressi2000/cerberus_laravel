@@ -1,4 +1,4 @@
-<div x-data="{ open: false }" @click.outside="open = false" class="relative" wire:poll.30s="mount">
+<div x-data="{ open: false }" @click.outside="open = false" class="relative" wire:poll.30s="refresh">
 
     {{-- Campana --}}
     <button @click="open = !open; if(open) $dispatch('bell-opened')"
