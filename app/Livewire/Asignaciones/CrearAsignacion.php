@@ -380,7 +380,7 @@ class CrearAsignacion extends Component
         $actor = Auth::user();
 
         try {
-            DB::transaction(function () use ($actor) {
+            $asignacion = DB::transaction(function () use ($actor) {
 
                 if ($actor->hasRole('Administrador')) {
                     if ($this->tipo_receptor === 'usuario') {
@@ -444,6 +444,8 @@ class CrearAsignacion extends Component
                         Equipo::where('id', $item['id'])->update(['estado_id' => $estadoAsignado]);
                     }
                 }
+
+                return $asignacion;
             });
 
             // Notificar al usuario asignado (si es personal) y a los admins
