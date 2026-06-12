@@ -28,13 +28,12 @@ class PrestamoProximoAVencerNotification extends Notification implements ShouldQ
             'icono'   => 'schedule',
             'color'   => 'amber',
             'titulo'  => 'Préstamo próximo a vencer',
-            'mensaje' => "El préstamo #{$p->numero} vence en {$this->diasRestantes} día(s) ({$p->fecha_devolucion_esperada?->format('d/m/Y')}).",
+            'mensaje' => "El préstamo #PRE-{$p->id} vence en {$this->diasRestantes} día(s) ({$p->fecha_devolucion_esperada?->format('d/m/Y')}).",
             'url'     => route('admin.prestamos.index'),
             'meta'    => [
-                'prestamo_id'             => $p->id,
-                'numero'                  => $p->numero,
+                'prestamo_id'              => $p->id,
                 'fecha_devolucion_esperada' => $p->fecha_devolucion_esperada?->toDateString(),
-                'dias_restantes'          => $this->diasRestantes,
+                'dias_restantes'           => $this->diasRestantes,
             ],
         ];
     }
@@ -46,21 +45,19 @@ class PrestamoProximoAVencerNotification extends Notification implements ShouldQ
 
     public function toMail(object $notifiable): MailMessage
     {
-        $p = $this->prestamo;
-        $dest = $p->tipo === 'personal'
-            ? ($p->usuario?->name ?? '—')
-            : ($p->areaEmpresa?->nombre ?? '—');
+        $p    = $this->prestamo;
+        $dest = $p->receptorNombre();
 
         return (new MailMessage)
-            ->subject("Cerberus · Préstamo #{$p->numero} vence en {$this->diasRestantes} día(s)")
+            ->subject("Cerberus · Préstamo #PRE-{$p->id} vence en {$this->diasRestantes} día(s)")
             ->view('emails.notificacion', [
                 'titulo'   => 'Préstamo próximo a vencer',
                 'icono'    => '⏰',
                 'tipo'     => 'warning',
                 'etiqueta' => 'Alerta',
-                'mensaje'  => "El préstamo #{$p->numero} vencerá en {$this->diasRestantes} día(s). Coordine la devolución a tiempo.",
+                'mensaje'  => "El préstamo #PRE-{$p->id} vencerá en {$this->diasRestantes} día(s). Coordine la devolución a tiempo.",
                 'detalles' => [
-                    'Número'               => $p->numero,
+                    'Número'               => "PRE-{$p->id}",
                     'Destinatario'         => $dest,
                     'Fecha devolución esp.' => $p->fecha_devolucion_esperada?->format('d/m/Y'),
                     'Días restantes'       => $this->diasRestantes,

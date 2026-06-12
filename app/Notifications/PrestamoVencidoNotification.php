@@ -22,20 +22,19 @@ class PrestamoVencidoNotification extends Notification implements ShouldQueue
 
     public function toDatabase(object $notifiable): array
     {
-        $p = $this->prestamo;
+        $p    = $this->prestamo;
         $dias = now()->diffInDays($p->fecha_devolucion_esperada);
         return [
             'tipo'    => 'prestamo_vencido',
             'icono'   => 'warning',
             'color'   => 'red',
             'titulo'  => 'Préstamo vencido',
-            'mensaje' => "El préstamo #{$p->numero} venció hace {$dias} día(s). Devolución esperada: {$p->fecha_devolucion_esperada?->format('d/m/Y')}.",
+            'mensaje' => "El préstamo #PRE-{$p->id} venció hace {$dias} día(s). Devolución esperada: {$p->fecha_devolucion_esperada?->format('d/m/Y')}.",
             'url'     => route('admin.prestamos.index'),
             'meta'    => [
-                'prestamo_id'             => $p->id,
-                'numero'                  => $p->numero,
+                'prestamo_id'              => $p->id,
                 'fecha_devolucion_esperada' => $p->fecha_devolucion_esperada?->toDateString(),
-                'dias_vencido'            => $dias,
+                'dias_vencido'             => $dias,
             ],
         ];
     }
@@ -47,22 +46,20 @@ class PrestamoVencidoNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $p = $this->prestamo;
+        $p    = $this->prestamo;
         $dias = now()->diffInDays($p->fecha_devolucion_esperada);
-        $dest = $p->tipo === 'personal'
-            ? ($p->usuario?->name ?? '—')
-            : ($p->areaEmpresa?->nombre ?? '—');
+        $dest = $p->receptorNombre();
 
         return (new MailMessage)
-            ->subject("⚠️ Cerberus · Préstamo #{$p->numero} VENCIDO")
+            ->subject("⚠️ Cerberus · Préstamo #PRE-{$p->id} VENCIDO")
             ->view('emails.notificacion', [
                 'titulo'   => 'Préstamo vencido',
                 'icono'    => '⚠️',
                 'tipo'     => 'danger',
                 'etiqueta' => 'Urgente',
-                'mensaje'  => "El préstamo #{$p->numero} ha superado su fecha de devolución esperada hace {$dias} día(s). Se requiere acción inmediata.",
+                'mensaje'  => "El préstamo #PRE-{$p->id} ha superado su fecha de devolución esperada hace {$dias} día(s). Se requiere acción inmediata.",
                 'detalles' => [
-                    'Número'               => $p->numero,
+                    'Número'               => "PRE-{$p->id}",
                     'Destinatario'         => $dest,
                     'Fecha devolución esp.' => $p->fecha_devolucion_esperada?->format('d/m/Y'),
                     'Días vencido'         => $dias,

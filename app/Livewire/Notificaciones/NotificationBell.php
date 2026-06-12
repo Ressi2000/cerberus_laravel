@@ -9,8 +9,6 @@ class NotificationBell extends Component
 {
     public int $unreadCount = 0;
 
-    protected $listeners = ['echo-private:users.{authId},Illuminate\\Notifications\\Events\\BroadcastNotificationCreated' => 'onNewNotification'];
-
     public function getListeners(): array
     {
         $id = auth()->id();
@@ -39,6 +37,12 @@ class NotificationBell extends Component
     {
         auth()->user()?->unreadNotifications->markAsRead();
         $this->unreadCount = 0;
+    }
+
+    public function markRead(string $id): void
+    {
+        auth()->user()?->notifications()->find($id)?->markAsRead();
+        $this->unreadCount = auth()->user()?->unreadNotifications()->count() ?? 0;
     }
 
     public function render()

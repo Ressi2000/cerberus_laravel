@@ -60,6 +60,7 @@
                 @endphp
                 <a href="{{ $url ?? '#' }}"
                    @if($url) wire:navigate @endif
+                   wire:click="markRead('{{ $notif->id }}')"
                    @click="open = false"
                    class="flex items-start gap-3 px-4 py-3 hover:bg-cerberus-mid transition-colors border-b border-cerberus-steel/50 last:border-0
                           {{ $leida ? 'opacity-60' : '' }}">

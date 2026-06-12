@@ -22,25 +22,25 @@ class AsignacionRealizadaNotification extends Notification implements ShouldQueu
 
     public function toDatabase(object $notifiable): array
     {
-        $asig = $this->asignacion;
-        $tipo = $asig->tipo === 'personal' ? 'Personal' : 'Área común';
-        $dest = $asig->tipo === 'personal'
-            ? ($asig->usuario?->name ?? '—')
-            : ($asig->areaEmpresa?->nombre ?? '—');
+        $asig     = $this->asignacion;
+        $tipo     = $asig->usuario_id ? 'Personal' : 'Área común';
+        $dest     = $asig->receptorNombre();
+        $analista = $asig->analista?->name ?? '—';
+        $items    = $asig->items()->count();
 
         return [
             'tipo'      => 'asignacion_realizada',
             'icono'     => 'assignment',
             'color'     => 'emerald',
             'titulo'    => 'Asignación realizada',
-            'mensaje'   => "Se registró la asignación #{$asig->numero} ({$tipo}) para {$dest}.",
+            'mensaje'   => "{$analista} registró la asignación #ASG-{$asig->id} ({$tipo}) para {$dest} — {$items} equipo(s).",
             'url'       => route('admin.asignaciones.index'),
             'meta'      => [
                 'asignacion_id' => $asig->id,
-                'numero'        => $asig->numero,
                 'tipo'          => $tipo,
                 'destinatario'  => $dest,
-                'items'         => $asig->items()->count(),
+                'analista'      => $analista,
+                'items'         => $items,
             ],
         ];
     }
@@ -52,24 +52,26 @@ class AsignacionRealizadaNotification extends Notification implements ShouldQueu
 
     public function toMail(object $notifiable): MailMessage
     {
-        $asig = $this->asignacion;
-        $dest = $asig->tipo === 'personal'
-            ? ($asig->usuario?->name ?? '—')
-            : ($asig->areaEmpresa?->nombre ?? '—');
+        $asig     = $this->asignacion;
+        $tipo     = $asig->usuario_id ? 'Personal' : 'Área común';
+        $dest     = $asig->receptorNombre();
+        $analista = $asig->analista?->name ?? '—';
+        $items    = $asig->items()->count();
 
         return (new MailMessage)
-            ->subject("Cerberus · Asignación #{$asig->numero} realizada")
+            ->subject("Cerberus · Asignación #ASG-{$asig->id} realizada para {$dest}")
             ->view('emails.notificacion', [
                 'titulo'   => 'Asignación realizada',
                 'icono'    => '📋',
                 'tipo'     => 'success',
                 'etiqueta' => 'Asignación',
-                'mensaje'  => "Se ha registrado correctamente la asignación #{$asig->numero} en el sistema Cerberus.",
+                'mensaje'  => "{$analista} ha registrado la asignación #ASG-{$asig->id} ({$tipo}) para {$dest}.",
                 'detalles' => [
-                    'Número'       => $asig->numero,
-                    'Tipo'         => $asig->tipo === 'personal' ? 'Personal' : 'Área común',
-                    'Destinatario' => $dest,
-                    'Equipos'      => $asig->items()->count(),
+                    'Número'       => "ASG-{$asig->id}",
+                    'Tipo'         => $tipo,
+                    'Asignado a'   => $dest,
+                    'Registrado por' => $analista,
+                    'Equipos'      => $items,
                     'Empresa'      => $asig->empresa?->nombre ?? '—',
                     'Fecha'        => $asig->created_at?->format('d/m/Y H:i'),
                 ],

@@ -3,27 +3,23 @@
 namespace App\Console\Commands;
 
 use App\Models\Equipo;
-use App\Models\EstadoEquipo;
 use App\Models\Prestamo;
 use App\Models\User;
-use App\Notifications\EquipoReparacionExtendidaNotification;
 use App\Notifications\GarantiaProximaVencerNotification;
 use App\Notifications\PrestamoProximoAVencerNotification;
 use App\Notifications\PrestamoVencidoNotification;
 use Illuminate\Console\Command;
-use Illuminate\Support\Carbon;
 
 class NotificarAlertas extends Command
 {
     protected $signature   = 'cerberus:notificar-alertas';
-    protected $description = 'Envía notificaciones diarias: préstamos vencidos/por vencer, garantías y equipos en reparación extendida.';
+    protected $description = 'Envía notificaciones diarias: préstamos vencidos/por vencer y garantías próximas a vencer.';
 
     public function handle(): int
     {
         $this->notificarPrestamosVencidos();
         $this->notificarPrestamosProximos();
         $this->notificarGarantiasProximas();
-        $this->notificarReparacionesExtendidas();
 
         $this->info('Alertas Cerberus enviadas correctamente.');
         return self::SUCCESS;
@@ -41,6 +37,15 @@ class NotificarAlertas extends Command
             ->get();
     }
 
+    private function yaNotificadoHoy(User $user, string $type, string $metaKey, int $entityId): bool
+    {
+        return $user->notifications()
+            ->where('type', $type)
+            ->whereDate('created_at', today())
+            ->whereRaw("json_extract(data, '$.meta.{$metaKey}') = ?", [$entityId])
+            ->exists();
+    }
+
     private function notificarPrestamosVencidos(): void
     {
         Prestamo::whereNull('fecha_devolucion_real')
@@ -55,10 +60,12 @@ class NotificarAlertas extends Command
                     : collect();
 
                 foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
-                    $user->notify($notif);
+                    if (! $this->yaNotificadoHoy($user, PrestamoVencidoNotification::class, 'prestamo_id', $prestamo->id)) {
+                        $user->notify($notif);
+                    }
                 }
 
-                $this->line("  ✓ Préstamo vencido #{$prestamo->numero}");
+                $this->line("  ✓ Préstamo vencido #PRE-{$prestamo->id}");
             });
     }
 
@@ -79,10 +86,12 @@ class NotificarAlertas extends Command
                     : collect();
 
                 foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
-                    $user->notify($notif);
+                    if (! $this->yaNotificadoHoy($user, PrestamoProximoAVencerNotification::class, 'prestamo_id', $prestamo->id)) {
+                        $user->notify($notif);
+                    }
                 }
 
-                $this->line("  ✓ Préstamo próximo #{$prestamo->numero} (en {$dias}d)");
+                $this->line("  ✓ Préstamo próximo #PRE-{$prestamo->id} (en {$dias}d)");
             });
     }
 
@@ -102,40 +111,14 @@ class NotificarAlertas extends Command
                     : collect();
 
                 foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
-                    $user->notify($notif);
+                    if (! $this->yaNotificadoHoy($user, GarantiaProximaVencerNotification::class, 'equipo_id', $equipo->id)) {
+                        $user->notify($notif);
+                    }
                 }
 
                 $this->line("  ✓ Garantía {$equipo->nombre} (en {$dias}d)");
             });
     }
 
-    private function notificarReparacionesExtendidas(): void
-    {
-        $umbralDias = 10;
-
-        $estadoReparacion = EstadoEquipo::where('nombre', EstadoEquipo::EN_REPARACION)->first();
-        if (! $estadoReparacion) {
-            return;
-        }
-
-        // Detectar por la auditoría cuándo cambió al estado de reparación
-        // Fallback: usar updated_at del equipo cuando estado_id cambió
-        Equipo::where('estado_id', $estadoReparacion->id)
-            ->where('updated_at', '<=', now()->subDays($umbralDias))
-            ->with('empresa')
-            ->each(function (Equipo $equipo) {
-                $dias = (int) now()->diffInDays($equipo->updated_at);
-                $notif = new EquipoReparacionExtendidaNotification($equipo, $dias);
-
-                $destinatarios = $equipo->empresa_id
-                    ? $this->analistasDeEmpresa($equipo->empresa_id)
-                    : collect();
-
-                foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
-                    $user->notify($notif);
-                }
-
-                $this->line("  ✓ Reparación extendida: {$equipo->nombre} ({$dias}d)");
-            });
-    }
 }
+
