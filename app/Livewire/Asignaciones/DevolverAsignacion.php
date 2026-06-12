@@ -4,6 +4,8 @@ namespace App\Livewire\Asignaciones;
 
 use App\Models\Asignacion;
 use App\Models\AsignacionItem;
+use App\Models\User;
+use App\Notifications\DevolucionAsignacionNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
@@ -152,6 +154,17 @@ class DevolverAsignacion extends Component
 
             $cant = count($this->seleccionados);
             session()->flash('success', "Devolución registrada correctamente. {$cant} equipo(s) liberado(s).");
+
+            rescue(function () use ($cant) {
+                $asignacion = Asignacion::with(['empresa', 'usuario', 'areaEmpresa', 'areaDepartamento'])->find($this->asignacionId);
+                if (! $asignacion) return;
+                $notif = new DevolucionAsignacionNotification($asignacion, auth()->user(), $cant);
+                if ($asignacion->usuario_id) {
+                    $asignacion->usuario?->notify($notif);
+                }
+                User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
+            }, report: true);
+
             $this->redirect(route('admin.asignaciones.index'), navigate: true);
 
         } catch (\Exception $e) {
