@@ -47,8 +47,9 @@ class TrasladoCreadoNotification extends Notification implements ShouldQueue
 
     public function toMail(object $notifiable): MailMessage
     {
-        $t     = $this->traslado;
-        $items = $t->items()->count();
+        $t       = $this->traslado;
+        $items   = $t->items()->count();
+        $destino = $t->ubicacionDestino?->nombre ?? 'tu ubicación';
         return (new MailMessage)
             ->subject("Cerberus · Traslado #{$t->numero} registrado")
             ->view('emails.notificacion', [
@@ -56,7 +57,7 @@ class TrasladoCreadoNotification extends Notification implements ShouldQueue
                 'icono'    => '🚚',
                 'tipo'     => 'info',
                 'etiqueta' => 'Traslado',
-                'mensaje'  => "{$items} equipo(s) del traslado #{$t->numero} están en camino a {$t->ubicacionDestino?->nombre ?? 'tu ubicación'}. ¡Prepárate para recibirlos!",
+                'mensaje'  => "{$items} equipo(s) del traslado #{$t->numero} están en camino a {$destino}. ¡Prepárate para recibirlos!",
                 'detalles' => [
                     'Número'  => $t->numero,
                     'Destino' => $t->ubicacionDestino?->nombre ?? '—',
