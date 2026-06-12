@@ -4,6 +4,8 @@ namespace App\Livewire\Traslados;
 
 use App\Models\Equipo;
 use App\Models\Traslado;
+use App\Models\User;
+use App\Notifications\TrasladoRevertidoNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\On;
@@ -67,7 +69,19 @@ class RevertirTrasladoModal extends Component
         } catch (\Exception $e) {
             Log::error('RevertirTrasladoModal@confirmar: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al revertir el traslado.');
+            return;
         }
+
+        rescue(function () {
+            $traslado = Traslado::with(['ubicacionOrigen', 'ubicacionDestino', 'items'])->find($this->trasladoId);
+            if (! $traslado) return;
+            $notif    = new TrasladoRevertidoNotification($traslado, auth()->user(), $this->motivoReversion);
+            $origenEmpresaId = $traslado->ubicacionOrigen?->empresa_id;
+            if ($origenEmpresaId) {
+                User::role('Analista')->where('empresa_activa_id', $origenEmpresaId)->each(fn($u) => $u->notify($notif));
+            }
+            User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
+        }, report: true);
     }
 
     public function cerrar(): void

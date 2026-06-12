@@ -39,6 +39,12 @@ class NotificationBell extends Component
         $this->unreadCount = 0;
     }
 
+    public function markRead(string $id): void
+    {
+        auth()->user()?->notifications()->find($id)?->markAsRead();
+        $this->unreadCount = auth()->user()?->unreadNotifications()->count() ?? 0;
+    }
+
     public function render()
     {
         $recientes = auth()->user()

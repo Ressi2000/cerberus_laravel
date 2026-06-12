@@ -4,6 +4,8 @@ namespace App\Livewire\Equipos;
 
 use App\Models\Equipo;
 use App\Models\EstadoEquipo;
+use App\Models\User;
+use App\Notifications\EquipoDadoDeBajaNotification;
 use Livewire\Component;
 use Livewire\Attributes\On;
 use Illuminate\Support\Facades\Log;
@@ -32,34 +34,28 @@ class EquipoDeleteModal extends Component
                 type: 'error',
                 message: 'No se puede dar de baja: el equipo tiene una asignación activa. Primero realiza la devolución.'
             );
-            return;   // No abre el modal
+            return;
         }
 
         $this->equipo = $equipo;
         $this->open   = true;
     }
 
-    /**
-     * Desactivación lógica:
-     *   - activo    = false        → dado de baja lógico
-     *   - estado_id = "Dado de baja" → reflejo visual en la tabla
-     *
-     * NO usa deleted_at. El registro permanece para auditoría.
-     * La eliminación real (deleted_at) es exclusiva del Administrador.
-     */
     public function desactivar(): void
     {
         if (! $this->equipo) return;
 
         $this->authorize('delete', $this->equipo);
 
+        $equipo = $this->equipo;
+
         try {
             $estadoBaja = EstadoEquipo::where('nombre', 'Dado de baja')->value('id');
-            $codigo     = $this->equipo->codigo_interno;
+            $codigo     = $equipo->codigo_interno;
 
-            $this->equipo->update([
+            $equipo->update([
                 'activo'    => false,
-                'estado_id' => $estadoBaja ?? $this->equipo->estado_id,
+                'estado_id' => $estadoBaja ?? $equipo->estado_id,
             ]);
 
             $this->close();
@@ -69,7 +65,13 @@ class EquipoDeleteModal extends Component
             Log::error('Error desactivando equipo: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al dar de baja el equipo.');
             $this->close();
+            return;
         }
+
+        rescue(function () use ($equipo) {
+            $notif = new EquipoDadoDeBajaNotification($equipo, auth()->user());
+            User::role('Administrador')->each(fn($admin) => $admin->notify($notif));
+        }, report: true);
     }
 
     public function close(): void

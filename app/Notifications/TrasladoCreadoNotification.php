@@ -26,10 +26,10 @@ class TrasladoCreadoNotification extends Notification implements ShouldQueue
         $items = $t->items()->count();
         return [
             'tipo'    => 'traslado_creado',
-            'icono'   => 'swap_horiz',
+            'icono'   => 'local_shipping',
             'color'   => 'blue',
-            'titulo'  => 'Traslado registrado',
-            'mensaje' => "Se registró el traslado #{$t->numero} hacia {$t->ubicacionDestino?->nombre}.",
+            'titulo'  => '¡Equipos en camino!',
+            'mensaje' => "El traslado #{$t->numero} fue registrado — {$items} equipo(s) van camino a {$t->ubicacionDestino?->nombre}.",
             'url'     => route('admin.traslados.index'),
             'meta'    => [
                 'traslado_id' => $t->id,
@@ -52,11 +52,11 @@ class TrasladoCreadoNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject("Cerberus · Traslado #{$t->numero} registrado")
             ->view('emails.notificacion', [
-                'titulo'   => 'Traslado registrado',
-                'icono'    => '🔄',
+                'titulo'   => '¡Equipos en camino hacia ti!',
+                'icono'    => '🚚',
                 'tipo'     => 'info',
                 'etiqueta' => 'Traslado',
-                'mensaje'  => "Se ha registrado el traslado #{$t->numero} en el sistema Cerberus.",
+                'mensaje'  => "{$items} equipo(s) del traslado #{$t->numero} están en camino a {$t->ubicacionDestino?->nombre ?? 'tu ubicación'}. ¡Prepárate para recibirlos!",
                 'detalles' => [
                     'Número'  => $t->numero,
                     'Destino' => $t->ubicacionDestino?->nombre ?? '—',

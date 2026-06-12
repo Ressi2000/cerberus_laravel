@@ -1,4 +1,22 @@
-<div x-data="{ open: false }" @click.outside="open = false" class="relative" wire:poll.30s="refresh">
+<div x-data="{
+    open: false,
+    playSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, ctx.currentTime);
+            osc.frequency.setValueAtTime(660, ctx.currentTime + 0.12);
+            gain.gain.setValueAtTime(0.25, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.35);
+        } catch(e) {}
+    }
+}" @click.outside="open = false" @notificacion-nueva.window="playSound()" class="relative" wire:poll.30s="refresh">
 
     {{-- Campana --}}
     <button @click="open = !open; if(open) $dispatch('bell-opened')"
@@ -60,6 +78,7 @@
                 @endphp
                 <a href="{{ $url ?? '#' }}"
                    @if($url) wire:navigate @endif
+                   wire:click="markRead('{{ $notif->id }}')"
                    @click="open = false"
                    class="flex items-start gap-3 px-4 py-3 hover:bg-cerberus-mid transition-colors border-b border-cerberus-steel/50 last:border-0
                           {{ $leida ? 'opacity-60' : '' }}">
