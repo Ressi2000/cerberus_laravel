@@ -117,7 +117,7 @@
                     @enderror
                 </div>
                 @if (auth()->user()->hasRole('Administrador'))
-                    <x-form.select searchable label="Empresa de la asignación" wire:model.live="empresa_personal_id"
+                    <x-form.select label="Empresa de la asignación" wire:model.live="empresa_personal_id"
                         :options="$this->empresasArea" required
                         hint="Empresa bajo la cual quedará registrada esta asignación personal." :error="$errors->first('empresa_personal_id')" />
                 @endif
@@ -125,21 +125,21 @@
                 {{-- Área común --}}
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <x-form.select searchable label="Empresa del área *" :options="$this->empresasArea" wire:model.live="area_empresa_id"
+                        <x-form.select label="Empresa del área *" :options="$this->empresasArea" wire:model.live="area_empresa_id"
                             placeholder="— Empresa —" />
                         @error('area_empresa_id')
                             <p class="text-xs text-red-500 -mt-3 mb-2">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
-                        <x-form.select searchable label="Departamento *" :options="$this->departamentosArea->isEmpty() ? [] : $this->departamentosArea->toArray()" wire:model="area_departamento_id"
+                        <x-form.select label="Departamento *" :options="$this->departamentosArea->isEmpty() ? [] : $this->departamentosArea->toArray()" wire:model="area_departamento_id"
                             placeholder="{{ $area_empresa_id ? '— Departamento —' : '← Primero empresa' }}" />
                         @error('area_departamento_id')
                             <p class="text-xs text-red-500 -mt-3 mb-2">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
-                        <x-form.select searchable label="Responsable *" :options="$this->responsablesArea->pluck('name', 'id')->toArray()" wire:model="area_responsable_id"
+                        <x-form.select label="Responsable *" :options="$this->responsablesArea->pluck('name', 'id')->toArray()" wire:model="area_responsable_id"
                             placeholder="— Responsable —" />
                         @error('area_responsable_id')
                             <p class="text-xs text-red-500 -mt-3 mb-2">{{ $message }}</p>
