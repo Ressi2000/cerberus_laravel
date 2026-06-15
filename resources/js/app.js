@@ -1,6 +1,19 @@
 import './bootstrap'
 // ❌ NO importar Alpine aquí — Livewire 3 lo incluye internamente
 // import Alpine from 'alpinejs'  ← COMENTADO / ELIMINADO
+// Si Alpine no está presente (p. ej. en páginas sin Livewire), lo cargamos dinámicamente.
+if (typeof window.Alpine === 'undefined') {
+    import('alpinejs').then((module) => {
+        window.Alpine = module.default || module
+        // start se llamará automáticamente cuando el script se ejecute,
+        // pero por seguridad llamamos a start() si existe.
+        if (window.Alpine && typeof window.Alpine.start === 'function') {
+            window.Alpine.start()
+        }
+    }).catch(() => {
+        // Falla silenciosa: si Alpine no carga, los componentes no-searchable seguirán funcionando
+    })
+}
 
 import 'flowbite'
 import Cropper from 'cropperjs'
