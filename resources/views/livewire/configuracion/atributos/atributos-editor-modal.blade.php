@@ -116,12 +116,12 @@
                                 </div>
 
                                 {{-- Toggle: Filtrable --}}
-                                @php $noFiltrable = $fila['eliminar'] || in_array($fila['tipo'], ['file','group']); @endphp
+                                @php $noFiltrable = $fila['eliminar'] || $fila['tipo'] === 'file'; @endphp
                                 <div class="flex justify-center">
                                     <button wire:click="$set('filas.{{ $i }}.filtrable', {{ $fila['filtrable'] ? 'false' : 'true' }})"
                                         type="button"
                                         {{ $noFiltrable ? 'disabled' : '' }}
-                                        title="Filtrable{{ in_array($fila['tipo'],['file','group']) ? ' (deshabilitado para este tipo)' : '' }}"
+                                        title="Filtrable{{ $fila['tipo'] === 'file' ? ' (deshabilitado para este tipo)' : '' }}"
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition
                                                {{ $fila['filtrable'] && !$noFiltrable
                                                    ? 'bg-green-50 dark:bg-green-500/15 text-green-600 dark:text-green-400'
@@ -132,12 +132,12 @@
                                 </div>
 
                                 {{-- Toggle: Visible en tabla --}}
-                                @php $noVisible = $fila['eliminar'] || in_array($fila['tipo'], ['file','group']); @endphp
+                                @php $noVisible = $fila['eliminar'] || $fila['tipo'] === 'file'; @endphp
                                 <div class="flex justify-center">
                                     <button wire:click="$set('filas.{{ $i }}.visible_en_tabla', {{ $fila['visible_en_tabla'] ? 'false' : 'true' }})"
                                         type="button"
                                         {{ $noVisible ? 'disabled' : '' }}
-                                        title="Visible en tabla{{ in_array($fila['tipo'],['file','group']) ? ' (deshabilitado para este tipo)' : '' }}"
+                                        title="Visible en tabla{{ $fila['tipo'] === 'file' ? ' (deshabilitado para este tipo)' : '' }}"
                                         class="w-7 h-7 rounded-lg flex items-center justify-center transition
                                                {{ $fila['visible_en_tabla'] && !$noVisible
                                                    ? 'bg-purple-50 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400'

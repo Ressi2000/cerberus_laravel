@@ -343,7 +343,7 @@ class AtributosEditorModal extends Component
     {
         $tipo = $this->filas[$index]['tipo'];
 
-        if ($tipo === 'file' || $tipo === 'group') {
+        if ($tipo === 'file') {
             $this->filas[$index]['filtrable']        = false;
             $this->filas[$index]['visible_en_tabla'] = false;
         }
