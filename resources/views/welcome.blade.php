@@ -22,10 +22,16 @@
     <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
 
         <!-- Fondo con el GIF (ocupando toda la pantalla) -->
+        <!-- Fondo con el video (ocupando toda la pantalla) -->
         <div class="absolute inset-0 z-0">
-            <div class="w-full h-full">
-                <img src="{{ asset('images/CB2.0.gif') }}" alt="Cerberus Background"
-                    class="w-full h-full object-cover object-center" style="mix-blend-mode: multiply; opacity: 0.9;">
+            <div class="w-full h-full overflow-hidden">
+                <video autoplay loop playsinline class="w-full h-full object-cover object-center">
+                    <source src="{{ asset('images/CB2.0.mp4') }}" type="video/mp4">
+                    <!-- Fallback si no carga -->
+                    <img src="{{ asset('images/CB2.0.gif') }}" alt="Cerberus Background"
+                        class="w-full h-full object-cover object-center"
+                        style="mix-blend-mode: multiply; opacity: 0.9;">
+                </video>
             </div>
             <!-- Overlay oscuro para legibilidad -->
             <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80"></div>
@@ -177,7 +183,8 @@
                     class="inline-block px-4 py-2 rounded-full bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10 border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20 text-[#1E40AF] dark:text-[#A9D6E5] text-sm font-medium mb-4 backdrop-blur-sm">
                     🔐 Control de acceso
                 </span>
-                <h3 class="text-4xl md:text-5xl font-bold text-[#0D1B2A] dark:text-white transition-colors duration-500">
+                <h3
+                    class="text-4xl md:text-5xl font-bold text-[#0D1B2A] dark:text-white transition-colors duration-500">
                     Acceso diferenciado por <span class="text-[#1E40AF] dark:text-[#A9D6E5]">roles</span>
                 </h3>
             </div>
@@ -209,18 +216,24 @@
             <div
                 class="relative overflow-hidden rounded-3xl p-12 bg-gradient-to-r from-[#1E40AF]/20 to-[#1E40AF]/5 dark:from-[#1E40AF]/30 dark:to-[#A9D6E5]/30 border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20 backdrop-blur-sm">
                 <!-- Elementos decorativos -->
-                <div class="absolute -top-20 -right-20 w-64 h-64 bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
-                <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-[#1E40AF]/5 dark:bg-[#1E40AF]/10 rounded-full blur-3xl"></div>
+                <div
+                    class="absolute -top-20 -right-20 w-64 h-64 bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10 rounded-full blur-3xl">
+                </div>
+                <div
+                    class="absolute -bottom-20 -left-20 w-64 h-64 bg-[#1E40AF]/5 dark:bg-[#1E40AF]/10 rounded-full blur-3xl">
+                </div>
 
                 <div class="relative z-10">
                     <span
                         class="inline-block px-4 py-2 rounded-full bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10 border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20 text-[#1E40AF] dark:text-[#A9D6E5] text-sm font-medium mb-6 backdrop-blur-sm">
                         🎯 Comienza ahora
                     </span>
-                    <h3 class="text-4xl md:text-5xl font-bold mb-6 text-[#0D1B2A] dark:text-white transition-colors duration-500">
+                    <h3
+                        class="text-4xl md:text-5xl font-bold mb-6 text-[#0D1B2A] dark:text-white transition-colors duration-500">
                         Controla tu infraestructura con <span class="text-[#1E40AF] dark:text-[#A9D6E5]">Cerberus</span>
                     </h3>
-                    <p class="text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto text-lg transition-colors duration-500">
+                    <p
+                        class="text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto text-lg transition-colors duration-500">
                         Solución moderna, segura y multiempresa para la gestión completa del ciclo de vida de tus
                         activos tecnológicos.
                     </p>
@@ -252,7 +265,7 @@
             <div class="absolute top-0 right-0 w-64 h-64 bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
             <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
         </div>
-        
+
         <div class="relative z-10 py-12 text-center text-gray-300 text-sm">
             <div class="max-w-7xl mx-auto px-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6">
@@ -265,7 +278,8 @@
                     <div class="flex gap-8 text-sm">
                         <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Política de
                             privacidad</a>
-                        <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Términos de uso</a>
+                        <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Términos de
+                            uso</a>
                         <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Contacto</a>
                     </div>
 
