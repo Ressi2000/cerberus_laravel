@@ -10,9 +10,9 @@
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
             font-size: 8.5pt;
-            color: #1a1a2e;
+            color: #0F172A;
             background: #ffffff;
-            line-height: 1.4;
+            line-height: 1.45;
             /* Márgenes de página controlados aquí, no con @page */
             margin: 14mm 16mm 14mm 16mm;
         }
@@ -23,8 +23,8 @@
         .header-principal {
             width: 100%;
             border-bottom: 2.5pt solid #1E3A8A;
-            padding-bottom: 8pt;
-            margin-bottom: 5pt;
+            padding-bottom: 9pt;
+            margin-bottom: 7pt;
         }
 
         .header-table {
@@ -80,10 +80,11 @@
             font-size: 6pt;
             font-weight: bold;
             text-align: center;
-            padding: 5pt 8pt;
-            border-radius: 3pt;
+            padding: 6pt 9pt;
+            border-radius: 4pt;
             text-transform: uppercase;
             line-height: 1.5;
+            letter-spacing: 0.3pt;
         }
 
         /* Meta del documento */
@@ -105,27 +106,28 @@
            TÍTULOS
         ══════════════════════════════════════════════════════════════════════ */
         .doc-title {
-            font-size: 12pt;
+            font-size: 13pt;
             font-weight: bold;
             color: #1E3A8A;
             text-align: center;
-            margin-bottom: 4pt;
+            margin-bottom: 3pt;
+            letter-spacing: 0.2pt;
         }
 
         .doc-subtitle {
             font-size: 7.5pt;
             color: #64748B;
             text-align: center;
-            margin-bottom: 12pt;
+            margin-bottom: 14pt;
         }
 
         /* ══════════════════════════════════════════════════════════════════════
            SECCIONES DE DATOS (receptor / trabajador)
         ══════════════════════════════════════════════════════════════════════ */
         .section {
-            margin-bottom: 10pt;
+            margin-bottom: 11pt;
             border: 0.5pt solid #CBD5E1;
-            border-radius: 4pt;
+            border-radius: 5pt;
             overflow: hidden;
         }
 
@@ -136,7 +138,7 @@
             font-weight: bold;
             letter-spacing: 0.7pt;
             text-transform: uppercase;
-            padding: 4pt 10pt;
+            padding: 5pt 10pt;
         }
 
         .section-title.area       { background: #0F6E56; }
@@ -202,9 +204,9 @@
            El primer thead tiene el título de sección + encabezados de columna.
         ══════════════════════════════════════════════════════════════════════ */
         .equipos-section {
-            margin-bottom: 10pt;
+            margin-bottom: 11pt;
             border: 0.5pt solid #CBD5E1;
-            border-radius: 4pt;
+            border-radius: 5pt;
             overflow: hidden;
         }
 
@@ -252,11 +254,12 @@
         /* Celdas del cuerpo */
         .data-table tbody td {
             font-size: 7.5pt;
-            padding: 4pt 6pt;
+            padding: 5pt 6pt;
             color: #1a1a2e;
             vertical-align: top;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            border-bottom: 0.3pt solid #EEF2F7;
         }
 
         /* Alternancia de filas */
@@ -404,14 +407,15 @@
             display: inline-block;
             font-size: 6.5pt;
             font-weight: bold;
-            border-radius: 2pt;
-            padding: 1.5pt 5pt;
+            border-radius: 8pt;
+            padding: 2pt 7pt;
             text-transform: uppercase;
+            letter-spacing: 0.2pt;
         }
 
-        .badge-pendiente { background: #FEE2E2; color: #991B1B; }
-        .badge-devuelto  { background: #FEF9C3; color: #713F12; }
-        .badge-ok        { background: #D1FAE5; color: #065F46; }
+        .badge-pendiente { background: #FEE2E2; color: #991B1B; border: 0.4pt solid #FCA5A5; }
+        .badge-devuelto  { background: #FEF9C3; color: #713F12; border: 0.4pt solid #FDE68A; }
+        .badge-ok        { background: #D1FAE5; color: #065F46; border: 0.4pt solid #6EE7B7; }
 
         /* ══════════════════════════════════════════════════════════════════════
            FIRMAS — flujo normal al final del documento
@@ -420,9 +424,9 @@
            sin romper nada.
         ══════════════════════════════════════════════════════════════════════ */
         .firmas-wrapper {
-            margin-top: 28pt;
+            margin-top: 30pt;
             border-top: 0.8pt solid #CBD5E1;
-            padding-top: 8pt;
+            padding-top: 10pt;
         }
 
         .firmas-meta {
