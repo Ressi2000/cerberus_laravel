@@ -141,10 +141,6 @@ class ExportController extends Controller
             $query->where('codigo_interno', 'like', "%{$request->search}%");
         }
 
-        if ($request->serial) {
-            $query->where('serial', 'like', "%{$request->serial}%");
-        }
-
         if ($request->categoria_id) {
             $query->where('categoria_id', $request->categoria_id);
         }

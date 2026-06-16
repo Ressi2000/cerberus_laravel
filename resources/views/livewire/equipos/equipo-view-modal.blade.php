@@ -142,14 +142,6 @@
                         <h4 class="text-cerberus-accent font-semibold text-sm mb-3">Datos generales</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-cerberus-light">
                             <p>
-                                <span class="font-semibold text-white">Serial:</span>
-                                {{ $equipo->serial ?? '—' }}
-                            </p>
-                            <p>
-                                <span class="font-semibold text-white">Hostname:</span>
-                                {{ $equipo->nombre_maquina ?? '—' }}
-                            </p>
-                            <p>
                                 <span class="font-semibold text-white">Empresa:</span>
                                 {{ $equipo->empresa->nombre ?? '—' }}
                             </p>
