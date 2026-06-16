@@ -88,6 +88,15 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
         Route::resource('/equipos', EquipoController::class);
         Route::get('/equipos/{equipo}/etiqueta', [EquipoController::class, 'etiqueta'])->name('equipos.etiqueta');
+
+        // Destino del QR impreso en la etiqueta física: misma vista de historial
+        // que admin.equipos.show, pero exige firma válida (signed) para que la
+        // URL no pueda ser adivinada/alterada (ej. cambiar el id en la barra de
+        // direcciones). Sigue exigiendo login + rol + EquipoPolicy::view igual
+        // que el resto del módulo — la firma es una capa adicional, no la única.
+        Route::get('/equipos/{equipo}/historial-qr', [EquipoController::class, 'show'])
+            ->name('equipos.historial.qr')
+            ->middleware('signed');
     });
 
     // Configuración (solo para Administrador)

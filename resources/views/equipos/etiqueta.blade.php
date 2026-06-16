@@ -189,7 +189,7 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
-    QRCode.toCanvas(document.getElementById('qr-canvas'), "{{ route('admin.equipos.show', $equipo) }}", {
+    QRCode.toCanvas(document.getElementById('qr-canvas'), @js(\Illuminate\Support\Facades\URL::signedRoute('admin.equipos.historial.qr', ['equipo' => $equipo->id])), {
         width: 78, margin: 1,
         color: { dark: '#111827', light: '#ffffff' }
     })
