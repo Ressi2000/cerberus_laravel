@@ -133,6 +133,7 @@ class ExportController extends Controller
             'ubicacion',
             'creadoPor',
             'atributosActuales.atributo',
+            'grupoInstancias.atributo',
         ])->visiblePara(Auth::user());
 
         // ── Filtros (los mismos que usa EquiposTable Livewire) ───────────────
