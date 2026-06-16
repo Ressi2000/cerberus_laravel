@@ -96,11 +96,11 @@ class AtributoEquipo extends Model
     /** Atributos que aparecen en los filtros de la tabla de equipos */
     public function scopeFiltrables($query)
     {
-        // Los atributos tipo 'file' NUNCA son filtrables (no tiene sentido buscar por path)
-        // y los tipo 'group' tampoco: sus valores viven en equipo_atributo_grupo_instancias,
-        // no en equipo_atributo_valores, así que el filtro EAV nunca encontraría coincidencias.
+        // Los atributos tipo 'file' NUNCA son filtrables (no tiene sentido buscar por path).
+        // Los tipo 'group' sí pueden marcarse filtrables: se filtran por sus sub-campos,
+        // contra equipo_atributo_grupo_instancias (ver EquiposTable::render()).
         return $query->where('filtrable', true)
-            ->whereNotIn('tipo', [self::TIPO_FILE, self::TIPO_GROUP]);
+            ->where('tipo', '!=', self::TIPO_FILE);
     }
 
     /** Atributos que se muestran como columna en el listado de equipos */

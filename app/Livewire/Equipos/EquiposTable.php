@@ -127,6 +127,42 @@ class EquiposTable extends Component
             ->get();
     }
 
+    /**
+     * Columnas finales a renderizar: una por atributo simple, o una por
+     * sub-campo cuando el atributo es de tipo 'group' (cada instancia se
+     * concatena en la celda, ver render() de la tabla).
+     */
+    #[Computed]
+    public function columnasVisibles(): Collection
+    {
+        $columnas = collect();
+
+        foreach ($this->atributosVisibles as $attr) {
+            if ($attr->tipo === AtributoEquipo::TIPO_GROUP) {
+                foreach ($attr->sub_campos ?? [] as $sub) {
+                    $columnas->push([
+                        'key'         => "attr_{$attr->id}_sub_{$sub['id']}",
+                        'label'       => "{$attr->nombre} - {$sub['nombre']}",
+                        'atributo_id' => $attr->id,
+                        'tipo'        => $sub['tipo'],
+                        'sub_id'      => $sub['id'],
+                    ]);
+                }
+                continue;
+            }
+
+            $columnas->push([
+                'key'         => "attr_{$attr->id}",
+                'label'       => $attr->nombre,
+                'atributo_id' => $attr->id,
+                'tipo'        => $attr->tipo,
+                'sub_id'      => null,
+            ]);
+        }
+
+        return $columnas;
+    }
+
     #[Computed]
     public function headers(): array
     {
@@ -134,8 +170,8 @@ class EquiposTable extends Component
             return ['Código', 'Categoría', 'Estado', 'Ubicación', 'Condición', 'Acciones'];
         }
 
-        $eav = $this->atributosVisibles
-            ->map(fn($a) => ['label' => $a->nombre, 'key' => 'attr_' . $a->id])
+        $eav = $this->columnasVisibles
+            ->map(fn($c) => ['label' => $c['label'], 'key' => $c['key']])
             ->toArray();
 
         return array_merge(
@@ -225,11 +261,41 @@ class EquiposTable extends Component
         if ($this->fecha_desde) $query->whereDate('fecha_adquisicion', '>=', $this->fecha_desde);
         if ($this->fecha_hasta) $query->whereDate('fecha_adquisicion', '<=', $this->fecha_hasta);
 
-        // Filtros EAV dinámicos
-        foreach ($this->filtros as $atributoId => $valor) {
+        // Filtros EAV dinámicos (atributos simples + sub-campos de grupo)
+        foreach ($this->filtros as $clave => $valor) {
             if ($valor === null || $valor === '') continue;
 
-            $atributo = $this->atributosFiltrables->firstWhere('id', $atributoId);
+            // Sub-campo de un atributo tipo 'group': clave = "{atributoId}_sub_{subId}"
+            if (str_contains((string) $clave, '_sub_')) {
+                [$atributoId, $subId] = array_pad(explode('_sub_', $clave, 2), 2, null);
+
+                $atributo = $this->atributosFiltrables->firstWhere('id', (int) $atributoId);
+                $subCampo = collect($atributo?->sub_campos ?? [])->firstWhere('id', $subId);
+
+                $query->whereExists(function ($sub) use ($atributoId, $subId, $valor, $subCampo) {
+                    $sub->selectRaw(1)
+                        ->from('equipo_atributo_grupo_instancias as egi')
+                        ->whereColumn('egi.equipo_id', 'equipos.id')
+                        ->where('egi.atributo_id', $atributoId);
+
+                    // Sintaxis "columna->clave" de Eloquent: agnóstica de motor de BD
+                    // (MySQL/SQLite/Postgres), a diferencia de JSON_EXTRACT/JSON_UNQUOTE crudo.
+                    $columna = "egi.valores->{$subId}";
+
+                    if ($subCampo && in_array($subCampo['tipo'], ['integer', 'decimal'])) {
+                        $sub->where($columna, $valor);
+                    } elseif ($subCampo && $subCampo['tipo'] === 'boolean') {
+                        $sub->where($columna, (int) $valor);
+                    } else {
+                        $sub->where($columna, 'like', "%{$valor}%");
+                    }
+                });
+
+                continue;
+            }
+
+            $atributoId = $clave;
+            $atributo   = $this->atributosFiltrables->firstWhere('id', $atributoId);
 
             $query->whereExists(function ($sub) use ($atributoId, $valor, $atributo) {
                 $sub->selectRaw(1)

@@ -224,9 +224,7 @@ class AtributoModal extends Component
                 'slug'             => Str::slug($this->nombre),
                 'tipo'             => $this->tipo,
                 'requerido'        => $this->requerido,
-                // 'group' nunca es filtrable: sus valores viven en
-                // equipo_atributo_grupo_instancias, no en equipo_atributo_valores.
-                'filtrable'        => $this->tipo === 'group' ? false : $this->filtrable,
+                'filtrable'        => $this->filtrable,
                 'visible_en_tabla' => $this->visible_en_tabla,
                 'orden'            => $this->orden,
                 'opciones'         => $opcionesJson,
