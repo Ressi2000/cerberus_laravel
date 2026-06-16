@@ -34,6 +34,13 @@ class PrestamoController extends Controller
         return view('prestamos.devolver', compact('prestamo'));
     }
 
+    /** Formulario de devolución por usuario (todos sus equipos en préstamo) */
+    public function devolverUsuario(User $usuario)
+    {
+        $this->authorize('viewAny', Prestamo::class);
+        return view('prestamos.devolver-usuario', compact('usuario'));
+    }
+
     /** Página de historial por usuario */
     public function historial(User $usuario)
     {

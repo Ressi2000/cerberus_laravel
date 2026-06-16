@@ -249,6 +249,20 @@
                                         Historial completo
                                     </a>
                                 </li>
+                                @if ($prestamosActivos->count() > 1)
+                                    <li>
+                                        <a href="{{ route('admin.prestamos.devolver.usuario', $usuario) }}"
+                                           wire:navigate @click="close()"
+                                           class="flex items-center gap-3 px-4 py-2.5 w-full
+                                                  text-gray-600 dark:text-cerberus-light
+                                                  hover:bg-amber-50 dark:hover:bg-amber-500/10
+                                                  hover:text-amber-600 dark:hover:text-amber-400
+                                                  transition-colors duration-100">
+                                            <span class="material-icons text-base text-amber-500">keyboard_return</span>
+                                            Devolver todos los equipos
+                                        </a>
+                                    </li>
+                                @endif
                             </x-slot>
                         </x-table.table-actions>
                     </td>

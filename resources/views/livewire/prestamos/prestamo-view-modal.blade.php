@@ -245,7 +245,15 @@
                         Ver historial completo
                     </a>
 
-                    @if ($this->prestamoActivo)
+                    @if ($this->equiposActivos->pluck('prestamo_id')->unique()->count() > 1)
+                        <a href="{{ route('admin.prestamos.devolver.usuario', $this->usuario) }}"
+                           wire:navigate
+                           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                                  text-white bg-cerberus-primary hover:bg-cerberus-primary/80 transition">
+                            <span class="material-icons text-base">assignment_return</span>
+                            Registrar devolución
+                        </a>
+                    @elseif ($this->prestamoActivo)
                         <a href="{{ route('admin.prestamos.devolver', $this->prestamoActivo) }}"
                            wire:navigate
                            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
