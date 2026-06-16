@@ -334,7 +334,10 @@ class EditarEquipo extends Component
             });
 
             session()->flash('success', 'Equipo actualizado correctamente.');
-            $this->redirect(route('admin.equipos.index'), navigate: true);
+            // Redirect sin navigate: wire:navigate puede servir una versión
+            // cacheada (prefetch) de la página destino, sin la sesión flash
+            // recién escrita, y el toast de éxito nunca aparece.
+            $this->redirect(route('admin.equipos.index'));
         } catch (\Exception $e) {
             Log::error('EditarEquipo@actualizar: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al actualizar el equipo. Por favor intenta nuevamente.');

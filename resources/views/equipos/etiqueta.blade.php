@@ -31,7 +31,7 @@
 
         /* ── Tarjeta principal ──────────────────────────── */
         .label-card {
-            width: 360px;
+            width: 260px;
             background: var(--c-mid);
             border: 1.5px solid var(--c-steel);
             border-radius: 14px;
@@ -42,30 +42,30 @@
         /* ── Header ─────────────────────────────────────── */
         .label-header {
             background: var(--c-primary);
-            padding: 12px 18px;
+            padding: 8px 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
         }
-        .brand        { font-size: 17px; font-weight: 900; color: #fff; letter-spacing: 2.5px; }
-        .brand-sub    { font-size: 8px; color: rgba(255,255,255,.65); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 1px; }
+        .brand        { font-size: 13px; font-weight: 900; color: #fff; letter-spacing: 2px; }
+        .brand-sub    { font-size: 6.5px; color: rgba(255,255,255,.65); text-transform: uppercase; letter-spacing: 1px; margin-top: 1px; }
         .cat-badge {
-            font-size: 10px; font-weight: 600;
+            font-size: 8px; font-weight: 600;
             color: rgba(255,255,255,.9);
             background: rgba(255,255,255,.15);
             border: 1px solid rgba(255,255,255,.25);
-            padding: 3px 10px; border-radius: 20px;
+            padding: 2px 8px; border-radius: 20px;
         }
 
         /* ── Código interno ──────────────────────────────── */
         .label-code {
-            padding: 18px 18px 14px;
+            padding: 12px 12px 10px;
             text-align: center;
             border-bottom: 1px solid var(--c-steel);
         }
         .code-value {
-            font-size: 30px; font-weight: 900;
-            color: #fff; letter-spacing: 3px;
+            font-size: 20px; font-weight: 900;
+            color: #fff; letter-spacing: 2px;
             font-family: 'Courier New', monospace;
         }
 
@@ -74,17 +74,17 @@
             display: flex;
             align-items: center;
             justify-content: space-around;
-            padding: 18px 16px;
-            gap: 10px;
+            padding: 12px 10px;
+            gap: 6px;
         }
-        .code-block { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+        .code-block { display: flex; flex-direction: column; align-items: center; gap: 5px; }
         .code-block canvas, .code-block svg { border-radius: 4px; }
         .code-label {
-            font-size: 8px; font-weight: 600;
+            font-size: 6.5px; font-weight: 600;
             color: var(--c-accent);
             text-transform: uppercase; letter-spacing: 1px;
         }
-        .v-divider { width: 1px; height: 90px; background: var(--c-steel); opacity: 0.5; }
+        .v-divider { width: 1px; height: 64px; background: var(--c-steel); opacity: 0.5; }
 
         /* ── Info strip (fechas) ─────────────────────────── */
         .label-info {
@@ -92,12 +92,12 @@
             border-top: 1px solid var(--c-steel);
         }
         .info-cell {
-            flex: 1; padding: 10px 14px;
+            flex: 1; padding: 7px 10px;
             border-right: 1px solid var(--c-steel);
         }
         .info-cell:last-child { border-right: none; }
-        .info-label { font-size: 8px; color: var(--c-accent); text-transform: uppercase; letter-spacing: .8px; display: block; margin-bottom: 2px; }
-        .info-value { font-size: 12px; color: var(--c-light); font-weight: 600; }
+        .info-label { font-size: 6.5px; color: var(--c-accent); text-transform: uppercase; letter-spacing: .8px; display: block; margin-bottom: 2px; }
+        .info-value { font-size: 10px; color: var(--c-light); font-weight: 600; }
 
         /* ── Botón imprimir ──────────────────────────────── */
         .btn-print {
@@ -114,7 +114,7 @@
         /* ── Print ───────────────────────────────────────── */
         @media print {
             body { background: #fff; padding: 0; min-height: unset; }
-            .label-card { box-shadow: none; border: 1.5px solid #333; border-radius: 8px; width: 340px; }
+            .label-card { box-shadow: none; border: 1.5px solid #333; border-radius: 8px; width: 250px; }
             .label-header { background: #1E40AF; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .code-value   { color: #111; }
             .code-label   { color: #6b7280; }
@@ -190,13 +190,13 @@
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script>
     QRCode.toCanvas(document.getElementById('qr-canvas'), "{{ route('admin.equipos.show', $equipo) }}", {
-        width: 110, margin: 1,
+        width: 78, margin: 1,
         color: { dark: '#111827', light: '#ffffff' }
     })
 
     JsBarcode('#barcode', "{{ $equipo->id }}", {
-        format: 'CODE128', width: 2, height: 55,
-        displayValue: true, fontSize: 12, margin: 4,
+        format: 'CODE128', width: 1.4, height: 40,
+        displayValue: true, fontSize: 9, margin: 3,
         background: '#ffffff', lineColor: '#111827',
     })
 </script>

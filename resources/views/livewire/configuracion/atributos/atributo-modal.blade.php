@@ -268,6 +268,9 @@
                             ['filtrable',         'Filtrable',         'Aparece como filtro en el inventario.'],
                             ['visible_en_tabla',  'Visible en tabla',  'Se muestra como columna en el listado.'],
                         ] as [$campo, $etiqueta, $hint])
+                            {{-- 'filtrable' no aplica a 'group': sus valores no viven en
+                                 equipo_atributo_valores, así que el filtro nunca encontraría nada --}}
+                            @continue($campo === 'filtrable' && $tipo === 'group')
                             <div class="flex items-start justify-between py-3 px-4
                                         bg-gray-50 dark:bg-cerberus-dark/50
                                         border border-gray-200 dark:border-cerberus-steel/50 rounded-lg">

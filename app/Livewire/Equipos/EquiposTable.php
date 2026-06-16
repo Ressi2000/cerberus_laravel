@@ -110,7 +110,7 @@ class EquiposTable extends Component
         if (! $this->categoria_id) return collect();
 
         return AtributoEquipo::where('categoria_id', $this->categoria_id)
-            ->where('filtrable', true)
+            ->filtrables()
             ->orderBy('orden')
             ->get();
     }
