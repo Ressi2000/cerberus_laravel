@@ -200,6 +200,40 @@
                         </div>
                     @endif
 
+                    {{-- Características técnicas agrupadas (atributos tipo 'group') --}}
+                    @if ($equipo->grupoInstancias->isNotEmpty())
+                        @foreach ($equipo->grupoInstancias->groupBy('atributo_id') as $instancias)
+                            @php $atributoGrupo = $instancias->first()->atributo @endphp
+                            <div class="bg-cerberus-dark border border-cerberus-steel rounded-xl p-4">
+                                <h4 class="text-cerberus-accent font-semibold text-sm mb-3">
+                                    {{ $atributoGrupo?->nombre ?? 'Grupo eliminado' }}
+                                </h4>
+                                <div class="space-y-3">
+                                    @foreach ($instancias->values() as $i => $instancia)
+                                        <div class="border border-cerberus-steel/50 rounded-lg p-3">
+                                            <p class="text-xs text-cerberus-steel mb-2">#{{ $i + 1 }}</p>
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-cerberus-light">
+                                                @foreach ($atributoGrupo?->sub_campos ?? [] as $sub)
+                                                    @php $valor = $instancia->valores[$sub['id']] ?? null @endphp
+                                                    <p>
+                                                        <span class="font-semibold text-white">{{ $sub['nombre'] }}:</span>
+                                                        @if ($valor === true || $valor === '1' || $valor === 1)
+                                                            Sí
+                                                        @elseif ($valor === false || $valor === '0' || $valor === 0)
+                                                            No
+                                                        @else
+                                                            {{ $valor ?? '—' }}
+                                                        @endif
+                                                    </p>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
+                    @endif
+
                     {{-- Historial de cambios EAV --}}
                     @if (count($historial))
                         <div class="bg-cerberus-dark border border-cerberus-steel rounded-xl p-4">

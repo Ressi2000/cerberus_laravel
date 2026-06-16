@@ -25,6 +25,7 @@ class EquipoViewModal extends Component
             'estado',
             'ubicacion',
             'atributosActuales.atributo',
+            'grupoInstancias.atributo',
         ])->findOrFail($id);
 
         // ── Cargar asignación activa (si existe) ──────────────────────────────
