@@ -170,14 +170,15 @@
                 </td>
             </tr>
             <tr class="thead-cols">
-                <th style="width:10%">Código</th>
-                <th style="width:14%">Hostname</th>
-                <th style="width:12%">Categoría</th>
-                <th style="width:12%">Marca</th>
-                <th style="width:12%">Modelo</th>
-                <th style="width:14%">Serial</th>
-                <th style="width:13%">Adquisición</th>
-                <th style="width:13%">Garantía</th>
+                <th style="width:9%">Código</th>
+                <th style="width:13%">Hostname</th>
+                <th style="width:11%">Categoría</th>
+                <th style="width:11%">Marca</th>
+                <th style="width:11%">Modelo</th>
+                <th style="width:13%">Serial</th>
+                <th style="width:11%">Adquisición</th>
+                <th style="width:11%">Garantía</th>
+                <th style="width:10%">Estado</th>
             </tr>
         </thead>
         <tbody>
@@ -205,8 +206,15 @@
                     @else —
                     @endif
                 </td>
+                <td>
+                    @if ($item->devuelto)
+                        <span class="badge badge-devuelto">Devuelto</span>
+                    @else
+                        <span class="badge badge-pendiente">Pendiente</span>
+                    @endif
+                </td>
             </tr>
-            @include('planillas._eav', ['atributos' => $eavPrinc, 'esPeriferico' => false, 'colspan' => 8])
+            @include('planillas._eav', ['atributos' => $eavPrinc, 'esPeriferico' => false, 'colspan' => 9])
             @foreach ($item->hijos as $hijo)
                 @php
                     $heq    = $hijo->equipo;
@@ -223,11 +231,18 @@
                     <td>{{ $heq?->serial ?? '—' }}</td>
                     <td>{{ $heq?->fecha_adquisicion?->format('d/m/Y') ?? '—' }}</td>
                     <td>@if ($heq?->fecha_garantia_fin) {{ $heq->fecha_garantia_fin->format('d/m/Y') }} @if ($heq->fecha_garantia_fin->isPast()) <span class="garantia-vencida">VENCIDA</span> @endif @else — @endif</td>
+                    <td>
+                        @if ($hijo->devuelto)
+                            <span class="badge badge-devuelto">Devuelto</span>
+                        @else
+                            <span class="badge badge-pendiente">Pendiente</span>
+                        @endif
+                    </td>
                 </tr>
-                @include('planillas._eav', ['atributos' => $hEav, 'esPeriferico' => true, 'colspan' => 8])
+                @include('planillas._eav', ['atributos' => $hEav, 'esPeriferico' => true, 'colspan' => 9])
             @endforeach
         @empty
-            <tr><td colspan="8" style="text-align:center;color:#6B7280;font-style:italic;padding:14pt;">No hay equipos registrados en este préstamo.</td></tr>
+            <tr><td colspan="9" style="text-align:center;color:#6B7280;font-style:italic;padding:14pt;">No hay equipos registrados en este préstamo.</td></tr>
         @endforelse
         </tbody>
     </table>

@@ -112,9 +112,11 @@ class DevolverPrestamo extends Component
 
         try {
             DB::transaction(function () {
+                // Periféricos primero: ver nota equivalente en DevolverAsignacion.
                 $items = PrestamoItem::whereIn('id', $this->seleccionados)
                     ->where('prestamo_id', $this->prestamoId)
                     ->where('devuelto', false)
+                    ->orderByRaw('equipo_padre_id IS NULL')
                     ->get();
 
                 foreach ($items as $item) {

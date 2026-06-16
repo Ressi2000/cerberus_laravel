@@ -83,7 +83,10 @@ class CrearPrestamo extends Component
     {
         if (! $this->area_empresa_id) return collect();
         return Departamento::where('activo', true)
-            ->where('empresa_id', $this->area_empresa_id)
+            ->where(function ($q) {
+                $q->where('empresa_id', $this->area_empresa_id)
+                    ->orWhereNull('empresa_id');
+            })
             ->orderBy('nombre')
             ->pluck('nombre', 'id');
     }
