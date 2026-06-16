@@ -34,6 +34,13 @@ class PrestamoController extends Controller
         return view('prestamos.devolver', compact('prestamo'));
     }
 
+    /** Página de historial por usuario */
+    public function historial(User $usuario)
+    {
+        $this->authorize('viewAny', Prestamo::class);
+        return view('prestamos.historial', compact('usuario'));
+    }
+
     public function planillaPrestamo(Prestamo $prestamo)
     {
         $this->authorize('view', $prestamo);

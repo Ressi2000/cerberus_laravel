@@ -136,6 +136,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         ->group(function () {
             Route::get('/',                                     [PrestamoController::class, 'index'])->name('index');
             Route::get('/crear',                               [PrestamoController::class, 'create'])->name('create');
+            Route::get('/historial/{usuario}',                 [PrestamoController::class, 'historial'])->name('historial');
             Route::get('/{prestamo}/devolver',                 [PrestamoController::class, 'devolver'])->name('devolver');
             Route::get('/{prestamo}/planilla/prestamo',        [PrestamoController::class, 'planillaPrestamo'])->name('planilla.prestamo');
             Route::get('/{prestamo}/planilla/devolucion',      [PrestamoController::class, 'planillaDevolucion'])->name('planilla.devolucion');

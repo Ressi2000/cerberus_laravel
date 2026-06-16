@@ -2,6 +2,7 @@
 
     {{-- ── Modales ─────────────────────────────────────────────────────────── --}}
     @livewire('prestamos.renovar-prestamo')
+    @livewire('prestamos.prestamo-view-modal')
 
     {{-- ── Stats ───────────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -174,6 +175,19 @@
                         @endphp
                         <x-table.table-actions :modelId="$usuario->id">
                             <x-slot name="acciones">
+                                <li>
+                                    <button wire:click="$dispatch('openPrestamoView', { userId: {{ $usuario->id }} })"
+                                            @click="close()"
+                                            class="flex items-center gap-3 px-4 py-2.5 w-full text-left
+                                                   text-gray-600 dark:text-cerberus-light
+                                                   hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                                   hover:text-[#1E40AF] dark:hover:text-white
+                                                   transition-colors duration-100">
+                                        <span class="material-icons text-base text-[#1E40AF]/70 dark:text-cerberus-accent">visibility</span>
+                                        Ver detalles
+                                    </button>
+                                </li>
+                                <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
                                 @if ($prestamosActivos->isNotEmpty())
                                     @foreach ($prestamosActivos as $p)
                                         <li>
@@ -222,6 +236,19 @@
                                         Sin préstamos activos
                                     </li>
                                 @endif
+                                <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
+                                <li>
+                                    <a href="{{ route('admin.prestamos.historial', $usuario) }}"
+                                       wire:navigate @click="close()"
+                                       class="flex items-center gap-3 px-4 py-2.5 w-full
+                                              text-gray-600 dark:text-cerberus-light
+                                              hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                              hover:text-purple-600 dark:hover:text-purple-400
+                                              transition-colors duration-100">
+                                        <span class="material-icons text-base text-purple-500">history</span>
+                                        Historial completo
+                                    </a>
+                                </li>
                             </x-slot>
                         </x-table.table-actions>
                     </td>
