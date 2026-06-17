@@ -148,7 +148,9 @@
 @endforelse
 
 @php
-    $perifericos = $asignacion->items->flatMap(fn ($item) => $item->hijos);
+    $perifericos = $asignacion->items->flatMap(
+        fn ($item) => $item->hijos->each(fn ($hijo) => $hijo->setRelation('padre', $item))
+    );
 @endphp
 
 @if ($perifericos->isNotEmpty())
@@ -157,6 +159,7 @@
     @foreach ($perifericos as $periferico)
         @php
             $equipoPer    = $periferico->equipo;
+            $equipoPadre  = $periferico->padre?->equipo;
             $atributosPer = ($equipoPer?->atributosActuales ?? collect())
                 ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
                 ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
@@ -172,7 +175,10 @@
                     <div class="field-label">Categoría</div>
                     <div class="field-value">{{ strtoupper($equipoPer?->categoria?->nombre ?? '—') }}</div>
                 </td>
-                <td></td>
+                <td>
+                    <div class="field-label">Pertenece a</div>
+                    <div class="field-value">{{ $equipoPadre?->codigo_interno ?? '—' }}</div>
+                </td>
             </tr>
             @foreach ($atributosPer->chunk(3) as $fila)
                 <tr>
