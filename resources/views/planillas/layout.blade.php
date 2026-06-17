@@ -22,8 +22,6 @@
         ══════════════════════════════════════════════════════════════════════ */
         .header-principal {
             width: 100%;
-            border-bottom: 2.5pt solid #1E3A8A;
-            padding-bottom: 9pt;
             margin-bottom: 7pt;
         }
 
@@ -33,11 +31,11 @@
         }
 
         .header-logo-cell {
-            width: 60pt;
+            width: 90pt;
             vertical-align: middle;
         }
 
-        .header-logo-cell img { width: 52pt; height: auto; }
+        .header-logo-cell img { width: 78pt; height: auto; }
 
         .header-center-cell {
             vertical-align: middle;
@@ -46,7 +44,7 @@
         }
 
         .header-grupo {
-            font-size: 6pt;
+            font-size: 8pt;
             font-weight: bold;
             color: #1E3A8A;
             letter-spacing: 1pt;
@@ -59,33 +57,18 @@
             font-weight: bold;
             color: #0D1B2A;
             line-height: 1.2;
+            text-transform: uppercase;
         }
 
         .header-gerencia {
             font-size: 7pt;
+            font-weight: bold;
             color: #374151;
+            text-transform: uppercase;
             margin-top: 2pt;
         }
 
-        .header-badge-cell {
-            width: 70pt;
-            vertical-align: middle;
-            text-align: right;
-        }
-
-        .header-badge {
-            display: inline-block;
-            background: #1E3A8A;
-            color: #ffffff;
-            font-size: 6pt;
-            font-weight: bold;
-            text-align: center;
-            padding: 6pt 9pt;
-            border-radius: 4pt;
-            text-transform: uppercase;
-            line-height: 1.5;
-            letter-spacing: 0.3pt;
-        }
+        .header-barra { width: 100%; display: block; margin-top: 5pt; }
 
         /* Meta del documento */
         .doc-meta {
@@ -495,65 +478,79 @@
             <tr>
                 <td class="header-logo-cell">
                     @php
-                        $logoPath   = public_path('images/cerberus.png');
-                        $logoBase64 = file_exists($logoPath)
-                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+                        $stPath   = public_path('images/st.png');
+                        $stBase64 = file_exists($stPath)
+                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($stPath))
                             : null;
                     @endphp
-                    @if ($logoBase64)
-                        <img src="{{ $logoBase64 }}" alt="Cerberus">
+                    @if ($stBase64)
+                        <img src="{{ $stBase64 }}" alt="Servicios Tecnológicos">
                     @endif
                 </td>
                 <td class="header-center-cell">
                     <div class="header-grupo">Grupo de Empresas Sindoni</div>
                     <div class="header-empresa">{{ $empresaSede ?? '—' }}</div>
-                    <div class="header-gerencia">Gerencia Corporativa de Tecnología — Servicios Tecnológicos</div>
+                    <div class="header-gerencia">Gerencia Corporativa de Tecnología. Servicios Tecnológicos</div>
                 </td>
-                <td class="header-badge-cell">
-                    <div class="header-badge">Servicios<br>Tecnológicos</div>
-                </td>
+                <td class="header-logo-cell"></td>
             </tr>
         </table>
+
+        @php
+            $barraPath   = public_path('images/barra.jpg');
+            $barraBase64 = file_exists($barraPath)
+                ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($barraPath))
+                : null;
+        @endphp
+        @if ($barraBase64)
+            <img src="{{ $barraBase64 }}" class="header-barra" alt="">
+        @endif
     </div>
 
-    <div class="doc-meta">
-        <table class="doc-meta-table">
-            <tr>
-                <td class="doc-meta-left">
-                    Código: <strong>{{ $codigoDoc ?? '—' }}</strong>
-                    &nbsp;·&nbsp; Uso: Actividades Inherentes al Cargo
-                </td>
-                <td class="doc-meta-right">
-                    Generado: <strong>{{ $fecha ?? now()->format('d/m/Y') }}</strong>
-                </td>
-            </tr>
-        </table>
-    </div>
+    @unless($ocultarMeta ?? false)
+        <div class="doc-meta">
+            <table class="doc-meta-table">
+                <tr>
+                    <td class="doc-meta-left">
+                        Código: <strong>{{ $codigoDoc ?? '—' }}</strong>
+                        &nbsp;·&nbsp; Uso: Actividades Inherentes al Cargo
+                    </td>
+                    <td class="doc-meta-right">
+                        Generado: <strong>{{ $fecha ?? now()->format('d/m/Y') }}</strong>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    @endunless
 
     {{-- ══ CONTENIDO ESPECÍFICO DE CADA PLANILLA ═══════════════════════════ --}}
     @yield('contenido')
 
     {{-- ══ FIRMAS — al final del flujo, siempre visibles ══════════════════ --}}
-    <div class="firmas-wrapper">
-        <div class="firmas-meta">
-            Cerberus 2.0 &nbsp;·&nbsp; {{ $codigoDoc ?? '' }} &nbsp;·&nbsp; {{ $fecha ?? now()->format('d/m/Y') }}
+    @hasSection('firmas')
+        <div class="firmas-wrapper">
+            <div class="firmas-meta">
+                Cerberus 2.0 &nbsp;·&nbsp; {{ $codigoDoc ?? '' }} &nbsp;·&nbsp; {{ $fecha ?? now()->format('d/m/Y') }}
+            </div>
+            <table class="firmas-table">
+                <tr>
+                    @yield('firmas')
+                </tr>
+            </table>
         </div>
-        <table class="firmas-table">
-            <tr>
-                @yield('firmas')
-            </tr>
-        </table>
-    </div>
+    @endif
 
     {{-- Footer informativo --}}
-    <div class="page-footer">
-        <table class="page-footer-table">
-            <tr>
-                <td class="page-footer-left">Cerberus 2.0 — Sistema de Inventario y Asignaciones Tecnológicas</td>
-                <td class="page-footer-right">{{ $codigoDoc ?? '' }} · {{ $fecha ?? now()->format('d/m/Y') }}</td>
-            </tr>
-        </table>
-    </div>
+    @unless($ocultarMeta ?? false)
+        <div class="page-footer">
+            <table class="page-footer-table">
+                <tr>
+                    <td class="page-footer-left">Cerberus 2.0 — Sistema de Inventario y Asignaciones Tecnológicas</td>
+                    <td class="page-footer-right">{{ $codigoDoc ?? '' }} · {{ $fecha ?? now()->format('d/m/Y') }}</td>
+                </tr>
+            </table>
+        </div>
+    @endunless
 
 </body>
 </html>
