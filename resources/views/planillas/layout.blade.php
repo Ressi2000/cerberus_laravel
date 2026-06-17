@@ -17,8 +17,10 @@
             color: #0F172A;
             background: #ffffff;
             line-height: 1.45;
-            /* Márgenes de página controlados aquí, no con @page */
-            margin: 14mm 16mm 14mm 16mm;
+            /* Margen inferior ampliado para reservar el espacio que ocupan
+               las firmas (position:fixed) + el footer, y evitar que el
+               contenido fluido se monte encima de ellos. */
+            margin: 14mm 16mm 60mm 16mm;
         }
 
         /* ══════════════════════════════════════════════════════════════════════
@@ -534,36 +536,15 @@
             letter-spacing: 0.5pt;
         }
 
-        /* Footer de página — fijo al fondo, se repite en cada página */
-        .page-footer {
+        /* Línea separadora del footer — fija, el texto del footer se dibuja
+           aparte vía script PHP de DomPDF (necesario para el contador
+           "Página X de Y", que no funciona con counter(pages) en CSS). */
+        .page-footer-line {
             position: fixed;
-            bottom: 14mm;
+            bottom: 12mm;
             left: 16mm;
             right: 16mm;
             border-top: 0.3pt solid #E2E8F0;
-            padding-top: 4pt;
-        }
-
-        .page-footer-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .page-footer-left {
-            font-size: 6pt;
-            color: #94A3B8;
-        }
-
-        .page-footer-right {
-            font-size: 6pt;
-            color: #94A3B8;
-            text-align: right;
-        }
-
-        /* Contador de páginas — DomPDF evalúa counter(page)/counter(pages)
-           solo dentro de elementos position:fixed. */
-        .page-counter:before {
-            content: "Página " counter(page) " de " counter(pages);
         }
     </style>
 </head>
@@ -645,17 +626,35 @@
         </div>
     @endif
 
-    {{-- Footer informativo — siempre visible, lleva el código de la planilla --}}
-    <div class="page-footer">
-        <table class="page-footer-table">
-            <tr>
-                <td class="page-footer-left">Cerberus 2.0 — Sistema de Inventario y Asignaciones Tecnológicas</td>
-                <td class="page-footer-right">
-                    {{ $codigoDoc ?? '' }} · {{ $fecha ?? now()->format('d/m/Y') }} · <span class="page-counter"></span>
-                </td>
-            </tr>
-        </table>
-    </div>
+    {{-- Línea separadora del footer — fija, se repite en cada página --}}
+    <div class="page-footer-line"></div>
+
+    {{-- ══ TEXTO DEL FOOTER — dibujado vía script PHP de DomPDF ════════════
+         Necesario porque counter(pages) (CSS) no calcula el total real de
+         páginas en este motor; $pdf->page_text() con {PAGE_COUNT} sí lo hace. --}}
+    @php
+        $piePrimero = 'Cerberus 2.0 — Sistema de Inventario y Asignaciones Tecnológicas';
+        $piePropio  = ($codigoDoc ?? '') . ' · ' . ($fecha ?? now()->format('d/m/Y')) . ' · Página {PAGE_NUM} de {PAGE_COUNT}';
+    @endphp
+    <script type="text/php">
+        if (isset($pdf)) {
+            $font  = $fontMetrics->getFont('Helvetica', 'normal');
+            $size  = 6;
+            $color = array(0.58, 0.65, 0.71);
+
+            $mmToPt   = 72 / 25.4;
+            $marginPt = 16 * $mmToPt;
+            $y        = $pdf->get_height() - (8 * $mmToPt);
+
+            $textoIzquierda = {!! json_encode($piePrimero) !!};
+            $pdf->page_text($marginPt, $y, $textoIzquierda, $font, $size, $color);
+
+            $textoDerecha = {!! json_encode($piePropio) !!};
+            $anchoDerecha = $fontMetrics->getTextWidth($textoDerecha, $font, $size);
+            $xDerecha     = $pdf->get_width() - $marginPt - $anchoDerecha;
+            $pdf->page_text($xDerecha, $y, $textoDerecha, $font, $size, $color);
+        }
+    </script>
 
 </body>
 
