@@ -486,14 +486,15 @@
         }
 
         /* ══════════════════════════════════════════════════════════════════════
-           FIRMAS — flujo normal al final del documento
-           Se usan con margin-top para separar del contenido.
-           Al estar en flujo normal, DomPDF las coloca donde corresponde
-           sin romper nada.
+           FIRMAS — fijas al fondo de la página (position:fixed)
+           Coordenadas alineadas con los márgenes del body (14mm/16mm).
+           DomPDF repite los elementos fixed en cada página generada.
         ══════════════════════════════════════════════════════════════════════ */
         .firmas-wrapper {
-            margin-top: 30pt;
-            padding-top: 10pt;
+            position: fixed;
+            bottom: 32mm;
+            left: 16mm;
+            right: 16mm;
         }
 
         .firmas-table {
@@ -533,12 +534,14 @@
             letter-spacing: 0.5pt;
         }
 
-        /* Footer de página */
+        /* Footer de página — fijo al fondo, se repite en cada página */
         .page-footer {
-            margin-top: 12pt;
+            position: fixed;
+            bottom: 14mm;
+            left: 16mm;
+            right: 16mm;
             border-top: 0.3pt solid #E2E8F0;
             padding-top: 4pt;
-            width: 100%;
         }
 
         .page-footer-table {
@@ -555,6 +558,12 @@
             font-size: 6pt;
             color: #94A3B8;
             text-align: right;
+        }
+
+        /* Contador de páginas — DomPDF evalúa counter(page)/counter(pages)
+           solo dentro de elementos position:fixed. */
+        .page-counter:before {
+            content: "Página " counter(page) " de " counter(pages);
         }
     </style>
 </head>
@@ -641,7 +650,9 @@
         <table class="page-footer-table">
             <tr>
                 <td class="page-footer-left">Cerberus 2.0 — Sistema de Inventario y Asignaciones Tecnológicas</td>
-                <td class="page-footer-right">{{ $codigoDoc ?? '' }} · {{ $fecha ?? now()->format('d/m/Y') }}</td>
+                <td class="page-footer-right">
+                    {{ $codigoDoc ?? '' }} · {{ $fecha ?? now()->format('d/m/Y') }} · <span class="page-counter"></span>
+                </td>
             </tr>
         </table>
     </div>
