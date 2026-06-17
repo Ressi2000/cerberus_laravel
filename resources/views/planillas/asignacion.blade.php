@@ -106,4 +106,44 @@
     </table>
 @endif
 
+<div class="section-title-plain">Datos del Equipo</div>
+
+@forelse ($asignacion->items as $item)
+    @php
+        $equipo    = $item->equipo;
+        $atributos = ($equipo?->atributosActuales ?? collect())
+            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+    @endphp
+
+    <table class="fields-table" style="margin-bottom: 6pt;">
+        <tr>
+            <td>
+                <div class="field-label">Código interno</div>
+                <div class="field-value">{{ $equipo?->codigo_interno ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Categoría</div>
+                <div class="field-value">{{ strtoupper($equipo?->categoria?->nombre ?? '—') }}</div>
+            </td>
+            <td></td>
+        </tr>
+        @foreach ($atributos->chunk(3) as $fila)
+            <tr>
+                @foreach ($fila as $valor)
+                    <td>
+                        <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                        <div class="field-value">{{ $valor->valor }}</div>
+                    </td>
+                @endforeach
+                @for ($i = $fila->count(); $i < 3; $i++)
+                    <td></td>
+                @endfor
+            </tr>
+        @endforeach
+    </table>
+@empty
+    <p class="field-value">Sin equipos asignados.</p>
+@endforelse
+
 @endsection
