@@ -482,19 +482,14 @@
             padding-top: 10pt;
         }
 
-        .firmas-meta {
-            font-size: 6pt;
-            color: #94A3B8;
-            text-align: center;
-            margin-bottom: 10pt;
-        }
-
         .firmas-table {
+            display: table;
             width: 100%;
-            border-collapse: collapse;
+            table-layout: fixed;
         }
 
         .firma-cell {
+            display: table-cell;
             width: 33.33%;
             text-align: center;
             padding: 0 14pt;
@@ -610,14 +605,9 @@
     {{-- ══ FIRMAS — al final del flujo, siempre visibles ══════════════════ --}}
     @hasSection('firmas')
         <div class="firmas-wrapper">
-            <div class="firmas-meta">
-                Cerberus 2.0 &nbsp;·&nbsp; {{ $codigoDoc ?? '' }} &nbsp;·&nbsp; {{ $fecha ?? now()->format('d/m/Y') }}
+            <div class="firmas-table">
+                @yield('firmas')
             </div>
-            <table class="firmas-table">
-                <tr>
-                    @yield('firmas')
-                </tr>
-            </table>
         </div>
     @endif
 
