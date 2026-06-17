@@ -50,34 +50,6 @@ class Prestamo extends Model
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Eventos del modelo
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /**
-     * Si se modifica fecha_devolucion_esperada sin tocar 'estado' explícitamente
-     * (p.ej. editando el registro directamente), se recalcula Activo/Vencido para
-     * que el cambio se refleje de inmediato y no dependa solo del job programado.
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (Prestamo $prestamo) {
-            if ($prestamo->estado === 'Cerrado') {
-                return;
-            }
-
-            if (! $prestamo->isDirty('fecha_devolucion_esperada') || $prestamo->isDirty('estado')) {
-                return;
-            }
-
-            $vencido = $prestamo->fecha_devolucion_esperada
-                && $prestamo->fecha_devolucion_esperada->isPast()
-                && ! $prestamo->fecha_devolucion_esperada->isToday();
-
-            $prestamo->estado = $vencido ? 'Vencido' : 'Activo';
-        });
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
     // Relaciones
     // ─────────────────────────────────────────────────────────────────────────
 
