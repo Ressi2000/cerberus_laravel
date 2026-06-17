@@ -191,10 +191,15 @@
                                                         </span>
                                                     @endif
 
-                                                    {{-- Fecha de préstamo --}}
+                                                    {{-- Fecha de préstamo / devolución esperada --}}
                                                     <p class="text-xs text-gray-400 dark:text-cerberus-steel/50 mt-1">
                                                         Prestado: {{ $item->prestamo?->fecha_prestamo?->format('d/m/Y') ?? '—' }}
                                                     </p>
+                                                    @if ($item->prestamo?->fecha_devolucion_esperada)
+                                                        <p class="text-xs mt-0.5 {{ $item->prestamo?->estaVencido() ? 'text-red-500 font-semibold' : 'text-gray-400 dark:text-cerberus-steel/50' }}">
+                                                            Devolver: {{ $item->prestamo->fecha_devolucion_esperada->format('d/m/Y') }}
+                                                        </p>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>

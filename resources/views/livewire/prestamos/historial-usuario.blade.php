@@ -123,12 +123,19 @@
                                     {{ $item->prestamo->empresa->nombre }}
                                 </p>
                             @endif
-                            <span class="text-xs px-2 py-0.5 rounded-full flex-shrink-0
-                                         {{ $item->prestamo?->estaVencido()
-                                             ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                                             : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' }}">
-                                {{ $item->prestamo?->fecha_prestamo?->format('d/m/Y') ?? '—' }}
-                            </span>
+                            <div class="flex flex-col items-end gap-1 flex-shrink-0">
+                                <span class="text-xs px-2 py-0.5 rounded-full
+                                             {{ $item->prestamo?->estaVencido()
+                                                 ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                                 : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' }}">
+                                    {{ $item->prestamo?->fecha_prestamo?->format('d/m/Y') ?? '—' }}
+                                </span>
+                                @if ($item->prestamo?->fecha_devolucion_esperada)
+                                    <span class="text-xs {{ $item->prestamo?->estaVencido() ? 'text-red-500 font-semibold' : 'text-gray-400 dark:text-cerberus-steel' }}">
+                                        Devolver: {{ $item->prestamo->fecha_devolucion_esperada->format('d/m/Y') }}
+                                    </span>
+                                @endif
+                            </div>
                         </div>
 
                         @if ($item->hijos->where('devuelto', false)->isNotEmpty())
@@ -225,8 +232,9 @@
 
                             <div class="flex-1 min-w-0 bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl overflow-hidden mb-1">
 
-                                <button type="button" @click="open = !open"
-                                    class="w-full flex items-center justify-between gap-3 px-5 py-3
+                                <div role="button" tabindex="0"
+                                    @click="open = !open" @keydown.enter="open = !open"
+                                    class="w-full flex items-center justify-between gap-3 px-5 py-3 cursor-pointer
                                                hover:bg-gray-50 dark:hover:bg-cerberus-steel/10 transition text-left">
 
                                     <div class="flex items-center gap-3 min-w-0">
@@ -272,7 +280,7 @@
                                             expand_more
                                         </span>
                                     </div>
-                                </button>
+                                </div>
 
                                 <div x-show="open" x-collapse class="border-t border-gray-100 dark:border-cerberus-steel/30 px-5 py-3 space-y-2">
 
