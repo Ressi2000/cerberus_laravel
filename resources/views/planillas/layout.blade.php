@@ -621,17 +621,15 @@
         </div>
     @endif
 
-    {{-- Footer informativo --}}
-    @unless ($ocultarMeta ?? false)
-        <div class="page-footer">
-            <table class="page-footer-table">
-                <tr>
-                    <td class="page-footer-left">Cerberus 2.0 — Sistema de Inventario y Asignaciones Tecnológicas</td>
-                    <td class="page-footer-right">{{ $codigoDoc ?? '' }} · {{ $fecha ?? now()->format('d/m/Y') }}</td>
-                </tr>
-            </table>
-        </div>
-    @endunless
+    {{-- Footer informativo — siempre visible, lleva el código de la planilla --}}
+    <div class="page-footer">
+        <table class="page-footer-table">
+            <tr>
+                <td class="page-footer-left">Cerberus 2.0 — Sistema de Inventario y Asignaciones Tecnológicas</td>
+                <td class="page-footer-right">{{ $codigoDoc ?? '' }} · {{ $fecha ?? now()->format('d/m/Y') }}</td>
+            </tr>
+        </table>
+    </div>
 
 </body>
 

@@ -3,6 +3,7 @@
 @php
     $esArea      = $asignacion->tipoReceptor() === 'area';
     $tituloDoc   = 'Formato de Asignación de Activos Tecnológicos';
+    $codigoDoc   = 'DC-ST-FO-08';
     $empresaSede = $asignacion->empresa->nombre ?? '—';
     $ocultarMeta = true; // El meta genérico del layout se reemplaza por el de abajo.
 
@@ -190,4 +191,22 @@
     @endforeach
 @endif
 
+@endsection
+
+@section('firmas')
+    <div class="firma-cell" style="width: 50%;">
+        <div class="firma-espacio"></div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">{{ strtoupper($asignacion->analista?->name ?? '—') }}</div>
+        <div class="firma-cargo">Técnico / Analista</div>
+    </div>
+
+    <div class="firma-cell" style="width: 50%;">
+        <div class="firma-espacio"></div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">
+            {{ strtoupper(($esArea ? $areaResp?->name : $receptor?->name) ?? '—') }}
+        </div>
+        <div class="firma-cargo">{{ $esArea ? 'Responsable del área receptora' : 'Trabajador receptor' }}</div>
+    </div>
 @endsection
