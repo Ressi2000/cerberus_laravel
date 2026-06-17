@@ -230,6 +230,42 @@
                         @endif
                     </div>
 
+                    {{-- ── Equipos devueltos recientemente ───────────────────── --}}
+                    @if ($this->equiposDevueltos->isNotEmpty())
+                        <hr class="border-gray-100 dark:border-cerberus-steel/30">
+
+                        <div>
+                            <h3 class="text-xs font-semibold uppercase tracking-wider
+                                       text-gray-500 dark:text-cerberus-steel flex items-center gap-1.5 mb-3">
+                                <span class="material-icons text-sm text-gray-400">assignment_return</span>
+                                Equipos devueltos recientemente
+                            </h3>
+
+                            <div class="space-y-1.5">
+                                @foreach ($this->equiposDevueltos as $item)
+                                    <div class="flex items-center justify-between gap-3 px-4 py-2 rounded-lg
+                                                bg-gray-50 dark:bg-cerberus-dark/50
+                                                border border-gray-200 dark:border-cerberus-steel/30">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                {{ $item->equipo?->codigo_interno ?? '—' }}
+                                                <span class="font-normal text-gray-500 dark:text-cerberus-steel">
+                                                    · {{ $item->equipo?->categoria?->nombre ?? '—' }}
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <p class="text-xs text-gray-500 dark:text-cerberus-steel flex-shrink-0">
+                                            Dev. {{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}
+                                            @if ($item->devueltoPor)
+                                                · {{ $item->devueltoPor->name }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                 </div>
 
                 {{-- ── Footer ──────────────────────────────────────────────── --}}
@@ -245,16 +281,8 @@
                         Ver historial completo
                     </a>
 
-                    @if ($this->equiposActivos->pluck('prestamo_id')->unique()->count() > 1)
+                    @if ($this->equiposActivos->isNotEmpty())
                         <a href="{{ route('admin.prestamos.devolver.usuario', $this->usuario) }}"
-                           wire:navigate
-                           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                                  text-white bg-cerberus-primary hover:bg-cerberus-primary/80 transition">
-                            <span class="material-icons text-base">assignment_return</span>
-                            Registrar devolución
-                        </a>
-                    @elseif ($this->prestamoActivo)
-                        <a href="{{ route('admin.prestamos.devolver', $this->prestamoActivo) }}"
                            wire:navigate
                            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
                                   text-white bg-cerberus-primary hover:bg-cerberus-primary/80 transition">

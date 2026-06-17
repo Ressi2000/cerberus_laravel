@@ -17,6 +17,11 @@ class NotificarAlertas extends Command
 
     public function handle(): int
     {
+        $marcados = Prestamo::marcarVencidosAutomaticamente();
+        if ($marcados > 0) {
+            $this->line("  ✓ {$marcados} préstamo(s) marcado(s) como Vencido.");
+        }
+
         $this->notificarPrestamosVencidos();
         $this->notificarPrestamosProximos();
         $this->notificarGarantiasProximas();

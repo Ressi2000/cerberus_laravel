@@ -7,6 +7,8 @@
 --}}
 <div class="space-y-6">
 
+    @livewire('prestamos.renovar-prestamo')
+
     {{-- ══ TARJETA DE PERFIL ══════════════════════════════════════════════ --}}
     <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
         <div class="flex items-start justify-between gap-4 flex-wrap">
@@ -242,6 +244,15 @@
                                     </div>
 
                                     <div class="flex items-center gap-2 flex-shrink-0">
+                                        @if ($prestamo->estaActivo())
+                                            <button type="button"
+                                                wire:click="$dispatch('abrir-renovar', { prestamoId: {{ $prestamo->id }} })"
+                                                @click.stop title="Renovar préstamo"
+                                                class="p-1 rounded text-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition">
+                                                <span class="material-icons text-sm">event</span>
+                                            </button>
+                                        @endif
+
                                         <a href="{{ route('admin.prestamos.planilla.prestamo', $prestamo) }}"
                                             target="_blank" @click.stop title="Planilla de préstamo"
                                             class="p-1 rounded text-gray-500 hover:text-cerberus-primary dark:hover:text-cerberus-accent transition">

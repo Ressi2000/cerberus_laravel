@@ -85,6 +85,19 @@ class PrestamoViewModal extends Component
             ->get();
     }
 
+    #[Computed]
+    public function equiposDevueltos()
+    {
+        if (! $this->userId) return collect();
+
+        return PrestamoItem::with(['equipo.categoria', 'prestamo', 'devueltoPor'])
+            ->whereHas('prestamo', fn ($q) => $q->where('usuario_id', $this->userId))
+            ->where('devuelto', true)
+            ->orderByDesc('fecha_devolucion')
+            ->limit(6)
+            ->get();
+    }
+
     public function render()
     {
         return view('livewire.prestamos.prestamo-view-modal');
