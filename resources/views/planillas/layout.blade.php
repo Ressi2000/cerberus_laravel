@@ -61,13 +61,6 @@
             line-height: 1.35;
         }
 
-        .header-barra {
-            width: 70pt;
-            height: auto;
-            display: block;
-            margin: 6pt auto 0;
-        }
-
         /* Meta del documento */
         .doc-meta {
             width: 100%;
@@ -80,27 +73,25 @@
             border-collapse: collapse;
         }
 
-        .doc-meta-left {
-            font-size: 7pt;
-            color: #64748B;
-        }
-
-        .doc-meta-right {
-            font-size: 7pt;
-            color: #64748B;
-            text-align: right;
-        }
+        .doc-meta-left  { font-size: 8pt; color: #000000; }
+        .doc-meta-right { font-size: 8pt; color: #000000; text-align: right; }
 
         /* ══════════════════════════════════════════════════════════════════════
            TÍTULOS
         ══════════════════════════════════════════════════════════════════════ */
         .doc-title {
-            font-size: 13pt;
-            font-weight: bold;
-            color: #1E3A8A;
+            font-size: 11pt;
+            font-weight: normal;
+            color: #000000;
             text-align: center;
-            margin-bottom: 3pt;
-            letter-spacing: 0.2pt;
+            margin-top: 10pt;
+            margin-bottom: 6pt;
+        }
+
+        .doc-divider {
+            width: 100%;
+            border-top: 0.75pt solid #94A3B8;
+            margin-bottom: 10pt;
         }
 
         .doc-subtitle {
@@ -113,6 +104,13 @@
         /* ══════════════════════════════════════════════════════════════════════
            SECCIONES DE DATOS (receptor / trabajador)
         ══════════════════════════════════════════════════════════════════════ */
+        .section-title-plain {
+            font-size: 9pt;
+            font-weight: bold;
+            color: #000000;
+            margin: 10pt 0 5pt;
+        }
+
         .section {
             margin-bottom: 11pt;
             border: 0.5pt solid #CBD5E1;
@@ -162,14 +160,14 @@
 
         .fields-table td {
             width: 33.33%;
-            padding: 3pt 6pt 3pt 0;
+            padding: 4pt 6pt 4pt 0;
             vertical-align: top;
         }
 
         .field-label {
             font-size: 6.5pt;
             font-weight: bold;
-            color: #1E3A8A;
+            color: #000000;
             text-transform: uppercase;
             letter-spacing: 0.3pt;
             margin-bottom: 1pt;
@@ -177,8 +175,8 @@
 
         .field-value {
             font-size: 8.5pt;
-            color: #1a1a2e;
-            font-weight: bold;
+            color: #000000;
+            font-weight: normal;
         }
 
         .receptor-badge {
@@ -577,19 +575,17 @@
                 </td>
                 <td class="header-logo-cell">
                     @php
-                        $barraPath = public_path('images/logo-sindoni.png');
-                        $barraBase64 = file_exists($barraPath)
-                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($barraPath))
+                        $sindoniPath   = public_path('images/logo-sindoni.png');
+                        $sindoniBase64 = file_exists($sindoniPath)
+                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($sindoniPath))
                             : null;
                     @endphp
-                    @if ($barraBase64)
-                        <img src="{{ $barraBase64 }}" class="header-barra" alt="">
+                    @if ($sindoniBase64)
+                        <img src="{{ $sindoniBase64 }}" alt="Empresas Sindoni">
                     @endif
                 </td>
             </tr>
         </table>
-
-
     </div>
 
     @unless ($ocultarMeta ?? false)
