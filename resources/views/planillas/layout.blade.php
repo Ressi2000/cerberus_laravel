@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <title>{{ $tituloDoc ?? 'Planilla' }} — Cerberus</title>
     <style>
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Helvetica', Arial, sans-serif;
@@ -35,7 +39,10 @@
             vertical-align: middle;
         }
 
-        .header-logo-cell img { width: 78pt; height: auto; }
+        .header-logo-cell img {
+            width: 78pt;
+            height: auto;
+        }
 
         .header-center-cell {
             vertical-align: middle;
@@ -73,8 +80,16 @@
             border-collapse: collapse;
         }
 
-        .doc-meta-left  { font-size: 7pt; color: #64748B; }
-        .doc-meta-right { font-size: 7pt; color: #64748B; text-align: right; }
+        .doc-meta-left {
+            font-size: 7pt;
+            color: #64748B;
+        }
+
+        .doc-meta-right {
+            font-size: 7pt;
+            color: #64748B;
+            text-align: right;
+        }
 
         /* ══════════════════════════════════════════════════════════════════════
            TÍTULOS
@@ -115,11 +130,21 @@
             padding: 5pt 10pt;
         }
 
-        .section-title.area       { background: #0F6E56; }
-        .section-title.devolucion { background: #92400E; }
-        .section-title.egreso     { background: #6B21A8; }
+        .section-title.area {
+            background: #0F6E56;
+        }
 
-        .fields-grid { padding: 6pt 10pt 5pt; }
+        .section-title.devolucion {
+            background: #92400E;
+        }
+
+        .section-title.egreso {
+            background: #6B21A8;
+        }
+
+        .fields-grid {
+            padding: 6pt 10pt 5pt;
+        }
 
         /* Tabla de campos 3 columnas */
         .fields-table {
@@ -127,8 +152,13 @@
             border-collapse: collapse;
         }
 
-        .fields-table tr { border-bottom: 0.3pt solid #E2E8F0; }
-        .fields-table tr:last-child { border-bottom: none; }
+        .fields-table tr {
+            border-bottom: 0.3pt solid #E2E8F0;
+        }
+
+        .fields-table tr:last-child {
+            border-bottom: none;
+        }
 
         .fields-table td {
             width: 33.33%;
@@ -163,12 +193,14 @@
         }
 
         .receptor-badge.usuario {
-            background: #DBEAFE; color: #1E40AF;
+            background: #DBEAFE;
+            color: #1E40AF;
             border: 0.5pt solid #93C5FD;
         }
 
         .receptor-badge.area {
-            background: #D1FAE5; color: #065F46;
+            background: #D1FAE5;
+            color: #065F46;
             border: 0.5pt solid #6EE7B7;
         }
 
@@ -206,10 +238,21 @@
             padding: 4pt 10pt;
         }
 
-        .thead-banner.devolucion td { background: #92400E; }
-        .thead-banner.peligro    td { background: #7F1D1D; }
-        .thead-banner.verde      td { background: #065F46; }
-        .thead-banner.egreso     td { background: #6B21A8; }
+        .thead-banner.devolucion td {
+            background: #92400E;
+        }
+
+        .thead-banner.peligro td {
+            background: #7F1D1D;
+        }
+
+        .thead-banner.verde td {
+            background: #065F46;
+        }
+
+        .thead-banner.egreso td {
+            background: #6B21A8;
+        }
 
         /* Segunda fila del thead: encabezados de columna */
         .thead-cols th {
@@ -223,7 +266,9 @@
             border-right: 0.3pt solid #4A6FBF;
         }
 
-        .thead-cols th:last-child { border-right: none; }
+        .thead-cols th:last-child {
+            border-right: none;
+        }
 
         /* Celdas del cuerpo */
         .data-table tbody td {
@@ -237,10 +282,18 @@
         }
 
         /* Alternancia de filas */
-        .tr-par td   { background: #F8FAFC; }
-        .tr-impar td { background: #ffffff; }
+        .tr-par td {
+            background: #F8FAFC;
+        }
 
-        .cod-interno { font-weight: bold; color: #1E3A8A; }
+        .tr-impar td {
+            background: #ffffff;
+        }
+
+        .cod-interno {
+            font-weight: bold;
+            color: #1E3A8A;
+        }
 
         .cell-sub {
             font-size: 6.5pt;
@@ -258,8 +311,13 @@
         }
 
         /* page-break-inside:avoid → equipo + su EAV no se separan */
-        .equipo-group    { page-break-inside: avoid; }
-        .periferico-group { page-break-inside: avoid; }
+        .equipo-group {
+            page-break-inside: avoid;
+        }
+
+        .periferico-group {
+            page-break-inside: avoid;
+        }
 
         /* ══════════════════════════════════════════════════════════════════════
            FILA EAV — equipo principal
@@ -345,13 +403,22 @@
             margin-right: 2pt;
         }
 
-        .periferico-cod { font-weight: bold; color: #92400E; }
+        .periferico-cod {
+            font-weight: bold;
+            color: #92400E;
+        }
 
         /* ══════════════════════════════════════════════════════════════════════
            ESTADOS ESPECIALES
         ══════════════════════════════════════════════════════════════════════ */
-        .tr-devuelto td { color: #9CA3AF !important; }
-        .tr-pendiente td { color: #DC2626 !important; font-weight: bold !important; }
+        .tr-devuelto td {
+            color: #9CA3AF !important;
+        }
+
+        .tr-pendiente td {
+            color: #DC2626 !important;
+            font-weight: bold !important;
+        }
 
         /* ══════════════════════════════════════════════════════════════════════
            OBSERVACIONES
@@ -387,9 +454,23 @@
             letter-spacing: 0.2pt;
         }
 
-        .badge-pendiente { background: #FEE2E2; color: #991B1B; border: 0.4pt solid #FCA5A5; }
-        .badge-devuelto  { background: #FEF9C3; color: #713F12; border: 0.4pt solid #FDE68A; }
-        .badge-ok        { background: #D1FAE5; color: #065F46; border: 0.4pt solid #6EE7B7; }
+        .badge-pendiente {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 0.4pt solid #FCA5A5;
+        }
+
+        .badge-devuelto {
+            background: #FEF9C3;
+            color: #713F12;
+            border: 0.4pt solid #FDE68A;
+        }
+
+        .badge-ok {
+            background: #D1FAE5;
+            color: #065F46;
+            border: 0.4pt solid #6EE7B7;
+        }
 
         /* ══════════════════════════════════════════════════════════════════════
            FIRMAS — flujo normal al final del documento
@@ -422,7 +503,9 @@
             vertical-align: bottom;
         }
 
-        .firma-espacio { height: 32pt; }
+        .firma-espacio {
+            height: 32pt;
+        }
 
         .firma-linea {
             border-top: 1pt solid #1E3A8A;
@@ -456,11 +539,19 @@
             border-collapse: collapse;
         }
 
-        .page-footer-left  { font-size: 6pt; color: #94A3B8; }
-        .page-footer-right { font-size: 6pt; color: #94A3B8; text-align: right; }
+        .page-footer-left {
+            font-size: 6pt;
+            color: #94A3B8;
+        }
 
+        .page-footer-right {
+            font-size: 6pt;
+            color: #94A3B8;
+            text-align: right;
+        }
     </style>
 </head>
+
 <body>
 
     {{-- ══ ENCABEZADO CORPORATIVO ══════════════════════════════════════════ --}}
@@ -469,7 +560,7 @@
             <tr>
                 <td class="header-logo-cell">
                     @php
-                        $stPath   = public_path('images/st.png');
+                        $stPath = public_path('images/st.png');
                         $stBase64 = file_exists($stPath)
                             ? 'data:image/png;base64,' . base64_encode(file_get_contents($stPath))
                             : null;
@@ -479,27 +570,29 @@
                     @endif
                 </td>
                 <td class="header-center-cell">
-                    <div class="header-grupo">Grupo de Empresas Sindoni</div>
                     <div class="header-empresa">{{ $empresaSede ?? '—' }}</div>
+                    <div class="header-grupo">Grupo de Empresas Sindoni</div>
                     <div class="header-gerencia">Gerencia Corporativa de Tecnología</div>
                     <div class="header-gerencia">Servicios Tecnológicos</div>
                 </td>
-                <td class="header-logo-cell"></td>
+                <td class="header-logo-cell">
+                    @php
+                        $barraPath = public_path('images/logo-sindoni.png');
+                        $barraBase64 = file_exists($barraPath)
+                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($barraPath))
+                            : null;
+                    @endphp
+                    @if ($barraBase64)
+                        <img src="{{ $barraBase64 }}" class="header-barra" alt="">
+                    @endif
+                </td>
             </tr>
         </table>
 
-        @php
-            $barraPath   = public_path('images/logo-sindoni.png');
-            $barraBase64 = file_exists($barraPath)
-                ? 'data:image/png;base64,' . base64_encode(file_get_contents($barraPath))
-                : null;
-        @endphp
-        @if ($barraBase64)
-            <img src="{{ $barraBase64 }}" class="header-barra" alt="">
-        @endif
+
     </div>
 
-    @unless($ocultarMeta ?? false)
+    @unless ($ocultarMeta ?? false)
         <div class="doc-meta">
             <table class="doc-meta-table">
                 <tr>
@@ -533,7 +626,7 @@
     @endif
 
     {{-- Footer informativo --}}
-    @unless($ocultarMeta ?? false)
+    @unless ($ocultarMeta ?? false)
         <div class="page-footer">
             <table class="page-footer-table">
                 <tr>
@@ -545,4 +638,5 @@
     @endunless
 
 </body>
+
 </html>
