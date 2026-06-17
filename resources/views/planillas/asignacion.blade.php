@@ -146,4 +146,48 @@
     <p class="field-value">Sin equipos asignados.</p>
 @endforelse
 
+@php
+    $perifericos = $asignacion->items->flatMap(fn ($item) => $item->hijos);
+@endphp
+
+@if ($perifericos->isNotEmpty())
+    <div class="section-title-plain">Datos de Periféricos</div>
+
+    @foreach ($perifericos as $periferico)
+        @php
+            $equipoPer    = $periferico->equipo;
+            $atributosPer = ($equipoPer?->atributosActuales ?? collect())
+                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        @endphp
+
+        <table class="fields-table" style="margin-bottom: 6pt;">
+            <tr>
+                <td>
+                    <div class="field-label">Código interno</div>
+                    <div class="field-value">{{ $equipoPer?->codigo_interno ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Categoría</div>
+                    <div class="field-value">{{ strtoupper($equipoPer?->categoria?->nombre ?? '—') }}</div>
+                </td>
+                <td></td>
+            </tr>
+            @foreach ($atributosPer->chunk(3) as $fila)
+                <tr>
+                    @foreach ($fila as $valor)
+                        <td>
+                            <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                            <div class="field-value">{{ $valor->valor }}</div>
+                        </td>
+                    @endforeach
+                    @for ($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
+    @endforeach
+@endif
+
 @endsection
