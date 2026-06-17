@@ -646,10 +646,10 @@
             $marginPt = 16 * $mmToPt;
             $y        = $pdf->get_height() - (8 * $mmToPt);
 
-            $textoIzquierda = {!! json_encode($piePrimero) !!};
+            $textoIzquierda = {!! json_encode($piePrimero, JSON_UNESCAPED_UNICODE) !!};
             $pdf->page_text($marginPt, $y, $textoIzquierda, $font, $size, $color);
 
-            $textoDerecha = {!! json_encode($piePropio) !!};
+            $textoDerecha = {!! json_encode($piePropio, JSON_UNESCAPED_UNICODE) !!};
             $anchoDerecha = $fontMetrics->getTextWidth($textoDerecha, $font, $size);
             $xDerecha     = $pdf->get_width() - $marginPt - $anchoDerecha;
             $pdf->page_text($xDerecha, $y, $textoDerecha, $font, $size, $color);
