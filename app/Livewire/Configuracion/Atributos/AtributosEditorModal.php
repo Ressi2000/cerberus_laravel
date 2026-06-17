@@ -97,6 +97,7 @@ class AtributosEditorModal extends Component
             'requerido'        => (bool) $a->requerido,
             'filtrable'        => (bool) $a->filtrable,
             'visible_en_tabla' => (bool) $a->visible_en_tabla,
+            'ver_en_reporte'   => (bool) $a->ver_en_reporte,
             'orden'            => (int) $a->orden,
             'opciones_raw'     => implode("\n", $a->opciones ?? []),
             'sub_campos_data'  => collect($a->sub_campos ?? [])->map(fn($sc) => [
@@ -134,6 +135,7 @@ class AtributosEditorModal extends Component
             'requerido'        => false,
             'filtrable'        => false,
             'visible_en_tabla' => true,
+            'ver_en_reporte'   => true,
             'orden'            => $siguienteOrden,
             'opciones_raw'     => '',
             'sub_campos_data'  => [],
@@ -286,6 +288,7 @@ class AtributosEditorModal extends Component
                         'requerido'        => $fila['requerido'],
                         'filtrable'        => $fila['filtrable'],
                         'visible_en_tabla' => $fila['visible_en_tabla'],
+                        'ver_en_reporte'   => $fila['ver_en_reporte'],
                         'orden'            => (int) $fila['orden'],
                         'opciones'         => $opciones,
                         'sub_campos'       => $subCampos,
@@ -346,6 +349,7 @@ class AtributosEditorModal extends Component
         if ($tipo === 'file') {
             $this->filas[$index]['filtrable']        = false;
             $this->filas[$index]['visible_en_tabla'] = false;
+            $this->filas[$index]['ver_en_reporte']   = false;
         }
 
         // Limpiar sub_campos_data si cambian a otro tipo

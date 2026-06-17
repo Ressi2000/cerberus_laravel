@@ -147,7 +147,7 @@
                         $marca     = $atributos->first(fn ($v) => strtolower($v->atributo?->nombre ?? '') === 'marca')?->valor ?? null;
                         $modelo    = $atributos->first(fn ($v) => strtolower($v->atributo?->nombre ?? '') === 'modelo')?->valor ?? null;
                         $eavExtra  = $atributos->filter(fn ($v) =>
-                            $v->atributo?->visible_en_tabla &&
+                            $v->atributo?->ver_en_reporte &&
                             ! in_array(strtolower($v->atributo->nombre ?? ''), ['marca', 'modelo'])
                         );
                     @endphp
@@ -217,7 +217,7 @@
                         $marca     = $atributos->first(fn ($v) => strtolower($v->atributo?->nombre ?? '') === 'marca')?->valor ?? null;
                         $modelo    = $atributos->first(fn ($v) => strtolower($v->atributo?->nombre ?? '') === 'modelo')?->valor ?? null;
                         $eavExtra  = $atributos->filter(fn ($v) =>
-                            $v->atributo?->visible_en_tabla &&
+                            $v->atributo?->ver_en_reporte &&
                             ! in_array(strtolower($v->atributo->nombre ?? ''), ['marca', 'modelo'])
                         );
                     @endphp

@@ -262,11 +262,12 @@
                     @endif
 
                     {{-- Toggles de comportamiento --}}
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
                         @foreach([
                             ['requerido',        'Requerido',        'Obligatorio al crear/editar un equipo.'],
                             ['filtrable',         'Filtrable',         $tipo === 'group' ? 'Permite filtrar por los sub-campos del grupo.' : 'Aparece como filtro en el inventario.'],
                             ['visible_en_tabla',  'Visible en tabla',  $tipo === 'group' ? 'Cada sub-campo aparece como columna en el listado.' : 'Se muestra como columna en el listado.'],
+                            ['ver_en_reporte',    'Ver en reporte',    $tipo === 'group' ? 'Cada sub-campo aparece en las planillas/reportes.' : 'Se incluye en las planillas/reportes descargables.'],
                         ] as [$campo, $etiqueta, $hint])
                             <div class="flex items-start justify-between py-3 px-4
                                         bg-gray-50 dark:bg-cerberus-dark/50
