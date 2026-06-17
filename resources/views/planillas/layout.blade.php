@@ -8,7 +8,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
+            font-family: 'Helvetica', Arial, sans-serif;
             font-size: 8.5pt;
             color: #0F172A;
             background: #ffffff;
@@ -43,32 +43,23 @@
             padding: 0 8pt;
         }
 
-        .header-grupo {
-            font-size: 8pt;
-            font-weight: bold;
-            color: #1E3A8A;
-            letter-spacing: 1pt;
-            text-transform: uppercase;
-            margin-bottom: 2pt;
-        }
-
-        .header-empresa {
-            font-size: 12pt;
-            font-weight: bold;
-            color: #0D1B2A;
-            line-height: 1.2;
-            text-transform: uppercase;
-        }
-
+        .header-grupo,
+        .header-empresa,
         .header-gerencia {
-            font-size: 7pt;
+            font-size: 9pt;
             font-weight: bold;
-            color: #374151;
+            color: #000000;
+            letter-spacing: 0.3pt;
             text-transform: uppercase;
-            margin-top: 2pt;
+            line-height: 1.35;
         }
 
-        .header-barra { width: 100%; display: block; margin-top: 5pt; }
+        .header-barra {
+            width: 70pt;
+            height: auto;
+            display: block;
+            margin: 6pt auto 0;
+        }
 
         /* Meta del documento */
         .doc-meta {
@@ -490,16 +481,17 @@
                 <td class="header-center-cell">
                     <div class="header-grupo">Grupo de Empresas Sindoni</div>
                     <div class="header-empresa">{{ $empresaSede ?? '—' }}</div>
-                    <div class="header-gerencia">Gerencia Corporativa de Tecnología. Servicios Tecnológicos</div>
+                    <div class="header-gerencia">Gerencia Corporativa de Tecnología</div>
+                    <div class="header-gerencia">Servicios Tecnológicos</div>
                 </td>
                 <td class="header-logo-cell"></td>
             </tr>
         </table>
 
         @php
-            $barraPath   = public_path('images/barra.jpg');
+            $barraPath   = public_path('images/logo-sindoni.png');
             $barraBase64 = file_exists($barraPath)
-                ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($barraPath))
+                ? 'data:image/png;base64,' . base64_encode(file_get_contents($barraPath))
                 : null;
         @endphp
         @if ($barraBase64)
