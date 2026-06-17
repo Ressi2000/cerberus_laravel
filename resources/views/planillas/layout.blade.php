@@ -22,6 +22,21 @@
         }
 
         /* ══════════════════════════════════════════════════════════════════════
+           MARCA DE AGUA — fixed → DomPDF la repite en cada página
+        ══════════════════════════════════════════════════════════════════════ */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 420pt;
+            height: auto;
+            margin-top: -210pt;
+            margin-left: -210pt;
+            opacity: 0.06;
+            z-index: -1;
+        }
+
+        /* ══════════════════════════════════════════════════════════════════════
            ENCABEZADO CORPORATIVO — flujo normal, primera página
         ══════════════════════════════════════════════════════════════════════ */
         .header-principal {
@@ -478,7 +493,6 @@
         ══════════════════════════════════════════════════════════════════════ */
         .firmas-wrapper {
             margin-top: 30pt;
-            border-top: 0.8pt solid #CBD5E1;
             padding-top: 10pt;
         }
 
@@ -546,6 +560,17 @@
 </head>
 
 <body>
+
+    {{-- ══ MARCA DE AGUA — se repite en cada página ══════════════════════════ --}}
+    @php
+        $watermarkPath   = public_path('images/CBRS2.0S_frW.png');
+        $watermarkBase64 = file_exists($watermarkPath)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($watermarkPath))
+            : null;
+    @endphp
+    @if ($watermarkBase64)
+        <img src="{{ $watermarkBase64 }}" class="watermark" alt="">
+    @endif
 
     {{-- ══ ENCABEZADO CORPORATIVO ══════════════════════════════════════════ --}}
     <div class="header-principal">
