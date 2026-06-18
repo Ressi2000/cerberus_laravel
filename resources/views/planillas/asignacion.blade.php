@@ -33,7 +33,7 @@
         <tr>
             <td>
                 <div class="field-label">Nombre completo</div>
-                <div class="field-value">{{ strtoupper($receptor?->name ?? '—') }}</div>
+                <div class="field-value valor-clave">{{ strtoupper($receptor?->name ?? '—') }}</div>
             </td>
             <td>
                 <div class="field-label">Ficha</div>
@@ -74,7 +74,7 @@
         </tr>
     </table>
 @else
-    <div class="section-title-plain">Datos del Área Receptora</div>
+    <div class="section-title-plain area">Datos del Área Receptora</div>
     <table class="fields-table">
         <tr>
             <td>
@@ -83,11 +83,11 @@
             </td>
             <td>
                 <div class="field-label">Departamento / Área</div>
-                <div class="field-value">{{ strtoupper($areaDpto?->nombre ?? '—') }}</div>
+                <div class="field-value valor-clave">{{ strtoupper($areaDpto?->nombre ?? '—') }}</div>
             </td>
             <td>
                 <div class="field-label">Responsable del área</div>
-                <div class="field-value">{{ strtoupper($areaResp?->name ?? '—') }}</div>
+                <div class="field-value valor-clave">{{ strtoupper($areaResp?->name ?? '—') }}</div>
             </td>
         </tr>
         <tr>
@@ -121,7 +121,7 @@
         <tr>
             <td>
                 <div class="field-label">Código interno</div>
-                <div class="field-value">{{ $equipo?->codigo_interno ?? '—' }}</div>
+                <div class="field-value valor-clave">{{ $equipo?->codigo_interno ?? '—' }}</div>
             </td>
             <td>
                 <div class="field-label">Categoría</div>
@@ -169,7 +169,7 @@
             <tr>
                 <td>
                     <div class="field-label">Código interno</div>
-                    <div class="field-value">{{ $equipoPer?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-clave">{{ $equipoPer?->codigo_interno ?? '—' }}</div>
                 </td>
                 <td>
                     <div class="field-label">Categoría</div>
@@ -177,7 +177,7 @@
                 </td>
                 <td>
                     <div class="field-label">Pertenece a</div>
-                    <div class="field-value">{{ $equipoPadre?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value" style="color: #415A77;">↳ {{ $equipoPadre?->codigo_interno ?? '—' }}</div>
                 </td>
             </tr>
             @foreach ($atributosPer->chunk(3) as $fila)

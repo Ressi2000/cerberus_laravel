@@ -90,24 +90,28 @@
             border-collapse: collapse;
         }
 
-        .doc-meta-left  { font-size: 8pt; color: #000000; }
-        .doc-meta-right { font-size: 8pt; color: #000000; text-align: right; }
+        .doc-meta-left  { font-size: 8pt; color: #415A77; }
+        .doc-meta-right { font-size: 8pt; color: #415A77; text-align: right; }
 
         /* ══════════════════════════════════════════════════════════════════════
            TÍTULOS
         ══════════════════════════════════════════════════════════════════════ */
         .doc-title {
-            font-size: 11pt;
-            font-weight: normal;
-            color: #000000;
+            font-size: 12pt;
+            font-weight: bold;
+            color: #1E3A8A;
             text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.4pt;
             margin-top: 10pt;
             margin-bottom: 6pt;
         }
 
         .doc-divider {
             width: 100%;
-            border-top: 0.75pt solid #94A3B8;
+            height: 2pt;
+            background: #1E3A8A;
+            border-top: none;
             margin-bottom: 10pt;
         }
 
@@ -122,10 +126,20 @@
            SECCIONES DE DATOS (receptor / trabajador)
         ══════════════════════════════════════════════════════════════════════ */
         .section-title-plain {
-            font-size: 9pt;
+            font-size: 7.5pt;
             font-weight: bold;
-            color: #000000;
-            margin: 10pt 0 5pt;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 0.6pt;
+            background: #1E3A8A;
+            border-left: 3pt solid #778DA9;
+            padding: 4pt 8pt;
+            margin: 10pt 0 6pt;
+        }
+
+        .section-title-plain.area {
+            background: #0F6E56;
+            border-left-color: #6EE7B7;
         }
 
         .section {
@@ -184,7 +198,7 @@
         .field-label {
             font-size: 6.5pt;
             font-weight: bold;
-            color: #000000;
+            color: #415A77;
             text-transform: uppercase;
             letter-spacing: 0.3pt;
             margin-bottom: 1pt;
@@ -192,8 +206,14 @@
 
         .field-value {
             font-size: 8.5pt;
-            color: #000000;
+            color: #0F172A;
             font-weight: normal;
+        }
+
+        /* Resalta los datos clave (nombre, código interno, etc.) */
+        .field-value.valor-clave {
+            color: #1E3A8A;
+            font-weight: bold;
         }
 
         .receptor-badge {
@@ -525,13 +545,13 @@
         .firma-nombre {
             font-size: 8pt;
             font-weight: bold;
-            color: #1a1a2e;
+            color: #1E3A8A;
             margin-bottom: 2pt;
         }
 
         .firma-cargo {
             font-size: 6.5pt;
-            color: #64748B;
+            color: #415A77;
             text-transform: uppercase;
             letter-spacing: 0.5pt;
         }
