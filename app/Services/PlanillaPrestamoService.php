@@ -24,12 +24,11 @@ class PlanillaPrestamoService
             'areaDepartamento',
             'areaResponsable.cargo',
             'areaResponsable.departamento',
-            'items' => fn ($q) => $q->whereNull('equipo_padre_id')->with([
+            'itemsActivos' => fn ($q) => $q->with([
                 'equipo.categoria',
                 'equipo.atributosActuales.atributo',
-                'hijos.equipo.categoria',
-                'hijos.equipo.atributosActuales.atributo',
-            ]),
+                'padre.equipo',
+            ])->orderByRaw('COALESCE(equipo_padre_id, id)')->orderBy('equipo_padre_id')->orderBy('id'),
         ]);
 
         $pdf = Pdf::loadView('planillas.prestamo', [

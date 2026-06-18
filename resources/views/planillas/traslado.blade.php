@@ -9,165 +9,152 @@
 @section('contenido')
 
 <div class="doc-title">Formato de Traslado de Activos Tecnológicos</div>
-<div class="doc-subtitle">N° {{ $traslado->numero }}</div>
+<div class="doc-divider"></div>
+
+<table class="doc-meta-table">
+    <tr>
+        <td class="doc-meta-left">N° de traslado: <strong>{{ $traslado->numero }}</strong></td>
+        <td class="doc-meta-right">
+            Fecha del traslado: <strong>{{ $traslado->fecha_traslado?->format('d/m/Y') ?? '—' }}</strong>
+        </td>
+    </tr>
+</table>
 
 {{-- ══ DATOS DEL TRASLADO ══════════════════════════════════════════════════ --}}
-<div class="section">
-    <div class="section-title">Datos del Traslado</div>
-    <div class="fields-grid">
-        <table class="fields-table">
-            <tr>
-                <td>
-                    <div class="field-label">Número de traslado</div>
-                    <div class="field-value">{{ $traslado->numero }}</div>
-                </td>
-                <td>
-                    <div class="field-label">Fecha del traslado</div>
-                    <div class="field-value">{{ $traslado->fecha_traslado?->format('d/m/Y') ?? '—' }}</div>
-                </td>
-                <td>
-                    <div class="field-label">Empresa</div>
-                    <div class="field-value">{{ strtoupper($traslado->empresa?->nombre ?? '—') }}</div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="field-label">Ubicación de origen</div>
-                    <div class="field-value">{{ strtoupper($traslado->ubicacionOrigen?->nombre ?? '—') }}</div>
-                </td>
-                <td colspan="2">
-                    <div class="field-label">Ubicación de destino</div>
-                    <div class="field-value">{{ strtoupper($traslado->ubicacionDestino?->nombre ?? '—') }}</div>
-                </td>
-            </tr>
-        </table>
-    </div>
-</div>
 
-{{-- ══ MOTIVO ══════════════════════════════════════════════════════════════ --}}
-<div class="section">
-    <div class="section-title">Motivo del Traslado</div>
-    <div class="fields-grid">
-        <p style="font-size: 8.5pt; color: #1a1a2e; line-height: 1.5;">{{ $traslado->motivo }}</p>
-        @if ($traslado->observaciones)
-            <div style="margin-top: 6pt;">
-                <div class="field-label">Observaciones</div>
-                <p style="font-size: 8pt; color: #374151; margin-top: 2pt;">{{ $traslado->observaciones }}</p>
-            </div>
-        @endif
-    </div>
-</div>
+<div class="section-title-plain">Datos del Traslado</div>
+<table class="fields-table">
+    <tr>
+        <td>
+            <div class="field-label">Empresa</div>
+            <div class="field-value">{{ $traslado->empresa?->nombre ?? '—' }}</div>
+        </td>
+        <td>
+            <div class="field-label">Ubicación de origen</div>
+            <div class="field-value valor-clave">{{ $traslado->ubicacionOrigen?->nombre ?? '—' }}</div>
+        </td>
+        <td>
+            <div class="field-label">Ubicación de destino</div>
+            <div class="field-value valor-clave">{{ $traslado->ubicacionDestino?->nombre ?? '—' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="3">
+            <div class="field-label">Motivo del traslado</div>
+            <div class="field-value">{{ $traslado->motivo }}</div>
+        </td>
+    </tr>
+</table>
 
 {{-- ══ RESPONSABLES ════════════════════════════════════════════════════════ --}}
-<div class="section">
-    <div class="section-title">Responsables</div>
-    <div class="fields-grid">
-        <table class="fields-table">
-            <tr>
-                <td>
-                    <div class="field-label">Realizado por</div>
-                    <div class="field-value">{{ strtoupper($traslado->realizadoPor?->name ?? '—') }}</div>
-                </td>
-                <td>
-                    <div class="field-label">Quien recibe</div>
-                    <div class="field-value">{{ strtoupper($traslado->recibe?->name ?? '—') }}</div>
-                </td>
-                <td>
-                    <div class="field-label">Quien autoriza</div>
-                    <div class="field-value">{{ strtoupper($traslado->autoriza?->name ?? '—') }}</div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="field-label">Cédula (realiza)</div>
-                    <div class="field-value">{{ $traslado->realizadoPor?->cedula ?? '—' }}</div>
-                </td>
-                <td>
-                    <div class="field-label">Cédula (recibe)</div>
-                    <div class="field-value">{{ $traslado->recibe?->cedula ?? '—' }}</div>
-                </td>
-                <td>
-                    <div class="field-label">Cédula (autoriza)</div>
-                    <div class="field-value">{{ $traslado->autoriza?->cedula ?? '—' }}</div>
-                </td>
-            </tr>
-        </table>
-    </div>
-</div>
+
+<div class="section-title-plain">Responsables</div>
+<table class="fields-table">
+    <tr>
+        <td>
+            <div class="field-label">Realizado por</div>
+            <div class="field-value">{{ $traslado->realizadoPor?->name ?? '—' }}</div>
+        </td>
+        <td>
+            <div class="field-label">Quien recibe</div>
+            <div class="field-value">{{ $traslado->recibe?->name ?? '—' }}</div>
+        </td>
+        <td>
+            <div class="field-label">Quien autoriza</div>
+            <div class="field-value">{{ $traslado->autoriza?->name ?? '—' }}</div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div class="field-label">Cédula (realiza)</div>
+            <div class="field-value">{{ $traslado->realizadoPor?->cedula ?? '—' }}</div>
+        </td>
+        <td>
+            <div class="field-label">Cédula (recibe)</div>
+            <div class="field-value">{{ $traslado->recibe?->cedula ?? '—' }}</div>
+        </td>
+        <td>
+            <div class="field-label">Cédula (autoriza)</div>
+            <div class="field-value">{{ $traslado->autoriza?->cedula ?? '—' }}</div>
+        </td>
+    </tr>
+</table>
 
 {{-- ══ EQUIPOS TRASLADADOS ══════════════════════════════════════════════════ --}}
-<div class="equipos-section">
-    <table class="data-table">
-        <thead>
-            <tr class="thead-banner">
-                <td colspan="5">Equipos Trasladados — {{ $traslado->items->count() }} equipo(s)</td>
-            </tr>
-            <tr class="thead-cols">
-                <th style="width:15%">Código interno</th>
-                <th style="width:20%">Categoría</th>
-                <th style="width:20%">Serial</th>
-                <th style="width:25%">Hostname / Nombre</th>
-                <th style="width:20%">Estado actual</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($traslado->items as $index => $item)
-                @php
-                    $equipo = $item->equipo;
-                    $par    = ($index % 2 === 0);
-                @endphp
-                <tr class="{{ $par ? 'tr-par' : 'tr-impar' }}">
-                    <td>
-                        <span class="cod-interno">{{ $equipo?->codigo_interno ?? '—' }}</span>
-                    </td>
-                    <td>{{ $equipo?->categoria?->nombre ?? '—' }}</td>
-                    <td>{{ $equipo?->serial ?? '—' }}</td>
-                    <td>{{ $equipo?->nombre_maquina ?? '—' }}</td>
-                    <td>{{ $equipo?->estado?->nombre ?? '—' }}</td>
-                </tr>
 
-                {{-- Fila de atributos EAV --}}
-                @if ($equipo && $equipo->atributosActuales->isNotEmpty())
-                    <tr class="tr-eav">
-                        <td colspan="5">
-                            @include('planillas._eav', [
-                                'atributos' => $equipo->atributosActuales,
-                                'clase_titulo' => 'eav-titulo',
-                                'clase_fila' => 'tr-eav',
-                            ])
-                        </td>
-                    </tr>
-                @endif
-            @empty
-                <tr class="tr-par">
-                    <td colspan="5" style="text-align:center; color:#9CA3AF; padding: 10pt;">
-                        Sin equipos registrados en este traslado.
-                    </td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+<div class="section-title-plain">
+    Equipos Trasladados
+    &nbsp;·&nbsp;
+    {{ $traslado->items->count() }} {{ $traslado->items->count() === 1 ? 'equipo' : 'equipos' }}
 </div>
+
+@forelse ($traslado->items as $item)
+    @php
+        $equipo    = $item->equipo;
+        $atributos = ($equipo?->atributosActuales ?? collect())
+            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+    @endphp
+
+    <table class="fields-table" style="margin-bottom: 6pt;">
+        <tr>
+            <td>
+                <div class="field-label">Código interno</div>
+                <div class="field-value valor-codigo">{{ $equipo?->codigo_interno ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Categoría</div>
+                <div class="field-value">{{ strtoupper($equipo?->categoria?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Estado actual</div>
+                <div class="field-value">{{ $equipo?->estado?->nombre ?? '—' }}</div>
+            </td>
+        </tr>
+        @foreach ($atributos->chunk(3) as $fila)
+            <tr>
+                @foreach ($fila as $valor)
+                    <td>
+                        <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                        <div class="field-value">{{ $valor->valor }}</div>
+                    </td>
+                @endforeach
+                @for ($i = $fila->count(); $i < 3; $i++)
+                    <td></td>
+                @endfor
+            </tr>
+        @endforeach
+    </table>
+@empty
+    <p class="field-value">Sin equipos registrados en este traslado.</p>
+@endforelse
+
+@if ($traslado->observaciones)
+    <div class="obs-box">
+        <div class="obs-label">Observaciones</div>
+        {{ $traslado->observaciones }}
+    </div>
+@endif
 
 @endsection
 
 @section('firmas')
-    <td class="firma-cell">
+    <div class="firma-cell">
         <div class="firma-espacio"></div>
         <div class="firma-linea"></div>
-        <div class="firma-nombre">{{ strtoupper($traslado->realizadoPor?->name ?? '—') }}</div>
+        <div class="firma-nombre">{{ $traslado->realizadoPor?->name ?? '—' }}</div>
         <div class="firma-cargo">Analista responsable</div>
-    </td>
-    <td class="firma-cell">
+    </div>
+    <div class="firma-cell">
         <div class="firma-espacio"></div>
         <div class="firma-linea"></div>
-        <div class="firma-nombre">{{ strtoupper($traslado->recibe?->name ?? '—') }}</div>
+        <div class="firma-nombre">{{ $traslado->recibe?->name ?? '—' }}</div>
         <div class="firma-cargo">Recibe conforme</div>
-    </td>
-    <td class="firma-cell">
+    </div>
+    <div class="firma-cell">
         <div class="firma-espacio"></div>
         <div class="firma-linea"></div>
-        <div class="firma-nombre">{{ strtoupper($traslado->autoriza?->name ?? '—') }}</div>
+        <div class="firma-nombre">{{ $traslado->autoriza?->name ?? '—' }}</div>
         <div class="firma-cargo">Autoriza el traslado</div>
-    </td>
+    </div>
 @endsection

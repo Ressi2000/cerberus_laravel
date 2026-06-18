@@ -46,11 +46,12 @@
                     </div>
 
                     {{-- Toggles de comportamiento --}}
-                    <div class="grid grid-cols-3 gap-2 pt-2 border-t border-gray-100 dark:border-cerberus-steel/30">
+                    <div class="grid grid-cols-4 gap-2 pt-2 border-t border-gray-100 dark:border-cerberus-steel/30">
                         @foreach([
                             ['requerido',        'Requerido'],
                             ['filtrable',         'Filtrable'],
                             ['visible_en_tabla',  'En tabla'],
+                            ['ver_en_reporte',    'En reporte'],
                         ] as [$campo, $label])
                             <div class="text-center">
                                 <span class="material-icons text-xl

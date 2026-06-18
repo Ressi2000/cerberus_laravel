@@ -208,4 +208,17 @@ class Prestamo extends Model
     {
         return $this->estado === 'Cerrado';
     }
+
+    /**
+     * Marca como 'Vencido' todo préstamo Activo cuya fecha esperada ya pasó.
+     * El estado solo se recalculaba antes al registrar una devolución, por lo
+     * que un préstamo vencido sin movimiento quedaba indefinidamente "Activo".
+     */
+    public static function marcarVencidosAutomaticamente(): int
+    {
+        return static::where('estado', 'Activo')
+            ->whereNotNull('fecha_devolucion_esperada')
+            ->where('fecha_devolucion_esperada', '<', now()->startOfDay())
+            ->update(['estado' => 'Vencido']);
+    }
 }

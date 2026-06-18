@@ -88,6 +88,15 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
         Route::resource('/equipos', EquipoController::class);
         Route::get('/equipos/{equipo}/etiqueta', [EquipoController::class, 'etiqueta'])->name('equipos.etiqueta');
+
+        // Destino del QR impreso en la etiqueta física: misma vista de historial
+        // que admin.equipos.show, pero exige firma válida (signed) para que la
+        // URL no pueda ser adivinada/alterada (ej. cambiar el id en la barra de
+        // direcciones). Sigue exigiendo login + rol + EquipoPolicy::view igual
+        // que el resto del módulo — la firma es una capa adicional, no la única.
+        Route::get('/equipos/{equipo}/historial-qr', [EquipoController::class, 'show'])
+            ->name('equipos.historial.qr')
+            ->middleware('signed');
     });
 
     // Configuración (solo para Administrador)
@@ -127,6 +136,8 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         ->group(function () {
             Route::get('/',                                     [PrestamoController::class, 'index'])->name('index');
             Route::get('/crear',                               [PrestamoController::class, 'create'])->name('create');
+            Route::get('/historial/{usuario}',                 [PrestamoController::class, 'historial'])->name('historial');
+            Route::get('/devolver/usuario/{usuario}',          [PrestamoController::class, 'devolverUsuario'])->name('devolver.usuario');
             Route::get('/{prestamo}/devolver',                 [PrestamoController::class, 'devolver'])->name('devolver');
             Route::get('/{prestamo}/planilla/prestamo',        [PrestamoController::class, 'planillaPrestamo'])->name('planilla.prestamo');
             Route::get('/{prestamo}/planilla/devolucion',      [PrestamoController::class, 'planillaDevolucion'])->name('planilla.devolucion');

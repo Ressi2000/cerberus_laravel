@@ -159,15 +159,16 @@ class PlanillaService
             'jefe.cargo',
         ]);
 
-        // Todos los items del usuario (activos y devueltos) de todas sus asignaciones
+        // Todos los items del usuario (activos y devueltos) de todas sus asignaciones,
+        // incluyendo periféricos (con su equipo principal cargado para la referencia visual)
         $todosLosItems = \App\Models\AsignacionItem::with([
             'equipo.categoria',
             'equipo.atributosActuales.atributo',
             'asignacion',
+            'padre.equipo',
         ])
             ->whereHas('asignacion', fn ($q) => $q->where('usuario_id', $usuario->id))
-            ->whereNull('equipo_padre_id')
-            ->orderBy('created_at')
+            ->orderByRaw('COALESCE(equipo_padre_id, id)')->orderBy('equipo_padre_id')->orderBy('id')
             ->get();
 
         $asignados  = $todosLosItems->filter(fn ($i) => ! $i->devuelto);
