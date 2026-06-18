@@ -17,109 +17,94 @@
 @section('contenido')
 
 <div class="doc-title">Formato de Devolución de Activos Tecnológicos</div>
+<div class="doc-divider"></div>
+
+<table class="doc-meta-table">
+    <tr>
+        <td class="doc-meta-left">Uso: Actividades Inherentes al Cargo</td>
+        <td class="doc-meta-right">
+            Fecha de Devolución: <strong>{{ $fecha }}</strong>
+        </td>
+    </tr>
+</table>
 
 {{-- ══ DATOS DEL USUARIO / ÁREA ════════════════════════════════════════════ --}}
 
 @if (! $esArea)
-    <div class="section">
-        <div class="section-title devolucion">Datos del Usuario</div>
-        <div class="fields-grid">
-            <div style="padding-bottom:5pt;">
-                <span class="receptor-badge usuario">Asignación personal</span>
-            </div>
-            <table class="fields-table">
-                <tr>
-                    <td>
-                        <div class="field-label">Ficha</div>
-                        <div class="field-value">{{ $receptor?->ficha ?? '—' }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Nombre completo</div>
-                        <div class="field-value">{{ strtoupper($receptor?->name ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Cédula de identidad</div>
-                        <div class="field-value">{{ $receptor?->cedula ?? '—' }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Empresa (nómina)</div>
-                        <div class="field-value">{{ strtoupper($receptor?->empresaNomina?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Sede</div>
-                        <div class="field-value">{{ strtoupper($asignacion->empresa?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Correo electrónico</div>
-                        <div class="field-value">{{ $receptor?->email ?? '—' }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Departamento</div>
-                        <div class="field-value">{{ strtoupper($receptor?->departamento?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Cargo</div>
-                        <div class="field-value">{{ strtoupper($receptor?->cargo?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Fecha de devolución</div>
-                        <div class="field-value">{{ $fecha }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Analista que recibe</div>
-                        <div class="field-value">{{ strtoupper($asignacion->analista?->name ?? '—') }}</div>
-                    </td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </table>
-        </div>
-    </div>
+    <div class="section-title-plain devolucion">Datos del Usuario</div>
+    <table class="fields-table">
+        <tr>
+            <td>
+                <div class="field-label">Nombre completo</div>
+                <div class="field-value valor-clave">{{ $receptor?->name ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Ficha</div>
+                <div class="field-value">{{ $receptor?->ficha ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Cédula de identidad</div>
+                <div class="field-value">{{ $receptor?->cedula ?? '—' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Empresa (nómina)</div>
+                <div class="field-value">{{ $receptor?->empresaNomina?->nombre ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Sede</div>
+                <div class="field-value">{{ $asignacion->empresa?->nombre ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Correo electrónico</div>
+                <div class="field-value">{{ $receptor?->email ?? '—' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Departamento</div>
+                <div class="field-value">{{ $receptor?->departamento?->nombre ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Cargo</div>
+                <div class="field-value">{{ $receptor?->cargo?->nombre ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Analista que recibe</div>
+                <div class="field-value">{{ $asignacion->analista?->name ?? '—' }}</div>
+            </td>
+        </tr>
+    </table>
 @else
-    <div class="section">
-        <div class="section-title area">Datos del Área</div>
-        <div class="fields-grid">
-            <div style="padding-bottom:5pt;">
-                <span class="receptor-badge area">Área común</span>
-            </div>
-            <table class="fields-table">
-                <tr>
-                    <td>
-                        <div class="field-label">Empresa del área</div>
-                        <div class="field-value">{{ strtoupper($areaEmpresa?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Departamento / Área</div>
-                        <div class="field-value">{{ strtoupper($areaDpto?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Responsable del área</div>
-                        <div class="field-value">{{ strtoupper($areaResp?->name ?? '—') }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Cargo del responsable</div>
-                        <div class="field-value">{{ strtoupper($areaResp?->cargo?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Fecha de devolución</div>
-                        <div class="field-value">{{ $fecha }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Analista que recibe</div>
-                        <div class="field-value">{{ strtoupper($asignacion->analista?->name ?? '—') }}</div>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
+    <div class="section-title-plain area">Datos del Área</div>
+    <table class="fields-table">
+        <tr>
+            <td>
+                <div class="field-label">Empresa del área</div>
+                <div class="field-value">{{ strtoupper($areaEmpresa?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Departamento / Área</div>
+                <div class="field-value valor-clave">{{ strtoupper($areaDpto?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Responsable del área</div>
+                <div class="field-value valor-clave">{{ strtoupper($areaResp?->name ?? '—') }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Cargo del responsable</div>
+                <div class="field-value">{{ strtoupper($areaResp?->cargo?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Analista que recibe</div>
+                <div class="field-value">{{ $asignacion->analista?->name ?? '—' }}</div>
+            </td>
+            <td></td>
+        </tr>
+    </table>
 @endif
 
 {{-- ══ TABLA EQUIPOS DEVUELTOS ══════════════════════════════════════════════ --}}
@@ -248,37 +233,37 @@
 
 @section('firmas')
     @if (! $esArea)
-        <td class="firma-cell">
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ strtoupper($asignacion->analista?->name ?? 'Analista') }}</div>
+            <div class="firma-nombre">{{ $asignacion->analista?->name ?? 'Analista' }}</div>
             <div class="firma-cargo">Técnico que recibe</div>
-        </td>
-        <td class="firma-cell">
+        </div>
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ strtoupper($receptor?->name ?? 'Trabajador') }}</div>
+            <div class="firma-nombre">{{ $receptor?->name ?? 'Trabajador' }}</div>
             <div class="firma-cargo">Trabajador que entrega</div>
-        </td>
-        <td class="firma-cell">
+        </div>
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ strtoupper($receptor?->jefe?->name ?? 'Supervisor') }}</div>
+            <div class="firma-nombre">{{ $receptor?->jefe?->name ?? 'Supervisor' }}</div>
             <div class="firma-cargo">Supervisor / Testigo</div>
-        </td>
+        </div>
     @else
-        <td class="firma-cell">
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ strtoupper($asignacion->analista?->name ?? 'Analista') }}</div>
+            <div class="firma-nombre">{{ $asignacion->analista?->name ?? 'Analista' }}</div>
             <div class="firma-cargo">Técnico que recibe</div>
-        </td>
-        <td class="firma-cell">
+        </div>
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ strtoupper($areaResp?->name ?? 'Responsable') }}</div>
             <div class="firma-cargo">Responsable del área</div>
-        </td>
-        <td class="firma-cell"></td>
+        </div>
+        <div class="firma-cell"></div>
     @endif
 @endsection

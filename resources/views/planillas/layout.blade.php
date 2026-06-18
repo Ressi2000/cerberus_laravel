@@ -142,6 +142,16 @@
             border-left-color: #6EE7B7;
         }
 
+        .section-title-plain.devolucion {
+            background: #92400E;
+            border-left-color: #FBBF24;
+        }
+
+        .section-title-plain.egreso {
+            background: #6B21A8;
+            border-left-color: #C084FC;
+        }
+
         .section {
             margin-bottom: 11pt;
             border: 0.5pt solid #CBD5E1;
