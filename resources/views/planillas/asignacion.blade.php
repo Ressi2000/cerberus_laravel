@@ -173,7 +173,7 @@
                 </td>
                 <td>
                     <div class="field-label">Pertenece a</div>
-                    <div class="field-value valor-referencia">↳ {{ $equipoPadre?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-referencia">» {{ $equipoPadre?->codigo_interno ?? '—' }}</div>
                 </td>
             </tr>
             @foreach ($atributosPer->chunk(3) as $fila)

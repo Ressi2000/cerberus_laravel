@@ -190,7 +190,7 @@
                 </td>
                 <td>
                     <div class="field-label">Pertenece a</div>
-                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-referencia">» {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
                 </td>
             </tr>
             <tr>
@@ -302,7 +302,7 @@
                 </td>
                 <td>
                     <div class="field-label">Pertenece a</div>
-                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-referencia">» {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
                 </td>
             </tr>
             <tr>

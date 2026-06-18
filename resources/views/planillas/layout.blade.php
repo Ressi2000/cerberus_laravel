@@ -459,7 +459,7 @@
         }
 
         /* ══════════════════════════════════════════════════════════════════════
-           PERIFÉRICO — fila completa con indicador ↳
+           PERIFÉRICO — fila completa con indicador »
         ══════════════════════════════════════════════════════════════════════ */
         .tr-periferico td {
             background: #FFFBEB !important;
@@ -695,10 +695,10 @@
             $marginPt = 16 * $mmToPt;
             $y        = $pdf->get_height() - (8 * $mmToPt);
 
-            $textoIzquierda = {!! json_encode($piePrimero, JSON_UNESCAPED_UNICODE) !!};
+            $textoIzquierda = {!! json_encode($piePrimero, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
             $pdf->page_text($marginPt, $y, $textoIzquierda, $font, $size, $color);
 
-            $textoDerecha = {!! json_encode($piePropio, JSON_UNESCAPED_UNICODE) !!};
+            $textoDerecha = {!! json_encode($piePropio, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
             $anchoDerecha = $fontMetrics->getTextWidth($textoDerecha, $font, $size);
             $xDerecha     = $pdf->get_width() - $marginPt - $anchoDerecha;
             $pdf->page_text($xDerecha, $y, $textoDerecha, $font, $size, $color);
