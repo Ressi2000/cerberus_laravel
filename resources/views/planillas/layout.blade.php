@@ -34,7 +34,7 @@
             height: auto;
             margin-top: -210pt;
             margin-left: -210pt;
-            opacity: 0.06;
+            opacity: 0.3;
             z-index: -1;
         }
 
