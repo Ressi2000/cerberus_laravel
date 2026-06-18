@@ -12,13 +12,17 @@ class PlanillaAssetCache
      */
     public static function base64(string $relativePath): ?string
     {
-        return Cache::rememberForever("planilla-asset:{$relativePath}", function () use ($relativePath) {
-            $path = public_path($relativePath);
+        $path = public_path($relativePath);
 
-            if (! file_exists($path)) {
-                return null;
-            }
+        if (! file_exists($path)) {
+            return null;
+        }
 
+        // El mtime entra en la cache key para que un reemplazo del archivo
+        // (p. ej. al optimizar su tamaño) invalide automáticamente la cache.
+        $cacheKey = "planilla-asset:{$relativePath}:" . filemtime($path);
+
+        return Cache::rememberForever($cacheKey, function () use ($path) {
             $mime = match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
                 'jpg', 'jpeg' => 'image/jpeg',
                 'gif' => 'image/gif',
