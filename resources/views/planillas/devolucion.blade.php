@@ -107,118 +107,118 @@
     </table>
 @endif
 
-{{-- ══ TABLA EQUIPOS DEVUELTOS ══════════════════════════════════════════════ --}}
+{{-- ══ EQUIPOS DEVUELTOS ════════════════════════════════════════════════════ --}}
 
-<div class="equipos-section">
-    <table class="data-table">
-        <thead>
-            <tr class="thead-banner devolucion">
-                <td colspan="8">
-                    Equipos Devueltos
-                    &nbsp;·&nbsp;
-                    {{ $itemsDevueltos->count() }} {{ $itemsDevueltos->count() === 1 ? 'equipo' : 'equipos' }}
-                </td>
-            </tr>
-            <tr class="thead-cols">
-                <th style="width:11%">Código</th>
-                <th style="width:13%">Hostname</th>
-                <th style="width:12%">Categoría</th>
-                <th style="width:12%">Marca</th>
-                <th style="width:12%">Modelo</th>
-                <th style="width:13%">Serial</th>
-                <th style="width:11%">F. Devolución</th>
-                <th style="width:16%">Recibido por</th>
-            </tr>
-        </thead>
-        <tbody>
-        @if ($itemsDevueltos->isEmpty())
-            <tr>
-                <td colspan="8" style="text-align:center;color:#6B7280;font-style:italic;padding:12pt;">
-                    No hay equipos devueltos registrados.
-                </td>
-            </tr>
-        @else
-            @foreach ($itemsDevueltos as $item)
-                @php
-                    $eq           = $item->equipo;
-                    $esPeriférico = $item->equipo_padre_id !== null;
-                    $atribs       = $eq?->atributosActuales ?? collect();
-                    $marca        = $atribs->first(fn($v) => strtolower($v->atributo?->nombre ?? '') === 'marca')?->valor ?? ($eq?->marca ?? '—');
-                    $modelo       = $atribs->first(fn($v) => strtolower($v->atributo?->nombre ?? '') === 'modelo')?->valor ?? ($eq?->modelo ?? '—');
-                    $eav          = $atribs->filter(fn($v) => ! in_array(strtolower($v->atributo?->nombre ?? ''), ['marca','modelo']));
-                @endphp
-
-                @if ($esPeriférico)
-                    <tr class="tr-periferico periferico-group">
-                        <td>
-                            <span class="periferico-prefix">↳</span>
-                            <span class="periferico-cod">{{ $eq?->codigo_interno ?? '—' }}</span>
-                        </td>
-                        <td>{{ $eq?->nombre_maquina ?? '—' }}</td>
-                        <td>{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</td>
-                        <td>{{ $marca }}</td>
-                        <td>{{ $modelo }}</td>
-                        <td>{{ $eq?->serial ?? '—' }}</td>
-                        <td>{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</td>
-                        <td>
-                            {{ $item->devueltoPor?->name ?? '—' }}
-                            @if ($item->padre?->equipo)
-                                <span class="cell-sub">De: {{ $item->padre->equipo->codigo_interno }}</span>
-                            @endif
-                        </td>
-                    </tr>
-                    @include('planillas._eav', ['atributos' => $eav, 'esPeriferico' => true, 'colspan' => 8])
-                @else
-                    <tr class="equipo-group tr-impar">
-                        <td class="cod-interno">{{ $eq?->codigo_interno ?? '—' }}</td>
-                        <td>{{ $eq?->nombre_maquina ?? '—' }}</td>
-                        <td>{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</td>
-                        <td>{{ $marca }}</td>
-                        <td>{{ $modelo }}</td>
-                        <td>{{ $eq?->serial ?? '—' }}</td>
-                        <td>{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</td>
-                        <td>{{ $item->devueltoPor?->name ?? '—' }}</td>
-                    </tr>
-                    @include('planillas._eav', ['atributos' => $eav, 'esPeriferico' => false, 'colspan' => 8])
-                @endif
-            @endforeach
-        @endif
-        </tbody>
-    </table>
+<div class="section-title-plain devolucion">
+    Equipos Devueltos
+    &nbsp;·&nbsp;
+    {{ $itemsDevueltos->count() }} {{ $itemsDevueltos->count() === 1 ? 'equipo' : 'equipos' }}
 </div>
+
+@forelse ($itemsDevueltos as $item)
+    @php
+        $eq        = $item->equipo;
+        $esPerif   = $item->equipo_padre_id !== null;
+        $atributos = ($eq?->atributosActuales ?? collect())
+            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+    @endphp
+
+    <table class="fields-table" style="margin-bottom: 6pt;">
+        <tr>
+            <td>
+                <div class="field-label">Código interno</div>
+                <div class="field-value valor-codigo">{{ $eq?->codigo_interno ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Categoría</div>
+                <div class="field-value">{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</div>
+            </td>
+            @if ($esPerif)
+                <td>
+                    <div class="field-label">Pertenece a</div>
+                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                </td>
+            @else
+                <td></td>
+            @endif
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Hostname</div>
+                <div class="field-value">{{ $eq?->nombre_maquina ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Serial</div>
+                <div class="field-value">{{ $eq?->serial ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Fecha de devolución</div>
+                <div class="field-value">{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Recibido por</div>
+                <div class="field-value">{{ $item->devueltoPor?->name ?? '—' }}</div>
+            </td>
+            <td colspan="2"></td>
+        </tr>
+        @foreach ($atributos->chunk(3) as $fila)
+            <tr>
+                @foreach ($fila as $valor)
+                    <td>
+                        <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                        <div class="field-value">{{ $valor->valor }}</div>
+                    </td>
+                @endforeach
+                @for ($i = $fila->count(); $i < 3; $i++)
+                    <td></td>
+                @endfor
+            </tr>
+        @endforeach
+    </table>
+@empty
+    <p class="field-value">No hay equipos devueltos registrados.</p>
+@endforelse
 
 {{-- ══ PENDIENTES (si quedan) ══════════════════════════════════════════════ --}}
 
 @if ($itemsPendientes->isNotEmpty())
-    <div class="equipos-section">
-        <table class="data-table">
-            <thead>
-                <tr class="thead-banner peligro">
-                    <td colspan="5">
-                        Equipos Pendientes de Devolución &nbsp;·&nbsp; {{ $itemsPendientes->count() }}
-                    </td>
-                </tr>
-                <tr class="thead-cols">
-                    <th style="width:16%">Código</th>
-                    <th style="width:22%">Hostname</th>
-                    <th style="width:20%">Categoría</th>
-                    <th style="width:22%">Serial</th>
-                    <th style="width:20%">Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($itemsPendientes as $item)
-                    <tr class="tr-pendiente">
-                        <td class="cod-interno" style="color:#DC2626;">{{ $item->equipo?->codigo_interno ?? '—' }}</td>
-                        <td>{{ $item->equipo?->nombre_maquina ?? '—' }}</td>
-                        <td>{{ strtoupper($item->equipo?->categoria?->nombre ?? '—') }}</td>
-                        <td>{{ $item->equipo?->serial ?? '—' }}</td>
-                        <td><span class="badge badge-pendiente">Pendiente</span></td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+    <div class="section-title-plain" style="background:#7F1D1D;border-left-color:#FCA5A5;">
+        Equipos Pendientes de Devolución &nbsp;·&nbsp; {{ $itemsPendientes->count() }}
     </div>
+
+    @foreach ($itemsPendientes as $item)
+        @php $eqPend = $item->equipo; @endphp
+        <table class="fields-table" style="margin-bottom: 6pt;">
+            <tr>
+                <td>
+                    <div class="field-label">Código interno</div>
+                    <div class="field-value valor-codigo" style="background:#7F1D1D;">{{ $eqPend?->codigo_interno ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Categoría</div>
+                    <div class="field-value">{{ strtoupper($eqPend?->categoria?->nombre ?? '—') }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Hostname</div>
+                    <div class="field-value">{{ $eqPend?->nombre_maquina ?? '—' }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-label">Serial</div>
+                    <div class="field-value">{{ $eqPend?->serial ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Estado</div>
+                    <div class="field-value"><span class="badge badge-pendiente">Pendiente</span></div>
+                </td>
+                <td></td>
+            </tr>
+        </table>
+    @endforeach
 @endif
 
 @if ($asignacion->observaciones)
