@@ -118,20 +118,6 @@
                 <div class="field-value">{{ strtoupper($equipo?->categoria?->nombre ?? '—') }}</div>
             </td>
             <td>
-                <div class="field-label">Hostname</div>
-                <div class="field-value">{{ $equipo?->nombre_maquina ?? '—' }}</div>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <div class="field-label">Serial</div>
-                <div class="field-value">{{ $equipo?->serial ?? '—' }}</div>
-            </td>
-            <td>
-                <div class="field-label">Fecha de asignación</div>
-                <div class="field-value">{{ $item->asignacion?->fecha_asignacion?->format('d/m/Y') ?? '—' }}</div>
-            </td>
-            <td>
                 <div class="field-label">Estado</div>
                 <div class="field-value"><span class="badge badge-pendiente">Pendiente</span></div>
             </td>
@@ -188,20 +174,9 @@
                     <div class="field-value">{{ strtoupper($equipo?->categoria?->nombre ?? '—') }}</div>
                 </td>
                 <td>
-                    <div class="field-label">Hostname</div>
-                    <div class="field-value">{{ $equipo?->nombre_maquina ?? '—' }}</div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="field-label">Serial</div>
-                    <div class="field-value">{{ $equipo?->serial ?? '—' }}</div>
-                </td>
-                <td>
                     <div class="field-label">Fecha de devolución</div>
                     <div class="field-value">{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</div>
                 </td>
-                <td></td>
             </tr>
             @foreach ($atributos->chunk(3) as $fila)
                 <tr>

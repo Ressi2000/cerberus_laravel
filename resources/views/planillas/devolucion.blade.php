@@ -145,24 +145,14 @@
         </tr>
         <tr>
             <td>
-                <div class="field-label">Hostname</div>
-                <div class="field-value">{{ $eq?->nombre_maquina ?? '—' }}</div>
-            </td>
-            <td>
-                <div class="field-label">Serial</div>
-                <div class="field-value">{{ $eq?->serial ?? '—' }}</div>
-            </td>
-            <td>
                 <div class="field-label">Fecha de devolución</div>
                 <div class="field-value">{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</div>
             </td>
-        </tr>
-        <tr>
             <td>
                 <div class="field-label">Recibido por</div>
                 <div class="field-value">{{ $item->devueltoPor?->name ?? '—' }}</div>
             </td>
-            <td colspan="2"></td>
+            <td></td>
         </tr>
         @foreach ($atributos->chunk(3) as $fila)
             <tr>
@@ -190,7 +180,12 @@
     </div>
 
     @foreach ($itemsPendientes as $item)
-        @php $eqPend = $item->equipo; @endphp
+        @php
+            $eqPend       = $item->equipo;
+            $atributosPend = ($eqPend?->atributosActuales ?? collect())
+                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        @endphp
         <table class="fields-table" style="margin-bottom: 6pt;">
             <tr>
                 <td>
@@ -202,21 +197,23 @@
                     <div class="field-value">{{ strtoupper($eqPend?->categoria?->nombre ?? '—') }}</div>
                 </td>
                 <td>
-                    <div class="field-label">Hostname</div>
-                    <div class="field-value">{{ $eqPend?->nombre_maquina ?? '—' }}</div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="field-label">Serial</div>
-                    <div class="field-value">{{ $eqPend?->serial ?? '—' }}</div>
-                </td>
-                <td>
                     <div class="field-label">Estado</div>
                     <div class="field-value"><span class="badge badge-pendiente">Pendiente</span></div>
                 </td>
-                <td></td>
             </tr>
+            @foreach ($atributosPend->chunk(3) as $fila)
+                <tr>
+                    @foreach ($fila as $valor)
+                        <td>
+                            <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                            <div class="field-value">{{ $valor->valor }}</div>
+                        </td>
+                    @endforeach
+                    @for ($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
         </table>
     @endforeach
 @endif
