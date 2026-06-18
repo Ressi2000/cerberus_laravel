@@ -611,10 +611,7 @@
 
     {{-- ══ MARCA DE AGUA — se repite en cada página ══════════════════════════ --}}
     @php
-        $watermarkPath   = public_path('images/CBRS2.0S_frW.png');
-        $watermarkBase64 = file_exists($watermarkPath)
-            ? 'data:image/png;base64,' . base64_encode(file_get_contents($watermarkPath))
-            : null;
+        $watermarkBase64 = \App\Services\PlanillaAssetCache::base64('images/CBRS2.0S_frW.png');
     @endphp
     @if ($watermarkBase64)
         <img src="{{ $watermarkBase64 }}" class="watermark" alt="">
@@ -626,10 +623,7 @@
             <tr>
                 <td class="header-logo-cell">
                     @php
-                        $stPath = public_path('images/st.png');
-                        $stBase64 = file_exists($stPath)
-                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($stPath))
-                            : null;
+                        $stBase64 = \App\Services\PlanillaAssetCache::base64('images/st.png');
                     @endphp
                     @if ($stBase64)
                         <img src="{{ $stBase64 }}" alt="Servicios Tecnológicos">
@@ -643,10 +637,7 @@
                 </td>
                 <td class="header-logo-cell">
                     @php
-                        $sindoniPath   = public_path('images/logo-sindoni.png');
-                        $sindoniBase64 = file_exists($sindoniPath)
-                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($sindoniPath))
-                            : null;
+                        $sindoniBase64 = \App\Services\PlanillaAssetCache::base64('images/logo-sindoni.png');
                     @endphp
                     @if ($sindoniBase64)
                         <img src="{{ $sindoniBase64 }}" alt="Empresas Sindoni">

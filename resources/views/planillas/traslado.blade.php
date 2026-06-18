@@ -91,9 +91,7 @@
 @forelse ($traslado->items as $item)
     @php
         $equipo    = $item->equipo;
-        $atributos = ($equipo?->atributosActuales ?? collect())
-            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        $atributos = $equipo?->atributosParaReporte() ?? collect();
     @endphp
 
     <table class="fields-table" style="margin-bottom: 6pt;">

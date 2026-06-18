@@ -109,9 +109,7 @@
 @forelse ($pendientesPrincipales as $item)
     @php
         $equipo    = $item->equipo;
-        $atributos = ($equipo?->atributosActuales ?? collect())
-            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        $atributos = $equipo?->atributosParaReporte() ?? collect();
     @endphp
 
     <table class="fields-table" style="margin-bottom: 6pt;">
@@ -163,9 +161,7 @@
     @foreach ($pendientesPerifericos as $item)
         @php
             $eqPer        = $item->equipo;
-            $atributosPer = ($eqPer?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributosPer = $eqPer?->atributosParaReporte() ?? collect();
         @endphp
 
         <table class="fields-table" style="margin-bottom: 6pt;">
@@ -219,9 +215,7 @@
     @foreach ($recibidosPrincipales as $item)
         @php
             $equipo    = $item->equipo;
-            $atributos = ($equipo?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributos = $equipo?->atributosParaReporte() ?? collect();
         @endphp
 
         <table class="fields-table" style="margin-bottom: 6pt;">
@@ -266,9 +260,7 @@
     @foreach ($recibidosPerifericos as $item)
         @php
             $eqPerRec        = $item->equipo;
-            $atributosPerRec = ($eqPerRec?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributosPerRec = $eqPerRec?->atributosParaReporte() ?? collect();
         @endphp
 
         <table class="fields-table" style="margin-bottom: 6pt;">

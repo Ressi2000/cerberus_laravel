@@ -112,9 +112,7 @@
 @forelse ($asignacion->items as $item)
     @php
         $equipo    = $item->equipo;
-        $atributos = ($equipo?->atributosActuales ?? collect())
-            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        $atributos = $equipo?->atributosParaReporte() ?? collect();
     @endphp
 
     <table class="fields-table" style="margin-bottom: 6pt;">
@@ -160,9 +158,7 @@
         @php
             $equipoPer    = $periferico->equipo;
             $equipoPadre  = $periferico->padre?->equipo;
-            $atributosPer = ($equipoPer?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributosPer = $equipoPer?->atributosParaReporte() ?? collect();
         @endphp
 
         <table class="fields-table" style="margin-bottom: 6pt;">
