@@ -231,6 +231,19 @@
             border-radius: 3pt;
         }
 
+        /* Referencia al equipo padre — distinta del código principal, en tono ámbar */
+        .field-value.valor-referencia {
+            display: inline-block;
+            background: #FEF3C7;
+            color: #92400E;
+            font-weight: bold;
+            font-size: 8.5pt;
+            letter-spacing: 0.2pt;
+            padding: 2pt 8pt;
+            border-radius: 3pt;
+            border: 0.5pt solid #FDE68A;
+        }
+
         .receptor-badge {
             display: inline-block;
             font-size: 6pt;
