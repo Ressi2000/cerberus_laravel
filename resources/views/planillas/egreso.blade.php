@@ -220,13 +220,6 @@
     <div class="firma-cell">
         <div class="firma-espacio"></div>
         <div class="firma-linea"></div>
-        <div class="firma-nombre">{{ $usuario->jefe?->name ?? 'Supervisor' }}</div>
-        <div class="firma-cargo">Supervisor / Jefe directo</div>
-    </div>
-
-    <div class="firma-cell">
-        <div class="firma-espacio"></div>
-        <div class="firma-linea"></div>
         <div class="firma-nombre">Gerencia de Tecnología</div>
         <div class="firma-cargo">Receptor de activos</div>
     </div>

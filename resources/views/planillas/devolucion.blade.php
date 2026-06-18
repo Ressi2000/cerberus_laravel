@@ -242,12 +242,6 @@
             <div class="firma-nombre">{{ $receptor?->name ?? 'Trabajador' }}</div>
             <div class="firma-cargo">Trabajador que entrega</div>
         </div>
-        <div class="firma-cell">
-            <div class="firma-espacio"></div>
-            <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ $receptor?->jefe?->name ?? 'Supervisor' }}</div>
-            <div class="firma-cargo">Supervisor / Testigo</div>
-        </div>
     @else
         <div class="firma-cell">
             <div class="firma-espacio"></div>
