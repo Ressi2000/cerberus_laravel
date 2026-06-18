@@ -179,6 +179,7 @@
         .fields-table {
             width: 100%;
             border-collapse: collapse;
+            font-family: 'Helvetica', Arial, sans-serif;
         }
 
         .fields-table tr {
@@ -214,6 +215,20 @@
         .field-value.valor-clave {
             color: #1E3A8A;
             font-weight: bold;
+            font-size: 9.5pt;
+            letter-spacing: 0.2pt;
+        }
+
+        /* Código interno del equipo — el dato de identificación más importante */
+        .field-value.valor-codigo {
+            display: inline-block;
+            background: #1E3A8A;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 9pt;
+            letter-spacing: 0.3pt;
+            padding: 2pt 8pt;
+            border-radius: 3pt;
         }
 
         .receptor-badge {

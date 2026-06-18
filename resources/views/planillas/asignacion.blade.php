@@ -33,7 +33,7 @@
         <tr>
             <td>
                 <div class="field-label">Nombre completo</div>
-                <div class="field-value valor-clave">{{ strtoupper($receptor?->name ?? '—') }}</div>
+                <div class="field-value valor-clave">{{ $receptor?->name ?? '—' }}</div>
             </td>
             <td>
                 <div class="field-label">Ficha</div>
@@ -47,11 +47,11 @@
         <tr>
             <td>
                 <div class="field-label">Empresa (nómina)</div>
-                <div class="field-value">{{ strtoupper($receptor?->empresaNomina?->nombre ?? '—') }}</div>
+                <div class="field-value">{{ $receptor?->empresaNomina?->nombre ?? '—' }}</div>
             </td>
             <td>
                 <div class="field-label">Sede de la asignación</div>
-                <div class="field-value">{{ strtoupper($asignacion->empresa?->nombre ?? '—') }}</div>
+                <div class="field-value">{{ $asignacion->empresa?->nombre ?? '—' }}</div>
             </td>
             <td>
                 <div class="field-label">Correo</div>
@@ -61,15 +61,15 @@
         <tr>
             <td>
                 <div class="field-label">Departamento</div>
-                <div class="field-value">{{ strtoupper($receptor?->departamento?->nombre ?? '—') }}</div>
+                <div class="field-value">{{ $receptor?->departamento?->nombre ?? '—' }}</div>
             </td>
             <td>
                 <div class="field-label">Cargo</div>
-                <div class="field-value">{{ strtoupper($receptor?->cargo?->nombre ?? '—') }}</div>
+                <div class="field-value">{{ $receptor?->cargo?->nombre ?? '—' }}</div>
             </td>
             <td>
                 <div class="field-label">Supervisor directo</div>
-                <div class="field-value">{{ strtoupper($receptor?->jefe?->name ?? '—') }}</div>
+                <div class="field-value">{{ $receptor?->jefe?->name ?? '—' }}</div>
             </td>
         </tr>
     </table>
@@ -121,7 +121,7 @@
         <tr>
             <td>
                 <div class="field-label">Código interno</div>
-                <div class="field-value valor-clave">{{ $equipo?->codigo_interno ?? '—' }}</div>
+                <div class="field-value valor-codigo">{{ $equipo?->codigo_interno ?? '—' }}</div>
             </td>
             <td>
                 <div class="field-label">Categoría</div>
@@ -169,7 +169,7 @@
             <tr>
                 <td>
                     <div class="field-label">Código interno</div>
-                    <div class="field-value valor-clave">{{ $equipoPer?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-codigo">{{ $equipoPer?->codigo_interno ?? '—' }}</div>
                 </td>
                 <td>
                     <div class="field-label">Categoría</div>
