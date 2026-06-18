@@ -11,242 +11,203 @@
     $areaDpto    = $prestamo->areaDepartamento;
     $areaResp    = $prestamo->areaResponsable;
 
-    $items = $prestamo->items->whereNull('equipo_padre_id')->values();
+    $itemsActivos = $prestamo->itemsActivos;
+    $principales  = $itemsActivos->filter(fn ($i) => $i->equipo_padre_id === null)->values();
+    $perifericos  = $itemsActivos->filter(fn ($i) => $i->equipo_padre_id !== null)->values();
 @endphp
 
 @section('contenido')
 
 <div class="doc-title">Formato de Préstamo de Activos Tecnológicos</div>
+<div class="doc-divider"></div>
 
-{{-- ── AVISO DE VENCIMIENTO ──────────────────────────────────────────────── --}}
 @if ($prestamo->fecha_devolucion_esperada)
-<div style="margin-bottom:10pt; padding:8pt 12pt; background:#FEF3C7; border:1px solid #F59E0B; border-radius:6pt;">
-    <table style="width:100%">
+<table class="doc-meta-table">
+    <tr>
+        <td class="doc-meta-left">
+            Fecha de préstamo: <strong>{{ $prestamo->fecha_prestamo?->format('d/m/Y') ?? '—' }}</strong>
+        </td>
+        <td class="doc-meta-right" style="{{ $prestamo->estaVencido() ? 'color:#DC2626;font-weight:bold;' : '' }}">
+            Fecha de devolución esperada: <strong>{{ $prestamo->fecha_devolucion_esperada->format('d/m/Y') }}</strong>
+        </td>
+    </tr>
+</table>
+@endif
+
+{{-- ══ DATOS DEL RECEPTOR / ÁREA ════════════════════════════════════════════ --}}
+
+@if (! $esArea)
+    <div class="section-title-plain">Datos del Receptor</div>
+    <table class="fields-table">
         <tr>
-            <td style="font-size:9pt; color:#92400E; font-weight:bold;">
-                Fecha de préstamo: {{ $prestamo->fecha_prestamo?->format('d/m/Y') ?? '—' }}
+            <td>
+                <div class="field-label">Nombre completo</div>
+                <div class="field-value valor-clave">{{ $receptor?->name ?? '—' }}</div>
             </td>
-            <td style="font-size:9pt; color:#92400E; font-weight:bold; text-align:right;">
-                Fecha de devolución esperada: {{ $prestamo->fecha_devolucion_esperada->format('d/m/Y') }}
+            <td>
+                <div class="field-label">Ficha</div>
+                <div class="field-value">{{ $receptor?->ficha ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Cédula de identidad</div>
+                <div class="field-value">{{ $receptor?->cedula ?? '—' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Empresa (nómina)</div>
+                <div class="field-value">{{ $receptor?->empresaNomina?->nombre ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Sede del préstamo</div>
+                <div class="field-value">{{ $prestamo->empresa?->nombre ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Correo electrónico</div>
+                <div class="field-value">{{ $receptor?->email ?? '—' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Departamento</div>
+                <div class="field-value">{{ $receptor?->departamento?->nombre ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Cargo</div>
+                <div class="field-value">{{ $receptor?->cargo?->nombre ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Analista responsable</div>
+                <div class="field-value">{{ $prestamo->analista?->name ?? '—' }}</div>
             </td>
         </tr>
     </table>
-</div>
-@endif
-
-{{-- ── RECEPTOR ─────────────────────────────────────────────────────────── --}}
-@if (! $esArea)
-    <div class="section">
-        <div class="section-title">Datos del Receptor</div>
-        <div class="fields-grid">
-            <div style="padding-bottom:5pt;">
-                <span class="receptor-badge usuario">Préstamo personal</span>
-            </div>
-            <table class="fields-table">
-                <tr>
-                    <td>
-                        <div class="field-label">Ficha</div>
-                        <div class="field-value">{{ $receptor?->ficha ?? '—' }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Nombre completo</div>
-                        <div class="field-value">{{ strtoupper($receptor?->name ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Cédula de identidad</div>
-                        <div class="field-value">{{ $receptor?->cedula ?? '—' }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Empresa (nómina)</div>
-                        <div class="field-value">{{ strtoupper($receptor?->empresaNomina?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Sede del préstamo</div>
-                        <div class="field-value">{{ strtoupper($prestamo->empresa?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Correo electrónico</div>
-                        <div class="field-value">{{ $receptor?->email ?? '—' }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Departamento</div>
-                        <div class="field-value">{{ strtoupper($receptor?->departamento?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Cargo</div>
-                        <div class="field-value">{{ strtoupper($receptor?->cargo?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Supervisor directo</div>
-                        <div class="field-value">{{ strtoupper($receptor?->jefe?->name ?? '—') }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Fecha de entrega</div>
-                        <div class="field-value">{{ $prestamo->fecha_prestamo?->format('d/m/Y') ?? '—' }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Fecha devolución esperada</div>
-                        <div class="field-value" style="{{ $prestamo->estaVencido() ? 'color:#DC2626;font-weight:bold;' : '' }}">
-                            {{ $prestamo->fecha_devolucion_esperada?->format('d/m/Y') ?? 'Sin fecha establecida' }}
-                        </div>
-                    </td>
-                    <td>
-                        <div class="field-label">Analista responsable</div>
-                        <div class="field-value">{{ strtoupper($prestamo->analista?->name ?? '—') }}</div>
-                    </td>
-                </tr>
-            </table>
-        </div>
-    </div>
 @else
-    <div class="section">
-        <div class="section-title area">Datos del Área Receptora</div>
-        <div class="fields-grid">
-            <div style="padding-bottom:5pt;">
-                <span class="receptor-badge area">Préstamo a área común</span>
-            </div>
-            <table class="fields-table">
-                <tr>
-                    <td>
-                        <div class="field-label">Empresa del área</div>
-                        <div class="field-value">{{ strtoupper($areaEmpresa?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Departamento / Área</div>
-                        <div class="field-value">{{ strtoupper($areaDpto?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Responsable del área</div>
-                        <div class="field-value">{{ strtoupper($areaResp?->name ?? '—') }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Cargo del responsable</div>
-                        <div class="field-value">{{ strtoupper($areaResp?->cargo?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Fecha de entrega</div>
-                        <div class="field-value">{{ $prestamo->fecha_prestamo?->format('d/m/Y') ?? '—' }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Fecha devolución esperada</div>
-                        <div class="field-value" style="{{ $prestamo->estaVencido() ? 'color:#DC2626;font-weight:bold;' : '' }}">
-                            {{ $prestamo->fecha_devolucion_esperada?->format('d/m/Y') ?? 'Sin fecha establecida' }}
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <div class="field-label">Sede del préstamo</div>
-                        <div class="field-value">{{ strtoupper($prestamo->empresa?->nombre ?? '—') }}</div>
-                    </td>
-                    <td>
-                        <div class="field-label">Analista responsable</div>
-                        <div class="field-value">{{ strtoupper($prestamo->analista?->name ?? '—') }}</div>
-                    </td>
-                    <td></td>
-                </tr>
-            </table>
-        </div>
-    </div>
+    <div class="section-title-plain area">Datos del Área Receptora</div>
+    <table class="fields-table">
+        <tr>
+            <td>
+                <div class="field-label">Empresa del área</div>
+                <div class="field-value">{{ strtoupper($areaEmpresa?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Departamento / Área</div>
+                <div class="field-value valor-clave">{{ strtoupper($areaDpto?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Responsable del área</div>
+                <div class="field-value valor-clave">{{ strtoupper($areaResp?->name ?? '—') }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Cargo del responsable</div>
+                <div class="field-value">{{ strtoupper($areaResp?->cargo?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Sede del préstamo</div>
+                <div class="field-value">{{ strtoupper($prestamo->empresa?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Analista responsable</div>
+                <div class="field-value">{{ strtoupper($prestamo->analista?->name ?? '—') }}</div>
+            </td>
+        </tr>
+    </table>
 @endif
 
-{{-- ── TABLA DE EQUIPOS ────────────────────────────────────────────────── --}}
-<div class="equipos-section">
-    <table class="data-table">
-        <thead>
-            <tr class="thead-banner">
-                <td colspan="8">
-                    Equipos Entregados en Préstamo
-                    &nbsp;·&nbsp;
-                    {{ $items->count() }} {{ $items->count() === 1 ? 'equipo principal' : 'equipos principales' }}
-                </td>
-            </tr>
-            <tr class="thead-cols">
-                <th style="width:9%">Código</th>
-                <th style="width:13%">Hostname</th>
-                <th style="width:11%">Categoría</th>
-                <th style="width:11%">Marca</th>
-                <th style="width:11%">Modelo</th>
-                <th style="width:13%">Serial</th>
-                <th style="width:11%">Adquisición</th>
-                <th style="width:11%">Garantía</th>
-                <th style="width:10%">Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-        @forelse ($items as $index => $item)
-            @php
-                $eq       = $item->equipo;
-                $atribs   = $eq?->atributosActuales ?? collect();
-                $marca    = $atribs->first(fn($v) => strtolower($v->atributo?->nombre ?? '') === 'marca')?->valor ?? '—';
-                $modelo   = $atribs->first(fn($v) => strtolower($v->atributo?->nombre ?? '') === 'modelo')?->valor ?? '—';
-                $eavPrinc = $atribs->filter(fn($v) => ! in_array(strtolower($v->atributo?->nombre ?? ''), ['marca','modelo']));
-                $rowClass = $index % 2 === 0 ? 'tr-impar' : 'tr-par';
-            @endphp
-            <tr class="equipo-group {{ $rowClass }}">
-                <td class="cod-interno">{{ $eq?->codigo_interno ?? '—' }}</td>
-                <td>{{ $eq?->nombre_maquina ?? '—' }}</td>
-                <td>{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</td>
-                <td>{{ $marca }}</td>
-                <td>{{ $modelo }}</td>
-                <td>{{ $eq?->serial ?? '—' }}</td>
-                <td>{{ $eq?->fecha_adquisicion?->format('d/m/Y') ?? '—' }}</td>
-                <td>
-                    @if ($eq?->fecha_garantia_fin)
-                        {{ $eq->fecha_garantia_fin->format('d/m/Y') }}
-                        @if ($eq->fecha_garantia_fin->isPast()) <span class="garantia-vencida">VENCIDA</span> @endif
-                    @else —
-                    @endif
-                </td>
-                <td>
-                    @if ($item->devuelto)
-                        <span class="badge badge-devuelto">Devuelto</span>
-                    @else
-                        <span class="badge badge-pendiente">Pendiente</span>
-                    @endif
-                </td>
-            </tr>
-            @include('planillas._eav', ['atributos' => $eavPrinc, 'esPeriferico' => false, 'colspan' => 9])
-            @foreach ($item->hijos as $hijo)
-                @php
-                    $heq    = $hijo->equipo;
-                    $hAtr   = $heq?->atributosActuales ?? collect();
-                    $hMarca = $hAtr->first(fn($v) => strtolower($v->atributo?->nombre ?? '') === 'marca')?->valor ?? '—';
-                    $hMod   = $hAtr->first(fn($v) => strtolower($v->atributo?->nombre ?? '') === 'modelo')?->valor ?? '—';
-                    $hEav   = $hAtr->filter(fn($v) => ! in_array(strtolower($v->atributo?->nombre ?? ''), ['marca','modelo']));
-                @endphp
-                <tr class="tr-periferico periferico-group">
-                    <td><span class="periferico-prefix">↳</span><span class="periferico-cod">{{ $heq?->codigo_interno ?? '—' }}</span></td>
-                    <td>{{ $heq?->nombre_maquina ?? '—' }}</td>
-                    <td>{{ strtoupper($heq?->categoria?->nombre ?? '—') }}</td>
-                    <td>{{ $hMarca }}</td><td>{{ $hMod }}</td>
-                    <td>{{ $heq?->serial ?? '—' }}</td>
-                    <td>{{ $heq?->fecha_adquisicion?->format('d/m/Y') ?? '—' }}</td>
-                    <td>@if ($heq?->fecha_garantia_fin) {{ $heq->fecha_garantia_fin->format('d/m/Y') }} @if ($heq->fecha_garantia_fin->isPast()) <span class="garantia-vencida">VENCIDA</span> @endif @else — @endif</td>
-                    <td>
-                        @if ($hijo->devuelto)
-                            <span class="badge badge-devuelto">Devuelto</span>
-                        @else
-                            <span class="badge badge-pendiente">Pendiente</span>
-                        @endif
-                    </td>
-                </tr>
-                @include('planillas._eav', ['atributos' => $hEav, 'esPeriferico' => true, 'colspan' => 9])
-            @endforeach
-        @empty
-            <tr><td colspan="9" style="text-align:center;color:#6B7280;font-style:italic;padding:14pt;">No hay equipos registrados en este préstamo.</td></tr>
-        @endforelse
-        </tbody>
-    </table>
+{{-- ══ EQUIPOS EN PRÉSTAMO ══════════════════════════════════════════════════ --}}
+
+<div class="section-title-plain">
+    Equipos Entregados en Préstamo
+    &nbsp;·&nbsp;
+    {{ $principales->count() }} {{ $principales->count() === 1 ? 'equipo' : 'equipos' }}
 </div>
+
+@forelse ($principales as $item)
+    @php
+        $eq        = $item->equipo;
+        $atributos = ($eq?->atributosActuales ?? collect())
+            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+    @endphp
+
+    <table class="fields-table" style="margin-bottom: 6pt;">
+        <tr>
+            <td>
+                <div class="field-label">Código interno</div>
+                <div class="field-value valor-codigo">{{ $eq?->codigo_interno ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Categoría</div>
+                <div class="field-value">{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</div>
+            </td>
+            <td></td>
+        </tr>
+        @foreach ($atributos->chunk(3) as $fila)
+            <tr>
+                @foreach ($fila as $valor)
+                    <td>
+                        <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                        <div class="field-value">{{ $valor->valor }}</div>
+                    </td>
+                @endforeach
+                @for ($i = $fila->count(); $i < 3; $i++)
+                    <td></td>
+                @endfor
+            </tr>
+        @endforeach
+    </table>
+@empty
+    <p class="field-value">No hay equipos activos en este préstamo.</p>
+@endforelse
+
+{{-- ══ PERIFÉRICOS ══════════════════════════════════════════════════════════ --}}
+
+@if ($perifericos->isNotEmpty())
+    <div class="section-title-plain">
+        Periféricos en Préstamo &nbsp;·&nbsp; {{ $perifericos->count() }}
+    </div>
+
+    @foreach ($perifericos as $item)
+        @php
+            $eqPer        = $item->equipo;
+            $atributosPer = ($eqPer?->atributosActuales ?? collect())
+                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        @endphp
+
+        <table class="fields-table" style="margin-bottom: 6pt;">
+            <tr>
+                <td>
+                    <div class="field-label">Código interno</div>
+                    <div class="field-value valor-codigo">{{ $eqPer?->codigo_interno ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Categoría</div>
+                    <div class="field-value">{{ strtoupper($eqPer?->categoria?->nombre ?? '—') }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Pertenece a</div>
+                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                </td>
+            </tr>
+            @foreach ($atributosPer->chunk(3) as $fila)
+                <tr>
+                    @foreach ($fila as $valor)
+                        <td>
+                            <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                            <div class="field-value">{{ $valor->valor }}</div>
+                        </td>
+                    @endforeach
+                    @for ($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
+    @endforeach
+@endif
 
 @if ($prestamo->observaciones)
     <div class="obs-box">
@@ -259,37 +220,31 @@
 
 @section('firmas')
     @if (! $esArea)
-        <td class="firma-cell">
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ strtoupper($prestamo->analista?->name ?? 'Analista') }}</div>
+            <div class="firma-nombre">{{ $prestamo->analista?->name ?? 'Analista' }}</div>
             <div class="firma-cargo">Técnico / Analista</div>
-        </td>
-        <td class="firma-cell">
+        </div>
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ strtoupper($receptor?->name ?? 'Receptor') }}</div>
+            <div class="firma-nombre">{{ $receptor?->name ?? 'Receptor' }}</div>
             <div class="firma-cargo">Trabajador receptor</div>
-        </td>
-        <td class="firma-cell">
-            <div class="firma-espacio"></div>
-            <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ strtoupper($receptor?->jefe?->name ?? 'Supervisor') }}</div>
-            <div class="firma-cargo">Supervisor / Jefe directo</div>
-        </td>
+        </div>
     @else
-        <td class="firma-cell">
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
-            <div class="firma-nombre">{{ strtoupper($prestamo->analista?->name ?? 'Analista') }}</div>
+            <div class="firma-nombre">{{ $prestamo->analista?->name ?? 'Analista' }}</div>
             <div class="firma-cargo">Técnico / Analista</div>
-        </td>
-        <td class="firma-cell">
+        </div>
+        <div class="firma-cell">
             <div class="firma-espacio"></div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ strtoupper($areaResp?->name ?? 'Responsable') }}</div>
             <div class="firma-cargo">Responsable del área</div>
-        </td>
-        <td class="firma-cell"></td>
+        </div>
+        <div class="firma-cell"></div>
     @endif
 @endsection
