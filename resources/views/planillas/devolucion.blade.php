@@ -109,16 +109,20 @@
 
 {{-- ══ EQUIPOS DEVUELTOS ════════════════════════════════════════════════════ --}}
 
+@php
+    $principalesDevueltos = $itemsDevueltos->filter(fn ($i) => $i->equipo_padre_id === null)->values();
+    $perifericosDevueltos = $itemsDevueltos->filter(fn ($i) => $i->equipo_padre_id !== null)->values();
+@endphp
+
 <div class="section-title-plain devolucion">
     Equipos Devueltos
     &nbsp;·&nbsp;
-    {{ $itemsDevueltos->count() }} {{ $itemsDevueltos->count() === 1 ? 'equipo' : 'equipos' }}
+    {{ $principalesDevueltos->count() }} {{ $principalesDevueltos->count() === 1 ? 'equipo' : 'equipos' }}
 </div>
 
-@forelse ($itemsDevueltos as $item)
+@forelse ($principalesDevueltos as $item)
     @php
         $eq        = $item->equipo;
-        $esPerif   = $item->equipo_padre_id !== null;
         $atributos = ($eq?->atributosActuales ?? collect())
             ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
             ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
@@ -134,14 +138,7 @@
                 <div class="field-label">Categoría</div>
                 <div class="field-value">{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</div>
             </td>
-            @if ($esPerif)
-                <td>
-                    <div class="field-label">Pertenece a</div>
-                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
-                </td>
-            @else
-                <td></td>
-            @endif
+            <td></td>
         </tr>
         <tr>
             <td>
@@ -172,14 +169,77 @@
     <p class="field-value">No hay equipos devueltos registrados.</p>
 @endforelse
 
-{{-- ══ PENDIENTES (si quedan) ══════════════════════════════════════════════ --}}
+{{-- ══ PERIFÉRICOS DEVUELTOS ═══════════════════════════════════════════════ --}}
 
-@if ($itemsPendientes->isNotEmpty())
-    <div class="section-title-plain" style="background:#7F1D1D;border-left-color:#FCA5A5;">
-        Equipos Pendientes de Devolución &nbsp;·&nbsp; {{ $itemsPendientes->count() }}
+@if ($perifericosDevueltos->isNotEmpty())
+    <div class="section-title-plain">
+        Periféricos Devueltos &nbsp;·&nbsp; {{ $perifericosDevueltos->count() }}
     </div>
 
-    @foreach ($itemsPendientes as $item)
+    @foreach ($perifericosDevueltos as $item)
+        @php
+            $eqPer        = $item->equipo;
+            $atributosPer = ($eqPer?->atributosActuales ?? collect())
+                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        @endphp
+
+        <table class="fields-table" style="margin-bottom: 6pt;">
+            <tr>
+                <td>
+                    <div class="field-label">Código interno</div>
+                    <div class="field-value valor-codigo">{{ $eqPer?->codigo_interno ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Categoría</div>
+                    <div class="field-value">{{ strtoupper($eqPer?->categoria?->nombre ?? '—') }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Pertenece a</div>
+                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-label">Fecha de devolución</div>
+                    <div class="field-value">{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Recibido por</div>
+                    <div class="field-value">{{ $item->devueltoPor?->name ?? '—' }}</div>
+                </td>
+                <td></td>
+            </tr>
+            @foreach ($atributosPer->chunk(3) as $fila)
+                <tr>
+                    @foreach ($fila as $valor)
+                        <td>
+                            <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                            <div class="field-value">{{ $valor->valor }}</div>
+                        </td>
+                    @endforeach
+                    @for ($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
+    @endforeach
+@endif
+
+{{-- ══ PENDIENTES (si quedan) ══════════════════════════════════════════════ --}}
+
+@php
+    $principalesPendientes = $itemsPendientes->filter(fn ($i) => $i->equipo_padre_id === null)->values();
+    $perifericosPendientes = $itemsPendientes->filter(fn ($i) => $i->equipo_padre_id !== null)->values();
+@endphp
+
+@if ($principalesPendientes->isNotEmpty())
+    <div class="section-title-plain" style="background:#7F1D1D;border-left-color:#FCA5A5;">
+        Equipos Pendientes de Devolución &nbsp;·&nbsp; {{ $principalesPendientes->count() }}
+    </div>
+
+    @foreach ($principalesPendientes as $item)
         @php
             $eqPend       = $item->equipo;
             $atributosPend = ($eqPend?->atributosActuales ?? collect())
@@ -202,6 +262,59 @@
                 </td>
             </tr>
             @foreach ($atributosPend->chunk(3) as $fila)
+                <tr>
+                    @foreach ($fila as $valor)
+                        <td>
+                            <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                            <div class="field-value">{{ $valor->valor }}</div>
+                        </td>
+                    @endforeach
+                    @for ($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
+    @endforeach
+@endif
+
+{{-- ══ PERIFÉRICOS PENDIENTES ═══════════════════════════════════════════════ --}}
+
+@if ($perifericosPendientes->isNotEmpty())
+    <div class="section-title-plain" style="background:#7F1D1D;border-left-color:#FCA5A5;">
+        Periféricos Pendientes de Devolución &nbsp;·&nbsp; {{ $perifericosPendientes->count() }}
+    </div>
+
+    @foreach ($perifericosPendientes as $item)
+        @php
+            $eqPerPend        = $item->equipo;
+            $atributosPerPend = ($eqPerPend?->atributosActuales ?? collect())
+                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        @endphp
+        <table class="fields-table" style="margin-bottom: 6pt;">
+            <tr>
+                <td>
+                    <div class="field-label">Código interno</div>
+                    <div class="field-value valor-codigo" style="background:#7F1D1D;">{{ $eqPerPend?->codigo_interno ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Categoría</div>
+                    <div class="field-value">{{ strtoupper($eqPerPend?->categoria?->nombre ?? '—') }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Pertenece a</div>
+                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-label">Estado</div>
+                    <div class="field-value"><span class="badge badge-pendiente">Pendiente</span></div>
+                </td>
+                <td colspan="2"></td>
+            </tr>
+            @foreach ($atributosPerPend->chunk(3) as $fila)
                 <tr>
                     @foreach ($fila as $valor)
                         <td>
