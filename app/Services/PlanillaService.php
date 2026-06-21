@@ -59,6 +59,7 @@ class PlanillaService
         $pdf = Pdf::loadView('planillas.asignacion', [
             'asignacion' => $asignacion,
             'fecha'      => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('asignacion', $asignacion->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');
@@ -109,6 +110,7 @@ class PlanillaService
         $pdf = Pdf::loadView('planillas.devolucion', [
             'asignacion' => $asignacion,
             'fecha'      => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('asignacion', $asignacion->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');
@@ -136,6 +138,7 @@ class PlanillaService
         $pdf = Pdf::loadView('planillas.traslado', [
             'traslado' => $traslado,
             'fecha'    => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('traslado', $traslado->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');

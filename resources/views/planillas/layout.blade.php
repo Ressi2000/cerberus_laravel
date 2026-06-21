@@ -93,6 +93,26 @@
         .doc-meta-left  { font-size: 8pt; color: #415A77; }
         .doc-meta-right { font-size: 8pt; color: #415A77; text-align: right; }
 
+        /* Bloque de verificación QR — esquina superior derecha */
+        .verificacion-box {
+            text-align: center;
+            font-size: 6pt;
+            color: #94A3B8;
+        }
+
+        .verificacion-box img {
+            width: 46pt;
+            height: 46pt;
+        }
+
+        .verificacion-box .folio {
+            display: block;
+            margin-top: 2pt;
+            font-weight: bold;
+            color: #415A77;
+            letter-spacing: 0.3pt;
+        }
+
         /* ══════════════════════════════════════════════════════════════════════
            TÍTULOS
         ══════════════════════════════════════════════════════════════════════ */
@@ -658,6 +678,14 @@
                     <td class="doc-meta-right">
                         Generado: <strong>{{ $fecha ?? now()->format('d/m/Y') }}</strong>
                     </td>
+                    @if (isset($qrBase64, $folio))
+                        <td style="width: 50pt;">
+                            <div class="verificacion-box">
+                                <img src="{{ $qrBase64 }}" alt="Verificar">
+                                <span class="folio">{{ $folio }}</span>
+                            </div>
+                        </td>
+                    @endif
                 </tr>
             </table>
         </div>
