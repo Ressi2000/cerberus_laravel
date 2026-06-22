@@ -7,7 +7,6 @@ use App\Models\Traslado;
 use App\Services\FirmaService;
 use App\Services\PlanillaService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\RedirectResponse;
 
 class TrasladoController extends Controller
 {
@@ -44,17 +43,10 @@ class TrasladoController extends Controller
     {
         $this->authorize('view', $traslado);
 
+        $this->firmas->inicializar('traslado', $traslado);
+
         $nombre = 'Traslado_' . $traslado->numero . '_' . now()->format('Ymd') . '.pdf';
 
         return $this->planillas->traslado($traslado)->download($nombre);
-    }
-
-    public function solicitarFirma(Traslado $traslado): RedirectResponse
-    {
-        $this->authorize('view', $traslado);
-
-        $this->firmas->solicitar('traslado', $traslado);
-
-        return back()->with('status', 'Se enviaron las solicitudes de firma digital.');
     }
 }

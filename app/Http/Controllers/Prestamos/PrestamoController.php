@@ -8,7 +8,6 @@ use App\Models\User;
 use App\Services\FirmaService;
 use App\Services\PlanillaPrestamoService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Http\RedirectResponse;
 
 class PrestamoController extends Controller
 {
@@ -55,6 +54,9 @@ class PrestamoController extends Controller
     public function planillaPrestamo(Prestamo $prestamo)
     {
         $this->authorize('view', $prestamo);
+
+        $this->firmas->inicializar('prestamo', $prestamo);
+
         $nombre = 'Prestamo_' . $prestamo->id . '_' . now()->format('Ymd') . '.pdf';
         return $this->planillas->prestamo($prestamo)->download($nombre);
     }
@@ -64,14 +66,5 @@ class PrestamoController extends Controller
         $this->authorize('view', $prestamo);
         $nombre = 'DevolucionPrestamo_' . $prestamo->id . '_' . now()->format('Ymd') . '.pdf';
         return $this->planillas->devolucion($prestamo)->download($nombre);
-    }
-
-    public function solicitarFirma(Prestamo $prestamo): RedirectResponse
-    {
-        $this->authorize('view', $prestamo);
-
-        $this->firmas->solicitar('prestamo', $prestamo);
-
-        return back()->with('status', 'Se envió la solicitud de firma digital al receptor.');
     }
 }

@@ -79,7 +79,7 @@
         </div>
         <div class="field">
             <span class="label">Rol</span>
-            <span class="value">{{ ucfirst($rol) }}</span>
+            <span class="value">{{ $rol }}</span>
         </div>
 
         <p style="font-size: 13px; color: #475569; margin-top: 16px;">

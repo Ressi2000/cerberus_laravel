@@ -26,8 +26,9 @@ Route::get('/verificar/{tipo}/{id}', [VerificacionController::class, 'show'])
     ->name('verificacion.show')
     ->middleware('signed');
 
-// Página pública de firma digital remota (destino del enlace enviado por
-// correo al solicitar una firma). Sin login: la URL llega firmada.
+// Página pública de firma digital remota (destino del enlace expuesto en
+// la página de verificación, accesible desde el mismo QR impreso). Sin
+// login: la URL llega firmada. Pide cédula antes de mostrar el lienzo.
 Route::get('/firmar/{tipo}/{id}/{rol}', [FirmaController::class, 'show'])
     ->name('firma.show')
     ->middleware('signed');
@@ -147,9 +148,6 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/{asignacion}/planilla/asignacion', [AsignacionController::class, 'planillaAsignacion'])->name('planilla.asignacion');
             Route::get('/{asignacion}/planilla/devolucion', [AsignacionController::class, 'planillaDevolucion'])->name('planilla.devolucion');
             Route::get('/planilla/egreso/{usuario}',        [AsignacionController::class, 'planillaEgreso'])->name('planilla.egreso');
-
-            // Firma digital remota
-            Route::post('/{asignacion}/firma/solicitar', [AsignacionController::class, 'solicitarFirma'])->name('firma.solicitar');
         });
     // Préstamos
     Route::prefix('admin/prestamos')
@@ -163,9 +161,6 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/{prestamo}/devolver',                 [PrestamoController::class, 'devolver'])->name('devolver');
             Route::get('/{prestamo}/planilla/prestamo',        [PrestamoController::class, 'planillaPrestamo'])->name('planilla.prestamo');
             Route::get('/{prestamo}/planilla/devolucion',      [PrestamoController::class, 'planillaDevolucion'])->name('planilla.devolucion');
-
-            // Firma digital remota
-            Route::post('/{prestamo}/firma/solicitar', [PrestamoController::class, 'solicitarFirma'])->name('firma.solicitar');
         });
 
     // Traslados
@@ -177,9 +172,6 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/crear',       [TrasladoController::class, 'create'])->name('create');
             Route::get('/{traslado}',  [TrasladoController::class, 'show'])->name('show');
             Route::get('/{traslado}/planilla', [TrasladoController::class, 'planilla'])->name('planilla');
-
-            // Firma digital remota
-            Route::post('/{traslado}/firma/solicitar', [TrasladoController::class, 'solicitarFirma'])->name('firma.solicitar');
         });
 });
 

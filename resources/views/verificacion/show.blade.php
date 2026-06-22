@@ -92,6 +92,38 @@
         letter-spacing: 1px;
         font-size: 13px;
     }
+    .firmas-box {
+        margin-top: 20px;
+        border-top: 1px solid #E2E8F0;
+        padding-top: 16px;
+    }
+    .firmas-box h2 {
+        font-size: 13px;
+        color: #1E293B;
+        margin: 0 0 10px;
+    }
+    .firma-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        font-size: 13px;
+    }
+    .firma-row .firma-rol { color: #64748B; }
+    .firma-row .firma-estado { color: #16A34A; font-weight: 600; font-size: 12px; }
+    .firma-row .firma-btn {
+        background: #1B3A5C;
+        color: #fff;
+        text-decoration: none;
+        padding: 6px 14px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+    }
     .footer-note {
         text-align: center;
         font-size: 11px;
@@ -149,6 +181,25 @@
             Folio de verificación<br>
             <strong>{{ $folio }}</strong>
         </div>
+
+        @if (! empty($firmas))
+            <div class="firmas-box">
+                <h2>Firma digital</h2>
+                @foreach ($firmas as $f)
+                    <div class="firma-row">
+                        <div>
+                            <div class="firma-rol">{{ $f['etiqueta'] }} — {{ $f['nombre'] ?? '—' }}</div>
+                            @if ($f['firmado'])
+                                <div class="firma-estado">✓ Firmado el {{ $f['firmadoAt']?->format('d/m/Y H:i') }}</div>
+                            @endif
+                        </div>
+                        @if (! $f['firmado'])
+                            <a class="firma-btn" href="{{ $f['url'] }}">Firmar</a>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
         <p class="footer-note">
             Si este documento fue modificado o ya no corresponde a un registro<br>

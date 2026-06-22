@@ -4,32 +4,23 @@ namespace App\Services;
 
 use App\Models\Firma;
 use App\Notifications\FirmaCompletadaNotification;
-use App\Notifications\SolicitudFirmaNotification;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\URL;
 
 /**
- * Orquesta el ciclo de vida de la firma digital remota: crear las
- * solicitudes pendientes, notificar a cada firmante con un enlace firmado,
- * y al completarse todos los roles, regenerar el PDF con las firmas
- * estampadas y distribuirlo por correo.
+ * Orquesta el ciclo de vida de la firma digital remota: crea las firmas
+ * pendientes apenas se genera la planilla (sus enlaces firmados se exponen
+ * luego en la página de verificación, destino del QR impreso) y, al
+ * completarse todos los roles, avisa por la notificación interna.
  */
 class FirmaService
 {
-    public function __construct(
-        private PlanillaService $planillas,
-        private PlanillaPrestamoService $planillasPrestamo,
-    ) {}
-
     /**
-     * Crea (o reutiliza) las firmas pendientes para un documento y notifica
-     * a cada firmante con un enlace firmado para estampar su firma.
+     * Crea (si no existen) las firmas pendientes para un documento. Se llama
+     * apenas se genera el PDF, antes de que exista cualquier enlace de firma.
      */
-    public function solicitar(string $tipo, Model $documento): void
+    public function inicializar(string $tipo, Model $documento): void
     {
         $firmantes = FirmaResolver::firmantes($tipo, $documento);
-        $titulo    = FirmaResolver::tituloDocumento($tipo);
-        $folio     = Folio::etiqueta($tipo, $documento->id);
 
         foreach (FirmaResolver::rolesAplicables($tipo) as $rol) {
             $firmante = $firmantes[$rol] ?? null;
@@ -38,7 +29,7 @@ class FirmaService
                 continue;
             }
 
-            $firma = Firma::firstOrCreate(
+            Firma::firstOrCreate(
                 [
                     'firmable_type' => $documento::class,
                     'firmable_id'   => $documento->id,
@@ -49,18 +40,6 @@ class FirmaService
                     'estado'  => 'pendiente',
                 ]
             );
-
-            if ($firma->estaFirmada()) {
-                continue;
-            }
-
-            $url = URL::signedRoute('firma.show', [
-                'tipo' => $tipo,
-                'id'   => $documento->id,
-                'rol'  => $rol,
-            ], now()->addDays(7));
-
-            $firmante->notify(new SolicitudFirmaNotification($firma, $titulo, $folio, $url));
         }
     }
 
@@ -94,22 +73,11 @@ class FirmaService
 
     private function completar(string $tipo, Model $documento): void
     {
-        $titulo  = FirmaResolver::tituloDocumento($tipo);
-        $folio   = Folio::etiqueta($tipo, $documento->id);
-        $archivo = strtolower(str_replace(' ', '_', $titulo)).'-'.$folio.'.pdf';
-
-        $pdf = match ($tipo) {
-            'asignacion' => $this->planillas->asignacion($documento),
-            'prestamo'   => $this->planillasPrestamo->prestamo($documento),
-            'traslado'   => $this->planillas->traslado($documento),
-        };
-
-        $binario = $pdf->output();
+        $titulo = FirmaResolver::tituloDocumento($tipo);
+        $folio  = Folio::etiqueta($tipo, $documento->id);
 
         foreach (FirmaResolver::firmantes($tipo, $documento) as $firmante) {
-            if ($firmante) {
-                $firmante->notify(new FirmaCompletadaNotification($titulo, $folio, $binario, $archivo));
-            }
+            $firmante?->notify(new FirmaCompletadaNotification($titulo, $folio));
         }
     }
 

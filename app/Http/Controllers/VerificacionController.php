@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Asignacion;
+use App\Models\Firma;
 use App\Models\Prestamo;
 use App\Models\Traslado;
+use App\Services\FirmaResolver;
 use App\Services\Folio;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,9 +35,55 @@ class VerificacionController extends Controller
         }
 
         return view('verificacion.show', [
-            'folio' => Folio::etiqueta($tipo, $id),
+            'folio'  => Folio::etiqueta($tipo, $id),
+            'firmas' => $this->enlacesFirma($tipo, $id),
             ...$datos,
         ]);
+    }
+
+    /**
+     * Enlaces de firma digital de cada rol aplicable, para mostrarlos junto
+     * a la verificación (mismo QR impreso). Si una firma todavía no fue
+     * inicializada (la planilla aún no se generó) ese rol simplemente no
+     * aparece. Una vez firmada, se muestra el nombre y la fecha en vez del
+     * enlace.
+     */
+    private function enlacesFirma(string $tipo, int $id): array
+    {
+        $documento = FirmaResolver::modelo($tipo, $id);
+
+        if (! $documento) {
+            return [];
+        }
+
+        $firmasExistentes = Firma::where('firmable_type', $documento::class)
+            ->where('firmable_id', $documento->id)
+            ->get()
+            ->keyBy('rol');
+
+        $enlaces = [];
+
+        foreach (FirmaResolver::rolesAplicables($tipo) as $rol) {
+            $firma = $firmasExistentes->get($rol);
+
+            if (! $firma) {
+                continue;
+            }
+
+            $enlaces[] = [
+                'etiqueta'   => FirmaResolver::etiquetaRol($rol),
+                'nombre'     => $firma->user?->name,
+                'firmado'    => $firma->estaFirmada(),
+                'firmadoAt'  => $firma->firmado_at,
+                'url'        => $firma->estaFirmada() ? null : URL::signedRoute('firma.show', [
+                    'tipo' => $tipo,
+                    'id'   => $id,
+                    'rol'  => $rol,
+                ], now()->addDays(30)),
+            ];
+        }
+
+        return $enlaces;
     }
 
     private function datosAsignacion(int $id): ?array

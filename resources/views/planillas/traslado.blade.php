@@ -138,7 +138,11 @@
 
 @section('firmas')
     <div class="firma-cell">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if (($firmaAnalista = $traslado->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
+                <img src="{{ $firmaAnalista->imagen }}" style="max-height: 30pt;">
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">{{ $traslado->realizadoPor?->name ?? '—' }}</div>
         <div class="firma-cargo">Analista responsable</div>

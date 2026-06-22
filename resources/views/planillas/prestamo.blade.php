@@ -217,7 +217,11 @@
 @section('firmas')
     @if (! $esArea)
         <div class="firma-cell">
-            <div class="firma-espacio"></div>
+            <div class="firma-espacio">
+                @if (($firmaAnalista = $prestamo->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
+                    <img src="{{ $firmaAnalista->imagen }}" style="max-height: 30pt;">
+                @endif
+            </div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ $prestamo->analista?->name ?? 'Analista' }}</div>
             <div class="firma-cargo">Técnico / Analista</div>
@@ -234,7 +238,11 @@
         </div>
     @else
         <div class="firma-cell">
-            <div class="firma-espacio"></div>
+            <div class="firma-espacio">
+                @if (($firmaAnalista = $prestamo->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
+                    <img src="{{ $firmaAnalista->imagen }}" style="max-height: 30pt;">
+                @endif
+            </div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ $prestamo->analista?->name ?? 'Analista' }}</div>
             <div class="firma-cargo">Técnico / Analista</div>
