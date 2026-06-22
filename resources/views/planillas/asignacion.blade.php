@@ -112,9 +112,7 @@
 @forelse ($asignacion->items as $item)
     @php
         $equipo    = $item->equipo;
-        $atributos = ($equipo?->atributosActuales ?? collect())
-            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        $atributos = $equipo?->atributosParaReporte() ?? collect();
     @endphp
 
     <table class="fields-table" style="margin-bottom: 6pt;">
@@ -160,9 +158,7 @@
         @php
             $equipoPer    = $periferico->equipo;
             $equipoPadre  = $periferico->padre?->equipo;
-            $atributosPer = ($equipoPer?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributosPer = $equipoPer?->atributosParaReporte() ?? collect();
         @endphp
 
         <table class="fields-table" style="margin-bottom: 6pt;">
@@ -177,7 +173,7 @@
                 </td>
                 <td>
                     <div class="field-label">Pertenece a</div>
-                    <div class="field-value valor-referencia">↳ {{ $equipoPadre?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-referencia">» {{ $equipoPadre?->codigo_interno ?? '—' }}</div>
                 </td>
             </tr>
             @foreach ($atributosPer->chunk(3) as $fila)
@@ -201,14 +197,24 @@
 
 @section('firmas')
     <div class="firma-cell" style="width: 50%;">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if (($firmaAnalista = $asignacion->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
+                <img src="{{ $firmaAnalista->imagen }}" style="max-height: 52pt;">
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">{{ strtoupper($asignacion->analista?->name ?? '—') }}</div>
         <div class="firma-cargo">Técnico / Analista</div>
     </div>
 
     <div class="firma-cell" style="width: 50%;">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if ($firmaReceptor = $asignacion->firmas->firstWhere('rol', 'receptor'))
+                @if ($firmaReceptor->estaFirmada())
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 52pt;">
+                @endif
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">
             {{ strtoupper(($esArea ? $areaResp?->name : $receptor?->name) ?? '—') }}

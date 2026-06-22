@@ -93,6 +93,34 @@
         .doc-meta-left  { font-size: 8pt; color: #415A77; }
         .doc-meta-right { font-size: 8pt; color: #415A77; text-align: right; }
 
+        /* Bloque de verificación QR — fixed, esquina inferior derecha,
+           encima de la línea del footer y por fuera del área de firmas.
+           Es independiente del doc-meta porque cada planilla reemplaza
+           ese bloque con uno propio cuando oculta el genérico; fixed
+           garantiza que el QR aparezca en todas sin tocar cada vista. */
+        .verificacion-box {
+            position: fixed;
+            bottom: 13mm;
+            right: 16mm;
+            width: 38pt;
+            text-align: center;
+            font-size: 5.5pt;
+            color: #94A3B8;
+        }
+
+        .verificacion-box img {
+            width: 38pt;
+            height: 38pt;
+        }
+
+        .verificacion-box .folio {
+            display: block;
+            margin-top: 2pt;
+            font-weight: bold;
+            color: #415A77;
+            letter-spacing: 0.3pt;
+        }
+
         /* ══════════════════════════════════════════════════════════════════════
            TÍTULOS
         ══════════════════════════════════════════════════════════════════════ */
@@ -459,7 +487,7 @@
         }
 
         /* ══════════════════════════════════════════════════════════════════════
-           PERIFÉRICO — fila completa con indicador ↳
+           PERIFÉRICO — fila completa con indicador »
         ══════════════════════════════════════════════════════════════════════ */
         .tr-periferico td {
             background: #FFFBEB !important;
@@ -572,7 +600,7 @@
         }
 
         .firma-espacio {
-            height: 32pt;
+            height: 54pt;
         }
 
         .firma-linea {
@@ -611,10 +639,7 @@
 
     {{-- ══ MARCA DE AGUA — se repite en cada página ══════════════════════════ --}}
     @php
-        $watermarkPath   = public_path('images/CBRS2.0S_frW.png');
-        $watermarkBase64 = file_exists($watermarkPath)
-            ? 'data:image/png;base64,' . base64_encode(file_get_contents($watermarkPath))
-            : null;
+        $watermarkBase64 = \App\Services\PlanillaAssetCache::base64('images/CBRS2.0S_frW.png');
     @endphp
     @if ($watermarkBase64)
         <img src="{{ $watermarkBase64 }}" class="watermark" alt="">
@@ -626,10 +651,7 @@
             <tr>
                 <td class="header-logo-cell">
                     @php
-                        $stPath = public_path('images/st.png');
-                        $stBase64 = file_exists($stPath)
-                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($stPath))
-                            : null;
+                        $stBase64 = \App\Services\PlanillaAssetCache::base64('images/st.png');
                     @endphp
                     @if ($stBase64)
                         <img src="{{ $stBase64 }}" alt="Servicios Tecnológicos">
@@ -643,10 +665,7 @@
                 </td>
                 <td class="header-logo-cell">
                     @php
-                        $sindoniPath   = public_path('images/logo-sindoni.png');
-                        $sindoniBase64 = file_exists($sindoniPath)
-                            ? 'data:image/png;base64,' . base64_encode(file_get_contents($sindoniPath))
-                            : null;
+                        $sindoniBase64 = \App\Services\PlanillaAssetCache::base64('images/logo-sindoni.png');
                     @endphp
                     @if ($sindoniBase64)
                         <img src="{{ $sindoniBase64 }}" alt="Empresas Sindoni">
@@ -671,6 +690,13 @@
             </table>
         </div>
     @endunless
+
+    @if (isset($qrBase64, $folio))
+        <div class="verificacion-box">
+            <img src="{{ $qrBase64 }}" alt="Verificar">
+            <span class="folio">{{ $folio }}</span>
+        </div>
+    @endif
 
     {{-- ══ CONTENIDO ESPECÍFICO DE CADA PLANILLA ═══════════════════════════ --}}
     @yield('contenido')
@@ -704,10 +730,10 @@
             $marginPt = 16 * $mmToPt;
             $y        = $pdf->get_height() - (8 * $mmToPt);
 
-            $textoIzquierda = {!! json_encode($piePrimero, JSON_UNESCAPED_UNICODE) !!};
+            $textoIzquierda = {!! json_encode($piePrimero, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
             $pdf->page_text($marginPt, $y, $textoIzquierda, $font, $size, $color);
 
-            $textoDerecha = {!! json_encode($piePropio, JSON_UNESCAPED_UNICODE) !!};
+            $textoDerecha = {!! json_encode($piePropio, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!};
             $anchoDerecha = $fontMetrics->getTextWidth($textoDerecha, $font, $size);
             $xDerecha     = $pdf->get_width() - $marginPt - $anchoDerecha;
             $pdf->page_text($xDerecha, $y, $textoDerecha, $font, $size, $color);

@@ -98,6 +98,11 @@ class Prestamo extends Model
         return $this->hasMany(PrestamoItem::class)->where('devuelto', true);
     }
 
+    public function firmas()
+    {
+        return $this->morphMany(Firma::class, 'firmable');
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Scopes
     // ─────────────────────────────────────────────────────────────────────────

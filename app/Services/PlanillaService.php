@@ -30,6 +30,7 @@ class PlanillaService
         $asignacion->load([
             'empresa',
             'analista',
+            'firmas',
 
             // ── Receptor personal ──────────────────────────────────────────
             'usuario.cargo',
@@ -44,12 +45,15 @@ class PlanillaService
             'areaResponsable.cargo',
             'areaResponsable.departamento',
 
-            // ── Items: solo principales con sus hijos y atributos EAV ──────
-            'items' => fn ($q) => $q->whereNull('equipo_padre_id')->with([
+            // ── Items: solo principales activos (no devueltos), con sus
+            // hijos activos y atributos EAV ────────────────────────────────
+            'items' => fn ($q) => $q->whereNull('equipo_padre_id')->where('devuelto', false)->with([
                 'equipo.categoria',
                 'equipo.atributosActuales.atributo',
-                'hijos.equipo.categoria',
-                'hijos.equipo.atributosActuales.atributo',
+                'hijos' => fn ($q) => $q->where('devuelto', false)->with([
+                    'equipo.categoria',
+                    'equipo.atributosActuales.atributo',
+                ]),
             ]),
 
             // ── Items devueltos (para la vista saber el estado) ───────────
@@ -59,6 +63,7 @@ class PlanillaService
         $pdf = Pdf::loadView('planillas.asignacion', [
             'asignacion' => $asignacion,
             'fecha'      => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('asignacion', $asignacion->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');
@@ -109,6 +114,7 @@ class PlanillaService
         $pdf = Pdf::loadView('planillas.devolucion', [
             'asignacion' => $asignacion,
             'fecha'      => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('asignacion', $asignacion->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');
@@ -128,6 +134,7 @@ class PlanillaService
             'recibe',
             'autoriza',
             'realizadoPor',
+            'firmas',
             'items.equipo.categoria',
             'items.equipo.estado',
             'items.equipo.atributosActuales.atributo',
@@ -136,6 +143,7 @@ class PlanillaService
         $pdf = Pdf::loadView('planillas.traslado', [
             'traslado' => $traslado,
             'fecha'    => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('traslado', $traslado->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');

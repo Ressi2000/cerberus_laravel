@@ -12,6 +12,7 @@ namespace App\Http\Controllers\Asignaciones;
 use App\Http\Controllers\Controller;
 use App\Models\Asignacion;
 use App\Models\User;
+use App\Services\FirmaService;
 use App\Services\PlanillaService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -20,8 +21,10 @@ class AsignacionController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private PlanillaService $planillas)
-    {
+    public function __construct(
+        private PlanillaService $planillas,
+        private FirmaService $firmas,
+    ) {
     }
  
     // ── Vistas principales ────────────────────────────────────────────────────
@@ -78,6 +81,8 @@ class AsignacionController extends Controller
     public function planillaAsignacion(Asignacion $asignacion)
     {
         $this->authorize('view', $asignacion);
+
+        $this->firmas->inicializar('asignacion', $asignacion);
 
         $nombre = 'Asignacion_' . $asignacion->id . '_' . now()->format('Ymd') . '.pdf';
         return $this->planillas->asignacion($asignacion)->download($nombre);

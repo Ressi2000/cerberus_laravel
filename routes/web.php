@@ -10,12 +10,32 @@ use App\Http\Controllers\Auth\EmpresaSelectorController;
 use App\Http\Controllers\Configuracion\ConfiguracionController;
 use App\Http\Controllers\Equipo\EquipoController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\FirmaController;
 use App\Http\Controllers\Usuario\ProfileController;
+use App\Http\Controllers\VerificacionController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->get('/', function () {
     return view('welcome');
 });
+
+// Página pública de verificación de planillas (destino del QR impreso).
+// Sin login: la URL llega firmada (middleware 'signed'), así que no se
+// puede adivinar ni alterar el tipo/id del documento.
+Route::get('/verificar/{tipo}/{id}', [VerificacionController::class, 'show'])
+    ->name('verificacion.show')
+    ->middleware('signed');
+
+// Página pública de firma digital remota (destino del enlace expuesto en
+// la página de verificación, accesible desde el mismo QR impreso). Sin
+// login: la URL llega firmada. Pide cédula antes de mostrar el lienzo.
+Route::get('/firmar/{tipo}/{id}/{rol}', [FirmaController::class, 'show'])
+    ->name('firma.show')
+    ->middleware('signed');
+
+Route::post('/firmar/{tipo}/{id}/{rol}', [FirmaController::class, 'store'])
+    ->name('firma.store')
+    ->middleware('signed');
 
 Route::middleware('auth')->group(function () {
     Route::get('/seleccionar-empresa', [EmpresaSelectorController::class, 'create'])

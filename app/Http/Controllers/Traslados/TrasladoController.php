@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Traslados;
 
 use App\Http\Controllers\Controller;
 use App\Models\Traslado;
+use App\Services\FirmaService;
 use App\Services\PlanillaService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -11,8 +12,10 @@ class TrasladoController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private PlanillaService $planillas)
-    {
+    public function __construct(
+        private PlanillaService $planillas,
+        private FirmaService $firmas,
+    ) {
     }
 
     public function index()
@@ -39,6 +42,8 @@ class TrasladoController extends Controller
     public function planilla(Traslado $traslado)
     {
         $this->authorize('view', $traslado);
+
+        $this->firmas->inicializar('traslado', $traslado);
 
         $nombre = 'Traslado_' . $traslado->numero . '_' . now()->format('Ymd') . '.pdf';
 

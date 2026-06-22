@@ -127,9 +127,7 @@
 @forelse ($principales as $item)
     @php
         $eq        = $item->equipo;
-        $atributos = ($eq?->atributosActuales ?? collect())
-            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        $atributos = $eq?->atributosParaReporte() ?? collect();
     @endphp
 
     <table class="fields-table" style="margin-bottom: 6pt;">
@@ -172,9 +170,7 @@
     @foreach ($perifericos as $item)
         @php
             $eqPer        = $item->equipo;
-            $atributosPer = ($eqPer?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributosPer = $eqPer?->atributosParaReporte() ?? collect();
         @endphp
 
         <table class="fields-table" style="margin-bottom: 6pt;">
@@ -189,7 +185,7 @@
                 </td>
                 <td>
                     <div class="field-label">Pertenece a</div>
-                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-referencia">» {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
                 </td>
             </tr>
             @foreach ($atributosPer->chunk(3) as $fila)
@@ -221,26 +217,42 @@
 @section('firmas')
     @if (! $esArea)
         <div class="firma-cell">
-            <div class="firma-espacio"></div>
+            <div class="firma-espacio">
+                @if (($firmaAnalista = $prestamo->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
+                    <img src="{{ $firmaAnalista->imagen }}" style="max-height: 52pt;">
+                @endif
+            </div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ $prestamo->analista?->name ?? 'Analista' }}</div>
             <div class="firma-cargo">Técnico / Analista</div>
         </div>
         <div class="firma-cell">
-            <div class="firma-espacio"></div>
+            <div class="firma-espacio">
+                @if (($firmaReceptor = $prestamo->firmas->firstWhere('rol', 'receptor')) && $firmaReceptor->estaFirmada())
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 52pt;">
+                @endif
+            </div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ $receptor?->name ?? 'Receptor' }}</div>
             <div class="firma-cargo">Trabajador receptor</div>
         </div>
     @else
         <div class="firma-cell">
-            <div class="firma-espacio"></div>
+            <div class="firma-espacio">
+                @if (($firmaAnalista = $prestamo->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
+                    <img src="{{ $firmaAnalista->imagen }}" style="max-height: 52pt;">
+                @endif
+            </div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ $prestamo->analista?->name ?? 'Analista' }}</div>
             <div class="firma-cargo">Técnico / Analista</div>
         </div>
         <div class="firma-cell">
-            <div class="firma-espacio"></div>
+            <div class="firma-espacio">
+                @if (($firmaReceptor = $prestamo->firmas->firstWhere('rol', 'receptor')) && $firmaReceptor->estaFirmada())
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 52pt;">
+                @endif
+            </div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ strtoupper($areaResp?->name ?? 'Responsable') }}</div>
             <div class="firma-cargo">Responsable del área</div>

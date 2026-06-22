@@ -91,9 +91,7 @@
 @forelse ($traslado->items as $item)
     @php
         $equipo    = $item->equipo;
-        $atributos = ($equipo?->atributosActuales ?? collect())
-            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        $atributos = $equipo?->atributosParaReporte() ?? collect();
     @endphp
 
     <table class="fields-table" style="margin-bottom: 6pt;">
@@ -140,19 +138,31 @@
 
 @section('firmas')
     <div class="firma-cell">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if (($firmaAnalista = $traslado->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
+                <img src="{{ $firmaAnalista->imagen }}" style="max-height: 52pt;">
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">{{ $traslado->realizadoPor?->name ?? '—' }}</div>
         <div class="firma-cargo">Analista responsable</div>
     </div>
     <div class="firma-cell">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if (($firmaReceptor = $traslado->firmas->firstWhere('rol', 'receptor')) && $firmaReceptor->estaFirmada())
+                <img src="{{ $firmaReceptor->imagen }}" style="max-height: 52pt;">
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">{{ $traslado->recibe?->name ?? '—' }}</div>
         <div class="firma-cargo">Recibe conforme</div>
     </div>
     <div class="firma-cell">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if (($firmaJefe = $traslado->firmas->firstWhere('rol', 'jefe')) && $firmaJefe->estaFirmada())
+                <img src="{{ $firmaJefe->imagen }}" style="max-height: 52pt;">
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">{{ $traslado->autoriza?->name ?? '—' }}</div>
         <div class="firma-cargo">Autoriza el traslado</div>

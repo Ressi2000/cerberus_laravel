@@ -23,6 +23,9 @@ class Equipo extends Model
 {
     use Auditable, SoftDeletes;
 
+    /** Cache en memoria de atributosParaReporte() para esta instancia. */
+    private ?\Illuminate\Support\Collection $atributosParaReporteCache = null;
+
     protected $fillable = [
         'empresa_id',
         'categoria_id',
@@ -122,6 +125,19 @@ class Equipo extends Model
     {
         return $this->hasMany(EquipoAtributoValor::class)
             ->where('es_actual', true);
+    }
+
+    /**
+     * Atributos actuales visibles en reportes (ver_en_reporte), ordenados.
+     * Requiere 'atributosActuales.atributo' eager-loaded; memoizado por instancia
+     * para no repetir el filter/sortBy en cada render de las planillas PDF.
+     */
+    public function atributosParaReporte(): \Illuminate\Support\Collection
+    {
+        return $this->atributosParaReporteCache ??= $this->atributosActuales
+            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
+            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99)
+            ->values();
     }
 
     /**

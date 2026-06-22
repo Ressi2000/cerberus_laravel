@@ -15,6 +15,7 @@ class PlanillaPrestamoService
         $prestamo->load([
             'empresa',
             'analista',
+            'firmas',
             'usuario.cargo',
             'usuario.departamento',
             'usuario.empresaNomina',
@@ -34,6 +35,7 @@ class PlanillaPrestamoService
         $pdf = Pdf::loadView('planillas.prestamo', [
             'prestamo' => $prestamo,
             'fecha'    => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('prestamo', $prestamo->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');
@@ -71,6 +73,7 @@ class PlanillaPrestamoService
         $pdf = Pdf::loadView('planillas.prestamo-devolucion', [
             'prestamo' => $prestamo,
             'fecha'    => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('prestamo', $prestamo->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');

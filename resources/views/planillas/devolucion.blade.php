@@ -123,9 +123,7 @@
 @forelse ($principalesDevueltos as $item)
     @php
         $eq        = $item->equipo;
-        $atributos = ($eq?->atributosActuales ?? collect())
-            ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-            ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+        $atributos = $eq?->atributosParaReporte() ?? collect();
     @endphp
 
     <table class="fields-table" style="margin-bottom: 6pt;">
@@ -179,9 +177,7 @@
     @foreach ($perifericosDevueltos as $item)
         @php
             $eqPer        = $item->equipo;
-            $atributosPer = ($eqPer?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributosPer = $eqPer?->atributosParaReporte() ?? collect();
         @endphp
 
         <table class="fields-table" style="margin-bottom: 6pt;">
@@ -196,7 +192,7 @@
                 </td>
                 <td>
                     <div class="field-label">Pertenece a</div>
-                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-referencia">» {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
                 </td>
             </tr>
             <tr>
@@ -242,9 +238,7 @@
     @foreach ($principalesPendientes as $item)
         @php
             $eqPend       = $item->equipo;
-            $atributosPend = ($eqPend?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributosPend = $eqPend?->atributosParaReporte() ?? collect();
         @endphp
         <table class="fields-table" style="margin-bottom: 6pt;">
             <tr>
@@ -288,9 +282,7 @@
     @foreach ($perifericosPendientes as $item)
         @php
             $eqPerPend        = $item->equipo;
-            $atributosPerPend = ($eqPerPend?->atributosActuales ?? collect())
-                ->filter(fn ($v) => $v->atributo?->ver_en_reporte)
-                ->sortBy(fn ($v) => $v->atributo?->orden ?? 99);
+            $atributosPerPend = $eqPerPend?->atributosParaReporte() ?? collect();
         @endphp
         <table class="fields-table" style="margin-bottom: 6pt;">
             <tr>
@@ -304,7 +296,7 @@
                 </td>
                 <td>
                     <div class="field-label">Pertenece a</div>
-                    <div class="field-value valor-referencia">↳ {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                    <div class="field-value valor-referencia">» {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
                 </td>
             </tr>
             <tr>
