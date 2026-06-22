@@ -45,12 +45,15 @@ class PlanillaService
             'areaResponsable.cargo',
             'areaResponsable.departamento',
 
-            // ── Items: solo principales con sus hijos y atributos EAV ──────
-            'items' => fn ($q) => $q->whereNull('equipo_padre_id')->with([
+            // ── Items: solo principales activos (no devueltos), con sus
+            // hijos activos y atributos EAV ────────────────────────────────
+            'items' => fn ($q) => $q->whereNull('equipo_padre_id')->where('devuelto', false)->with([
                 'equipo.categoria',
                 'equipo.atributosActuales.atributo',
-                'hijos.equipo.categoria',
-                'hijos.equipo.atributosActuales.atributo',
+                'hijos' => fn ($q) => $q->where('devuelto', false)->with([
+                    'equipo.categoria',
+                    'equipo.atributosActuales.atributo',
+                ]),
             ]),
 
             // ── Items devueltos (para la vista saber el estado) ───────────
