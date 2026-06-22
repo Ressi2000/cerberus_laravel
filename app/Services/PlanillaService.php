@@ -30,6 +30,7 @@ class PlanillaService
         $asignacion->load([
             'empresa',
             'analista',
+            'firmas',
 
             // ── Receptor personal ──────────────────────────────────────────
             'usuario.cargo',
@@ -130,6 +131,7 @@ class PlanillaService
             'recibe',
             'autoriza',
             'realizadoPor',
+            'firmas',
             'items.equipo.categoria',
             'items.equipo.estado',
             'items.equipo.atributosActuales.atributo',

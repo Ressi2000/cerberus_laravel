@@ -204,7 +204,13 @@
     </div>
 
     <div class="firma-cell" style="width: 50%;">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if ($firmaReceptor = $asignacion->firmas->firstWhere('rol', 'receptor'))
+                @if ($firmaReceptor->estaFirmada())
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 30pt;">
+                @endif
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">
             {{ strtoupper(($esArea ? $areaResp?->name : $receptor?->name) ?? '—') }}

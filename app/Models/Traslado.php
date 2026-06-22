@@ -80,6 +80,11 @@ class Traslado extends Model
         return $this->belongsTo(User::class, 'revertido_por_id');
     }
 
+    public function firmas()
+    {
+        return $this->morphMany(Firma::class, 'firmable');
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Scopes
     // ─────────────────────────────────────────────────────────────────────────

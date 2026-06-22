@@ -144,13 +144,21 @@
         <div class="firma-cargo">Analista responsable</div>
     </div>
     <div class="firma-cell">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if (($firmaReceptor = $traslado->firmas->firstWhere('rol', 'receptor')) && $firmaReceptor->estaFirmada())
+                <img src="{{ $firmaReceptor->imagen }}" style="max-height: 30pt;">
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">{{ $traslado->recibe?->name ?? '—' }}</div>
         <div class="firma-cargo">Recibe conforme</div>
     </div>
     <div class="firma-cell">
-        <div class="firma-espacio"></div>
+        <div class="firma-espacio">
+            @if (($firmaJefe = $traslado->firmas->firstWhere('rol', 'jefe')) && $firmaJefe->estaFirmada())
+                <img src="{{ $firmaJefe->imagen }}" style="max-height: 30pt;">
+            @endif
+        </div>
         <div class="firma-linea"></div>
         <div class="firma-nombre">{{ $traslado->autoriza?->name ?? '—' }}</div>
         <div class="firma-cargo">Autoriza el traslado</div>

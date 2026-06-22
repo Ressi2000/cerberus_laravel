@@ -5,15 +5,19 @@ namespace App\Http\Controllers\Prestamos;
 use App\Http\Controllers\Controller;
 use App\Models\Prestamo;
 use App\Models\User;
+use App\Services\FirmaService;
 use App\Services\PlanillaPrestamoService;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\RedirectResponse;
 
 class PrestamoController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private PlanillaPrestamoService $planillas)
-    {
+    public function __construct(
+        private PlanillaPrestamoService $planillas,
+        private FirmaService $firmas,
+    ) {
     }
 
     public function index()
@@ -60,5 +64,14 @@ class PrestamoController extends Controller
         $this->authorize('view', $prestamo);
         $nombre = 'DevolucionPrestamo_' . $prestamo->id . '_' . now()->format('Ymd') . '.pdf';
         return $this->planillas->devolucion($prestamo)->download($nombre);
+    }
+
+    public function solicitarFirma(Prestamo $prestamo): RedirectResponse
+    {
+        $this->authorize('view', $prestamo);
+
+        $this->firmas->solicitar('prestamo', $prestamo);
+
+        return back()->with('status', 'Se envió la solicitud de firma digital al receptor.');
     }
 }

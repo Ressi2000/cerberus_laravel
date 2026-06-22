@@ -223,7 +223,11 @@
             <div class="firma-cargo">Técnico / Analista</div>
         </div>
         <div class="firma-cell">
-            <div class="firma-espacio"></div>
+            <div class="firma-espacio">
+                @if (($firmaReceptor = $prestamo->firmas->firstWhere('rol', 'receptor')) && $firmaReceptor->estaFirmada())
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 30pt;">
+                @endif
+            </div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ $receptor?->name ?? 'Receptor' }}</div>
             <div class="firma-cargo">Trabajador receptor</div>
@@ -236,7 +240,11 @@
             <div class="firma-cargo">Técnico / Analista</div>
         </div>
         <div class="firma-cell">
-            <div class="firma-espacio"></div>
+            <div class="firma-espacio">
+                @if (($firmaReceptor = $prestamo->firmas->firstWhere('rol', 'receptor')) && $firmaReceptor->estaFirmada())
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 30pt;">
+                @endif
+            </div>
             <div class="firma-linea"></div>
             <div class="firma-nombre">{{ strtoupper($areaResp?->name ?? 'Responsable') }}</div>
             <div class="firma-cargo">Responsable del área</div>

@@ -103,6 +103,11 @@ class Asignacion extends Model
         // Para asignaciones a áreas comunes, se muestra la ubicación de la empresa del área.
         return $this->usuario?->ubicacion ?? $this->areaEmpresa?->ubicacion;
     }
+
+    public function firmas()
+    {
+        return $this->morphMany(Firma::class, 'firmable');
+    }
  
     // ─────────────────────────────────────────────────────────────────────────
     // Scopes

@@ -15,6 +15,7 @@ class PlanillaPrestamoService
         $prestamo->load([
             'empresa',
             'analista',
+            'firmas',
             'usuario.cargo',
             'usuario.departamento',
             'usuario.empresaNomina',

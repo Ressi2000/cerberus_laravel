@@ -12,7 +12,9 @@ namespace App\Http\Controllers\Asignaciones;
 use App\Http\Controllers\Controller;
 use App\Models\Asignacion;
 use App\Models\User;
+use App\Services\FirmaService;
 use App\Services\PlanillaService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -20,8 +22,10 @@ class AsignacionController extends Controller
 {
     use AuthorizesRequests;
 
-    public function __construct(private PlanillaService $planillas)
-    {
+    public function __construct(
+        private PlanillaService $planillas,
+        private FirmaService $firmas,
+    ) {
     }
  
     // ── Vistas principales ────────────────────────────────────────────────────
@@ -97,5 +101,16 @@ class AsignacionController extends Controller
 
         $nombre = 'Egreso_' . str_replace(' ', '_', $usuario->name) . '_' . now()->format('Ymd') . '.pdf';
         return $this->planillas->egreso($usuario)->download($nombre);
+    }
+
+    // ── Firma digital remota ─────────────────────────────────────────────────
+
+    public function solicitarFirma(Asignacion $asignacion): RedirectResponse
+    {
+        $this->authorize('view', $asignacion);
+
+        $this->firmas->solicitar('asignacion', $asignacion);
+
+        return back()->with('status', 'Se envió la solicitud de firma digital al receptor.');
     }
 }
