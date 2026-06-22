@@ -46,6 +46,18 @@
     .field:last-child { border-bottom: none; }
     .field .label { color: #64748B; }
     .field .value { font-weight: 600; text-align: right; }
+    .btn-volver {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        background: #1B3A5C;
+        color: #fff;
+    }
 </style>
 </head>
 <body>
@@ -72,6 +84,8 @@
             Cuando todas las partes hayan firmado, el documento quedará
             disponible con las firmas en el sistema.
         </p>
+
+        <a class="btn-volver" href="{{ $urlVerificacion }}">Volver a la página de verificación</a>
     </div>
 </div>
 

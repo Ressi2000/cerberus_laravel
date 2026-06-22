@@ -8,6 +8,7 @@ use App\Services\FirmaService;
 use App\Services\Folio;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -112,6 +113,10 @@ class FirmaController extends Controller
             'firma'           => $firma,
             'tituloDocumento' => FirmaResolver::tituloDocumento($tipo),
             'folio'           => Folio::etiqueta($tipo, $id),
+            'urlVerificacion' => URL::signedRoute('verificacion.show', [
+                'tipo' => $tipo,
+                'id'   => $id,
+            ], now()->addDays(30)),
         ]);
     }
 
