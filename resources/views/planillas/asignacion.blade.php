@@ -199,7 +199,7 @@
     <div class="firma-cell" style="width: 50%;">
         <div class="firma-espacio">
             @if (($firmaAnalista = $asignacion->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
-                <img src="{{ $firmaAnalista->imagen }}" style="max-height: 30pt;">
+                <img src="{{ $firmaAnalista->imagen }}" style="max-height: 52pt;">
             @endif
         </div>
         <div class="firma-linea"></div>
@@ -211,7 +211,7 @@
         <div class="firma-espacio">
             @if ($firmaReceptor = $asignacion->firmas->firstWhere('rol', 'receptor'))
                 @if ($firmaReceptor->estaFirmada())
-                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 30pt;">
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 52pt;">
                 @endif
             @endif
         </div>

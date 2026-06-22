@@ -600,7 +600,7 @@
         }
 
         .firma-espacio {
-            height: 32pt;
+            height: 54pt;
         }
 
         .firma-linea {

@@ -69,8 +69,8 @@
             <span class="value">{{ $folio }}</span>
         </div>
         <p style="margin-top: 16px;">
-            Cuando todas las partes hayan firmado, recibirás por correo el
-            documento final en formato PDF.
+            Cuando todas las partes hayan firmado, el documento quedará
+            disponible con las firmas en el sistema.
         </p>
     </div>
 </div>

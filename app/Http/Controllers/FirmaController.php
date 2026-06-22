@@ -81,7 +81,7 @@ class FirmaController extends Controller
     {
         $request->validate(['cedula' => ['required', 'string']]);
 
-        $coincide = trim($request->input('cedula')) === trim((string) $firma->user?->cedula);
+        $coincide = $this->soloDigitos($request->input('cedula')) === $this->soloDigitos((string) $firma->user?->cedula);
 
         if (! $coincide) {
             return back()->withErrors(['cedula' => 'La cédula no coincide con el firmante esperado.']);
@@ -118,5 +118,15 @@ class FirmaController extends Controller
     private function claveVerificada(Firma $firma): string
     {
         return "firma_verificada.{$firma->id}";
+    }
+
+    /**
+     * La cédula se guarda como 'V-12345678' o 'E-12345678', pero el firmante
+     * solo escribe los números (el formulario es de tipo numérico). Comparamos
+     * solo los dígitos para no exigirle que recuerde el prefijo V/E.
+     */
+    private function soloDigitos(string $valor): string
+    {
+        return preg_replace('/\D/', '', $valor);
     }
 }

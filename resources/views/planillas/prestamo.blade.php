@@ -219,7 +219,7 @@
         <div class="firma-cell">
             <div class="firma-espacio">
                 @if (($firmaAnalista = $prestamo->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
-                    <img src="{{ $firmaAnalista->imagen }}" style="max-height: 30pt;">
+                    <img src="{{ $firmaAnalista->imagen }}" style="max-height: 52pt;">
                 @endif
             </div>
             <div class="firma-linea"></div>
@@ -229,7 +229,7 @@
         <div class="firma-cell">
             <div class="firma-espacio">
                 @if (($firmaReceptor = $prestamo->firmas->firstWhere('rol', 'receptor')) && $firmaReceptor->estaFirmada())
-                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 30pt;">
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 52pt;">
                 @endif
             </div>
             <div class="firma-linea"></div>
@@ -240,7 +240,7 @@
         <div class="firma-cell">
             <div class="firma-espacio">
                 @if (($firmaAnalista = $prestamo->firmas->firstWhere('rol', 'analista')) && $firmaAnalista->estaFirmada())
-                    <img src="{{ $firmaAnalista->imagen }}" style="max-height: 30pt;">
+                    <img src="{{ $firmaAnalista->imagen }}" style="max-height: 52pt;">
                 @endif
             </div>
             <div class="firma-linea"></div>
@@ -250,7 +250,7 @@
         <div class="firma-cell">
             <div class="firma-espacio">
                 @if (($firmaReceptor = $prestamo->firmas->firstWhere('rol', 'receptor')) && $firmaReceptor->estaFirmada())
-                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 30pt;">
+                    <img src="{{ $firmaReceptor->imagen }}" style="max-height: 52pt;">
                 @endif
             </div>
             <div class="firma-linea"></div>
