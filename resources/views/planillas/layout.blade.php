@@ -93,8 +93,15 @@
         .doc-meta-left  { font-size: 8pt; color: #415A77; }
         .doc-meta-right { font-size: 8pt; color: #415A77; text-align: right; }
 
-        /* Bloque de verificación QR — esquina superior derecha */
+        /* Bloque de verificación QR — fixed, esquina superior derecha.
+           Es independiente del doc-meta porque cada planilla reemplaza
+           ese bloque con uno propio cuando oculta el genérico; fixed
+           garantiza que el QR aparezca en todas sin tocar cada vista. */
         .verificacion-box {
+            position: fixed;
+            top: 14mm;
+            right: 16mm;
+            width: 46pt;
             text-align: center;
             font-size: 6pt;
             color: #94A3B8;
@@ -678,18 +685,17 @@
                     <td class="doc-meta-right">
                         Generado: <strong>{{ $fecha ?? now()->format('d/m/Y') }}</strong>
                     </td>
-                    @if (isset($qrBase64, $folio))
-                        <td style="width: 50pt;">
-                            <div class="verificacion-box">
-                                <img src="{{ $qrBase64 }}" alt="Verificar">
-                                <span class="folio">{{ $folio }}</span>
-                            </div>
-                        </td>
-                    @endif
                 </tr>
             </table>
         </div>
     @endunless
+
+    @if (isset($qrBase64, $folio))
+        <div class="verificacion-box">
+            <img src="{{ $qrBase64 }}" alt="Verificar">
+            <span class="folio">{{ $folio }}</span>
+        </div>
+    @endif
 
     {{-- ══ CONTENIDO ESPECÍFICO DE CADA PLANILLA ═══════════════════════════ --}}
     @yield('contenido')
