@@ -185,9 +185,18 @@
                     class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel
                             rounded-xl p-4 space-y-3">
 
-                    {{-- Fila 0: escaneo de código de barras / QR (lector USB o Bluetooth) --}}
+                    {{-- Fila 0: escaneo de código de barras / QR (lector HID o cámara) --}}
                     <div class="relative"
                         x-data="{
+                            camaraAbierta: false,
+                            usandoFallback: false,
+                            errorCamara: '',
+                            stream: null,
+                            detectorInterval: null,
+                            html5Qr: null,
+                            ultimoValor: null,
+                            ultimoTiempo: 0,
+
                             playBeep(ok) {
                                 try {
                                     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -201,6 +210,75 @@
                                     osc.stop(ctx.currentTime + (ok ? 0.12 : 0.25));
                                 } catch (e) {}
                             },
+
+                            cargarScript(src) {
+                                return new Promise((resolve, reject) => {
+                                    const s = document.createElement('script');
+                                    s.src = src;
+                                    s.onload = resolve;
+                                    s.onerror = reject;
+                                    document.head.appendChild(s);
+                                });
+                            },
+
+                            async abrirCamara() {
+                                this.errorCamara = '';
+                                this.camaraAbierta = true;
+                                this.usandoFallback = !('BarcodeDetector' in window);
+                                this.ultimoValor = null;
+                                this.ultimoTiempo = 0;
+                                await this.$nextTick();
+                                this.usandoFallback ? await this.iniciarFallback() : await this.iniciarNativo();
+                            },
+
+                            async iniciarNativo() {
+                                try {
+                                    this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                                    this.$refs.video.srcObject = this.stream;
+                                    await this.$refs.video.play();
+                                    const detector = new BarcodeDetector({ formats: ['qr_code', 'code_128'] });
+                                    this.detectorInterval = setInterval(async () => {
+                                        try {
+                                            const codigos = await detector.detect(this.$refs.video);
+                                            if (codigos.length) this.onDetectado(codigos[0].rawValue);
+                                        } catch (e) {}
+                                    }, 300);
+                                } catch (e) {
+                                    this.errorCamara = 'No se pudo acceder a la cámara.';
+                                }
+                            },
+
+                            async iniciarFallback() {
+                                try {
+                                    if (! window.Html5Qrcode) {
+                                        await this.cargarScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
+                                    }
+                                    this.html5Qr = new Html5Qrcode('camara-fallback');
+                                    await this.html5Qr.start(
+                                        { facingMode: 'environment' },
+                                        { fps: 10, qrbox: 220 },
+                                        (decodedText) => this.onDetectado(decodedText),
+                                        () => {}
+                                    );
+                                } catch (e) {
+                                    this.errorCamara = 'No se pudo acceder a la cámara.';
+                                }
+                            },
+
+                            onDetectado(valor) {
+                                const ahora = Date.now();
+                                if (valor === this.ultimoValor && (ahora - this.ultimoTiempo) < 1500) return;
+                                this.ultimoValor = valor;
+                                this.ultimoTiempo = ahora;
+                                this.$wire.procesarEscaneoCamara(valor);
+                            },
+
+                            cerrarCamara() {
+                                this.camaraAbierta = false;
+                                if (this.detectorInterval) { clearInterval(this.detectorInterval); this.detectorInterval = null; }
+                                if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
+                                if (this.html5Qr) { this.html5Qr.stop().catch(() => {}); this.html5Qr = null; }
+                            },
                         }"
                         x-init="
                             $wire.on('equipo-escaneado', (e) => {
@@ -209,15 +287,59 @@
                             });
                             $refs.inputEscaneo.focus();
                         ">
-                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                            <span class="material-icons text-base text-cerberus-primary">qr_code_scanner</span>
-                        </span>
-                        <input type="text" x-ref="inputEscaneo" wire:model="escaneo"
-                            wire:keydown.enter.prevent="procesarEscaneo" autocomplete="off"
-                            placeholder="Escanear código de barras o QR del equipo..."
-                            class="w-full bg-cerberus-primary/5 dark:bg-cerberus-primary/10 border border-cerberus-primary/30
-                                      text-gray-900 dark:text-white rounded-lg pl-10 pr-4 py-2.5 text-sm
-                                      focus:outline-none focus:border-cerberus-primary focus:ring-1 focus:ring-cerberus-primary/30 transition" />
+
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-base text-cerberus-primary">qr_code_scanner</span>
+                                </span>
+                                <input type="text" x-ref="inputEscaneo" wire:model="escaneo"
+                                    wire:keydown.enter.prevent="procesarEscaneo" autocomplete="off"
+                                    placeholder="Escanear código de barras o QR del equipo..."
+                                    class="w-full bg-cerberus-primary/5 dark:bg-cerberus-primary/10 border border-cerberus-primary/30
+                                              text-gray-900 dark:text-white rounded-lg pl-10 pr-4 py-2.5 text-sm
+                                              focus:outline-none focus:border-cerberus-primary focus:ring-1 focus:ring-cerberus-primary/30 transition" />
+                            </div>
+
+                            <button type="button" x-on:click="abrirCamara()" title="Escanear con la cámara"
+                                class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg
+                                       border border-cerberus-primary/30 bg-cerberus-primary/5 dark:bg-cerberus-primary/10
+                                       text-cerberus-primary hover:bg-cerberus-primary/15 transition">
+                                <span class="material-icons text-lg">photo_camera</span>
+                            </button>
+                        </div>
+
+                        {{-- Modal de escaneo por cámara --}}
+                        <div x-show="camaraAbierta" x-cloak x-on:keydown.escape.window="cerrarCamara()"
+                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+                            <div class="bg-white dark:bg-cerberus-mid rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                                <div
+                                    class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-cerberus-steel/40">
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
+                                        <span class="material-icons text-base text-cerberus-accent">photo_camera</span>
+                                        Escanear con la cámara
+                                    </p>
+                                    <button type="button" x-on:click="cerrarCamara()"
+                                        class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
+                                        <span class="material-icons text-base">close</span>
+                                    </button>
+                                </div>
+
+                                <div class="relative bg-black aspect-square">
+                                    <video x-ref="video" x-show="!usandoFallback" muted playsinline
+                                        class="w-full h-full object-cover"></video>
+                                    <div id="camara-fallback" x-show="usandoFallback" class="w-full h-full"></div>
+                                    <div class="absolute inset-0 m-10 border-2 border-white/70 rounded-lg pointer-events-none"></div>
+                                </div>
+
+                                <div class="px-4 py-3 space-y-2">
+                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel text-center">
+                                        Apunta el código de barras o QR del equipo hacia el centro.
+                                    </p>
+                                    <p x-show="errorCamara" x-text="errorCamara" class="text-xs text-red-500 text-center"></p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Fila 1: buscador + toggle vista (B1 + B2) --}}

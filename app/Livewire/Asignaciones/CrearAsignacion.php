@@ -331,13 +331,25 @@ class CrearAsignacion extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Escaneo de código de barras / QR — lectores HID (USB o Bluetooth keyboard-wedge)
+    // Escaneo de código de barras / QR
+    // - procesarEscaneo(): lectores HID (USB o Bluetooth keyboard-wedge)
+    // - procesarEscaneoCamara(): cámara del dispositivo (BarcodeDetector / fallback JS)
     // ─────────────────────────────────────────────────────────────────────────
 
     public function procesarEscaneo(): void
     {
-        $valor          = trim($this->escaneo);
-        $this->escaneo  = '';
+        $valor         = trim($this->escaneo);
+        $this->escaneo = '';
+        $this->registrarEscaneo($valor);
+    }
+
+    public function procesarEscaneoCamara(string $valor): void
+    {
+        $this->registrarEscaneo(trim($valor));
+    }
+
+    private function registrarEscaneo(string $valor): void
+    {
         $this->resetErrorBag('carrito');
 
         if ($valor === '') {
