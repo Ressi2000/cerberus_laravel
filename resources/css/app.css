@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+[x-cloak] {
+  display: none !important;
+}
+
 /* ===================================================================
    CERBERUS — Tokens de color adaptativos
    Los colores cerberus-* cambian automáticamente entre modos.
