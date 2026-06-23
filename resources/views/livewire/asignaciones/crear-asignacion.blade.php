@@ -237,7 +237,9 @@
 
                             async iniciarNativo() {
                                 try {
-                                    this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                                    this.stream = await navigator.mediaDevices.getUserMedia({
+                                        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                                    });
                                     if (! this.camaraAbierta) { // se cerró mientras esperábamos el permiso
                                         this.stream.getTracks().forEach(t => t.stop());
                                         return;
@@ -245,12 +247,19 @@
                                     this.$refs.video.srcObject = this.stream;
                                     await this.$refs.video.play();
                                     const detector = new BarcodeDetector({ formats: ['qr_code', 'code_128'] });
-                                    this.detectorInterval = setInterval(async () => {
+
+                                    // Bucle auto-programado (no setInterval de paso fijo): pide el siguiente
+                                    // frame apenas termina de analizar el actual, así detecta tan rápido como
+                                    // el dispositivo pueda en vez de esperar un intervalo fijo de por medio.
+                                    const detectar = async () => {
+                                        if (! this.camaraAbierta) return;
                                         try {
                                             const codigos = await detector.detect(this.$refs.video);
                                             if (codigos.length) this.onDetectado(codigos[0].rawValue);
                                         } catch (e) {}
-                                    }, 300);
+                                        this.detectorInterval = requestAnimationFrame(detectar);
+                                    };
+                                    detectar();
                                 } catch (e) {
                                     this.errorCamara = 'No se pudo acceder a la cámara. Revisa los permisos del navegador.';
                                 }
@@ -265,7 +274,7 @@
                                     this.html5Qr = new Html5Qrcode('camara-fallback');
                                     await this.html5Qr.start(
                                         { facingMode: 'environment' },
-                                        { fps: 10, qrbox: 220 },
+                                        { fps: 20, qrbox: 240 },
                                         (decodedText) => this.onDetectado(decodedText),
                                         () => {}
                                     );
@@ -298,7 +307,7 @@
                                 this.errorCamara = '';
                                 this.toastVisible = false;
                                 clearTimeout(this.toastTimeout);
-                                if (this.detectorInterval) { clearInterval(this.detectorInterval); this.detectorInterval = null; }
+                                if (this.detectorInterval) { cancelAnimationFrame(this.detectorInterval); this.detectorInterval = null; }
                                 if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
                                 if (this.html5Qr) { this.html5Qr.stop().catch(() => {}).then(() => this.html5Qr?.clear()); this.html5Qr = null; }
                             },
@@ -333,58 +342,66 @@
                             </button>
                         </div>
 
-                        {{-- Modal de escaneo por cámara. wire:ignore evita que el morphing de Livewire
-                             toque este subárbol entre escaneos, así el <video> y su stream se mantienen
-                             vivos y se pueden escanear varios equipos seguidos sin reabrir la cámara. --}}
-                        <div wire:ignore x-show="camaraAbierta" x-cloak x-on:keydown.escape.window="cerrarCamara()"
-                            x-on:click.self="cerrarCamara()"
-                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
-                            <div x-on:click.stop
-                                class="relative bg-white dark:bg-cerberus-mid rounded-xl shadow-xl w-full max-w-md
-                                       max-h-[90vh] overflow-y-auto my-auto">
+                        {{-- Modal de escaneo por cámara, teletransportado al <body>. La animación
+                             "animate-fade-in" del contenedor del paso 2 deja un transform aplicado
+                             (animation-fill-mode: forwards), y eso convierte a ese contenedor en el
+                             "containing block" de cualquier descendiente position:fixed — por eso el
+                             modal aparecía centrado dentro de TODO el alto de la grilla de equipos en
+                             vez del viewport visible, obligando a hacer scroll para verlo. Al moverlo
+                             fuera de ese árbol con x-teleport, queda anclado al viewport real.
+                             wire:ignore evita que el morphing de Livewire toque este subárbol entre
+                             escaneos, así el <video> y su stream se mantienen vivos. --}}
+                        <template x-teleport="body">
+                            <div wire:ignore x-show="camaraAbierta" x-cloak x-on:keydown.escape.window="cerrarCamara()"
+                                x-on:click.self="cerrarCamara()"
+                                class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
+                                <div x-on:click.stop
+                                    class="relative bg-white dark:bg-cerberus-mid rounded-xl shadow-xl w-full max-w-md
+                                           max-h-[90vh] overflow-y-auto my-auto">
 
-                                {{-- Botón de cierre flotante: siempre visible aunque el header quede fuera de vista --}}
-                                <button type="button" x-on:click="cerrarCamara()" title="Cerrar"
-                                    class="absolute top-2 right-2 z-10 flex items-center justify-center w-9 h-9 rounded-full
-                                           bg-black/60 text-white hover:bg-black/80 transition">
-                                    <span class="material-icons text-lg">close</span>
-                                </button>
-
-                                <div
-                                    class="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 dark:border-cerberus-steel/40">
-                                    <span class="material-icons text-base text-cerberus-accent">photo_camera</span>
-                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                                        Escanear con la cámara
-                                    </p>
-                                </div>
-
-                                <div class="relative bg-black h-72">
-                                    <video x-ref="video" x-show="!usandoFallback" muted playsinline
-                                        class="w-full h-full object-cover"></video>
-                                    <div id="camara-fallback" x-show="usandoFallback" class="w-full h-full"></div>
-                                    <div class="absolute inset-0 m-8 border-2 border-white/70 rounded-lg pointer-events-none"></div>
-
-                                    {{-- Toast de confirmación tras cada escaneo, sin cerrar la cámara --}}
-                                    <div x-show="toastVisible" x-cloak x-transition.opacity
-                                        class="absolute bottom-3 left-3 right-3 rounded-lg px-3 py-2 text-xs font-semibold text-center text-white"
-                                        :class="toastOk ? 'bg-green-600/90' : 'bg-red-600/90'"
-                                        x-text="toastMensaje"></div>
-                                </div>
-
-                                <div class="px-4 py-3 space-y-2">
-                                    <p class="text-xs text-gray-400 dark:text-cerberus-steel text-center">
-                                        Apunta el código de barras o QR del equipo hacia el centro. Puedes escanear
-                                        varios equipos seguidos sin cerrar la cámara.
-                                    </p>
-                                    <p x-show="errorCamara" x-text="errorCamara" class="text-xs text-red-500 text-center"></p>
-                                    <button type="button" x-on:click="cerrarCamara()"
-                                        class="w-full py-2 rounded-lg text-xs font-medium bg-cerberus-primary
-                                               text-white hover:bg-cerberus-primary/90 transition">
-                                        Listo
+                                    {{-- Botón de cierre flotante: siempre visible aunque el header quede fuera de vista --}}
+                                    <button type="button" x-on:click="cerrarCamara()" title="Cerrar"
+                                        class="absolute top-2 right-2 z-10 flex items-center justify-center w-9 h-9 rounded-full
+                                               bg-black/60 text-white hover:bg-black/80 transition">
+                                        <span class="material-icons text-lg">close</span>
                                     </button>
+
+                                    <div
+                                        class="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 dark:border-cerberus-steel/40">
+                                        <span class="material-icons text-base text-cerberus-accent">photo_camera</span>
+                                        <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                            Escanear con la cámara
+                                        </p>
+                                    </div>
+
+                                    <div class="relative bg-black h-72">
+                                        <video x-ref="video" x-show="!usandoFallback" muted playsinline
+                                            class="w-full h-full object-cover"></video>
+                                        <div id="camara-fallback" x-show="usandoFallback" class="w-full h-full"></div>
+                                        <div class="absolute inset-0 m-8 border-2 border-white/70 rounded-lg pointer-events-none"></div>
+
+                                        {{-- Toast de confirmación tras cada escaneo, sin cerrar la cámara --}}
+                                        <div x-show="toastVisible" x-cloak x-transition.opacity
+                                            class="absolute bottom-3 left-3 right-3 rounded-lg px-3 py-2 text-xs font-semibold text-center text-white"
+                                            :class="toastOk ? 'bg-green-600/90' : 'bg-red-600/90'"
+                                            x-text="toastMensaje"></div>
+                                    </div>
+
+                                    <div class="px-4 py-3 space-y-2">
+                                        <p class="text-xs text-gray-400 dark:text-cerberus-steel text-center">
+                                            Apunta el código de barras o QR del equipo hacia el centro. Puedes escanear
+                                            varios equipos seguidos sin cerrar la cámara.
+                                        </p>
+                                        <p x-show="errorCamara" x-text="errorCamara" class="text-xs text-red-500 text-center"></p>
+                                        <button type="button" x-on:click="cerrarCamara()"
+                                            class="w-full py-2 rounded-lg text-xs font-medium bg-cerberus-primary
+                                                   text-white hover:bg-cerberus-primary/90 transition">
+                                            Listo
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </template>
                     </div>
 
                     {{-- Fila 1: buscador + toggle vista (B1 + B2) --}}
