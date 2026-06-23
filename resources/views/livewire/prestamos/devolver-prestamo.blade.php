@@ -132,7 +132,7 @@
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     @if ($esPeriferico)
-                                        <span class="text-gray-400 dark:text-cerberus-steel text-xs">↳ periférico</span>
+                                        <span class="text-gray-400 dark:text-cerberus-steel text-xs">» periférico</span>
                                     @endif
                                     <span class="text-sm font-semibold text-gray-900 dark:text-white">
                                         {{ $item->equipo?->codigo_interno ?? '—' }}
