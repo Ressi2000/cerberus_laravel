@@ -185,6 +185,41 @@
                     class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel
                             rounded-xl p-4 space-y-3">
 
+                    {{-- Fila 0: escaneo de código de barras / QR (lector USB o Bluetooth) --}}
+                    <div class="relative"
+                        x-data="{
+                            playBeep(ok) {
+                                try {
+                                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                                    const osc = ctx.createOscillator();
+                                    const gain = ctx.createGain();
+                                    osc.frequency.value = ok ? 880 : 220;
+                                    osc.connect(gain);
+                                    gain.connect(ctx.destination);
+                                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                                    osc.start();
+                                    osc.stop(ctx.currentTime + (ok ? 0.12 : 0.25));
+                                } catch (e) {}
+                            },
+                        }"
+                        x-init="
+                            $wire.on('equipo-escaneado', (e) => {
+                                playBeep(e.ok);
+                                $refs.inputEscaneo.focus();
+                            });
+                            $refs.inputEscaneo.focus();
+                        ">
+                        <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                            <span class="material-icons text-base text-cerberus-primary">qr_code_scanner</span>
+                        </span>
+                        <input type="text" x-ref="inputEscaneo" wire:model="escaneo"
+                            wire:keydown.enter.prevent="procesarEscaneo" autocomplete="off"
+                            placeholder="Escanear código de barras o QR del equipo..."
+                            class="w-full bg-cerberus-primary/5 dark:bg-cerberus-primary/10 border border-cerberus-primary/30
+                                      text-gray-900 dark:text-white rounded-lg pl-10 pr-4 py-2.5 text-sm
+                                      focus:outline-none focus:border-cerberus-primary focus:ring-1 focus:ring-cerberus-primary/30 transition" />
+                    </div>
+
                     {{-- Fila 1: buscador + toggle vista (B1 + B2) --}}
                     <div class="flex gap-2 items-center">
 

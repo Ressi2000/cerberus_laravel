@@ -61,6 +61,9 @@ class CrearAsignacion extends Component
     // ── Carrito ───────────────────────────────────────────────────────────────
     public array $carrito = [];
 
+    // ── Escaneo de código de barras / QR ────────────────────────────────────
+    public string $escaneo = '';
+
     // ─────────────────────────────────────────────────────────────────────────
     // Mount
     // ─────────────────────────────────────────────────────────────────────────
@@ -325,6 +328,55 @@ class CrearAsignacion extends Component
             }
             return $item;
         })->toArray();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Escaneo de código de barras / QR — lectores HID (USB o Bluetooth keyboard-wedge)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function procesarEscaneo(): void
+    {
+        $valor          = trim($this->escaneo);
+        $this->escaneo  = '';
+        $this->resetErrorBag('carrito');
+
+        if ($valor === '') {
+            return;
+        }
+
+        $equipoId = $this->idEquipoDesdeCodigo($valor);
+
+        if (! $equipoId) {
+            $this->addError('carrito', 'Código escaneado no reconocido.');
+            $this->dispatch('equipo-escaneado', ok: false);
+            return;
+        }
+
+        if (collect($this->carrito)->contains('id', $equipoId)) {
+            $this->addError('carrito', 'Ese equipo ya está en el carrito.');
+            $this->dispatch('equipo-escaneado', ok: false);
+            return;
+        }
+
+        $totalAntes = count($this->carrito);
+        $this->agregarAlCarrito($equipoId);
+
+        $this->dispatch('equipo-escaneado', ok: count($this->carrito) > $totalAntes);
+    }
+
+    // El código de barras codifica el id del equipo; el QR codifica la URL de su ficha
+    // (.../equipos/{id}) — ambos formatos se resuelven al mismo identificador.
+    private function idEquipoDesdeCodigo(string $valor): ?int
+    {
+        if (ctype_digit($valor)) {
+            return (int) $valor;
+        }
+
+        if (preg_match('#/equipos/(\d+)#', $valor, $m)) {
+            return (int) $m[1];
+        }
+
+        return null;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
