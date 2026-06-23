@@ -175,7 +175,7 @@
 
     {{-- ════════════════════════════ PASO 2 ════════════════════════════════ --}}
     @if ($paso === 2)
-        <div class="flex gap-5 items-start animate-fade-in">
+        <div class="flex flex-col lg:flex-row gap-5 items-start animate-fade-in">
 
             {{-- ── Grilla/Lista izquierda ──────────────────────────────────── --}}
             <div class="flex-1 min-w-0 space-y-4">
@@ -223,10 +223,10 @@
 
                             async abrirCamara() {
                                 this.errorCamara = '';
-                                this.camaraAbierta = true;
-                                this.usandoFallback = !('BarcodeDetector' in window);
                                 this.ultimoValor = null;
                                 this.ultimoTiempo = 0;
+                                this.camaraAbierta = true;
+                                this.usandoFallback = !('BarcodeDetector' in window);
                                 await this.$nextTick();
                                 this.usandoFallback ? await this.iniciarFallback() : await this.iniciarNativo();
                             },
@@ -234,6 +234,10 @@
                             async iniciarNativo() {
                                 try {
                                     this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                                    if (! this.camaraAbierta) { // se cerró mientras esperábamos el permiso
+                                        this.stream.getTracks().forEach(t => t.stop());
+                                        return;
+                                    }
                                     this.$refs.video.srcObject = this.stream;
                                     await this.$refs.video.play();
                                     const detector = new BarcodeDetector({ formats: ['qr_code', 'code_128'] });
@@ -244,7 +248,7 @@
                                         } catch (e) {}
                                     }, 300);
                                 } catch (e) {
-                                    this.errorCamara = 'No se pudo acceder a la cámara.';
+                                    this.errorCamara = 'No se pudo acceder a la cámara. Revisa los permisos del navegador.';
                                 }
                             },
 
@@ -253,6 +257,7 @@
                                     if (! window.Html5Qrcode) {
                                         await this.cargarScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
                                     }
+                                    if (! this.camaraAbierta) return; // se cerró mientras cargaba la librería
                                     this.html5Qr = new Html5Qrcode('camara-fallback');
                                     await this.html5Qr.start(
                                         { facingMode: 'environment' },
@@ -261,23 +266,28 @@
                                         () => {}
                                     );
                                 } catch (e) {
-                                    this.errorCamara = 'No se pudo acceder a la cámara.';
+                                    this.errorCamara = 'No se pudo acceder a la cámara. Revisa los permisos del navegador.';
                                 }
                             },
 
+                            // Se detectó un código: apagamos la cámara y cerramos el modal ANTES de llamar
+                            // a Livewire. Si la dejáramos prendida durante el round-trip, el morphing del
+                            // DOM puede recrear el <video> y quedarse con el stream "colgado" en negro.
                             onDetectado(valor) {
                                 const ahora = Date.now();
                                 if (valor === this.ultimoValor && (ahora - this.ultimoTiempo) < 1500) return;
                                 this.ultimoValor = valor;
                                 this.ultimoTiempo = ahora;
+                                this.cerrarCamara();
                                 this.$wire.procesarEscaneoCamara(valor);
                             },
 
                             cerrarCamara() {
                                 this.camaraAbierta = false;
+                                this.errorCamara = '';
                                 if (this.detectorInterval) { clearInterval(this.detectorInterval); this.detectorInterval = null; }
                                 if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
-                                if (this.html5Qr) { this.html5Qr.stop().catch(() => {}); this.html5Qr = null; }
+                                if (this.html5Qr) { this.html5Qr.stop().catch(() => {}).then(() => this.html5Qr?.clear()); this.html5Qr = null; }
                             },
                         }"
                         x-init="
@@ -311,25 +321,32 @@
 
                         {{-- Modal de escaneo por cámara --}}
                         <div x-show="camaraAbierta" x-cloak x-on:keydown.escape.window="cerrarCamara()"
-                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-                            <div class="bg-white dark:bg-cerberus-mid rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+                            x-on:click.self="cerrarCamara()"
+                            class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
+                            <div x-on:click.stop
+                                class="relative bg-white dark:bg-cerberus-mid rounded-xl shadow-xl w-full max-w-md
+                                       max-h-[90vh] overflow-y-auto my-auto">
+
+                                {{-- Botón de cierre flotante: siempre visible aunque el header quede fuera de vista --}}
+                                <button type="button" x-on:click="cerrarCamara()" title="Cerrar"
+                                    class="absolute top-2 right-2 z-10 flex items-center justify-center w-9 h-9 rounded-full
+                                           bg-black/60 text-white hover:bg-black/80 transition">
+                                    <span class="material-icons text-lg">close</span>
+                                </button>
+
                                 <div
-                                    class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-cerberus-steel/40">
-                                    <p class="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-1.5">
-                                        <span class="material-icons text-base text-cerberus-accent">photo_camera</span>
+                                    class="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 dark:border-cerberus-steel/40">
+                                    <span class="material-icons text-base text-cerberus-accent">photo_camera</span>
+                                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
                                         Escanear con la cámara
                                     </p>
-                                    <button type="button" x-on:click="cerrarCamara()"
-                                        class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
-                                        <span class="material-icons text-base">close</span>
-                                    </button>
                                 </div>
 
-                                <div class="relative bg-black aspect-square">
+                                <div class="relative bg-black h-72">
                                     <video x-ref="video" x-show="!usandoFallback" muted playsinline
                                         class="w-full h-full object-cover"></video>
                                     <div id="camara-fallback" x-show="usandoFallback" class="w-full h-full"></div>
-                                    <div class="absolute inset-0 m-10 border-2 border-white/70 rounded-lg pointer-events-none"></div>
+                                    <div class="absolute inset-0 m-8 border-2 border-white/70 rounded-lg pointer-events-none"></div>
                                 </div>
 
                                 <div class="px-4 py-3 space-y-2">
@@ -337,6 +354,11 @@
                                         Apunta el código de barras o QR del equipo hacia el centro.
                                     </p>
                                     <p x-show="errorCamara" x-text="errorCamara" class="text-xs text-red-500 text-center"></p>
+                                    <button type="button" x-on:click="cerrarCamara()"
+                                        class="w-full py-2 rounded-lg text-xs font-medium border border-gray-200 dark:border-cerberus-steel/50
+                                               text-gray-500 dark:text-cerberus-light hover:bg-gray-50 dark:hover:bg-cerberus-steel/10 transition">
+                                        Cancelar
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -598,7 +620,7 @@
             </div>
 
             {{-- ── Carrito derecho ──────────────────────────────────────────── --}}
-            <div class="w-80 flex-shrink-0 sticky top-20 space-y-3">
+            <div class="w-full lg:w-80 lg:flex-shrink-0 lg:sticky lg:top-20 space-y-3">
 
                 {{-- Receptor --}}
                 <div
