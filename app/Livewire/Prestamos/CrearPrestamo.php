@@ -45,6 +45,9 @@ class CrearPrestamo extends Component
     // ── Carrito ───────────────────────────────────────────────────────────────
     public array $carrito = [];
 
+    // ── Escaneo de código de barras / QR ────────────────────────────────────
+    public string $escaneo = '';
+
     // ─────────────────────────────────────────────────────────────────────────
 
     public function mount(): void
@@ -262,6 +265,76 @@ class CrearPrestamo extends Component
             if ($item['uid'] === $uid) $item['padre_uid'] = $padreUid;
             return $item;
         })->toArray();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Escaneo de código de barras / QR
+    // - procesarEscaneo(): lectores HID (USB o Bluetooth keyboard-wedge)
+    // - procesarEscaneoCamara(): cámara del dispositivo (BarcodeDetector / fallback JS)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function procesarEscaneo(): void
+    {
+        $valor         = trim($this->escaneo);
+        $this->escaneo = '';
+        $this->registrarEscaneo($valor);
+    }
+
+    public function procesarEscaneoCamara(string $valor): void
+    {
+        $this->registrarEscaneo(trim($valor));
+    }
+
+    private function registrarEscaneo(string $valor): void
+    {
+        $this->resetErrorBag('carrito');
+
+        if ($valor === '') {
+            return;
+        }
+
+        $equipoId = $this->idEquipoDesdeCodigo($valor);
+
+        if (! $equipoId) {
+            $mensaje = 'Código no reconocido.';
+            $this->addError('carrito', $mensaje);
+            $this->dispatch('equipo-escaneado', ok: false, mensaje: $mensaje);
+            return;
+        }
+
+        if (collect($this->carrito)->contains('id', $equipoId)) {
+            $mensaje = 'Ese equipo ya está en el carrito.';
+            $this->addError('carrito', $mensaje);
+            $this->dispatch('equipo-escaneado', ok: false, mensaje: $mensaje);
+            return;
+        }
+
+        $totalAntes = count($this->carrito);
+        $this->agregarAlCarrito($equipoId);
+
+        if (count($this->carrito) > $totalAntes) {
+            $codigo = collect($this->carrito)->last()['codigo'] ?? '';
+            $this->dispatch('equipo-escaneado', ok: true, mensaje: "Agregado: {$codigo}");
+            return;
+        }
+
+        $mensaje = $this->getErrorBag()->first('carrito') ?: 'No se pudo agregar el equipo.';
+        $this->dispatch('equipo-escaneado', ok: false, mensaje: $mensaje);
+    }
+
+    // El código de barras codifica el id del equipo; el QR codifica la URL de su ficha
+    // (.../equipos/{id}) — ambos formatos se resuelven al mismo identificador.
+    private function idEquipoDesdeCodigo(string $valor): ?int
+    {
+        if (ctype_digit($valor)) {
+            return (int) $valor;
+        }
+
+        if (preg_match('#/equipos/(\d+)#', $valor, $m)) {
+            return (int) $m[1];
+        }
+
+        return null;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

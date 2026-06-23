@@ -128,13 +128,233 @@
 
     {{-- ════════════════════════════ PASO 2 ════════════════════════════════ --}}
     @if ($paso === 2)
-        <div class="flex gap-5 items-start animate-fade-in">
+        <div class="flex flex-col lg:flex-row gap-5 items-start animate-fade-in">
 
             {{-- Grilla izquierda --}}
             <div class="flex-1 min-w-0 space-y-4">
 
                 <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-4 space-y-3">
 
+                    {{-- Fila 0: escaneo de código de barras / QR (lector HID o cámara) --}}
+                    <div class="relative"
+                        x-data="{
+                            camaraAbierta: false,
+                            usandoFallback: false,
+                            errorCamara: '',
+                            stream: null,
+                            detectorInterval: null,
+                            html5Qr: null,
+                            ultimoValor: null,
+                            ultimoTiempo: 0,
+                            toastVisible: false,
+                            toastOk: true,
+                            toastMensaje: '',
+                            toastTimeout: null,
+
+                            playBeep(ok) {
+                                try {
+                                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                                    const osc = ctx.createOscillator();
+                                    const gain = ctx.createGain();
+                                    osc.frequency.value = ok ? 880 : 220;
+                                    osc.connect(gain);
+                                    gain.connect(ctx.destination);
+                                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                                    osc.start();
+                                    osc.stop(ctx.currentTime + (ok ? 0.12 : 0.25));
+                                } catch (e) {}
+                            },
+
+                            cargarScript(src) {
+                                return new Promise((resolve, reject) => {
+                                    const s = document.createElement('script');
+                                    s.src = src;
+                                    s.onload = resolve;
+                                    s.onerror = reject;
+                                    document.head.appendChild(s);
+                                });
+                            },
+
+                            async abrirCamara() {
+                                this.errorCamara = '';
+                                this.ultimoValor = null;
+                                this.ultimoTiempo = 0;
+                                this.camaraAbierta = true;
+                                this.usandoFallback = !('BarcodeDetector' in window);
+                                await this.$nextTick();
+                                this.usandoFallback ? await this.iniciarFallback() : await this.iniciarNativo();
+                            },
+
+                            async iniciarNativo() {
+                                try {
+                                    this.stream = await navigator.mediaDevices.getUserMedia({
+                                        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+                                    });
+                                    if (! this.camaraAbierta) { // se cerró mientras esperábamos el permiso
+                                        this.stream.getTracks().forEach(t => t.stop());
+                                        return;
+                                    }
+                                    this.$refs.video.srcObject = this.stream;
+                                    await this.$refs.video.play();
+                                    const detector = new BarcodeDetector({ formats: ['qr_code', 'code_128'] });
+
+                                    // Bucle auto-programado (no setInterval de paso fijo): pide el siguiente
+                                    // frame apenas termina de analizar el actual, así detecta tan rápido como
+                                    // el dispositivo pueda en vez de esperar un intervalo fijo de por medio.
+                                    const detectar = async () => {
+                                        if (! this.camaraAbierta) return;
+                                        try {
+                                            const codigos = await detector.detect(this.$refs.video);
+                                            if (codigos.length) this.onDetectado(codigos[0].rawValue);
+                                        } catch (e) {}
+                                        this.detectorInterval = requestAnimationFrame(detectar);
+                                    };
+                                    detectar();
+                                } catch (e) {
+                                    this.errorCamara = 'No se pudo acceder a la cámara. Revisa los permisos del navegador.';
+                                }
+                            },
+
+                            async iniciarFallback() {
+                                try {
+                                    if (! window.Html5Qrcode) {
+                                        await this.cargarScript('https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js');
+                                    }
+                                    if (! this.camaraAbierta) return; // se cerró mientras cargaba la librería
+                                    this.html5Qr = new Html5Qrcode('camara-fallback');
+                                    await this.html5Qr.start(
+                                        { facingMode: 'environment' },
+                                        { fps: 20, qrbox: 240 },
+                                        (decodedText) => this.onDetectado(decodedText),
+                                        () => {}
+                                    );
+                                } catch (e) {
+                                    this.errorCamara = 'No se pudo acceder a la cámara. Revisa los permisos del navegador.';
+                                }
+                            },
+
+                            // La cámara se queda abierta entre escaneos para permitir escanear varios
+                            // equipos seguidos. El modal tiene wire:ignore, asi que el morphing de
+                            // Livewire nunca toca el video y el stream no se cuelga.
+                            onDetectado(valor) {
+                                const ahora = Date.now();
+                                if (valor === this.ultimoValor && (ahora - this.ultimoTiempo) < 1500) return;
+                                this.ultimoValor = valor;
+                                this.ultimoTiempo = ahora;
+                                this.$wire.procesarEscaneoCamara(valor);
+                            },
+
+                            mostrarToast(ok, mensaje) {
+                                this.toastOk = ok;
+                                this.toastMensaje = mensaje;
+                                this.toastVisible = true;
+                                clearTimeout(this.toastTimeout);
+                                this.toastTimeout = setTimeout(() => { this.toastVisible = false; }, 1800);
+                            },
+
+                            cerrarCamara() {
+                                this.camaraAbierta = false;
+                                this.errorCamara = '';
+                                this.toastVisible = false;
+                                clearTimeout(this.toastTimeout);
+                                if (this.detectorInterval) { cancelAnimationFrame(this.detectorInterval); this.detectorInterval = null; }
+                                if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
+                                if (this.html5Qr) { this.html5Qr.stop().catch(() => {}).then(() => this.html5Qr?.clear()); this.html5Qr = null; }
+                            },
+                        }"
+                        x-init="
+                            $wire.on('equipo-escaneado', (e) => {
+                                playBeep(e.ok);
+                                mostrarToast(e.ok, e.mensaje);
+                                if (! camaraAbierta) $refs.inputEscaneo.focus();
+                            });
+                            $refs.inputEscaneo.focus();
+                        ">
+
+                        <div class="flex gap-2">
+                            <div class="relative flex-1">
+                                <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                    <span class="material-icons text-base text-cerberus-primary">qr_code_scanner</span>
+                                </span>
+                                <input type="text" x-ref="inputEscaneo" wire:model="escaneo"
+                                    wire:keydown.enter.prevent="procesarEscaneo" autocomplete="off"
+                                    placeholder="Escanear código de barras o QR del equipo..."
+                                    class="w-full bg-cerberus-primary/5 dark:bg-cerberus-primary/10 border border-cerberus-primary/30
+                                              text-gray-900 dark:text-white rounded-lg pl-10 pr-4 py-2.5 text-sm
+                                              focus:outline-none focus:border-cerberus-primary focus:ring-1 focus:ring-cerberus-primary/30 transition" />
+                            </div>
+
+                            <button type="button" x-on:click="abrirCamara()" title="Escanear con la cámara"
+                                class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg
+                                       border border-cerberus-primary/30 bg-cerberus-primary/5 dark:bg-cerberus-primary/10
+                                       text-cerberus-primary hover:bg-cerberus-primary/15 transition">
+                                <span class="material-icons text-lg">photo_camera</span>
+                            </button>
+                        </div>
+
+                        {{-- Modal de escaneo por cámara, teletransportado al <body>. La animación
+                             "animate-fade-in" del contenedor del paso 2 deja un transform aplicado
+                             (animation-fill-mode: forwards), y eso convierte a ese contenedor en el
+                             "containing block" de cualquier descendiente position:fixed — por eso el
+                             modal aparecía centrado dentro de TODO el alto de la grilla de equipos en
+                             vez del viewport visible, obligando a hacer scroll para verlo. Al moverlo
+                             fuera de ese árbol con x-teleport, queda anclado al viewport real.
+                             wire:ignore evita que el morphing de Livewire toque este subárbol entre
+                             escaneos, así el <video> y su stream se mantienen vivos. --}}
+                        <template x-teleport="body">
+                            <div wire:ignore x-show="camaraAbierta" x-cloak x-on:keydown.escape.window="cerrarCamara()"
+                                x-on:click.self="cerrarCamara()"
+                                class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
+                                <div x-on:click.stop
+                                    class="relative bg-white dark:bg-cerberus-mid rounded-xl shadow-xl w-full max-w-md
+                                           max-h-[90vh] overflow-y-auto my-auto">
+
+                                    {{-- Botón de cierre flotante: siempre visible aunque el header quede fuera de vista --}}
+                                    <button type="button" x-on:click="cerrarCamara()" title="Cerrar"
+                                        class="absolute top-2 right-2 z-10 flex items-center justify-center w-9 h-9 rounded-full
+                                               bg-black/60 text-white hover:bg-black/80 transition">
+                                        <span class="material-icons text-lg">close</span>
+                                    </button>
+
+                                    <div
+                                        class="flex items-center gap-1.5 px-4 py-3 border-b border-gray-100 dark:border-cerberus-steel/40">
+                                        <span class="material-icons text-base text-cerberus-accent">photo_camera</span>
+                                        <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                            Escanear con la cámara
+                                        </p>
+                                    </div>
+
+                                    <div class="relative bg-black h-72">
+                                        <video x-ref="video" x-show="!usandoFallback" muted playsinline
+                                            class="w-full h-full object-cover"></video>
+                                        <div id="camara-fallback" x-show="usandoFallback" class="w-full h-full"></div>
+                                        <div class="absolute inset-0 m-8 border-2 border-white/70 rounded-lg pointer-events-none"></div>
+
+                                        {{-- Toast de confirmación tras cada escaneo, sin cerrar la cámara --}}
+                                        <div x-show="toastVisible" x-cloak x-transition.opacity
+                                            class="absolute bottom-3 left-3 right-3 rounded-lg px-3 py-2 text-xs font-semibold text-center text-white"
+                                            :class="toastOk ? 'bg-green-600/90' : 'bg-red-600/90'"
+                                            x-text="toastMensaje"></div>
+                                    </div>
+
+                                    <div class="px-4 py-3 space-y-2">
+                                        <p class="text-xs text-gray-400 dark:text-cerberus-steel text-center">
+                                            Apunta el código de barras o QR del equipo hacia el centro. Puedes escanear
+                                            varios equipos seguidos sin cerrar la cámara.
+                                        </p>
+                                        <p x-show="errorCamara" x-text="errorCamara" class="text-xs text-red-500 text-center"></p>
+                                        <button type="button" x-on:click="cerrarCamara()"
+                                            class="w-full py-2 rounded-lg text-xs font-medium bg-cerberus-primary
+                                                   text-white hover:bg-cerberus-primary/90 transition">
+                                            Listo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    {{-- Fila 1: buscador + toggle vista (B1 + B2) --}}
                     <div class="flex gap-2 items-center">
                         <div class="relative flex-1">
                             <span class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -279,7 +499,7 @@
             </div>
 
             {{-- Carrito derecho --}}
-            <div class="w-80 flex-shrink-0 sticky top-20 space-y-3">
+            <div class="w-full lg:w-80 lg:flex-shrink-0 lg:sticky lg:top-20 space-y-3">
 
                 <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-4">
                     <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-cerberus-steel mb-2">Prestando a</p>
