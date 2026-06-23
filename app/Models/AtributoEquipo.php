@@ -22,6 +22,7 @@ class AtributoEquipo extends Model
         'requerido',
         'filtrable',
         'visible_en_tabla',
+        'ver_en_reporte',
         'orden',
         'opciones',    // JSON — solo aplica cuando tipo = 'select'
         'sub_campos',  // JSON — solo aplica cuando tipo = 'group'
@@ -31,6 +32,7 @@ class AtributoEquipo extends Model
         'requerido'        => 'boolean',
         'filtrable'        => 'boolean',
         'visible_en_tabla' => 'boolean',
+        'ver_en_reporte'   => 'boolean',
         'orden'            => 'integer',
         'opciones'         => 'array',
         'sub_campos'       => 'array',
@@ -96,8 +98,11 @@ class AtributoEquipo extends Model
     /** Atributos que aparecen en los filtros de la tabla de equipos */
     public function scopeFiltrables($query)
     {
-        // Los atributos tipo 'file' NUNCA son filtrables (no tiene sentido buscar por path)
-        return $query->where('filtrable', true)->where('tipo', '!=', self::TIPO_FILE);
+        // Los atributos tipo 'file' NUNCA son filtrables (no tiene sentido buscar por path).
+        // Los tipo 'group' sí pueden marcarse filtrables: se filtran por sus sub-campos,
+        // contra equipo_atributo_grupo_instancias (ver EquiposTable::render()).
+        return $query->where('filtrable', true)
+            ->where('tipo', '!=', self::TIPO_FILE);
     }
 
     /** Atributos que se muestran como columna en el listado de equipos */
@@ -110,6 +115,12 @@ class AtributoEquipo extends Model
     public function scopeRequeridos($query)
     {
         return $query->where('requerido', true);
+    }
+
+    /** Atributos que se incluyen en las planillas/reportes descargables */
+    public function scopeVerEnReporte($query)
+    {
+        return $query->where('ver_en_reporte', true);
     }
 
     /** Atributos de tipo select (tienen opciones JSON) */

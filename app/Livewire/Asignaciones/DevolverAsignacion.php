@@ -142,9 +142,14 @@ class DevolverAsignacion extends Component
 
         try {
             DB::transaction(function () {
+                // Periféricos primero: si el principal se procesa antes, su
+                // registrarDevolucion() promovería al periférico aún activo
+                // (equipo_padre_id = null) antes de registrar su propia
+                // devolución, perdiendo la marca de periférico.
                 $items = AsignacionItem::whereIn('id', $this->seleccionados)
                     ->where('asignacion_id', $this->asignacionId)
                     ->where('devuelto', false)
+                    ->orderByRaw('equipo_padre_id IS NULL')
                     ->get();
 
                 foreach ($items as $item) {

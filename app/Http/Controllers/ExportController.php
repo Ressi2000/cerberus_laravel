@@ -133,15 +133,12 @@ class ExportController extends Controller
             'ubicacion',
             'creadoPor',
             'atributosActuales.atributo',
+            'grupoInstancias.atributo',
         ])->visiblePara(Auth::user());
 
         // ── Filtros (los mismos que usa EquiposTable Livewire) ───────────────
         if ($request->search) {
             $query->where('codigo_interno', 'like', "%{$request->search}%");
-        }
-
-        if ($request->serial) {
-            $query->where('serial', 'like', "%{$request->serial}%");
         }
 
         if ($request->categoria_id) {
@@ -172,10 +169,27 @@ class ExportController extends Controller
             $query->where('fecha_garantia_fin', '<', now()->toDateString());
         }
 
-        // Filtros EAV dinámicos
+        // Filtros EAV dinámicos (atributos simples + sub-campos de grupo,
+        // mismo esquema de clave que EquiposTable::render())
         if ($request->filtros && is_array($request->filtros)) {
-            foreach ($request->filtros as $atributoId => $valor) {
+            foreach ($request->filtros as $clave => $valor) {
                 if ($valor === null || $valor === '') continue;
+
+                if (str_contains((string) $clave, '_sub_')) {
+                    [$atributoId, $subId] = array_pad(explode('_sub_', $clave, 2), 2, null);
+
+                    $query->whereExists(function ($sub) use ($atributoId, $subId, $valor) {
+                        $sub->selectRaw(1)
+                            ->from('equipo_atributo_grupo_instancias as egi')
+                            ->whereColumn('egi.equipo_id', 'equipos.id')
+                            ->where('egi.atributo_id', $atributoId)
+                            ->where("egi.valores->{$subId}", 'like', "%{$valor}%");
+                    });
+
+                    continue;
+                }
+
+                $atributoId = $clave;
 
                 $query->whereExists(function ($sub) use ($atributoId, $valor) {
                     $sub->selectRaw(1)

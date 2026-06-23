@@ -4,6 +4,8 @@ namespace App\Livewire\Prestamos;
 
 use App\Models\Prestamo;
 use App\Models\PrestamoItem;
+use App\Models\User;
+use App\Notifications\DevolucionPrestamoNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
@@ -112,9 +114,11 @@ class DevolverPrestamo extends Component
 
         try {
             DB::transaction(function () {
+                // Periféricos primero: ver nota equivalente en DevolverAsignacion.
                 $items = PrestamoItem::whereIn('id', $this->seleccionados)
                     ->where('prestamo_id', $this->prestamoId)
                     ->where('devuelto', false)
+                    ->orderByRaw('equipo_padre_id IS NULL')
                     ->get();
 
                 foreach ($items as $item) {
@@ -124,6 +128,17 @@ class DevolverPrestamo extends Component
 
             $cant = count($this->seleccionados);
             session()->flash('success', "Devolución registrada correctamente. {$cant} equipo(s) liberado(s).");
+
+            rescue(function () use ($cant) {
+                $prestamo = Prestamo::with(['empresa', 'usuario', 'areaEmpresa', 'areaDepartamento'])->find($this->prestamoId);
+                if (! $prestamo) return;
+                $notif = new DevolucionPrestamoNotification($prestamo, auth()->user(), $cant);
+                if ($prestamo->usuario_id) {
+                    $prestamo->usuario?->notify($notif);
+                }
+                User::role('Administrador')->each(fn ($admin) => $admin->notify($notif));
+            }, report: true);
+
             $this->redirect(route('admin.prestamos.index'), navigate: true);
 
         } catch (\Exception $e) {

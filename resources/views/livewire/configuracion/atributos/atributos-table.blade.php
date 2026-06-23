@@ -68,7 +68,7 @@
         </x-slot>
     </x-table.crud-header>
 
-    <x-table.crud-table :headers="['Categoría', 'Atributo', 'Tipo', 'Req.', 'Filtrable', 'En tabla', 'Orden', 'Acciones']" export exportRoute="export.atributos" :filters="$this->filterParams" :paginated="$atributos">
+    <x-table.crud-table :headers="['Categoría', 'Atributo', 'Tipo', 'Req.', 'Filtrable', 'En tabla', 'En reporte', 'Orden', 'Acciones']" export exportRoute="export.atributos" :filters="$this->filterParams" :paginated="$atributos">
 
         @forelse ($atributos as $atributo)
             <tr wire:key="attr-{{ $atributo->id }}"
@@ -135,7 +135,7 @@
                     </span>
                 </td>
 
-                @foreach (['requerido', 'filtrable', 'visible_en_tabla'] as $campo)
+                @foreach (['requerido', 'filtrable', 'visible_en_tabla', 'ver_en_reporte'] as $campo)
                     <td class="px-4 py-3 text-center">
                         @if ($atributo->$campo)
                             <span

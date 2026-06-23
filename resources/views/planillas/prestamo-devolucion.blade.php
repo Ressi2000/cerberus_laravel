@@ -11,129 +11,360 @@
     $areaDpto    = $prestamo->areaDepartamento;
     $areaResp    = $prestamo->areaResponsable;
 
-    $devueltos = $prestamo->itemsDevueltos;
-    $pendientes = $prestamo->items->where('devuelto', false);
+    $itemsDevueltos  = $prestamo->itemsDevueltos;
+    $itemsPendientes = $prestamo->items->filter(fn ($i) => ! $i->devuelto)->values();
 @endphp
 
 @section('contenido')
 
 <div class="doc-title">Constancia de Devolución de Préstamo</div>
+<div class="doc-divider"></div>
 
-{{-- ── RECEPTOR ─────────────────────────────────────────────────────────── --}}
-<div class="section">
-    <div class="section-title {{ $esArea ? 'area' : '' }}">Datos del Receptor</div>
-    <div class="fields-grid">
-        <div style="padding-bottom:5pt;">
-            <span class="receptor-badge {{ $esArea ? 'area' : 'usuario' }}">
-                {{ $esArea ? 'Préstamo a área común' : 'Préstamo personal' }}
-            </span>
-        </div>
-        <table class="fields-table">
-            @if (! $esArea)
-            <tr>
-                <td><div class="field-label">Nombre completo</div><div class="field-value">{{ strtoupper($receptor?->name ?? '—') }}</div></td>
-                <td><div class="field-label">Ficha</div><div class="field-value">{{ $receptor?->ficha ?? '—' }}</div></td>
-                <td><div class="field-label">Empresa (nómina)</div><div class="field-value">{{ strtoupper($receptor?->empresaNomina?->nombre ?? '—') }}</div></td>
-            </tr>
-            @else
-            <tr>
-                <td><div class="field-label">Área / Departamento</div><div class="field-value">{{ strtoupper($areaDpto?->nombre ?? '—') }}</div></td>
-                <td><div class="field-label">Empresa</div><div class="field-value">{{ strtoupper($areaEmpresa?->nombre ?? '—') }}</div></td>
-                <td><div class="field-label">Responsable</div><div class="field-value">{{ strtoupper($areaResp?->name ?? '—') }}</div></td>
-            </tr>
-            @endif
-            <tr>
-                <td><div class="field-label">Fecha de préstamo</div><div class="field-value">{{ $prestamo->fecha_prestamo?->format('d/m/Y') ?? '—' }}</div></td>
-                <td><div class="field-label">Fecha devolución real</div><div class="field-value">{{ $prestamo->fecha_devolucion_real?->format('d/m/Y') ?? now()->format('d/m/Y') }}</div></td>
-                <td><div class="field-label">Analista</div><div class="field-value">{{ strtoupper($prestamo->analista?->name ?? '—') }}</div></td>
-            </tr>
-        </table>
-    </div>
-</div>
+<table class="doc-meta-table">
+    <tr>
+        <td class="doc-meta-left">Uso: Préstamo de Activos Tecnológicos</td>
+        <td class="doc-meta-right">
+            Fecha de Devolución: <strong>{{ $prestamo->fecha_devolucion_real?->format('d/m/Y') ?? $fecha }}</strong>
+        </td>
+    </tr>
+</table>
 
-{{-- ── EQUIPOS DEVUELTOS ────────────────────────────────────────────────── --}}
-@if ($devueltos->isNotEmpty())
-<div class="equipos-section">
-    <table class="data-table">
-        <thead>
-            <tr class="thead-banner"><td colspan="6">Equipos Devueltos ({{ $devueltos->count() }})</td></tr>
-            <tr class="thead-cols">
-                <th style="width:12%">Código</th>
-                <th style="width:16%">Hostname</th>
-                <th style="width:13%">Categoría</th>
-                <th style="width:13%">Serial</th>
-                <th style="width:14%">Fecha devolución</th>
-                <th style="width:32%">Observaciones</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach ($devueltos as $index => $item)
-            @php
-                $eq       = $item->equipo;
-                $rowClass = $index % 2 === 0 ? 'tr-impar' : 'tr-par';
-                $esPerif  = $item->equipo_padre_id !== null;
-            @endphp
-            <tr class="{{ $rowClass }} {{ $esPerif ? 'tr-periferico' : 'equipo-group' }}">
-                <td class="{{ $esPerif ? '' : 'cod-interno' }}">
-                    @if ($esPerif)<span class="periferico-prefix">↳</span>@endif
-                    {{ $eq?->codigo_interno ?? '—' }}
-                </td>
-                <td>{{ $eq?->nombre_maquina ?? '—' }}</td>
-                <td>{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</td>
-                <td>{{ $eq?->serial ?? '—' }}</td>
-                <td>{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</td>
-                <td style="font-size:8pt;">{{ $item->observaciones_devolucion ?? '—' }}</td>
-            </tr>
-        @endforeach
-        </tbody>
+{{-- ══ DATOS DEL USUARIO / ÁREA ════════════════════════════════════════════ --}}
+
+@if (! $esArea)
+    <div class="section-title-plain devolucion">Datos del Receptor</div>
+    <table class="fields-table">
+        <tr>
+            <td>
+                <div class="field-label">Nombre completo</div>
+                <div class="field-value valor-clave">{{ $receptor?->name ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Ficha</div>
+                <div class="field-value">{{ $receptor?->ficha ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Empresa (nómina)</div>
+                <div class="field-value">{{ $receptor?->empresaNomina?->nombre ?? '—' }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Fecha de préstamo</div>
+                <div class="field-value">{{ $prestamo->fecha_prestamo?->format('d/m/Y') ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Fecha devolución real</div>
+                <div class="field-value">{{ $prestamo->fecha_devolucion_real?->format('d/m/Y') ?? $fecha }}</div>
+            </td>
+            <td>
+                <div class="field-label">Analista que recibe</div>
+                <div class="field-value">{{ $prestamo->analista?->name ?? '—' }}</div>
+            </td>
+        </tr>
     </table>
-</div>
+@else
+    <div class="section-title-plain area">Datos del Área</div>
+    <table class="fields-table">
+        <tr>
+            <td>
+                <div class="field-label">Empresa del área</div>
+                <div class="field-value">{{ strtoupper($areaEmpresa?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Departamento / Área</div>
+                <div class="field-value valor-clave">{{ strtoupper($areaDpto?->nombre ?? '—') }}</div>
+            </td>
+            <td>
+                <div class="field-label">Responsable del área</div>
+                <div class="field-value valor-clave">{{ strtoupper($areaResp?->name ?? '—') }}</div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Fecha de préstamo</div>
+                <div class="field-value">{{ $prestamo->fecha_prestamo?->format('d/m/Y') ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Fecha devolución real</div>
+                <div class="field-value">{{ $prestamo->fecha_devolucion_real?->format('d/m/Y') ?? $fecha }}</div>
+            </td>
+            <td>
+                <div class="field-label">Analista que recibe</div>
+                <div class="field-value">{{ $prestamo->analista?->name ?? '—' }}</div>
+            </td>
+        </tr>
+    </table>
 @endif
 
-{{-- ── EQUIPOS PENDIENTES ───────────────────────────────────────────────── --}}
-@if ($pendientes->isNotEmpty())
-<div class="equipos-section" style="margin-top:10pt;">
-    <table class="data-table">
-        <thead>
-            <tr class="thead-banner" style="background:#FEF3C7; color:#92400E;">
-                <td colspan="4">Equipos Pendientes de Devolución ({{ $pendientes->count() }})</td>
+{{-- ══ EQUIPOS DEVUELTOS ════════════════════════════════════════════════════ --}}
+
+@php
+    $principalesDevueltos = $itemsDevueltos->filter(fn ($i) => $i->equipo_padre_id === null)->values();
+    $perifericosDevueltos = $itemsDevueltos->filter(fn ($i) => $i->equipo_padre_id !== null)->values();
+@endphp
+
+<div class="section-title-plain devolucion">
+    Equipos Devueltos
+    &nbsp;·&nbsp;
+    {{ $principalesDevueltos->count() }} {{ $principalesDevueltos->count() === 1 ? 'equipo' : 'equipos' }}
+</div>
+
+@forelse ($principalesDevueltos as $item)
+    @php
+        $eq        = $item->equipo;
+        $atributos = $eq?->atributosParaReporte() ?? collect();
+    @endphp
+
+    <table class="fields-table" style="margin-bottom: 6pt;">
+        <tr>
+            <td>
+                <div class="field-label">Código interno</div>
+                <div class="field-value valor-codigo">{{ $eq?->codigo_interno ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Categoría</div>
+                <div class="field-value">{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</div>
+            </td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>
+                <div class="field-label">Fecha de devolución</div>
+                <div class="field-value">{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</div>
+            </td>
+            <td>
+                <div class="field-label">Recibido por</div>
+                <div class="field-value">{{ $item->devueltoPor?->name ?? '—' }}</div>
+            </td>
+            <td></td>
+        </tr>
+        @if ($item->observaciones_devolucion)
+            <tr>
+                <td colspan="3">
+                    <div class="field-label">Observaciones de devolución</div>
+                    <div class="field-value">{{ $item->observaciones_devolucion }}</div>
+                </td>
             </tr>
-            <tr class="thead-cols">
-                <th style="width:15%">Código</th>
-                <th style="width:20%">Hostname</th>
-                <th style="width:15%">Categoría</th>
-                <th style="width:15%">Serial</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach ($pendientes as $index => $item)
-            @php $eq = $item->equipo; @endphp
-            <tr class="{{ $index % 2 === 0 ? 'tr-impar' : 'tr-par' }}">
-                <td>{{ $eq?->codigo_interno ?? '—' }}</td>
-                <td>{{ $eq?->nombre_maquina ?? '—' }}</td>
-                <td>{{ strtoupper($eq?->categoria?->nombre ?? '—') }}</td>
-                <td>{{ $eq?->serial ?? '—' }}</td>
+        @endif
+        @foreach ($atributos->chunk(3) as $fila)
+            <tr>
+                @foreach ($fila as $valor)
+                    <td>
+                        <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                        <div class="field-value">{{ $valor->valor }}</div>
+                    </td>
+                @endforeach
+                @for ($i = $fila->count(); $i < 3; $i++)
+                    <td></td>
+                @endfor
             </tr>
         @endforeach
-        </tbody>
     </table>
-</div>
+@empty
+    <p class="field-value">No hay equipos devueltos registrados.</p>
+@endforelse
+
+{{-- ══ PERIFÉRICOS DEVUELTOS ═══════════════════════════════════════════════ --}}
+
+@if ($perifericosDevueltos->isNotEmpty())
+    <div class="section-title-plain">
+        Periféricos Devueltos &nbsp;·&nbsp; {{ $perifericosDevueltos->count() }}
+    </div>
+
+    @foreach ($perifericosDevueltos as $item)
+        @php
+            $eqPer        = $item->equipo;
+            $atributosPer = $eqPer?->atributosParaReporte() ?? collect();
+        @endphp
+
+        <table class="fields-table" style="margin-bottom: 6pt;">
+            <tr>
+                <td>
+                    <div class="field-label">Código interno</div>
+                    <div class="field-value valor-codigo">{{ $eqPer?->codigo_interno ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Categoría</div>
+                    <div class="field-value">{{ strtoupper($eqPer?->categoria?->nombre ?? '—') }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Pertenece a</div>
+                    <div class="field-value valor-referencia">» {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-label">Fecha de devolución</div>
+                    <div class="field-value">{{ $item->fecha_devolucion?->format('d/m/Y') ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Recibido por</div>
+                    <div class="field-value">{{ $item->devueltoPor?->name ?? '—' }}</div>
+                </td>
+                <td></td>
+            </tr>
+            @if ($item->observaciones_devolucion)
+                <tr>
+                    <td colspan="3">
+                        <div class="field-label">Observaciones de devolución</div>
+                        <div class="field-value">{{ $item->observaciones_devolucion }}</div>
+                    </td>
+                </tr>
+            @endif
+            @foreach ($atributosPer->chunk(3) as $fila)
+                <tr>
+                    @foreach ($fila as $valor)
+                        <td>
+                            <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                            <div class="field-value">{{ $valor->valor }}</div>
+                        </td>
+                    @endforeach
+                    @for ($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
+    @endforeach
+@endif
+
+{{-- ══ PENDIENTES (si quedan) ══════════════════════════════════════════════ --}}
+
+@php
+    $principalesPendientes = $itemsPendientes->filter(fn ($i) => $i->equipo_padre_id === null)->values();
+    $perifericosPendientes = $itemsPendientes->filter(fn ($i) => $i->equipo_padre_id !== null)->values();
+@endphp
+
+@if ($principalesPendientes->isNotEmpty())
+    <div class="section-title-plain" style="background:#7F1D1D;border-left-color:#FCA5A5;">
+        Equipos Pendientes de Devolución &nbsp;·&nbsp; {{ $principalesPendientes->count() }}
+    </div>
+
+    @foreach ($principalesPendientes as $item)
+        @php
+            $eqPend        = $item->equipo;
+            $atributosPend = $eqPend?->atributosParaReporte() ?? collect();
+        @endphp
+        <table class="fields-table" style="margin-bottom: 6pt;">
+            <tr>
+                <td>
+                    <div class="field-label">Código interno</div>
+                    <div class="field-value valor-codigo" style="background:#7F1D1D;">{{ $eqPend?->codigo_interno ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Categoría</div>
+                    <div class="field-value">{{ strtoupper($eqPend?->categoria?->nombre ?? '—') }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Estado</div>
+                    <div class="field-value"><span class="badge badge-pendiente">Pendiente</span></div>
+                </td>
+            </tr>
+            @foreach ($atributosPend->chunk(3) as $fila)
+                <tr>
+                    @foreach ($fila as $valor)
+                        <td>
+                            <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                            <div class="field-value">{{ $valor->valor }}</div>
+                        </td>
+                    @endforeach
+                    @for ($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
+    @endforeach
+@endif
+
+{{-- ══ PERIFÉRICOS PENDIENTES ═══════════════════════════════════════════════ --}}
+
+@if ($perifericosPendientes->isNotEmpty())
+    <div class="section-title-plain" style="background:#7F1D1D;border-left-color:#FCA5A5;">
+        Periféricos Pendientes de Devolución &nbsp;·&nbsp; {{ $perifericosPendientes->count() }}
+    </div>
+
+    @foreach ($perifericosPendientes as $item)
+        @php
+            $eqPerPend        = $item->equipo;
+            $atributosPerPend = $eqPerPend?->atributosParaReporte() ?? collect();
+        @endphp
+        <table class="fields-table" style="margin-bottom: 6pt;">
+            <tr>
+                <td>
+                    <div class="field-label">Código interno</div>
+                    <div class="field-value valor-codigo" style="background:#7F1D1D;">{{ $eqPerPend?->codigo_interno ?? '—' }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Categoría</div>
+                    <div class="field-value">{{ strtoupper($eqPerPend?->categoria?->nombre ?? '—') }}</div>
+                </td>
+                <td>
+                    <div class="field-label">Pertenece a</div>
+                    <div class="field-value valor-referencia">» {{ $item->padre?->equipo?->codigo_interno ?? '—' }}</div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <div class="field-label">Estado</div>
+                    <div class="field-value"><span class="badge badge-pendiente">Pendiente</span></div>
+                </td>
+                <td colspan="2"></td>
+            </tr>
+            @foreach ($atributosPerPend->chunk(3) as $fila)
+                <tr>
+                    @foreach ($fila as $valor)
+                        <td>
+                            <div class="field-label">{{ $valor->atributo?->nombre }}</div>
+                            <div class="field-value">{{ $valor->valor }}</div>
+                        </td>
+                    @endforeach
+                    @for ($i = $fila->count(); $i < 3; $i++)
+                        <td></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
+    @endforeach
+@endif
+
+@if ($prestamo->observaciones)
+    <div class="obs-box">
+        <div class="obs-label">Observaciones</div>
+        {{ $prestamo->observaciones }}
+    </div>
 @endif
 
 @endsection
 
 @section('firmas')
-    <td class="firma-cell">
-        <div class="firma-espacio"></div>
-        <div class="firma-linea"></div>
-        <div class="firma-nombre">{{ strtoupper($prestamo->analista?->name ?? 'Analista') }}</div>
-        <div class="firma-cargo">Técnico / Analista</div>
-    </td>
-    <td class="firma-cell">
-        <div class="firma-espacio"></div>
-        <div class="firma-linea"></div>
-        <div class="firma-nombre">{{ strtoupper($esArea ? ($areaResp?->name ?? 'Responsable') : ($receptor?->name ?? 'Receptor')) }}</div>
-        <div class="firma-cargo">{{ $esArea ? 'Responsable del área' : 'Trabajador receptor' }}</div>
-    </td>
-    <td class="firma-cell"></td>
+    @if (! $esArea)
+        <div class="firma-cell">
+            <div class="firma-espacio"></div>
+            <div class="firma-linea"></div>
+            <div class="firma-nombre">{{ $prestamo->analista?->name ?? 'Analista' }}</div>
+            <div class="firma-cargo">Técnico que recibe</div>
+        </div>
+        <div class="firma-cell">
+            <div class="firma-espacio"></div>
+            <div class="firma-linea"></div>
+            <div class="firma-nombre">{{ $receptor?->name ?? 'Trabajador' }}</div>
+            <div class="firma-cargo">Trabajador que entrega</div>
+        </div>
+    @else
+        <div class="firma-cell">
+            <div class="firma-espacio"></div>
+            <div class="firma-linea"></div>
+            <div class="firma-nombre">{{ $prestamo->analista?->name ?? 'Analista' }}</div>
+            <div class="firma-cargo">Técnico que recibe</div>
+        </div>
+        <div class="firma-cell">
+            <div class="firma-espacio"></div>
+            <div class="firma-linea"></div>
+            <div class="firma-nombre">{{ strtoupper($areaResp?->name ?? 'Responsable') }}</div>
+            <div class="firma-cargo">Responsable del área</div>
+        </div>
+        <div class="firma-cell"></div>
+    @endif
 @endsection

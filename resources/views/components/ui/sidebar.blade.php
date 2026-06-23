@@ -208,7 +208,7 @@
         </div>
 
         {{-- ── EQUIPOS (colapsable) ────────────────────────────────────────── --}}
-        @php $eqOpen = $active('admin.equipos.*'); @endphp
+        @php $eqOpen = $active('admin.equipos.*') || $active('admin.asignaciones.*'); @endphp
 
         <div x-data="{ open: {{ $eqOpen ? 'true' : 'false' }} }">
 
@@ -261,6 +261,15 @@
                         swap_horiz
                     </span>
                     <span class="whitespace-nowrap">Préstamos</span>
+                </a>
+
+                <a href="{{ route('admin.asignaciones.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.asignaciones.*') ? $on : $off }}"
+                    title="Asignaciones">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.asignaciones.*') ? $ion : $ioff }}">
+                        assignment
+                    </span>
+                    <span class="whitespace-nowrap">Asignaciones</span>
                 </a>
 
                 <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
@@ -329,16 +338,6 @@
             </span>
 
             @include('components.ui._sidebar-tooltip', ['label' => 'Auditoría'])
-        </a>
-
-        @php $asigOpen = $active('admin.asignaciones.*'); @endphp
-
-        <a href="{{ route('admin.asignaciones.index') }}" class="{{ $li }} {{ $asigOpen ? $on : $off }}">
-            <span
-                class="material-icons text-xl flex-shrink-0
-                  {{ $asigOpen ? $ion : $ioff }}">assignment</span>
-            <span class="sidebar-label text-sm font-medium whitespace-nowrap">Asignaciones</span>
-            @include('components.ui._sidebar-tooltip', ['label' => 'Asignaciones'])
         </a>
 
         @php $traslOpen = $active('admin.traslados.*'); @endphp

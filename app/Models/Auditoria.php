@@ -21,6 +21,10 @@ class Auditoria extends Model
         'created_at'
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime',
+    ];
+
     protected $ignoredAuditFields = [
         'id',
         'created_at',

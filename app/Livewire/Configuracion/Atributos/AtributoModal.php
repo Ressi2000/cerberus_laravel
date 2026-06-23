@@ -19,6 +19,7 @@ class AtributoModal extends Component
     public bool   $requerido        = false;
     public bool   $filtrable        = false;
     public bool   $visible_en_tabla = false;
+    public bool   $ver_en_reporte   = false;
     public int    $orden            = 0;
     public array  $opciones         = [];   // [['id'=>uuid, 'valor'=>'...'], ...] — solo tipo 'select'
     public array  $subCampos        = [];   // solo tipo 'group'
@@ -50,7 +51,7 @@ class AtributoModal extends Component
     {
         $this->reset([
             'atributoId', 'nombre', 'requerido', 'filtrable',
-            'visible_en_tabla', 'opciones', 'subCampos',
+            'visible_en_tabla', 'ver_en_reporte', 'opciones', 'subCampos',
         ]);
         $this->tipo         = 'string';
         $this->orden        = 0;
@@ -70,6 +71,7 @@ class AtributoModal extends Component
         $this->requerido        = (bool) $a->requerido;
         $this->filtrable        = (bool) $a->filtrable;
         $this->visible_en_tabla = (bool) $a->visible_en_tabla;
+        $this->ver_en_reporte   = (bool) $a->ver_en_reporte;
         $this->orden            = (int) $a->orden;
 
         // Opciones del tipo 'select'
@@ -151,6 +153,7 @@ class AtributoModal extends Component
             'requerido'        => 'boolean',
             'filtrable'        => 'boolean',
             'visible_en_tabla' => 'boolean',
+            'ver_en_reporte'   => 'boolean',
             'orden'            => 'integer|min:0',
         ];
 
@@ -226,6 +229,7 @@ class AtributoModal extends Component
                 'requerido'        => $this->requerido,
                 'filtrable'        => $this->filtrable,
                 'visible_en_tabla' => $this->visible_en_tabla,
+                'ver_en_reporte'   => $this->ver_en_reporte,
                 'orden'            => $this->orden,
                 'opciones'         => $opcionesJson,
                 'sub_campos'       => $subCamposJson,
@@ -269,7 +273,7 @@ class AtributoModal extends Component
         $this->open = false;
         $this->reset([
             'atributoId', 'categoria_id', 'nombre', 'tipo',
-            'requerido', 'filtrable', 'visible_en_tabla', 'orden',
+            'requerido', 'filtrable', 'visible_en_tabla', 'ver_en_reporte', 'orden',
             'opciones', 'subCampos',
         ]);
         $this->tipo = 'string';

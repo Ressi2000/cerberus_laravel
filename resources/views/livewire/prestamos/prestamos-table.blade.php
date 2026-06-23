@@ -2,6 +2,8 @@
 
     {{-- ── Modales ─────────────────────────────────────────────────────────── --}}
     @livewire('prestamos.renovar-prestamo')
+    @livewire('prestamos.prestamo-view-modal')
+    @livewire('prestamos.prestamo-area-view-modal')
 
     {{-- ── Stats ───────────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -170,51 +172,45 @@
                                 ->whereIn('estado', ['Activo', 'Vencido'])
                                 ->orderByDesc('fecha_prestamo')
                                 ->get();
-                            $prestamoActivo = $prestamosActivos->first();
                         @endphp
                         <x-table.table-actions :modelId="$usuario->id">
                             <x-slot name="acciones">
+                                <li>
+                                    <button wire:click="$dispatch('openPrestamoView', { userId: {{ $usuario->id }} })"
+                                            @click="close()"
+                                            class="flex items-center gap-3 px-4 py-2.5 w-full text-left
+                                                   text-gray-600 dark:text-cerberus-light
+                                                   hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                                   hover:text-[#1E40AF] dark:hover:text-white
+                                                   transition-colors duration-100">
+                                        <span class="material-icons text-base text-[#1E40AF]/70 dark:text-cerberus-accent">visibility</span>
+                                        Ver detalles
+                                    </button>
+                                </li>
+                                <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
+                                <li>
+                                    <a href="{{ route('admin.prestamos.historial', $usuario) }}"
+                                       wire:navigate @click="close()"
+                                       class="flex items-center gap-3 px-4 py-2.5 w-full
+                                              text-gray-600 dark:text-cerberus-light
+                                              hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                              hover:text-purple-600 dark:hover:text-purple-400
+                                              transition-colors duration-100">
+                                        <span class="material-icons text-base text-purple-500">history</span>
+                                        Historial completo
+                                    </a>
+                                </li>
                                 @if ($prestamosActivos->isNotEmpty())
-                                    @foreach ($prestamosActivos as $p)
-                                        <li>
-                                            <a href="{{ route('admin.prestamos.devolver', $p) }}"
-                                               wire:navigate @click="close()"
-                                               class="flex items-center gap-3 px-4 py-2.5 w-full
-                                                      text-gray-600 dark:text-cerberus-light
-                                                      hover:bg-amber-50 dark:hover:bg-amber-500/10
-                                                      hover:text-amber-600 dark:hover:text-amber-400
-                                                      transition-colors duration-100">
-                                                <span class="material-icons text-base text-amber-500">keyboard_return</span>
-                                                Devolver préstamo
-                                                @if ($prestamosActivos->count() > 1)
-                                                    <span class="ml-auto text-xs text-gray-400">{{ \Carbon\Carbon::parse($p->fecha_prestamo)->format('d/m/Y') }}</span>
-                                                @endif
-                                            </a>
-                                        </li>
-                                    @endforeach
-                                    <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
                                     <li>
-                                        <button wire:click="$dispatch('abrir-renovar', { prestamoId: {{ $prestamoActivo->id }} })"
-                                                @click="close()"
-                                                class="flex items-center gap-3 px-4 py-2.5 w-full text-left
-                                                       text-gray-600 dark:text-cerberus-light
-                                                       hover:bg-blue-50 dark:hover:bg-blue-500/10
-                                                       hover:text-blue-600 dark:hover:text-blue-400
-                                                       transition-colors duration-100">
-                                            <span class="material-icons text-base text-blue-500">event</span>
-                                            Renovar préstamo
-                                        </button>
-                                    </li>
-                                    <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
-                                    <li>
-                                        <a href="{{ route('admin.prestamos.planilla.prestamo', $prestamoActivo) }}"
-                                           target="_blank" @click="close()"
+                                        <a href="{{ route('admin.prestamos.devolver.usuario', $usuario) }}"
+                                           wire:navigate @click="close()"
                                            class="flex items-center gap-3 px-4 py-2.5 w-full
                                                   text-gray-600 dark:text-cerberus-light
-                                                  hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                                  hover:bg-amber-50 dark:hover:bg-amber-500/10
+                                                  hover:text-amber-600 dark:hover:text-amber-400
                                                   transition-colors duration-100">
-                                            <span class="material-icons text-base text-cerberus-accent">download</span>
-                                            Planilla de préstamo
+                                            <span class="material-icons text-base text-amber-500">keyboard_return</span>
+                                            Devolver todos los equipos
                                         </a>
                                     </li>
                                 @else
@@ -304,6 +300,18 @@
                         <x-table.table-actions :modelId="$prestamo->id">
                             <x-slot name="acciones">
                                 <li>
+                                    <button wire:click="$dispatch('openPrestamoAreaView', { id: {{ $prestamo->id }} })"
+                                            @click="close()"
+                                            class="flex items-center gap-3 px-4 py-2.5 w-full text-left
+                                                   text-gray-600 dark:text-cerberus-light
+                                                   hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                                   transition-colors duration-100">
+                                        <span class="material-icons text-base text-[#1E40AF] dark:text-cerberus-accent">visibility</span>
+                                        Ver detalle
+                                    </button>
+                                </li>
+                                <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
+                                <li>
                                     <a href="{{ route('admin.prestamos.devolver', $prestamo) }}"
                                        wire:navigate @click="close()"
                                        class="flex items-center gap-3 px-4 py-2.5 w-full
@@ -313,31 +321,6 @@
                                               transition-colors duration-100">
                                         <span class="material-icons text-base text-amber-500">keyboard_return</span>
                                         Registrar devolución
-                                    </a>
-                                </li>
-                                <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
-                                <li>
-                                    <button wire:click="$dispatch('abrir-renovar', { prestamoId: {{ $prestamo->id }} })"
-                                            @click="close()"
-                                            class="flex items-center gap-3 px-4 py-2.5 w-full text-left
-                                                   text-gray-600 dark:text-cerberus-light
-                                                   hover:bg-blue-50 dark:hover:bg-blue-500/10
-                                                   hover:text-blue-600 dark:hover:text-blue-400
-                                                   transition-colors duration-100">
-                                        <span class="material-icons text-base text-blue-500">event</span>
-                                        Renovar préstamo
-                                    </button>
-                                </li>
-                                <li><div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div></li>
-                                <li>
-                                    <a href="{{ route('admin.prestamos.planilla.prestamo', $prestamo) }}"
-                                       target="_blank" @click="close()"
-                                       class="flex items-center gap-3 px-4 py-2.5 w-full
-                                              text-gray-600 dark:text-cerberus-light
-                                              hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
-                                              transition-colors duration-100">
-                                        <span class="material-icons text-base text-cerberus-accent">download</span>
-                                        Planilla de préstamo
                                     </a>
                                 </li>
                             </x-slot>

@@ -102,7 +102,30 @@
                         </p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4">
                             @foreach ($this->atributosFiltrables as $atributo)
-                                @if ($atributo->tipo === 'boolean')
+                                @if ($atributo->tipo === 'group')
+                                    {{-- Un filtro por cada sub-campo del grupo --}}
+                                    @foreach ($atributo->sub_campos ?? [] as $sub)
+                                        @php $clave = "{$atributo->id}_sub_{$sub['id']}" @endphp
+                                        @if ($sub['tipo'] === 'boolean')
+                                            <x-form.select
+                                                :label="$atributo->nombre . ' — ' . $sub['nombre']"
+                                                :options="['1' => 'Sí', '0' => 'No']"
+                                                wire:model.live="filtros.{{ $clave }}"
+                                            />
+                                        @elseif ($sub['tipo'] === 'select')
+                                            <x-form.select
+                                                :label="$atributo->nombre . ' — ' . $sub['nombre']"
+                                                :options="collect($sub['opciones'] ?? [])->mapWithKeys(fn($v) => [$v => $v])->toArray()"
+                                                wire:model.live="filtros.{{ $clave }}"
+                                            />
+                                        @else
+                                            <x-form.input
+                                                :label="$atributo->nombre . ' — ' . $sub['nombre']"
+                                                wire:model.live.500ms="filtros.{{ $clave }}"
+                                            />
+                                        @endif
+                                    @endforeach
+                                @elseif ($atributo->tipo === 'boolean')
                                     <x-form.select
                                         :label="$atributo->nombre"
                                         :options="['1' => 'Sí', '0' => 'No']"
@@ -138,13 +161,13 @@
     <div wire:key="table-section-{{ $categoria_id }}"
          x-data="equiposColumnas(
              {{ $categoria_id ?: 'null' }},
-             @js($this->atributosVisibles->map(fn($a) => ['id' => $a->id, 'nombre' => $a->nombre])->values())
+             @js($this->columnasVisibles->map(fn($c) => ['key' => $c['key'], 'label' => $c['label']])->values())
          )"
          x-init="init()"
          class="space-y-3">
 
         {{-- Selector de columnas: solo aparece cuando la categoría tiene atributos visibles --}}
-        @if ($this->atributosVisibles->count())
+        @if ($this->columnasVisibles->count())
             <div class="flex justify-end">
                 <div class="relative" x-data="{ open: false }" @click.outside="open = false">
 
@@ -249,32 +272,38 @@
                     </td>
 
                     {{-- Columnas EAV dinámicas (solo cuando hay categoría seleccionada) --}}
-                    @foreach ($this->atributosVisibles as $attr)
-                        @php
-                            $val = $equipo->atributosActuales
-                                ->first(fn($v) => $v->atributo_id === $attr->id)
-                                ?->valor;
-                        @endphp
-                        <td x-show="columnas['attr_{{ $attr->id }}'] ?? true"
+                    @foreach ($this->columnasVisibles as $col)
+                        <td x-show="columnas['{{ $col['key'] }}'] ?? true"
                             class="px-4 py-3 text-cerberus-light text-sm">
-                            @if ($attr->tipo === 'group')
-                                @php $count = $equipo->grupoInstancias->where('atributo_id', $attr->id)->count(); @endphp
-                                @if ($count > 0)
-                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
-                                                 bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-400
-                                                 border border-indigo-200 dark:border-indigo-500/30">
-                                        <span class="material-icons text-xs">layers</span>
-                                        {{ $count }}
-                                    </span>
-                                @else
-                                    —
-                                @endif
-                            @elseif ($attr->tipo === 'boolean')
-                                {{ $val !== null ? ($val ? 'Sí' : 'No') : '—' }}
-                            @elseif ($attr->tipo === 'date' && $val)
-                                {{ \Carbon\Carbon::parse($val)->format('d/m/Y') }}
+                            @if ($col['sub_id'])
+                                {{-- Sub-campo de un atributo tipo 'group': concatena el valor de cada instancia --}}
+                                @php
+                                    $valores = $equipo->grupoInstancias
+                                        ->where('atributo_id', $col['atributo_id'])
+                                        ->map(function ($inst) use ($col) {
+                                            $v = $inst->valores[$col['sub_id']] ?? null;
+                                            if ($col['tipo'] === 'boolean') {
+                                                return $v === null ? null : ($v ? 'Sí' : 'No');
+                                            }
+                                            return $v;
+                                        })
+                                        ->filter(fn($v) => $v !== null && $v !== '')
+                                        ->values();
+                                @endphp
+                                {{ $valores->isNotEmpty() ? $valores->implode(', ') : '—' }}
                             @else
-                                {{ $val ?? '—' }}
+                                @php
+                                    $val = $equipo->atributosActuales
+                                        ->first(fn($v) => $v->atributo_id === $col['atributo_id'])
+                                        ?->valor;
+                                @endphp
+                                @if ($col['tipo'] === 'boolean')
+                                    {{ $val !== null ? ($val ? 'Sí' : 'No') : '—' }}
+                                @elseif ($col['tipo'] === 'date' && $val)
+                                    {{ \Carbon\Carbon::parse($val)->format('d/m/Y') }}
+                                @else
+                                    {{ $val ?? '—' }}
+                                @endif
                             @endif
                         </td>
                     @endforeach
@@ -331,19 +360,19 @@
 
 @script
 <script>
-    window.equiposColumnas = function (categoriaId, atributos) {
+    window.equiposColumnas = function (categoriaId, columnas) {
         return {
             columnas: {},
 
             get columnLabels() {
                 const labels = {};
-                atributos.forEach(a => { labels['attr_' + a.id] = a.nombre; });
+                columnas.forEach(c => { labels[c.key] = c.label; });
                 return labels;
             },
 
             init() {
                 const defaults = {};
-                atributos.forEach(a => { defaults['attr_' + a.id] = true; });
+                columnas.forEach(c => { defaults[c.key] = true; });
 
                 if (categoriaId) {
                     const saved = localStorage.getItem('cerberus_equipos_columnas_' + categoriaId);
