@@ -196,6 +196,10 @@
                             html5Qr: null,
                             ultimoValor: null,
                             ultimoTiempo: 0,
+                            toastVisible: false,
+                            toastOk: true,
+                            toastMensaje: '',
+                            toastTimeout: null,
 
                             playBeep(ok) {
                                 try {
@@ -270,21 +274,30 @@
                                 }
                             },
 
-                            // Se detectó un código: apagamos la cámara y cerramos el modal ANTES de llamar
-                            // a Livewire. Si la dejáramos prendida durante el round-trip, el morphing del
-                            // DOM puede recrear el <video> y quedarse con el stream colgado en negro.
+                            // La cámara se queda abierta entre escaneos para permitir escanear varios
+                            // equipos seguidos. El modal tiene wire:ignore, asi que el morphing de
+                            // Livewire nunca toca el video y el stream no se cuelga.
                             onDetectado(valor) {
                                 const ahora = Date.now();
                                 if (valor === this.ultimoValor && (ahora - this.ultimoTiempo) < 1500) return;
                                 this.ultimoValor = valor;
                                 this.ultimoTiempo = ahora;
-                                this.cerrarCamara();
                                 this.$wire.procesarEscaneoCamara(valor);
+                            },
+
+                            mostrarToast(ok, mensaje) {
+                                this.toastOk = ok;
+                                this.toastMensaje = mensaje;
+                                this.toastVisible = true;
+                                clearTimeout(this.toastTimeout);
+                                this.toastTimeout = setTimeout(() => { this.toastVisible = false; }, 1800);
                             },
 
                             cerrarCamara() {
                                 this.camaraAbierta = false;
                                 this.errorCamara = '';
+                                this.toastVisible = false;
+                                clearTimeout(this.toastTimeout);
                                 if (this.detectorInterval) { clearInterval(this.detectorInterval); this.detectorInterval = null; }
                                 if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
                                 if (this.html5Qr) { this.html5Qr.stop().catch(() => {}).then(() => this.html5Qr?.clear()); this.html5Qr = null; }
@@ -293,7 +306,8 @@
                         x-init="
                             $wire.on('equipo-escaneado', (e) => {
                                 playBeep(e.ok);
-                                $refs.inputEscaneo.focus();
+                                mostrarToast(e.ok, e.mensaje);
+                                if (! camaraAbierta) $refs.inputEscaneo.focus();
                             });
                             $refs.inputEscaneo.focus();
                         ">
@@ -319,8 +333,10 @@
                             </button>
                         </div>
 
-                        {{-- Modal de escaneo por cámara --}}
-                        <div x-show="camaraAbierta" x-cloak x-on:keydown.escape.window="cerrarCamara()"
+                        {{-- Modal de escaneo por cámara. wire:ignore evita que el morphing de Livewire
+                             toque este subárbol entre escaneos, así el <video> y su stream se mantienen
+                             vivos y se pueden escanear varios equipos seguidos sin reabrir la cámara. --}}
+                        <div wire:ignore x-show="camaraAbierta" x-cloak x-on:keydown.escape.window="cerrarCamara()"
                             x-on:click.self="cerrarCamara()"
                             class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
                             <div x-on:click.stop
@@ -347,17 +363,24 @@
                                         class="w-full h-full object-cover"></video>
                                     <div id="camara-fallback" x-show="usandoFallback" class="w-full h-full"></div>
                                     <div class="absolute inset-0 m-8 border-2 border-white/70 rounded-lg pointer-events-none"></div>
+
+                                    {{-- Toast de confirmación tras cada escaneo, sin cerrar la cámara --}}
+                                    <div x-show="toastVisible" x-cloak x-transition.opacity
+                                        class="absolute bottom-3 left-3 right-3 rounded-lg px-3 py-2 text-xs font-semibold text-center text-white"
+                                        :class="toastOk ? 'bg-green-600/90' : 'bg-red-600/90'"
+                                        x-text="toastMensaje"></div>
                                 </div>
 
                                 <div class="px-4 py-3 space-y-2">
                                     <p class="text-xs text-gray-400 dark:text-cerberus-steel text-center">
-                                        Apunta el código de barras o QR del equipo hacia el centro.
+                                        Apunta el código de barras o QR del equipo hacia el centro. Puedes escanear
+                                        varios equipos seguidos sin cerrar la cámara.
                                     </p>
                                     <p x-show="errorCamara" x-text="errorCamara" class="text-xs text-red-500 text-center"></p>
                                     <button type="button" x-on:click="cerrarCamara()"
-                                        class="w-full py-2 rounded-lg text-xs font-medium border border-gray-200 dark:border-cerberus-steel/50
-                                               text-gray-500 dark:text-cerberus-light hover:bg-gray-50 dark:hover:bg-cerberus-steel/10 transition">
-                                        Cancelar
+                                        class="w-full py-2 rounded-lg text-xs font-medium bg-cerberus-primary
+                                               text-white hover:bg-cerberus-primary/90 transition">
+                                        Listo
                                     </button>
                                 </div>
                             </div>

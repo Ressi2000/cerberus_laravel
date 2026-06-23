@@ -362,21 +362,30 @@ class CrearAsignacion extends Component
         $equipoId = $this->idEquipoDesdeCodigo($valor);
 
         if (! $equipoId) {
-            $this->addError('carrito', 'Código escaneado no reconocido.');
-            $this->dispatch('equipo-escaneado', ok: false);
+            $mensaje = 'Código no reconocido.';
+            $this->addError('carrito', $mensaje);
+            $this->dispatch('equipo-escaneado', ok: false, mensaje: $mensaje);
             return;
         }
 
         if (collect($this->carrito)->contains('id', $equipoId)) {
-            $this->addError('carrito', 'Ese equipo ya está en el carrito.');
-            $this->dispatch('equipo-escaneado', ok: false);
+            $mensaje = 'Ese equipo ya está en el carrito.';
+            $this->addError('carrito', $mensaje);
+            $this->dispatch('equipo-escaneado', ok: false, mensaje: $mensaje);
             return;
         }
 
         $totalAntes = count($this->carrito);
         $this->agregarAlCarrito($equipoId);
 
-        $this->dispatch('equipo-escaneado', ok: count($this->carrito) > $totalAntes);
+        if (count($this->carrito) > $totalAntes) {
+            $codigo = collect($this->carrito)->last()['codigo'] ?? '';
+            $this->dispatch('equipo-escaneado', ok: true, mensaje: "Agregado: {$codigo}");
+            return;
+        }
+
+        $mensaje = $this->getErrorBag()->first('carrito') ?: 'No se pudo agregar el equipo.';
+        $this->dispatch('equipo-escaneado', ok: false, mensaje: $mensaje);
     }
 
     // El código de barras codifica el id del equipo; el QR codifica la URL de su ficha
