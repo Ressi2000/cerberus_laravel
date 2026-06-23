@@ -272,7 +272,7 @@
 
                             // Se detectó un código: apagamos la cámara y cerramos el modal ANTES de llamar
                             // a Livewire. Si la dejáramos prendida durante el round-trip, el morphing del
-                            // DOM puede recrear el <video> y quedarse con el stream "colgado" en negro.
+                            // DOM puede recrear el <video> y quedarse con el stream colgado en negro.
                             onDetectado(valor) {
                                 const ahora = Date.now();
                                 if (valor === this.ultimoValor && (ahora - this.ultimoTiempo) < 1500) return;
