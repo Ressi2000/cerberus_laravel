@@ -244,6 +244,8 @@ class CrearEquipo extends Component
                                 'atributo_id' => $atributoId,
                                 'valores'     => $instancia,
                                 'orden'       => $orden++,
+                                'es_actual'   => true,
+                                'creado_por'  => Auth::id(),
                             ]);
                         }
                     } elseif ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {

@@ -14,11 +14,14 @@ class EquipoAtributoGrupoInstancia extends Model
         'atributo_id',
         'valores', // JSON: {sub_campo_id => valor}
         'orden',
+        'es_actual',
+        'creado_por',
     ];
 
     protected $casts = [
-        'valores' => 'array',
-        'orden'   => 'integer',
+        'valores'   => 'array',
+        'orden'     => 'integer',
+        'es_actual' => 'boolean',
     ];
 
     public function equipo(): BelongsTo
@@ -29,5 +32,10 @@ class EquipoAtributoGrupoInstancia extends Model
     public function atributo(): BelongsTo
     {
         return $this->belongsTo(AtributoEquipo::class, 'atributo_id');
+    }
+
+    public function usuario(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'creado_por');
     }
 }
