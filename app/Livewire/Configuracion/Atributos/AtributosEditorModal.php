@@ -121,6 +121,43 @@ class AtributosEditorModal extends Component
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // Reordenamiento automático al editar el campo "orden" de una fila
+    // ─────────────────────────────────────────────────────────────────────────
+    public function updated(string $name): void
+    {
+        if (preg_match('/^filas\.(\d+)\.orden$/', $name, $m)) {
+            $this->reordenarFilas((int) $m[1]);
+        }
+    }
+
+    /**
+     * Al cambiar manualmente el "orden" de una fila, la reubica en esa
+     * posición y renumera el resto de forma secuencial (1..N), para que el
+     * usuario no tenga que mantener a mano una secuencia consistente.
+     */
+    private function reordenarFilas(int $index): void
+    {
+        $filas = $this->filas;
+        if (! isset($filas[$index])) return;
+
+        $fila  = $filas[$index];
+        $total = count($filas);
+
+        $nuevaPosicion = max(1, min((int) $fila['orden'], $total));
+
+        unset($filas[$index]);
+        $filas = array_values($filas);
+        array_splice($filas, $nuevaPosicion - 1, 0, [$fila]);
+
+        foreach ($filas as $i => &$f) {
+            $f['orden'] = $i + 1;
+        }
+        unset($f);
+
+        $this->filas = $filas;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // Agregar fila vacía al final
     // ─────────────────────────────────────────────────────────────────────────
     public function agregarFila(): void
@@ -203,7 +240,7 @@ class AtributosEditorModal extends Component
             $tipos = implode(',', array_keys(AtributoEquipo::TIPOS));
             $rules["filas.{$i}.nombre"] = 'required|string|max:100';
             $rules["filas.{$i}.tipo"]   = "required|in:{$tipos}";
-            $rules["filas.{$i}.orden"]  = 'integer|min:0';
+            $rules["filas.{$i}.orden"]  = 'integer|min:1';
 
             if ($fila['tipo'] === 'select') {
                 $rules["filas.{$i}.opciones_raw"] = 'required|string';

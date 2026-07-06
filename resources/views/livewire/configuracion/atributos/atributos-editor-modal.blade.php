@@ -166,8 +166,8 @@
 
                                 {{-- Orden --}}
                                 <div>
-                                    <input wire:model="filas.{{ $i }}.orden"
-                                        type="number" min="0"
+                                    <input wire:model.blur="filas.{{ $i }}.orden"
+                                        type="number" min="1"
                                         {{ $fila['eliminar'] ? 'disabled' : '' }}
                                         class="w-full rounded-lg px-2 py-1.5 text-sm text-center
                                                bg-white dark:bg-cerberus-dark
@@ -388,6 +388,10 @@
                         <span class="flex items-center gap-1">
                             <span class="material-icons text-sm text-purple-500">table_chart</span>
                             Visible tabla
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <span class="material-icons text-sm text-amber-500">description</span>
+                            Ver en reporte
                         </span>
                         <span class="flex items-center gap-1">
                             <span class="material-icons text-sm text-amber-500">lock</span>
