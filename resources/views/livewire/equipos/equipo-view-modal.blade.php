@@ -205,77 +205,43 @@
                         @foreach ($equipo->grupoInstancias->groupBy('atributo_id') as $instancias)
                             @php $atributoGrupo = $instancias->first()->atributo @endphp
                             <div class="bg-cerberus-dark border border-cerberus-steel rounded-xl p-4">
-                                <h4 class="text-cerberus-accent font-semibold text-sm mb-3">
+                                <h4 class="text-cerberus-accent font-semibold text-sm mb-3 flex items-center gap-2">
                                     {{ $atributoGrupo?->nombre ?? 'Grupo eliminado' }}
+                                    <span class="text-xs text-cerberus-steel font-normal">
+                                        ({{ $instancias->count() }})
+                                    </span>
                                 </h4>
-                                <div class="space-y-3">
-                                    @foreach ($instancias->values() as $i => $instancia)
-                                        <div class="border border-cerberus-steel/50 rounded-lg p-3">
-                                            <p class="text-xs text-cerberus-steel mb-2">#{{ $i + 1 }}</p>
-                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-cerberus-light">
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-sm text-left whitespace-nowrap">
+                                        <thead>
+                                            <tr class="border-b border-cerberus-steel/50 text-xs text-cerberus-steel uppercase tracking-wide">
                                                 @foreach ($atributoGrupo?->sub_campos ?? [] as $sub)
-                                                    @php $valor = $instancia->valores[$sub['id']] ?? null @endphp
-                                                    <p>
-                                                        <span class="font-semibold text-white">{{ $sub['nombre'] }}:</span>
-                                                        @if ($valor === true || $valor === '1' || $valor === 1)
-                                                            Sí
-                                                        @elseif ($valor === false || $valor === '0' || $valor === 0)
-                                                            No
-                                                        @else
-                                                            {{ $valor ?? '—' }}
-                                                        @endif
-                                                    </p>
+                                                    <th class="py-1.5 pr-4 font-medium">{{ $sub['nombre'] }}</th>
                                                 @endforeach
-                                            </div>
-                                        </div>
-                                    @endforeach
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-cerberus-steel/20">
+                                            @foreach ($instancias->values() as $instancia)
+                                                <tr>
+                                                    @foreach ($atributoGrupo?->sub_campos ?? [] as $sub)
+                                                        @php $valor = $instancia->valores[$sub['id']] ?? null @endphp
+                                                        <td class="py-1.5 pr-4 text-cerberus-light">
+                                                            @if ($valor === true || $valor === '1' || $valor === 1)
+                                                                Sí
+                                                            @elseif ($valor === false || $valor === '0' || $valor === 0)
+                                                                No
+                                                            @else
+                                                                {{ $valor ?? '—' }}
+                                                            @endif
+                                                        </td>
+                                                    @endforeach
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         @endforeach
-                    @endif
-
-                    {{-- Historial de cambios EAV --}}
-                    @if (count($historial))
-                        <div class="bg-cerberus-dark border border-cerberus-steel rounded-xl p-4">
-                            <h4 class="text-cerberus-accent font-semibold text-sm mb-3 flex items-center gap-2">
-                                <span class="material-icons text-base">history</span>
-                                Historial de cambios
-                            </h4>
-
-                            <div class="space-y-3">
-                                @foreach ($historial as $nombreAtributo => $versiones)
-                                    @if (count($versiones) > 1)
-                                        {{-- Solo mostramos atributos que tienen más de 1 versión --}}
-                                        <div>
-                                            <p class="text-white text-xs font-semibold mb-1">
-                                                {{ $nombreAtributo }}
-                                            </p>
-                                            <div class="space-y-1 pl-3 border-l border-cerberus-steel/50">
-                                                @foreach ($versiones as $version)
-                                                    <div class="flex items-center gap-2 text-xs">
-                                                        <span @class([
-                                                            'w-1.5 h-1.5 rounded-full flex-shrink-0',
-                                                            'bg-cerberus-accent' => $version['es_actual'],
-                                                            'bg-cerberus-steel' => !$version['es_actual'],
-                                                        ])></span>
-                                                        <span @class([
-                                                            $version['es_actual']
-                                                                ? 'text-white font-medium'
-                                                                : 'text-cerberus-steel line-through',
-                                                        ])>
-                                                            {{ $version['valor'] }}
-                                                        </span>
-                                                        <span class="text-cerberus-steel ml-auto">
-                                                            {{ $version['fecha'] }} — {{ $version['usuario'] }}
-                                                        </span>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    @endif
-                                @endforeach
-                            </div>
-                        </div>
                     @endif
 
                     {{-- Registro --}}
@@ -299,12 +265,20 @@
                 <div
                     class="flex justify-between items-center px-6 py-4
                             border-t border-cerberus-steel flex-shrink-0">
-                    <a href="{{ route('admin.equipos.edit', $equipo) }}"
-                        class="px-4 py-2 text-sm bg-cerberus-primary hover:bg-cerberus-hover
-                               text-white rounded-lg transition flex items-center gap-1">
-                        <span class="material-icons text-sm">edit</span>
-                        Editar equipo
-                    </a>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ route('admin.equipos.edit', $equipo) }}"
+                            class="px-4 py-2 text-sm bg-cerberus-primary hover:bg-cerberus-hover
+                                   text-white rounded-lg transition flex items-center gap-1">
+                            <span class="material-icons text-sm">edit</span>
+                            Editar equipo
+                        </a>
+                        <a href="{{ route('admin.equipos.show', $equipo) }}" wire:navigate
+                            class="px-4 py-2 text-sm bg-cerberus-steel/30 hover:bg-cerberus-steel/50
+                                   text-white rounded-lg transition flex items-center gap-1">
+                            <span class="material-icons text-sm">history</span>
+                            Ver historial
+                        </a>
+                    </div>
                     <button wire:click="close"
                         class="px-5 py-2 text-sm bg-cerberus-steel/30 hover:bg-cerberus-steel/50
                                text-white rounded-lg transition">
