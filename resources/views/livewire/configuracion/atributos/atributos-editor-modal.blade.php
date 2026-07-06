@@ -166,8 +166,8 @@
 
                                 {{-- Orden --}}
                                 <div>
-                                    <input wire:model.blur="filas.{{ $i }}.orden"
-                                        type="number" min="1"
+                                    <input wire:model="filas.{{ $i }}.orden"
+                                        type="number" min="0"
                                         {{ $fila['eliminar'] ? 'disabled' : '' }}
                                         class="w-full rounded-lg px-2 py-1.5 text-sm text-center
                                                bg-white dark:bg-cerberus-dark
