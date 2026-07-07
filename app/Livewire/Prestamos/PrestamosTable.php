@@ -135,18 +135,24 @@ class PrestamosTable extends Component
     {
         $actor = Auth::user();
 
+        $filtroPrestamosActivos = function (Builder $q) use ($actor) {
+            $q->visiblePara($actor)
+              ->whereIn('estado', ['Activo', 'Vencido']);
+
+            if ($this->empresa_id)  $q->where('empresa_id',  $this->empresa_id);
+            if ($this->analista_id) $q->where('analista_id', $this->analista_id);
+            if ($this->fecha_desde) $q->whereDate('fecha_prestamo', '>=', $this->fecha_desde);
+            if ($this->fecha_hasta) $q->whereDate('fecha_prestamo', '<=', $this->fecha_hasta);
+        };
+
         $query = User::query()
             ->with(['cargo', 'empresaNomina', 'ubicacion'])
-            ->whereHas('prestamos', function (Builder $q) use ($actor) {
-                $q->visiblePara($actor)
-                  ->whereIn('estado', ['Activo', 'Vencido']);
-
-                if ($this->empresa_id)  $q->where('empresa_id',  $this->empresa_id);
-                if ($this->analista_id) $q->where('analista_id', $this->analista_id);
-                if ($this->fecha_desde) $q->whereDate('fecha_prestamo', '>=', $this->fecha_desde);
-                if ($this->fecha_hasta) $q->whereDate('fecha_prestamo', '<=', $this->fecha_hasta);
-            })
+            ->whereHas('prestamos', $filtroPrestamosActivos)
             ->withCount(['prestamoItemsActivos as equipos_prestados_count'])
+            ->withExists(['prestamos as tiene_prestamo_vencido' => function (Builder $q) use ($filtroPrestamosActivos) {
+                $filtroPrestamosActivos($q);
+                $q->where('estado', 'Vencido');
+            }])
             ->withMax(
                 ['prestamos as ultimo_prestamo' => fn ($q) => $q->visiblePara($actor)],
                 'fecha_prestamo'
