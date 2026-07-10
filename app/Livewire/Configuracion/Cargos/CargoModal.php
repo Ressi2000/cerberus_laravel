@@ -54,15 +54,30 @@ class CargoModal extends Component
 
     // ── Validación ────────────────────────────────────────────────────────────
 
+    /**
+     * El nombre es único por (empresa_id, departamento_id), no global — un
+     * mismo cargo (ej. "Pasante") puede repetirse en distintos departamentos
+     * o en distintas empresas, cada uno como una fila independiente.
+     */
     protected function rules(): array
     {
+        $empresaId      = $this->empresa_id      ?: null;
+        $departamentoId = $this->departamento_id ?: null;
+
+        $uniqueRule = Rule::unique('cargos', 'nombre')
+            ->where('activo', true)
+            ->where(function ($query) use ($empresaId, $departamentoId) {
+                $empresaId
+                    ? $query->where('empresa_id', $empresaId)
+                    : $query->whereNull('empresa_id');
+
+                $departamentoId
+                    ? $query->where('departamento_id', $departamentoId)
+                    : $query->whereNull('departamento_id');
+            });
+
         if ($this->cargoId) {
-            $uniqueRule = Rule::unique('cargos', 'nombre')
-                ->ignore($this->cargoId)
-                ->where('activo', true);
-        } else {
-            $uniqueRule = Rule::unique('cargos', 'nombre')
-                ->where('activo', true);
+            $uniqueRule->ignore($this->cargoId);
         }
 
         return [
@@ -76,7 +91,7 @@ class CargoModal extends Component
     {
         return [
             'nombre.required'          => 'El nombre es obligatorio.',
-            'nombre.unique'            => 'Ya existe un cargo activo con ese nombre.',
+            'nombre.unique'            => 'Ya existe un cargo activo con ese nombre en ese departamento.',
             'nombre.max'               => 'Máximo 255 caracteres.',
             'empresa_id.exists'        => 'La empresa seleccionada no es válida.',
             'departamento_id.required' => 'Debe seleccionar un departamento.',
@@ -128,9 +143,12 @@ class CargoModal extends Component
                 Cargo::findOrFail($this->cargoId)->update($data);
                 $msg = "Cargo «{$this->nombre}» actualizado.";
             } else {
-                // Verificar si existe inactivo con el mismo nombre
+                // Verificar si existe inactivo con el mismo nombre en la misma
+                // empresa/departamento (misma clave de unicidad que rules())
                 $inactivo = Cargo::where('nombre', trim($this->nombre))
                     ->where('activo', false)
+                    ->where('empresa_id', $this->empresa_id ?: null)
+                    ->where('departamento_id', $this->departamento_id ?: null)
                     ->first();
 
                 if ($inactivo) {

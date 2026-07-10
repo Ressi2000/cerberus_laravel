@@ -7,27 +7,33 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Agrega departamento_id y la FK de empresa_id a `cargos`.
+     *
+     * Antes esta migración volvía a hacer Schema::create('cargos', ...),
+     * duplicando la migración anterior (create_cargos_table de 2025-11-02)
+     * sin ningún drop entre medio — en un migrate desde cero fallaba con
+     * "table already exists". Se convierte en un alter idempotente.
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('cargos', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-            
-            // Relaciones
-            $table->foreignId('empresa_id')
-                  ->nullable()
-                  ->constrained('empresas')
-                  ->nullOnDelete();
-
-            $table->foreignId('departamento_id')
-                  ->nullable()
-                  ->constrained('departamentos')
-                  ->nullOnDelete();
-
-            $table->timestamps();
+        Schema::table('cargos', function (Blueprint $table) {
+            if (! Schema::hasColumn('cargos', 'departamento_id')) {
+                $table->foreignId('departamento_id')
+                    ->nullable()
+                    ->after('empresa_id')
+                    ->constrained('departamentos')
+                    ->nullOnDelete();
+            }
         });
+
+        // La migración original de 2025-11-02 crea empresa_id sin FK.
+        try {
+            Schema::table('cargos', function (Blueprint $table) {
+                $table->foreign('empresa_id')->references('id')->on('empresas')->nullOnDelete();
+            });
+        } catch (\Throwable $e) {
+            // La FK ya existe en este entorno (corrió antes de esta limpieza).
+        }
     }
 
     /**
@@ -35,6 +41,15 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cargos');
+        Schema::table('cargos', function (Blueprint $table) {
+            $table->dropForeign(['empresa_id']);
+        });
+
+        if (Schema::hasColumn('cargos', 'departamento_id')) {
+            Schema::table('cargos', function (Blueprint $table) {
+                $table->dropForeign(['departamento_id']);
+                $table->dropColumn('departamento_id');
+            });
+        }
     }
 };
