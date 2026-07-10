@@ -166,13 +166,20 @@ class EditarUsuario extends Component
             ->pluck('nombre', 'id');
     }
 
+    /**
+     * Cargos filtrados por departamento seleccionado, más los cargos
+     * transversales (sin departamento_id: aplican a todos).
+     */
     #[Computed]
     public function cargos()
     {
         if (! $this->departamento_id) return collect();
 
         return Cargo::where('activo', true)
-            ->where('departamento_id', $this->departamento_id)
+            ->where(function ($q) {
+                $q->where('departamento_id', $this->departamento_id)
+                  ->orWhereNull('departamento_id');
+            })
             ->where(function ($q) {
                 $q->whereNull('empresa_id');
                 if ($this->empresa_id) {

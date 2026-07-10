@@ -40,19 +40,17 @@
                         hint="Sin empresa = cargo global (visible en todas las empresas)."
                     />
 
-                    {{-- Departamento — reactivo según empresa --}}
+                    {{-- Departamento — reactivo según empresa. Opcional: sin departamento
+                         el cargo es transversal y aparece en todos al crear un usuario. --}}
                     <x-form.select
                         label="Departamento"
                         :options="$this->departamentos"
                         wire:model="departamento_id"
                         :error="$errors->first('departamento_id')"
-                        required
-                        :hint="! $empresa_id
-                            ? 'Mostrando departamentos globales. Selecciona una empresa para ver los suyos también.'
-                            : 'Departamentos globales + los de la empresa seleccionada.'"
+                        hint="Sin departamento, el cargo aparecerá disponible en todos los departamentos."
                     />
 
-                    {{-- Aviso global --}}
+                    {{-- Aviso global (empresa) --}}
                     @if (! $empresa_id)
                         <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
                                     bg-blue-50 dark:bg-cerberus-primary/10
@@ -62,6 +60,19 @@
                             Sin empresa asignada, este cargo será
                             <strong class="mx-0.5">global</strong>
                             y aparecerá en los selects de todas las empresas.
+                        </div>
+                    @endif
+
+                    {{-- Aviso departamento transversal --}}
+                    @if (! $departamento_id)
+                        <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
+                                    bg-amber-50 dark:bg-amber-500/10
+                                    border border-amber-200 dark:border-amber-500/30
+                                    text-amber-700 dark:text-amber-400">
+                            <span class="material-icons text-sm mt-0.5">info</span>
+                            Sin departamento asignado, este cargo será
+                            <strong class="mx-0.5">transversal</strong>
+                            y aparecerá disponible en todos los departamentos al crear un usuario.
                         </div>
                     @endif
 

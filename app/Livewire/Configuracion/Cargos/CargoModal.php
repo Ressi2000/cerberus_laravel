@@ -83,19 +83,18 @@ class CargoModal extends Component
         return [
             'nombre'          => ['required', 'string', 'max:255', $uniqueRule],
             'empresa_id'      => 'nullable|exists:empresas,id',
-            'departamento_id' => 'required|exists:departamentos,id',
+            'departamento_id' => 'nullable|exists:departamentos,id',
         ];
     }
 
     protected function messages(): array
     {
         return [
-            'nombre.required'          => 'El nombre es obligatorio.',
-            'nombre.unique'            => 'Ya existe un cargo activo con ese nombre en ese departamento.',
-            'nombre.max'               => 'Máximo 255 caracteres.',
-            'empresa_id.exists'        => 'La empresa seleccionada no es válida.',
-            'departamento_id.required' => 'Debe seleccionar un departamento.',
-            'departamento_id.exists'   => 'El departamento seleccionado no es válido.',
+            'nombre.required'        => 'El nombre es obligatorio.',
+            'nombre.unique'          => 'Ya existe un cargo activo con ese nombre en ese departamento.',
+            'nombre.max'             => 'Máximo 255 caracteres.',
+            'empresa_id.exists'      => 'La empresa seleccionada no es válida.',
+            'departamento_id.exists' => 'El departamento seleccionado no es válido.',
         ];
     }
 

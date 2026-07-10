@@ -36,7 +36,7 @@
                             Departamento
                         </p>
                         <p class="text-sm text-gray-800 dark:text-white mt-0.5">
-                            {{ $cargo->departamento?->nombre ?? '—' }}
+                            {{ $cargo->departamento?->nombre ?? 'Todos (transversal)' }}
                         </p>
                     </div>
 
