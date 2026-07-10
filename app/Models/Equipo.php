@@ -149,8 +149,20 @@ class Equipo extends Model
         return $this->hasMany(EquipoAtributoValor::class);
     }
 
-    /** Instancias de atributos tipo 'group' (multi-valor, e.g., múltiples discos) */
+    /** Instancias vigentes de atributos tipo 'group' (multi-valor, e.g., múltiples discos) */
     public function grupoInstancias()
+    {
+        return $this->hasMany(EquipoAtributoGrupoInstancia::class)
+                    ->where('es_actual', true)
+                    ->orderBy('atributo_id')
+                    ->orderBy('orden');
+    }
+
+    /**
+     * Historial completo de instancias de grupo (vigentes e históricas).
+     * Útil para la vista de historial de cambios.
+     */
+    public function grupoInstanciasHistorico()
     {
         return $this->hasMany(EquipoAtributoGrupoInstancia::class)
                     ->orderBy('atributo_id')

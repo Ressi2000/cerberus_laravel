@@ -126,7 +126,7 @@
                 </td>
 
                 <td class="px-4 py-3 text-gray-600 dark:text-cerberus-light text-sm">
-                    {{ $cargo->departamento?->nombre ?? '—' }}
+                    {{ $cargo->departamento?->nombre ?? 'Todos (transversal)' }}
                 </td>
 
                 <td class="px-4 py-3 text-center text-sm text-gray-600 dark:text-cerberus-light">

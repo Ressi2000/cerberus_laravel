@@ -85,8 +85,9 @@ class EditarEquipo extends Component
         // Valores actuales indexados por atributo_id
         $valoresActuales = $equipo->atributosActuales->keyBy('atributo_id');
 
-        // Instancias de grupo existentes
+        // Instancias de grupo vigentes
         $instanciasGrupo = EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
+            ->where('es_actual', true)
             ->orderBy('atributo_id')
             ->orderBy('orden')
             ->get()
@@ -251,21 +252,39 @@ class EditarEquipo extends Component
                     $atributoId = $atributo['id'];
 
                     if ($atributo['tipo'] === AtributoEquipo::TIPO_GROUP) {
-                        // ── Grupo: borrar y recrear instancias ───────────────
-                        EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
+                        // ── Grupo: versionar solo si el conjunto realmente cambió ──
+                        // (igual que los atributos simples: el set viejo pasa a
+                        // es_actual=false y queda en el historial, nunca se borra).
+                        $nuevasInstancias = collect($this->grupoInstancias[$atributoId] ?? [])
+                            ->filter(fn($i) => collect($i)->filter(fn($v) => $v !== '' && $v !== null)->isNotEmpty())
+                            ->values();
+
+                        $instanciasActuales = EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
                             ->where('atributo_id', $atributoId)
-                            ->delete();
+                            ->where('es_actual', true)
+                            ->orderBy('orden')
+                            ->get();
+
+                        $normalizar = fn(array $i) => collect($i)->map(fn($v) => (string) $v)->sortKeys()->all();
+
+                        $actualNormalizado = $instanciasActuales->map(fn($i) => $normalizar($i->valores))->values()->all();
+                        $nuevoNormalizado  = $nuevasInstancias->map(fn($i) => $normalizar($i))->values()->all();
+
+                        if ($actualNormalizado === $nuevoNormalizado) {
+                            continue; // sin cambios: no tocar nada ni generar historial
+                        }
+
+                        $instanciasActuales->each(fn($i) => $i->update(['es_actual' => false]));
 
                         $orden = 0;
-                        foreach ($this->grupoInstancias[$atributoId] ?? [] as $instancia) {
-                            $hasValue = collect($instancia)->filter(fn($v) => $v !== '' && $v !== null)->isNotEmpty();
-                            if (! $hasValue) continue;
-
+                        foreach ($nuevasInstancias as $instancia) {
                             EquipoAtributoGrupoInstancia::create([
                                 'equipo_id'   => $equipo->id,
                                 'atributo_id' => $atributoId,
                                 'valores'     => $instancia,
                                 'orden'       => $orden++,
+                                'es_actual'   => true,
+                                'creado_por'  => Auth::id(),
                             ]);
                         }
                     } elseif ($atributo['tipo'] === AtributoEquipo::TIPO_FILE) {

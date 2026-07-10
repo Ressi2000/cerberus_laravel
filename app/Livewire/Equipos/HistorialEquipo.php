@@ -90,6 +90,49 @@ class HistorialEquipo extends Component
             ]);
     }
 
+    /**
+     * Cambios en atributos tipo 'group' (multi-instancia: RAM, discos, etc.).
+     * Cada guardado que modifica el conjunto genera una "foto" completa nueva
+     * (mismas reglas de es_actual que los atributos simples), así que se
+     * agrupan las instancias creadas juntas (mismo atributo + mismo instante)
+     * en un solo evento de línea de tiempo.
+     */
+    protected function eventosGrupos(): Collection
+    {
+        return $this->equipo->grupoInstanciasHistorico()
+            ->with(['atributo', 'usuario'])
+            ->when($this->atributo_id, fn($q) => $q->where('atributo_id', $this->atributo_id))
+            ->get()
+            ->groupBy(fn($i) => $i->atributo_id . '|' . $i->created_at?->format('Y-m-d H:i:s'))
+            ->map(function ($instancias) {
+                $primera  = $instancias->first();
+                $atributo = $primera->atributo;
+
+                $detalle = $instancias
+                    ->map(fn($i) => collect($i->valores)
+                        ->map(function ($valor, $subId) use ($atributo) {
+                            $sub    = collect($atributo?->sub_campos ?? [])->firstWhere('id', $subId);
+                            $nombre = $sub['nombre'] ?? $subId;
+                            return "{$nombre}: {$valor}";
+                        })
+                        ->implode(', ')
+                    )
+                    ->implode(' · ');
+
+                return [
+                    'fecha'   => $primera->created_at,
+                    'tipo'    => 'tecnico',
+                    'icono'   => 'memory',
+                    'color'   => 'indigo',
+                    'titulo'  => $atributo?->nombre ?? 'Atributo eliminado',
+                    'detalle' => $detalle ?: null,
+                    'estado'  => $primera->es_actual ? 'Vigente' : 'Histórico',
+                    'usuario' => $primera->usuario?->name ?? 'Sistema',
+                ];
+            })
+            ->values();
+    }
+
     /** Asignaciones: un evento de entrega y, si aplica, uno de devolución. */
     protected function eventosAsignaciones(): Collection
     {
@@ -255,7 +298,7 @@ class HistorialEquipo extends Component
             ->pluck('nombre', 'id');
 
         $fuentes = [
-            'tecnico'    => fn() => $this->eventosTecnicos(),
+            'tecnico'    => fn() => $this->eventosTecnicos()->merge($this->eventosGrupos()),
             'asignacion' => fn() => $this->eventosAsignaciones(),
             'traslado'   => fn() => $this->eventosTraslados(),
             'prestamo'   => fn() => $this->eventosPrestamos(),

@@ -112,7 +112,8 @@ class CrearUsuario extends Component
     }
 
     /**
-     * Cargos filtrados por departamento seleccionado.
+     * Cargos filtrados por departamento seleccionado, más los cargos
+     * transversales (sin departamento_id: aplican a todos).
      * Devuelve colección vacía si no hay departamento elegido.
      */
     #[Computed]
@@ -123,7 +124,10 @@ class CrearUsuario extends Component
         }
 
         return Cargo::where('activo', true)
-            ->where('departamento_id', $this->departamento_id)
+            ->where(function ($q) {
+                $q->where('departamento_id', $this->departamento_id)
+                  ->orWhereNull('departamento_id');
+            })
             ->where(function ($q) {
                 $q->whereNull('empresa_id');
                 if ($this->empresa_id) {

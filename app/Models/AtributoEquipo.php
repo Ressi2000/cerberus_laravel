@@ -86,10 +86,11 @@ class AtributoEquipo extends Model
                     ->where('es_actual', true);
     }
 
-    /** Instancias multi-valor (solo aplica cuando tipo = 'group') */
+    /** Instancias multi-valor vigentes (solo aplica cuando tipo = 'group') */
     public function instanciasGrupo(): HasMany
     {
         return $this->hasMany(EquipoAtributoGrupoInstancia::class, 'atributo_id')
+                    ->where('es_actual', true)
                     ->orderBy('orden');
     }
 

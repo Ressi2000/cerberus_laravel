@@ -119,7 +119,7 @@
     {{-- ════════════════════════════════════════════════════════════════════ --}}
     <div x-show="tab === 'usuarios'" x-cloak>
         <x-table.crud-table
-            :headers="['Usuario', 'Empresa / Cargo', 'Sede', 'Equipos en préstamo', 'Último préstamo', 'Acciones']"
+            :headers="['Usuario', 'Empresa / Cargo', 'Sede', 'Equipos en préstamo', 'Estado', 'Último préstamo', 'Acciones']"
             :paginated="$usuarios">
 
             @forelse ($usuarios as $usuario)
@@ -158,6 +158,24 @@
                             {{ $usuario->equipos_prestados_count ?? 0 }}
                             {{ ($usuario->equipos_prestados_count ?? 0) === 1 ? 'equipo' : 'equipos' }}
                         </span>
+                    </td>
+
+                    <td class="px-4 py-3">
+                        @if ($usuario->tiene_prestamo_vencido)
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+                                         bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400
+                                         border border-red-200 dark:border-red-700/40">
+                                <span class="material-icons text-xs">schedule</span>
+                                Vencido
+                            </span>
+                        @else
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold
+                                         bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400
+                                         border border-emerald-200 dark:border-emerald-700/40">
+                                <span class="material-icons text-xs">check_circle</span>
+                                Vigente
+                            </span>
+                        @endif
                     </td>
 
                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-cerberus-accent">
@@ -225,7 +243,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="6" class="px-4 py-16 text-center">
+                    <td colspan="7" class="px-4 py-16 text-center">
                         <span class="material-icons text-5xl text-gray-500 dark:text-cerberus-steel/30 block mb-3">people</span>
                         <p class="text-sm text-gray-500 dark:text-cerberus-accent">
                             {{ $search ? 'Sin resultados para "' . $search . '"' : 'Ningún usuario con préstamos activos.' }}

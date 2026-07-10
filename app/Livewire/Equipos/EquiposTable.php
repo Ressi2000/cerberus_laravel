@@ -276,7 +276,8 @@ class EquiposTable extends Component
                     $sub->selectRaw(1)
                         ->from('equipo_atributo_grupo_instancias as egi')
                         ->whereColumn('egi.equipo_id', 'equipos.id')
-                        ->where('egi.atributo_id', $atributoId);
+                        ->where('egi.atributo_id', $atributoId)
+                        ->where('egi.es_actual', true);
 
                     // Sintaxis "columna->clave" de Eloquent: agnóstica de motor de BD
                     // (MySQL/SQLite/Postgres), a diferencia de JSON_EXTRACT/JSON_UNQUOTE crudo.

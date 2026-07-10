@@ -390,6 +390,10 @@
                             Visible tabla
                         </span>
                         <span class="flex items-center gap-1">
+                            <span class="material-icons text-sm text-amber-500">description</span>
+                            Ver en reporte
+                        </span>
+                        <span class="flex items-center gap-1">
                             <span class="material-icons text-sm text-amber-500">lock</span>
                             Con valores
                         </span>
