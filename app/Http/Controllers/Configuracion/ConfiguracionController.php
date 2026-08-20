@@ -41,4 +41,9 @@ class ConfiguracionController extends Controller
     {
         return view('configuracion.empresas.empresas');
     }
+
+    public function licenciasMicrosoft()
+    {
+        return view('configuracion.licencias-microsoft.licencias-microsoft');
+    }
 }

@@ -33,6 +33,7 @@ class User extends Authenticatable
         'cedula',
         'departamento_id',
         'cargo_id',
+        'tipo_licencia_microsoft_id',
         'ubicacion_id', //visibilidad
         'telefono',
         'jefe_id',
@@ -87,6 +88,11 @@ class User extends Authenticatable
     public function cargo()
     {
         return $this->belongsTo(Cargo::class, 'cargo_id');
+    }
+
+    public function tipoLicenciaMicrosoft()
+    {
+        return $this->belongsTo(TipoLicenciaMicrosoft::class, 'tipo_licencia_microsoft_id');
     }
 
     public function jefe()

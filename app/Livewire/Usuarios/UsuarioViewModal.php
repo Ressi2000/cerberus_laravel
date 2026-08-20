@@ -19,6 +19,7 @@ class UsuarioViewModal extends Component
             'empresaNomina',
             'departamento',
             'cargo',
+            'tipoLicenciaMicrosoft',
             'ubicacion'
         ])->findOrFail($id);
 

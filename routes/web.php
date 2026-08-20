@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         Route::get('export/cargos',        [ExportController::class, 'cargos'])->name('export.cargos');
         Route::get('export/departamentos', [ExportController::class, 'departamentos'])->name('export.departamentos');
         Route::get('export/empresas',      [ExportController::class, 'empresas'])->name('export.empresas');
+        Route::get('export/licencias-microsoft', [ExportController::class, 'licenciasMicrosoft'])->name('export.licencias-microsoft');
     });
     
     // Perfil del usuario
@@ -130,6 +131,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/cargos',      [ConfiguracionController::class, 'cargos'])->name('cargos');
             Route::get('/ubicaciones', [ConfiguracionController::class, 'ubicaciones'])->name('ubicaciones');
             Route::get('/empresas',    [ConfiguracionController::class, 'empresas'])->name('empresas');
+            Route::get('/licencias-microsoft', [ConfiguracionController::class, 'licenciasMicrosoft'])->name('licencias-microsoft');
         });
 
     Route::prefix('admin/asignaciones')

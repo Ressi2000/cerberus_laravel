@@ -63,6 +63,8 @@
                                         {{ $user->ubicacion->nombre ?? '—' }}</p>
                                     <p><span class="font-semibold text-white">Jefe directo:</span>
                                         {{ $user->jefe->name ?? '—' }}</p>
+                                    <p><span class="font-semibold text-white">Licencia Microsoft:</span>
+                                        {{ $user->tipoLicenciaMicrosoft->nombre ?? 'No tiene' }}</p>
                                 </div>
                             </div>
 

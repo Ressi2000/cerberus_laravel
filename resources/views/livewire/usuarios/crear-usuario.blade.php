@@ -233,6 +233,15 @@
                         hint="Supervisor directo del usuario. Opcional."
                         :error="$errors->first('jefe_id')"
                     />
+
+                    <x-form.select
+                        label="Licencia Microsoft"
+                        wire:model="tipo_licencia_microsoft_id"
+                        :options="$this->tiposLicenciaMicrosoft"
+                        placeholder="No tiene"
+                        hint="Tipo de licencia de Microsoft asignada al usuario."
+                        :error="$errors->first('tipo_licencia_microsoft_id')"
+                    />
                 </div>
             </div>
 

@@ -5,6 +5,7 @@ namespace App\Livewire\Usuarios;
 use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\TipoLicenciaMicrosoft;
 use App\Models\Ubicacion;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -49,6 +50,7 @@ class CrearUsuario extends Component
     public string $cargo_id        = '';  // Se limpia al cambiar departamento
     public string $ubicacion_id    = '';
     public string $jefe_id         = '';
+    public string $tipo_licencia_microsoft_id = '';
 
     // ── Acceso al sistema ─────────────────────────────────────────────────────
     public string $rol_id               = '';
@@ -166,6 +168,13 @@ class CrearUsuario extends Component
         return User::seleccionables()->pluck('name', 'id');
     }
 
+    /** Tipos de licencia de Microsoft disponibles para el select */
+    #[Computed]
+    public function tiposLicenciaMicrosoft()
+    {
+        return TipoLicenciaMicrosoft::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
+    }
+
     /**
      * Roles disponibles según quien está creando:
      *  - Administrador → todos los roles
@@ -224,6 +233,7 @@ class CrearUsuario extends Component
             'cargo_id'        => 'nullable|exists:cargos,id',
             'ubicacion_id'    => 'required|exists:ubicaciones,id',
             'jefe_id'         => 'nullable|exists:users,id',
+            'tipo_licencia_microsoft_id' => 'nullable|exists:tipos_licencia_microsoft,id',
 
             // Acceso
             'rol_id'      => 'required|exists:roles,id',
@@ -294,6 +304,7 @@ class CrearUsuario extends Component
                 'cargo_id'          => $this->cargo_id          ?: null,
                 'ubicacion_id'      => $this->ubicacion_id,
                 'jefe_id'           => $this->jefe_id           ?: null,
+                'tipo_licencia_microsoft_id' => $this->tipo_licencia_microsoft_id ?: null,
                 'estado'            => $actor->hasRole('Analista') ? 'Activo' : $this->estado,
                 'telefono'          => $this->telefono           ?: null,
                 'foto'              => $fotoPath,

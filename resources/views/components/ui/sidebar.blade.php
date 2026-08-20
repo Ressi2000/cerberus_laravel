@@ -464,7 +464,17 @@
                         </span>
                         <span class="whitespace-nowrap">Empresas</span>
                     </a>
-                    
+
+                    <a href="{{ route('admin.configuracion.licencias-microsoft') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.licencias-microsoft') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.licencias-microsoft') ? $ion : $ioff }}">
+                            badge
+                        </span>
+                        <span class="whitespace-nowrap">Licencias Microsoft</span>
+                    </a>
 
                 </div>
             </div>

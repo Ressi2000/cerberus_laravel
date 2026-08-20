@@ -5,6 +5,7 @@ namespace App\Livewire\Usuarios;
 use App\Models\Cargo;
 use App\Models\Departamento;
 use App\Models\Empresa;
+use App\Models\TipoLicenciaMicrosoft;
 use App\Models\Ubicacion;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -53,6 +54,7 @@ class EditarUsuario extends Component
     public string $cargo_id        = '';
     public string $ubicacion_id    = '';
     public string $jefe_id         = '';
+    public string $tipo_licencia_microsoft_id = '';
 
     // ── Acceso ────────────────────────────────────────────────────────────────
     public string $rol_id               = '';
@@ -100,6 +102,7 @@ class EditarUsuario extends Component
         $this->cargo_id        = (string) ($u->cargo_id        ?? '');
         $this->ubicacion_id    = (string) ($u->ubicacion_id    ?? '');
         $this->jefe_id         = (string) ($u->jefe_id         ?? '');
+        $this->tipo_licencia_microsoft_id = (string) ($u->tipo_licencia_microsoft_id ?? '');
 
         // Acceso
         $this->rol_id = (string) ($u->roles->first()?->id ?? '');
@@ -217,6 +220,13 @@ class EditarUsuario extends Component
             ->pluck('name', 'id');
     }
 
+    /** Tipos de licencia de Microsoft disponibles para el select */
+    #[Computed]
+    public function tiposLicenciaMicrosoft()
+    {
+        return TipoLicenciaMicrosoft::where('activo', true)->orderBy('nombre')->pluck('nombre', 'id');
+    }
+
     #[Computed]
     public function roles()
     {
@@ -304,6 +314,7 @@ class EditarUsuario extends Component
             'cargo_id'        => 'nullable|exists:cargos,id',
             'ubicacion_id'    => 'required|exists:ubicaciones,id',
             'jefe_id'         => 'nullable|exists:users,id',
+            'tipo_licencia_microsoft_id' => 'nullable|exists:tipos_licencia_microsoft,id',
 
             'rol_id'          => 'required|exists:roles,id',
             'empresa_ids'     => 'nullable|array',
@@ -375,6 +386,7 @@ class EditarUsuario extends Component
                 'cargo_id'        => $this->cargo_id        ?: null,
                 'ubicacion_id'    => $this->ubicacion_id,
                 'jefe_id'         => $this->jefe_id         ?: null,
+                'tipo_licencia_microsoft_id' => $this->tipo_licencia_microsoft_id ?: null,
                 'telefono'        => $this->telefono        ?: null,
                 'foto'            => $fotoPath,
                 'ficha'           => $this->ficha,
