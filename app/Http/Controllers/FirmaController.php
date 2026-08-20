@@ -53,12 +53,16 @@ class FirmaController extends Controller
         ]);
     }
 
-    public function store(Request $request, string $tipo, int $id, string $rol): View|RedirectResponse
+    public function store(Request $request, string $tipo, int $id, string $rol): View|RedirectResponse|Response
     {
         $firma = $this->buscarFirma($tipo, $id, $rol);
 
-        if (! $firma || $firma->estaFirmada()) {
+        if (! $firma) {
             return response()->view('firma.no-encontrado', [], 404);
+        }
+
+        if ($firma->estaFirmada()) {
+            return $this->vistaCompletado($tipo, $id, $firma);
         }
 
         if ($request->has('cedula')) {
