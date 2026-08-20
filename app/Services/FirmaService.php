@@ -111,7 +111,9 @@ class FirmaService
             folio: $folio,
             totalItems: $documento->items()->count(),
             empresaNombre: $documento->empresa?->nombre,
-            pdfContenido: $pdf->output(),
+            // Base64: la notificación se encola y el payload se serializa a
+            // JSON, que exige UTF-8 válido — el PDF binario lo rompe.
+            pdfContenidoBase64: base64_encode($pdf->output()),
         ));
     }
 

@@ -24,7 +24,7 @@ class PlanillaFirmadaNotification extends Notification implements ShouldQueue
         public string $folio,
         public int $totalItems,
         public ?string $empresaNombre,
-        public string $pdfContenido,
+        public string $pdfContenidoBase64,
     ) {}
 
     public function via(object $notifiable): array
@@ -53,7 +53,7 @@ class PlanillaFirmadaNotification extends Notification implements ShouldQueue
                     'Fecha'   => now()->format('d/m/Y H:i'),
                 ],
             ])
-            ->attachData($this->pdfContenido, "{$this->folio}.pdf", [
+            ->attachData(base64_decode($this->pdfContenidoBase64), "{$this->folio}.pdf", [
                 'mime' => 'application/pdf',
             ]);
     }
