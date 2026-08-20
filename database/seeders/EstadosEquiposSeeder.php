@@ -13,18 +13,19 @@ class EstadosEquiposSeeder extends Seeder
     public function run(): void
     {
         $estados = [
-            'Disponible',
-            'Asignado',
-            'En préstamo',
-            'En reparación',
-            'Dado de baja',
-            'No asignable'
+            'Disponible'    => '#22C55E',
+            'Asignado'      => '#3B82F6',
+            'En préstamo'   => '#F59E0B',
+            'En reparación' => '#F97316',
+            'Dado de baja'  => '#EF4444',
+            'No asignable'  => '#64748B',
         ];
 
-        foreach ($estados as $estado) {
-            \App\Models\EstadoEquipo::firstOrCreate([
-                'nombre' => $estado
-            ]);
+        foreach ($estados as $nombre => $color) {
+            \App\Models\EstadoEquipo::firstOrCreate(
+                ['nombre' => $nombre],
+                ['color' => $color]
+            );
         }
     }
 }

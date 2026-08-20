@@ -89,7 +89,7 @@
 
                 {{-- Nombre --}}
                 <td class="px-4 py-3 text-[#1E293B] dark:text-white font-medium text-sm">
-                    {{ $estado->nombre }}
+                    <x-ui.estado-badge :estado="$estado" />
                 </td>
 
                 {{-- Badge activo/inactivo --}}

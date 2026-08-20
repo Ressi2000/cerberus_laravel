@@ -25,6 +25,7 @@ class EstadoEquipo extends Model
 
     protected $fillable = [
         'nombre',
+        'color',
         'activo'
     ];
 

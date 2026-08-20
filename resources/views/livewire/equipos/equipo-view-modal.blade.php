@@ -36,24 +36,7 @@
                             {{ $equipo->categoria->nombre }}
                         </span>
 
-                        <span @class([
-                            'px-2 py-0.5 text-xs rounded-full font-medium',
-                            'bg-green-700/30 text-green-300 border border-green-700/40' =>
-                                $equipo->estado->nombre === 'Disponible',
-                            'bg-blue-700/30 text-blue-300 border border-blue-700/40' =>
-                                $equipo->estado->nombre === 'Asignado',
-                            'bg-yellow-700/30 text-yellow-300 border border-yellow-700/40' =>
-                                str_contains($equipo->estado->nombre, 'préstamo') ||
-                                str_contains($equipo->estado->nombre, 'Prestamo'),
-                            'bg-orange-700/30 text-orange-300 border border-orange-700/40' =>
-                                str_contains($equipo->estado->nombre, 'reparación') ||
-                                str_contains($equipo->estado->nombre, 'Mantenimiento'),
-                            'bg-red-700/30 text-red-300 border border-red-700/40' =>
-                                $equipo->estado->nombre === 'Baja',
-                            'bg-cerberus-steel/30 text-cerberus-light border border-cerberus-steel/40' => true, // fallback
-                        ])>
-                            {{ $equipo->estado->nombre }}
-                        </span>
+                        <x-ui.estado-badge :estado="$equipo->estado" />
                     </div>
 
                     {{-- ── ASIGNACIÓN ACTIVA ─────────────────────────────────────────────── --}}

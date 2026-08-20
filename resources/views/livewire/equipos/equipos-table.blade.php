@@ -247,10 +247,7 @@
 
                     {{-- Estado: siempre visible --}}
                     <td class="px-4 py-3">
-                        <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium
-                                     ring-1 ring-inset bg-teal-400/10 text-teal-400 ring-teal-500/20">
-                            {{ $equipo->estado->nombre }}
-                        </span>
+                        <x-ui.estado-badge :estado="$equipo->estado" />
                     </td>
 
                     {{-- Ubicación: siempre visible --}}
