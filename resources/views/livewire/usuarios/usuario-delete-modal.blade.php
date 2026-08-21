@@ -7,7 +7,7 @@
 
                 @if ($user->estado === 'Activo')
                     {{-- ── INACTIVAR ──────────────────────────────────────────── --}}
-                    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <span class="material-icons text-orange-400">person_off</span>
                         Inactivar Usuario
                     </h2>
@@ -36,7 +36,7 @@
 
                 @else
                     {{-- ── ACTIVAR ────────────────────────────────────────────── --}}
-                    <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                         <span class="material-icons text-green-400">person</span>
                         Activar Usuario
                     </h2>

@@ -5,7 +5,7 @@
 
             <div class="relative z-50 w-full max-w-md p-6 bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus">
 
-                <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <span class="material-icons text-red-400">delete_forever</span>
                     Eliminar Traslado
                 </h2>

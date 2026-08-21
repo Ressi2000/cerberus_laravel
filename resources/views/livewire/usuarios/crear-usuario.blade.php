@@ -372,13 +372,13 @@
     {{-- ── MODAL CROPPER DE FOTO ────────────────────────────────────────────── --}}
     <x-modal.modal name="crop-photo" maxWidth="lg">
         <div class="bg-cerberus-dark p-6 space-y-4">
-            <h3 class="text-lg font-semibold text-white">Ajustar foto de perfil</h3>
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Ajustar foto de perfil</h3>
             <div class="w-full max-h-[400px] overflow-hidden bg-black rounded-lg">
                 <img id="cropperImage" class="max-w-full block">
             </div>
             <div class="flex justify-end gap-3 pt-4">
                 <button type="button" id="cancelCrop"
-                    class="px-4 py-2 text-sm rounded-lg bg-cerberus-steel text-white hover:bg-cerberus-hover">
+                    class="px-4 py-2 text-sm rounded-lg bg-cerberus-steel text-gray-900 dark:text-white hover:bg-cerberus-hover hover:text-white">
                     Cancelar
                 </button>
                 <button type="button" id="confirmCrop"

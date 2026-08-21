@@ -8,11 +8,11 @@
 
                 {{-- Header --}}
                 <div class="flex-shrink-0 flex justify-between items-center px-6 py-4 border-b border-cerberus-steel">
-                    <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <span class="material-icons text-blue-400">info</span>
                         Detalle del Usuario
                     </h2>
-                    <button wire:click="close" class="text-gray-300 hover:text-white">
+                    <button wire:click="close" class="text-gray-500 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                         <span class="material-icons">close</span>
                     </button>
                 </div>
@@ -27,7 +27,7 @@
                             <img src="{{ $user->foto_url }}"
                                 class="w-28 h-28 rounded-full object-cover border border-cerberus-steel">
 
-                            <h3 class="text-white text-lg font-semibold mt-3">{{ $user->name }}</h3>
+                            <h3 class="text-gray-900 dark:text-white text-lg font-semibold mt-3">{{ $user->name }}</h3>
                             <p class="text-cerberus-light text-sm">{{ $user->email }}</p>
 
                             <span class="mt-2 px-3 py-1 rounded-full text-xs
@@ -42,10 +42,10 @@
                             <div class="bg-cerberus-dark border border-cerberus-steel p-4 rounded-xl">
                                 <h4 class="text-cerberus-accent font-semibold mb-2">Información Personal</h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-cerberus-light">
-                                    <p><span class="font-semibold text-white">Cédula:</span> {{ $user->cedula ?: '—' }}</p>
-                                    <p><span class="font-semibold text-white">Teléfono:</span> {{ $user->telefono ?: '—' }}</p>
-                                    <p><span class="font-semibold text-white">Ficha:</span> {{ $user->ficha ?: '—' }}</p>
-                                    <p><span class="font-semibold text-white">Rol:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Cédula:</span> {{ $user->cedula ?: '—' }}</p>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Teléfono:</span> {{ $user->telefono ?: '—' }}</p>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Ficha:</span> {{ $user->ficha ?: '—' }}</p>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Rol:</span>
                                         {{ $user->getRoleNames()->join(', ') ?: '—' }}</p>
                                 </div>
                             </div>
@@ -53,17 +53,17 @@
                             <div class="bg-cerberus-dark border border-cerberus-steel p-4 rounded-xl">
                                 <h4 class="text-cerberus-accent font-semibold mb-2">Información Laboral</h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-cerberus-light">
-                                    <p><span class="font-semibold text-white">Empresa:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Empresa:</span>
                                         {{ $user->empresaNomina->nombre ?? '—' }}</p>
-                                    <p><span class="font-semibold text-white">Departamento:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Departamento:</span>
                                         {{ $user->departamento->nombre ?? '—' }}</p>
-                                    <p><span class="font-semibold text-white">Cargo:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Cargo:</span>
                                         {{ $user->cargo->nombre ?? '—' }}</p>
-                                    <p><span class="font-semibold text-white">Ubicación:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Ubicación:</span>
                                         {{ $user->ubicacion->nombre ?? '—' }}</p>
-                                    <p><span class="font-semibold text-white">Jefe directo:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Jefe directo:</span>
                                         {{ $user->jefe->name ?? '—' }}</p>
-                                    <p><span class="font-semibold text-white">Licencia Microsoft:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Licencia Microsoft:</span>
                                         {{ $user->tipoLicenciaMicrosoft->nombre ?? 'No tiene' }}</p>
                                 </div>
                             </div>
@@ -71,9 +71,9 @@
                             <div class="bg-cerberus-dark border border-cerberus-steel p-4 rounded-xl">
                                 <h4 class="text-cerberus-accent font-semibold mb-2">Registro</h4>
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-cerberus-light">
-                                    <p><span class="font-semibold text-white">Creado:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Creado:</span>
                                         {{ $user->created_at?->format('d/m/Y H:i') }}</p>
-                                    <p><span class="font-semibold text-white">Última actualización:</span>
+                                    <p><span class="font-semibold text-gray-900 dark:text-white">Última actualización:</span>
                                         {{ $user->updated_at?->format('d/m/Y H:i') }}</p>
                                 </div>
                             </div>
@@ -86,7 +86,7 @@
                 {{-- Footer --}}
                 <div class="flex-shrink-0 flex justify-end px-6 py-4 border-t border-cerberus-steel">
                     <button wire:click="close"
-                        class="px-5 py-2 bg-cerberus-steel/30 hover:bg-cerberus-steel/50 text-white rounded-lg transition">
+                        class="px-5 py-2 bg-cerberus-steel/30 hover:bg-cerberus-steel/50 text-gray-900 dark:text-white rounded-lg transition">
                         Cerrar
                     </button>
                 </div>

@@ -66,7 +66,7 @@
                     {{ $log->created_at ? \Illuminate\Support\Carbon::parse($log->created_at)->format('d/m/Y H:i') : '—' }}
                 </td>
                 @if (!$isProfileView)
-                    <td class="px-4 py-3 text-white">
+                    <td class="px-4 py-3 text-gray-900 dark:text-white">
                         {{ $log->usuario->name ?? 'Sistema' }}
                     </td>
                 @endif

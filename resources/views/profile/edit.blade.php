@@ -95,7 +95,7 @@
                     {{-- Usuario --}}
                     <div>
                         <p class="text-cerberus-light">Usuario</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ $user->username ?? '—' }}
                         </p>
                     </div>
@@ -103,7 +103,7 @@
                     {{-- Email --}}
                     <div>
                         <p class="text-cerberus-light">Correo</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ $user->email }}
                         </p>
                     </div>
@@ -111,7 +111,7 @@
                     {{-- Rol(es) --}}
                     <div>
                         <p class="text-cerberus-light">Rol</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ $user->roles->pluck('name')->join(', ') }}
                         </p>
                     </div>
@@ -129,7 +129,7 @@
                     {{-- Empresa nómina --}}
                     <div>
                         <p class="text-cerberus-light">Empresa nómina</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ optional($user->empresaNomina)->nombre ?? '—' }}
                         </p>
                     </div>
@@ -138,7 +138,7 @@
                     @if ($user->empresaActiva)
                         <div>
                             <p class="text-cerberus-light">Empresa activa</p>
-                            <p class="text-white font-medium">
+                            <p class="text-gray-900 dark:text-white font-medium">
                                 {{ $user->empresaActiva->nombre }}
                             </p>
                         </div>
@@ -150,7 +150,7 @@
                             <p class="text-cerberus-light">Empresas asignadas</p>
 
                             @if ($user->empresasAsignadas->isEmpty())
-                                <p class="text-white font-medium">—</p>
+                                <p class="text-gray-900 dark:text-white font-medium">—</p>
                             @else
                                 <div class="flex flex-wrap gap-2 mt-1">
                                     @foreach ($user->empresasAsignadas as $empresa)
@@ -168,7 +168,7 @@
                     {{-- Departamento --}}
                     <div>
                         <p class="text-cerberus-light">Departamento</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ optional($user->departamento)->nombre ?? '—' }}
                         </p>
                     </div>
@@ -176,7 +176,7 @@
                     {{-- Cargo --}}
                     <div>
                         <p class="text-cerberus-light">Cargo</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ optional($user->cargo)->nombre ?? '—' }}
                         </p>
                     </div>
@@ -184,7 +184,7 @@
                     {{-- Ubicación --}}
                     <div>
                         <p class="text-cerberus-light">Ubicación</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ optional($user->ubicacion)->nombre ?? '—' }}
                         </p>
                     </div>
@@ -193,7 +193,7 @@
                     @if ($user->jefe)
                         <div>
                             <p class="text-cerberus-light">Jefe directo</p>
-                            <p class="text-white font-medium">
+                            <p class="text-gray-900 dark:text-white font-medium">
                                 {{ $user->jefe->name }}
                             </p>
                         </div>
@@ -202,7 +202,7 @@
                     {{-- Ficha --}}
                     <div>
                         <p class="text-cerberus-light">Ficha</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ $user->ficha ?? '—' }}
                         </p>
                     </div>
@@ -210,7 +210,7 @@
                     {{-- Teléfono --}}
                     <div>
                         <p class="text-cerberus-light">Teléfono</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ $user->telefono ?? '—' }}
                         </p>
                     </div>
@@ -218,7 +218,7 @@
                     {{-- Fecha creación --}}
                     <div>
                         <p class="text-cerberus-light">Cuenta creada</p>
-                        <p class="text-white font-medium">
+                        <p class="text-gray-900 dark:text-white font-medium">
                             {{ $user->created_at?->format('d/m/Y') }}
                         </p>
                     </div>
@@ -303,7 +303,7 @@
                             </time>
 
                             {{-- Acción --}}
-                            <h3 class="mt-2 text-sm font-semibold text-white">
+                            <h3 class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
                                 {{ ucfirst($log->accion) }}
                                 <span class="text-cerberus-light">
                                     {{ $log->tabla }}
@@ -367,7 +367,7 @@
         <x-modal.modal name="crop-photo" maxWidth="lg">
             <div class="bg-cerberus-dark p-6 space-y-4">
 
-                <h3 class="text-lg font-semibold text-white">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Ajustar foto de perfil
                 </h3>
 
@@ -377,7 +377,7 @@
 
                 <div class="flex justify-end gap-3 pt-4">
                     <button type="button" id="cancelCrop"
-                        class="px-4 py-2 text-sm rounded-lg bg-cerberus-steel text-white hover:bg-cerberus-hover">
+                        class="px-4 py-2 text-sm rounded-lg bg-cerberus-steel text-gray-900 dark:text-white hover:bg-cerberus-hover hover:text-white">
                         Cancelar
                     </button>
 

@@ -12,11 +12,11 @@
 
                 {{-- Header --}}
                 <div class="flex justify-between items-center px-6 py-4 border-b border-cerberus-steel flex-shrink-0">
-                    <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <span class="material-icons text-cerberus-accent">devices</span>
                         Detalle del Equipo
                     </h2>
-                    <button wire:click="close" class="text-gray-400 hover:text-white transition">
+                    <button wire:click="close" class="text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
                         <span class="material-icons">close</span>
                     </button>
                 </div>
@@ -26,7 +26,7 @@
 
                     {{-- Fila superior: código + badges --}}
                     <div class="flex flex-wrap items-center gap-3">
-                        <span class="font-mono text-lg font-bold text-white">
+                        <span class="font-mono text-lg font-bold text-gray-900 dark:text-white">
                             {{ $equipo->codigo_interno }}
                         </span>
 
@@ -55,32 +55,32 @@
                                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Asignado a</span>
-                                        <p class="text-white font-medium">{{ $usuario?->name ?? '—' }}</p>
+                                        <p class="text-gray-900 dark:text-white font-medium">{{ $usuario?->name ?? '—' }}</p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Cargo</span>
-                                        <p class="text-white">{{ $usuario?->cargo?->nombre ?? '—' }}</p>
+                                        <p class="text-gray-900 dark:text-white">{{ $usuario?->cargo?->nombre ?? '—' }}</p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Empresa</span>
-                                        <p class="text-white">{{ $usuario?->empresaNomina?->nombre ?? '—' }}</p>
+                                        <p class="text-gray-900 dark:text-white">{{ $usuario?->empresaNomina?->nombre ?? '—' }}</p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Ubicación</span>
-                                        <p class="text-white">{{ $usuario?->ubicacion?->nombre ?? '—' }}</p>
+                                        <p class="text-gray-900 dark:text-white">{{ $usuario?->ubicacion?->nombre ?? '—' }}</p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Departamento</span>
-                                        <p class="text-white">{{ $usuario?->departamento?->nombre ?? '—' }}</p>
+                                        <p class="text-gray-900 dark:text-white">{{ $usuario?->departamento?->nombre ?? '—' }}</p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Ubicación de la Asignación</span>
-                                        <p class="text-white">
+                                        <p class="text-gray-900 dark:text-white">
                                             {{ $asignacionActiva?->asignacion?->empresa?->nombre ?? '—' }}</p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Fecha asignación</span>
-                                        <p class="text-white">
+                                        <p class="text-gray-900 dark:text-white">
                                             {{ $asignacionActiva->asignacion->fecha_asignacion?->format('d/m/Y') ?? '—' }}
                                         </p>
                                     </div>
@@ -90,23 +90,23 @@
                                 <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Asignado a área</span>
-                                        <p class="text-white font-medium">
+                                        <p class="text-gray-900 dark:text-white font-medium">
                                             {{ $asignacionActiva->asignacion->areaDepartamento?->nombre ?? '—' }}
                                         </p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Empresa del área</span>
-                                        <p class="text-white">
+                                        <p class="text-gray-900 dark:text-white">
                                             {{ $asignacionActiva->asignacion->areaEmpresa?->nombre ?? '—' }}</p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Responsable</span>
-                                        <p class="text-white">
+                                        <p class="text-gray-900 dark:text-white">
                                             {{ $asignacionActiva->asignacion->areaResponsable?->name ?? '—' }}</p>
                                     </div>
                                     <div>
                                         <span class="text-cerberus-steel text-xs">Fecha asignación</span>
-                                        <p class="text-white">
+                                        <p class="text-gray-900 dark:text-white">
                                             {{ $asignacionActiva->asignacion->fecha_asignacion?->format('d/m/Y') ?? '—' }}
                                         </p>
                                     </div>
@@ -115,7 +115,7 @@
 
                             <div class="text-xs text-cerberus-steel mt-1">
                                 Analista: <span
-                                    class="text-white">{{ $asignacionActiva->asignacion->analista?->name ?? '—' }}</span>
+                                    class="text-gray-900 dark:text-white">{{ $asignacionActiva->asignacion->analista?->name ?? '—' }}</span>
                             </div>
                         </div>
                     @endif
@@ -125,19 +125,19 @@
                         <h4 class="text-cerberus-accent font-semibold text-sm mb-3">Datos generales</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-cerberus-light">
                             <p>
-                                <span class="font-semibold text-white">Empresa:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">Empresa:</span>
                                 {{ $equipo->empresa->nombre ?? '—' }}
                             </p>
                             <p>
-                                <span class="font-semibold text-white">Ubicación:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">Ubicación:</span>
                                 {{ $equipo->ubicacion->nombre ?? '—' }}
                             </p>
                             <p>
-                                <span class="font-semibold text-white">Adquisición:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">Adquisición:</span>
                                 {{ $equipo->fecha_adquisicion ? \Carbon\Carbon::parse($equipo->fecha_adquisicion)->format('d/m/Y') : '—' }}
                             </p>
                             <p>
-                                <span class="font-semibold text-white">Garantía hasta:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">Garantía hasta:</span>
                                 @if ($equipo->fecha_garantia_fin)
                                     @php
                                         $garantia = \Carbon\Carbon::parse($equipo->fecha_garantia_fin);
@@ -154,7 +154,7 @@
                         </div>
                         @if ($equipo->observaciones)
                             <p class="mt-3 text-sm text-cerberus-light">
-                                <span class="font-semibold text-white">Observaciones:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">Observaciones:</span>
                                 {{ $equipo->observaciones }}
                             </p>
                         @endif
@@ -169,7 +169,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-cerberus-light">
                                 @foreach ($equipo->atributosActuales as $val)
                                     <p>
-                                        <span class="font-semibold text-white">
+                                        <span class="font-semibold text-gray-900 dark:text-white">
                                             {{ $val->atributo->nombre }}:
                                         </span>
                                         @if ($val->atributo->tipo === 'boolean')
@@ -231,12 +231,12 @@
                     <div class="bg-cerberus-dark border border-cerberus-steel rounded-xl p-4">
                         <h4 class="text-cerberus-accent font-semibold text-sm mb-2">Registro</h4>
                         <p class="text-sm text-cerberus-light">
-                            <span class="font-semibold text-white">Creado:</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">Creado:</span>
                             {{ $equipo->created_at?->format('d/m/Y H:i') }}
                         </p>
                         @if ($equipo->updated_at != $equipo->created_at)
                             <p class="text-sm text-cerberus-light mt-1">
-                                <span class="font-semibold text-white">Última modificación:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">Última modificación:</span>
                                 {{ $equipo->updated_at?->format('d/m/Y H:i') }}
                             </p>
                         @endif
@@ -257,14 +257,14 @@
                         </a>
                         <a href="{{ route('admin.equipos.show', $equipo) }}" wire:navigate
                             class="px-4 py-2 text-sm bg-cerberus-steel/30 hover:bg-cerberus-steel/50
-                                   text-white rounded-lg transition flex items-center gap-1">
+                                   text-gray-900 dark:text-white rounded-lg transition flex items-center gap-1">
                             <span class="material-icons text-sm">history</span>
                             Ver historial
                         </a>
                     </div>
                     <button wire:click="close"
                         class="px-5 py-2 text-sm bg-cerberus-steel/30 hover:bg-cerberus-steel/50
-                               text-white rounded-lg transition">
+                               text-gray-900 dark:text-white rounded-lg transition">
                         Cerrar
                     </button>
                 </div>

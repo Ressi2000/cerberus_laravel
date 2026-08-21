@@ -41,7 +41,7 @@
                 <div class="flex justify-end gap-3">
                     <button wire:click="close"
                         class="px-4 py-2 text-sm bg-cerberus-steel/30 hover:bg-cerberus-steel/50
-                               text-white rounded-lg transition">
+                               text-gray-900 dark:text-white rounded-lg transition">
                         Cancelar
                     </button>
 

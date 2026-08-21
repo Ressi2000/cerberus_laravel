@@ -160,13 +160,13 @@
                         <img src="{{ $u->foto_url }}" alt="{{ $u->name }}"
                              class="w-9 h-9 rounded-full object-cover border border-cerberus-steel">
                         <div>
-                            <p class="text-white font-medium text-sm">{{ $u->name }}</p>
+                            <p class="text-gray-900 dark:text-white font-medium text-sm">{{ $u->name }}</p>
                             <p class="text-cerberus-steel text-xs">{{ $u->cedula }}</p>
                         </div>
                     </div>
                 </td>
 
-                <td class="px-4 py-3 text-white text-sm">{{ $u->username }}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">{{ $u->username }}</td>
                 <td class="px-4 py-3 text-cerberus-light text-sm">{{ $u->email }}</td>
 
                 <td class="px-4 py-3">

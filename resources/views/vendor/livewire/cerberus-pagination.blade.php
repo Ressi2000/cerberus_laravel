@@ -16,7 +16,7 @@
             @else
                 <button
                     wire:click="previousPage('{{ $paginator->getPageName() }}')"
-                    class="px-3 py-2 text-white hover:bg-cerberus-steel rounded-lg transition">
+                    class="px-3 py-2 text-gray-700 dark:text-white hover:bg-cerberus-steel rounded-lg transition">
                     <span class="material-icons text-base">chevron_left</span>
                 </button>
             @endif
@@ -24,11 +24,11 @@
             {{-- PAGE INFO --}}
             <span class="text-sm text-cerberus-light">
                 Página
-                <span class="font-semibold text-white">
+                <span class="font-semibold text-gray-900 dark:text-white">
                     {{ $paginator->currentPage() }}
                 </span>
                 de
-                <span class="font-semibold text-white">
+                <span class="font-semibold text-gray-900 dark:text-white">
                     {{ $paginator->lastPage() }}
                 </span>
             </span>
@@ -37,7 +37,7 @@
             @if ($paginator->hasMorePages())
                 <button
                     wire:click="nextPage('{{ $paginator->getPageName() }}')"
-                    class="px-3 py-2 text-white hover:bg-cerberus-steel rounded-lg transition">
+                    class="px-3 py-2 text-gray-700 dark:text-white hover:bg-cerberus-steel rounded-lg transition">
                     <span class="material-icons text-base">chevron_right</span>
                 </button>
             @else
@@ -53,11 +53,11 @@
             {{-- INFO --}}
             <div class="text-sm text-cerberus-light">
                 Mostrando
-                <span class="font-semibold text-white">{{ $paginator->firstItem() }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ $paginator->firstItem() }}</span>
                 –
-                <span class="font-semibold text-white">{{ $paginator->lastItem() }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ $paginator->lastItem() }}</span>
                 de
-                <span class="font-semibold text-white">{{ $paginator->total() }}</span>
+                <span class="font-semibold text-gray-900 dark:text-white">{{ $paginator->total() }}</span>
                 registros
             </div>
 
@@ -72,7 +72,7 @@
                 @else
                     <button
                         wire:click="previousPage('{{ $paginator->getPageName() }}')"
-                        class="px-3 py-2 text-white hover:bg-cerberus-steel transition">
+                        class="px-3 py-2 text-gray-700 dark:text-white hover:bg-cerberus-steel transition">
                         <span class="material-icons text-base">chevron_left</span>
                     </button>
                 @endif
@@ -110,7 +110,7 @@
                 @if ($paginator->hasMorePages())
                     <button
                         wire:click="nextPage('{{ $paginator->getPageName() }}')"
-                        class="px-3 py-2 text-white hover:bg-cerberus-steel transition">
+                        class="px-3 py-2 text-gray-700 dark:text-white hover:bg-cerberus-steel transition">
                         <span class="material-icons text-base">chevron_right</span>
                     </button>
                 @else
