@@ -5,6 +5,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cerberus 2.0 – Sistema de Inventario y Asignaciones Tecnológicas</title>
+    <link rel="icon" href="{{ asset('images/CBRS2.0favicon.ico') }}">
+    <link rel="shortcut icon" href="{{ asset('images/CBRS2.0favicon.ico') }}">
     <meta name="description" content="Cerberus 2.0 centraliza el control de activos tecnológicos en un entorno multiempresa: asignaciones, préstamos, traslados y auditoría completa, con acceso diferenciado por roles.">
     <meta property="og:title" content="Cerberus 2.0 – Sistema de Inventario y Asignaciones Tecnológicas">
     <meta property="og:description" content="Gestión inteligente de tu inventario tecnológico: asignaciones, préstamos, traslados y auditoría completa.">
