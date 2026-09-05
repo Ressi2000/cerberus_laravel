@@ -17,7 +17,20 @@
                  || $attributes->has('wire:model.blur')
                  || $attributes->has('wire:model.lazy');
 
-    $fieldId = $name ?? 'field-' . uniqid();
+    /*
+     * ID estable entre renders: si no se pasa $name, se deriva del propio
+     * wire:model en vez de uniqid(). uniqid() cambia en cada render de
+     * Livewire, y cada tecla escrita en OTRO campo con wire:model.live en
+     * la misma página dispara un render — el select cambiaba de id
+     * constantemente y perdía el foco/estado al reabrir el dropdown.
+     */
+    $wireModelTarget = $attributes->get('wire:model')
+        ?? $attributes->get('wire:model.live')
+        ?? $attributes->get('wire:model.blur')
+        ?? $attributes->get('wire:model.lazy');
+
+    $fieldId = $name
+        ?? ($wireModelTarget ? 'field-' . \Illuminate\Support\Str::slug($wireModelTarget) : 'field-' . uniqid());
     $hintId  = $fieldId . '-hint';
     $errorId = $fieldId . '-error';
 

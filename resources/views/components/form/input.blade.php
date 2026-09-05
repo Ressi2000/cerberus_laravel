@@ -22,8 +22,22 @@
                  || $attributes->has('wire:model.blur')
                  || $attributes->has('wire:model.lazy');
 
-    // ID único para accesibilidad (aria-describedby)
-    $fieldId   = $name ?? 'field-' . uniqid();
+    /*
+     * ID para accesibilidad (aria-describedby) y para el `for` del label.
+     * Debe ser ESTABLE entre renders: si no se pasa $name, lo derivamos del
+     * propio wire:model (que no cambia) en vez de uniqid(). uniqid() genera
+     * un id distinto en cada render de Livewire, y como escribir con
+     * wire:model.live dispara un render por cada tecla, el input cambiaba
+     * de id constantemente — Livewire perdía la referencia al elemento
+     * enfocado y el campo perdía el foco mientras se escribía.
+     */
+    $wireModelTarget = $attributes->get('wire:model')
+        ?? $attributes->get('wire:model.live')
+        ?? $attributes->get('wire:model.blur')
+        ?? $attributes->get('wire:model.lazy');
+
+    $fieldId = $name
+        ?? ($wireModelTarget ? 'field-' . \Illuminate\Support\Str::slug($wireModelTarget) : 'field-' . uniqid());
     $hintId    = $fieldId . '-hint';
     $errorId   = $fieldId . '-error';
 @endphp
