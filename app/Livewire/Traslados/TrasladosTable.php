@@ -64,21 +64,21 @@ class TrasladosTable extends Component
             ->paginate($this->perPage);
     }
 
+    /**
+     * Ubicaciones para los filtros de Origen/Destino de la búsqueda.
+     * Deliberadamente sin restricción por empresa: un traslado por
+     * definición cruza ubicaciones, y el Analista necesita poder
+     * buscar/filtrar traslados aunque el origen o destino no sea el
+     * de su propia empresa (a diferencia de crear un traslado nuevo,
+     * donde el origen sí se restringe a lo que puede gestionar).
+     */
     #[Computed]
     public function ubicaciones()
     {
-        $actor = Auth::user();
-
-        $query = Ubicacion::where('activo', true)->orderBy('es_estado')->orderBy('nombre');
-
-        if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
-            $query->where(function ($q) use ($actor) {
-                $q->where('empresa_id', $actor->empresa_activa_id)
-                    ->orWhere('es_estado', true);
-            });
-        }
-
-        return $query->get(['id', 'nombre']);
+        return Ubicacion::where('activo', true)
+            ->orderBy('es_estado')
+            ->orderBy('nombre')
+            ->get(['id', 'nombre']);
     }
 
     #[Computed]
