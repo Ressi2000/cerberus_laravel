@@ -12,10 +12,17 @@
 ])
 
 @php
-    $hasWireModel = $attributes->has('wire:model')
-                 || $attributes->has('wire:model.live')
-                 || $attributes->has('wire:model.blur')
-                 || $attributes->has('wire:model.lazy');
+    /*
+     * Buscamos por prefijo en vez de comparar contra una lista fija de
+     * claves: "wire:model.live.400ms" (debounce) es una clave distinta a
+     * "wire:model.live" dentro del attribute bag, así que una comparación
+     * exacta no la detecta.
+     */
+    $wireModelKey = collect($attributes->getAttributes())
+        ->keys()
+        ->first(fn ($key) => $key === 'wire:model' || str_starts_with($key, 'wire:model.'));
+
+    $hasWireModel = $wireModelKey !== null;
 
     /*
      * ID estable entre renders: si no se pasa $name, se deriva del propio
@@ -24,10 +31,7 @@
      * la misma página dispara un render — el select cambiaba de id
      * constantemente y perdía el foco/estado al reabrir el dropdown.
      */
-    $wireModelTarget = $attributes->get('wire:model')
-        ?? $attributes->get('wire:model.live')
-        ?? $attributes->get('wire:model.blur')
-        ?? $attributes->get('wire:model.lazy');
+    $wireModelTarget = $wireModelKey ? $attributes->get($wireModelKey) : null;
 
     $fieldId = $name
         ?? ($wireModelTarget ? 'field-' . \Illuminate\Support\Str::slug($wireModelTarget) : 'field-' . uniqid());
@@ -97,9 +101,10 @@
     @if ($searchable)
 
         @php
-            // Separar wire:model del resto de atributos para pasarlo al input oculto
-            $wireModelAttr = $attributes->only(['wire:model', 'wire:model.live', 'wire:model.blur', 'wire:model.lazy']);
-            $extraAttrs    = $attributes->except(['wire:model', 'wire:model.live', 'wire:model.blur', 'wire:model.lazy', 'class']);
+            // Separar wire:model (en cualquier variante, incl. debounce) del resto
+            // de atributos para pasarlo al input oculto.
+            $wireModelAttr = $wireModelKey ? $attributes->only([$wireModelKey]) : $attributes->only([]);
+            $extraAttrs    = $attributes->except(array_filter([$wireModelKey, 'class']));
         @endphp
 
         <div

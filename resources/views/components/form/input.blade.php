@@ -13,14 +13,20 @@
 
 @php
     /*
-     * Detectar si el componente recibe wire:model (en cualquier variante).
+     * Detectar si el componente recibe wire:model (en cualquier variante,
+     * incluyendo modificadores de debounce/throttle como
+     * wire:model.live.400ms). Buscamos por prefijo en vez de comparar
+     * contra una lista fija de claves: "wire:model.live.400ms" es una
+     * clave distinta a "wire:model.live" dentro del attribute bag, así
+     * que una comparación exacta no la detecta.
      * Cuando hay wire:model, NO ponemos value ni name en el input directamente,
      * porque Livewire los maneja solo.
      */
-    $hasWireModel = $attributes->has('wire:model')
-                 || $attributes->has('wire:model.live')
-                 || $attributes->has('wire:model.blur')
-                 || $attributes->has('wire:model.lazy');
+    $wireModelKey = collect($attributes->getAttributes())
+        ->keys()
+        ->first(fn ($key) => $key === 'wire:model' || str_starts_with($key, 'wire:model.'));
+
+    $hasWireModel = $wireModelKey !== null;
 
     /*
      * ID para accesibilidad (aria-describedby) y para el `for` del label.
@@ -31,10 +37,7 @@
      * de id constantemente — Livewire perdía la referencia al elemento
      * enfocado y el campo perdía el foco mientras se escribía.
      */
-    $wireModelTarget = $attributes->get('wire:model')
-        ?? $attributes->get('wire:model.live')
-        ?? $attributes->get('wire:model.blur')
-        ?? $attributes->get('wire:model.lazy');
+    $wireModelTarget = $wireModelKey ? $attributes->get($wireModelKey) : null;
 
     $fieldId = $name
         ?? ($wireModelTarget ? 'field-' . \Illuminate\Support\Str::slug($wireModelTarget) : 'field-' . uniqid());
