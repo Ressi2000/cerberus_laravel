@@ -31,7 +31,7 @@
 
 <body>
     <img
-        src="{{ asset('images/banner-mantenimiento.jpg') }}"
+        src="{{ asset('images/banner-mantenimiento1.jpg') }}"
         alt="Cerberus 2.0 en mantenimiento. Por favor espere 1 hora, la aplicación se encuentra en una actualización."
         class="banner-mantenimiento"
     >
