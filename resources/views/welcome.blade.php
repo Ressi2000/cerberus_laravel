@@ -212,24 +212,30 @@
 
     <!-- ══════════════════════════════════════════════════════════
          ANATOMÍA DEL SISTEMA — acróstico CERBERUS, en secciones fijas
-         (no carrusel): gradiente siempre oscuro, colores fijos
+         (no carrusel): fondo adaptable al tema
          ══════════════════════════════════════════════════════════ -->
     <section id="anatomia" class="py-24 w-full relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-[#0D1B2A] via-[#122744] to-[#0A1628]"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-[#EEF2F7] via-[#E4ECF4] to-[#DCE6EF]
+                    dark:from-[#0D1B2A] dark:via-[#122744] dark:to-[#0A1628]
+                    transition-colors duration-500"></div>
         <div class="absolute inset-0 opacity-30">
-            <div class="absolute top-10 left-1/4 w-96 h-96 bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-10 right-1/4 w-72 h-72 bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
+            <div class="absolute top-10 left-1/4 w-96 h-96 bg-[#1E40AF]/10 dark:bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-10 right-1/4 w-72 h-72 bg-[#A9D6E5]/20 dark:bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
         </div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-6">
             <div class="text-center mb-12">
-                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1E40AF]/10 border border-[#A9D6E5]/20 text-[#A9D6E5] text-sm font-medium mb-4 backdrop-blur-sm">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full
+                             bg-[#1E40AF]/10 dark:bg-[#1E40AF]/10
+                             border border-cerberus-primary/20 dark:border-[#A9D6E5]/20
+                             text-cerberus-primary dark:text-[#A9D6E5]
+                             text-sm font-medium mb-4 backdrop-blur-sm">
                     🐺 Anatomía del sistema
                 </span>
-                <h3 class="text-4xl md:text-5xl font-bold mb-4 text-white">
-                    ¿Qué significa <span class="text-[#A9D6E5]">CERBERUS</span>?
+                <h3 class="text-4xl md:text-5xl font-bold mb-4 text-[#0D1B2A] dark:text-white transition-colors duration-500">
+                    ¿Qué significa <span class="text-cerberus-primary dark:text-[#A9D6E5]">CERBERUS</span>?
                 </h3>
-                <p class="text-gray-300 max-w-2xl mx-auto text-lg">
+                <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg transition-colors duration-500">
                     Ocho pilares que definen la arquitectura y la identidad de la plataforma
                 </p>
             </div>
@@ -246,16 +252,18 @@
                     ['U', 'Unificación'],
                     ['S', 'Seguridad'],
                 ] as [$letra, $palabra])
-                    <div class="bg-white/5 border border-white/10 rounded-xl p-3 text-center
-                                hover:border-[#A9D6E5]/50 hover:bg-white/10 hover:-translate-y-1
+                    <div class="bg-white/70 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-3 text-center
+                                hover:border-cerberus-primary/50 dark:hover:border-[#A9D6E5]/50
+                                hover:bg-white dark:hover:bg-white/10 hover:-translate-y-1
                                 transition-all duration-300 motion-reduce:hover:translate-y-0">
-                        <span class="block text-lg font-extrabold text-[#A9D6E5] mb-1">{{ $letra }}</span>
-                        <span class="block text-[10px] uppercase tracking-wide text-gray-400 font-medium">{{ $palabra }}</span>
+                        <span class="block text-lg font-extrabold text-cerberus-primary dark:text-[#A9D6E5] mb-1">{{ $letra }}</span>
+                        <span class="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 font-medium">{{ $palabra }}</span>
                     </div>
                 @endforeach
             </div>
 
-            <!-- Los ocho pilares, en tarjetas fijas (no diapositivas) -->
+            <!-- Los ocho pilares: tarjetas con foto, siempre con scrim oscuro
+                 para que el texto blanco quede legible sobre cualquier imagen -->
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                 @foreach ([
                     ['C', '🎛️', 'Control', 'Gestión centralizada y absoluta de todos los activos tecnológicos en un entorno unificado y seguro.', 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=900&q=70'],
@@ -267,8 +275,8 @@
                     ['U', '📊', 'Unificación', 'Integración de reportes y auditorías con capacidad de exportación directa a Excel y PDF.', 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=70'],
                     ['S', '🔒', 'Seguridad', 'Transparencia, protección de datos y cumplimiento normativo riguroso en cada movimiento.', 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=900&q=70'],
                 ] as [$letra, $icono, $titulo, $desc, $imagen])
-                    <div class="group relative overflow-hidden rounded-2xl border border-white/10
-                                hover:border-[#A9D6E5]/40 transition-all duration-500
+                    <div class="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10
+                                hover:border-cerberus-primary/40 dark:hover:border-[#A9D6E5]/40 transition-all duration-500
                                 min-h-[280px] flex flex-col justify-end p-6
                                 hover:-translate-y-2 motion-reduce:hover:-translate-y-0">
                         <div class="absolute inset-0 bg-cover bg-center scale-105 group-hover:scale-110
@@ -296,16 +304,17 @@
 
     <!-- ══════════════════════════════════════════════════════════
          CIERRE — "Lleva el control total de tu tecnología"
-         (panel de la propuesta), siempre oscuro: colores fijos
+         (panel de la propuesta), fondo adaptable al tema
          ══════════════════════════════════════════════════════════ -->
-    <section class="py-24 w-full text-center relative overflow-hidden bg-[#060913]">
+    <section class="py-24 w-full text-center relative overflow-hidden bg-[#EDF1F6] dark:bg-[#060913] transition-colors duration-500">
         <div class="relative z-10 max-w-4xl mx-auto px-6">
-            <div class="relative overflow-hidden rounded-3xl p-12 sm:p-16 border border-white/5"
-                 style="background: radial-gradient(circle at center, rgba(59, 130, 246, 0.12) 0%, transparent 70%);">
-                <h3 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 text-white">
+            <div class="relative overflow-hidden rounded-3xl p-12 sm:p-16 border border-gray-200 dark:border-white/5
+                        bg-[radial-gradient(circle_at_center,rgba(30,64,175,0.08)_0%,transparent_70%)]
+                        dark:bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.12)_0%,transparent_70%)]">
+                <h3 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 text-[#0D1B2A] dark:text-white transition-colors duration-500">
                     Lleva el control total de tu tecnología
                 </h3>
-                <p class="text-gray-400 mb-10 max-w-xl mx-auto text-lg">
+                <p class="text-gray-600 dark:text-gray-400 mb-10 max-w-xl mx-auto text-lg transition-colors duration-500">
                     Optimiza los recursos, automatiza la trazabilidad y asegura el rendimiento de tu
                     infraestructura con Cerberus 2.0.
                 </p>
@@ -323,32 +332,36 @@
     </section>
 
     <!-- ══════════════════════════════════════════════════════════
-         FOOTER — gradiente siempre oscuro: colores fijos
+         FOOTER — fondo adaptable al tema
          ══════════════════════════════════════════════════════════ -->
     <footer class="relative w-full overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-[#0A1628] via-[#1a3a5c] to-[#0D1B2A]"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-[#EDF1F6] via-[#E3EAF1] to-[#DCE6EF]
+                    dark:from-[#0A1628] dark:via-[#1a3a5c] dark:to-[#0D1B2A]
+                    transition-colors duration-500"></div>
         <div class="absolute inset-0 opacity-20">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
+            <div class="absolute top-0 right-0 w-64 h-64 bg-[#A9D6E5]/20 dark:bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#1E40AF]/10 dark:bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
         </div>
 
-        <div class="relative z-10 py-12 text-gray-300 text-sm">
+        <div class="relative z-10 py-12 text-gray-600 dark:text-gray-300 text-sm transition-colors duration-500">
             <div class="max-w-7xl mx-auto px-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                     <div class="flex items-center gap-3">
-                        {{-- Logo fijo (variante "dark"): el footer siempre tiene fondo oscuro --}}
-                        <img src="{{ asset('images/logos/crb2-dark.png') }}" alt="Cerberus Logo" loading="lazy"
+                        {{-- Sigue el toggle de isDark, igual que el logo del auth-card --}}
+                        <img :src="isDark ? '{{ asset('images/logos/crb2-dark.png') }}' : '{{ asset('images/logos/crb2-ligth.png') }}'"
+                            src="{{ asset('images/logos/crb2-dark.png') }}"
+                            alt="Cerberus Logo" loading="lazy"
                             class="h-8 w-auto opacity-70">
-                        <span class="text-white/80 font-semibold">Cerberus 2.0</span>
+                        <span class="text-[#0D1B2A]/80 dark:text-white/80 font-semibold">Cerberus 2.0</span>
                     </div>
 
                     <div class="flex gap-8 text-sm">
-                        <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Política de privacidad</a>
-                        <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Términos de uso</a>
-                        <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Contacto</a>
+                        <a href="#" class="hover:text-cerberus-primary dark:hover:text-[#A9D6E5] transition-colors duration-300">Política de privacidad</a>
+                        <a href="#" class="hover:text-cerberus-primary dark:hover:text-[#A9D6E5] transition-colors duration-300">Términos de uso</a>
+                        <a href="#" class="hover:text-cerberus-primary dark:hover:text-[#A9D6E5] transition-colors duration-300">Contacto</a>
                     </div>
 
-                    <div class="text-gray-400">
+                    <div class="text-gray-500 dark:text-gray-400">
                         © {{ date('Y') }} R - A - H
                     </div>
                 </div>
