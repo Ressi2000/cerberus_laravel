@@ -121,13 +121,6 @@
                                       text-white hover:bg-white/10 rounded-md transition font-medium backdrop-blur-sm">
                                 Iniciar sesión
                             </a>
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}"
-                                    class="px-5 py-2 bg-[#A9D6E5] hover:bg-[#89C2D9]
-                                          text-[#0D1B2A] rounded-md shadow transition font-medium">
-                                    Registrarse
-                                </a>
-                            @endif
                         @endauth
                     </nav>
 
@@ -157,12 +150,6 @@
                             class="px-5 py-2 border border-white/30 hover:border-white/60 text-white hover:bg-white/10 rounded-md transition font-medium text-center">
                             Iniciar sesión
                         </a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}"
-                                class="px-5 py-2 bg-[#A9D6E5] hover:bg-[#89C2D9] text-[#0D1B2A] rounded-md shadow transition font-medium text-center">
-                                Registrarse
-                            </a>
-                        @endif
                     @endauth
                 </nav>
             @endif
