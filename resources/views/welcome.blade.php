@@ -185,6 +185,90 @@
     </section>
 
     <!-- ══════════════════════════════════════════════════════════
+         ANATOMÍA DEL SISTEMA — acróstico CERBERUS, en secciones fijas
+         (no carrusel): gradiente siempre oscuro, colores fijos
+         ══════════════════════════════════════════════════════════ -->
+    <section id="anatomia" class="py-24 w-full relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-[#0D1B2A] via-[#122744] to-[#0A1628]"></div>
+        <div class="absolute inset-0 opacity-30">
+            <div class="absolute top-10 left-1/4 w-96 h-96 bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-10 right-1/4 w-72 h-72 bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-6">
+            <div class="text-center mb-12">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#1E40AF]/10 border border-[#A9D6E5]/20 text-[#A9D6E5] text-sm font-medium mb-4 backdrop-blur-sm">
+                    🐺 Anatomía del sistema
+                </span>
+                <h3 class="text-4xl md:text-5xl font-bold mb-4 text-white">
+                    ¿Qué significa <span class="text-[#A9D6E5]">CERBERUS</span>?
+                </h3>
+                <p class="text-gray-300 max-w-2xl mx-auto text-lg">
+                    Ocho pilares que definen la arquitectura y la identidad de la plataforma
+                </p>
+            </div>
+
+            <!-- Resumen del acróstico -->
+            <div class="grid grid-cols-4 sm:grid-cols-8 gap-3 max-w-4xl mx-auto mb-16">
+                @foreach ([
+                    ['C', 'Control'],
+                    ['E', 'Eficiencia'],
+                    ['R', 'Roles'],
+                    ['B', 'Business'],
+                    ['E', 'Evolución'],
+                    ['R', 'Rastreo'],
+                    ['U', 'Unificación'],
+                    ['S', 'Seguridad'],
+                ] as [$letra, $palabra])
+                    <div class="bg-white/5 border border-white/10 rounded-xl p-3 text-center
+                                hover:border-[#A9D6E5]/50 hover:bg-white/10 hover:-translate-y-1
+                                transition-all duration-300 motion-reduce:hover:translate-y-0">
+                        <span class="block text-lg font-extrabold text-[#A9D6E5] mb-1">{{ $letra }}</span>
+                        <span class="block text-[10px] uppercase tracking-wide text-gray-400 font-medium">{{ $palabra }}</span>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Los ocho pilares, en tarjetas fijas (no diapositivas) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                @foreach ([
+                    ['C', '🎛️', 'Control', 'Gestión centralizada y absoluta de todos los activos tecnológicos en un entorno unificado y seguro.', 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=900&q=70'],
+                    ['E', '⚡', 'Eficiencia', 'Optimización de procesos operativos diarios como asignaciones, préstamos y traslados de equipos.', 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=70'],
+                    ['R', '🛡️', 'Roles', 'Seguridad avanzada y acceso diferenciado según los permisos y perfiles específicos de los usuarios.', 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=900&q=70'],
+                    ['B', '🏢', 'Business (Multiempresa)', 'Capacidad corporativa de administrar múltiples organizaciones o divisiones desde una sola plataforma.', 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=70'],
+                    ['E', '🔧', 'Evolución', 'Adaptabilidad y flexibilidad total gracias a atributos dinámicos que se ajustan a cada necesidad.', 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=70'],
+                    ['R', '📡', 'Rastreo (Trazabilidad Total)', 'Seguimiento detallado del ciclo de vida completo de cada activo tecnológico registrado.', 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=70'],
+                    ['U', '📊', 'Unificación', 'Integración de reportes y auditorías con capacidad de exportación directa a Excel y PDF.', 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=70'],
+                    ['S', '🔒', 'Seguridad', 'Transparencia, protección de datos y cumplimiento normativo riguroso en cada movimiento.', 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=900&q=70'],
+                ] as [$letra, $icono, $titulo, $desc, $imagen])
+                    <div class="group relative overflow-hidden rounded-2xl border border-white/10
+                                hover:border-[#A9D6E5]/40 transition-all duration-500
+                                min-h-[280px] flex flex-col justify-end p-6
+                                hover:-translate-y-2 motion-reduce:hover:-translate-y-0">
+                        <div class="absolute inset-0 bg-cover bg-center scale-105 group-hover:scale-110
+                                    transition-transform duration-700 motion-reduce:transform-none"
+                             style="background-image:url('{{ $imagen }}')"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#060913] via-[#060913]/85 to-[#060913]/40"></div>
+
+                        <div class="relative z-10">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-[#1E40AF]/20 border border-[#A9D6E5]/30
+                                            flex items-center justify-center text-xl">
+                                    {{ $icono }}
+                                </div>
+                                <span class="text-4xl font-black bg-gradient-to-br from-white to-[#A9D6E5]
+                                             bg-clip-text text-transparent opacity-90">{{ $letra }}</span>
+                            </div>
+                            <h4 class="text-lg font-bold text-white mb-2">{{ $titulo }}</h4>
+                            <p class="text-sm text-gray-300 leading-relaxed">{{ $desc }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════
          FEATURES — gradiente siempre oscuro: colores fijos
          ══════════════════════════════════════════════════════════ -->
     <section id="features" class="py-24 w-full relative overflow-hidden">
