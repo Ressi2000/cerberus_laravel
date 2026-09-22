@@ -98,11 +98,11 @@
             <div class="flex items-center gap-3">
                 <!-- Toggle modo oscuro/claro -->
                 <button type="button" @click="toggle()"
-                    class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm text-white transition-all duration-300"
+                    class="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm text-white transition-all duration-300"
                     :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
                     aria-label="Cambiar tema">
-                    <span class="material-icons text-base" x-show="isDark" style="display:none">light_mode</span>
-                    <span class="material-icons text-base" x-show="!isDark">dark_mode</span>
+                    <span class="material-icons text-base leading-none" x-show="isDark" style="display:none">light_mode</span>
+                    <span class="material-icons text-base leading-none" x-show="!isDark">dark_mode</span>
                 </button>
 
                 @if (Route::has('login'))
