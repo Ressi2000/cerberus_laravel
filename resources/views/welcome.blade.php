@@ -87,8 +87,10 @@
         <!-- NAVBAR -->
         <header class="absolute top-0 left-0 right-0 z-20 w-full px-6 sm:px-8 py-6 flex justify-between items-center max-w-7xl mx-auto">
             <div class="flex items-center gap-3">
-                {{-- Logo fijo (variante "dark"): el Hero siempre tiene fondo oscuro --}}
-                <img src="{{ asset('images/logos/crb2-dark.png') }}" alt="Cerberus Logo"
+                {{-- Sigue el toggle de isDark, igual que el logo del footer/sidebar/auth-card --}}
+                <img src="{{ asset('images/logos/crb2-dark.png') }}"
+                    :src="isDark ? '{{ asset('images/logos/crb2-dark.png') }}' : '{{ asset('images/logos/crb2-ligth.png') }}'"
+                    alt="Cerberus Logo"
                     class="h-12 w-auto">
                 <h1 class="text-2xl font-semibold tracking-tight text-white">
                     Cerberus <span class="text-[#A9D6E5]">2.0</span>
