@@ -173,7 +173,7 @@
                               hover:scale-105 transform duration-300 motion-reduce:transform-none">
                         Iniciar sesión
                     </a>
-                    <a href="#features"
+                    <a href="#anatomia"
                         class="px-8 py-4 border-2 border-white/30 hover:border-white/60
                               text-white hover:bg-white/10 rounded-lg font-semibold text-lg transition
                               backdrop-blur-sm hover:scale-105 transform duration-300 motion-reduce:transform-none">
@@ -269,143 +269,29 @@
     </section>
 
     <!-- ══════════════════════════════════════════════════════════
-         FEATURES — gradiente siempre oscuro: colores fijos
+         CIERRE — "Lleva el control total de tu tecnología"
+         (panel de la propuesta), siempre oscuro: colores fijos
          ══════════════════════════════════════════════════════════ -->
-    <section id="features" class="py-24 w-full relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-[#0A1628] via-[#1a3a5c] to-[#0D1B2A]"></div>
-        <div class="absolute inset-0 opacity-30">
-            <div class="absolute top-20 right-20 w-96 h-96 bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-20 left-20 w-72 h-72 bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
-        </div>
-
-        <div class="relative z-10 max-w-7xl mx-auto text-center px-6">
-            <div class="mb-16">
-                <span class="inline-block px-4 py-2 rounded-full bg-[#A9D6E5]/10 border border-[#A9D6E5]/20 text-[#A9D6E5] text-sm font-medium mb-4 backdrop-blur-sm">
-                    🚀 Características
-                </span>
-                <h3 class="text-4xl md:text-5xl font-bold mb-4 text-white">
-                    ¿Qué puede hacer <span class="text-[#A9D6E5]">Cerberus</span>?
+    <section class="py-24 w-full text-center relative overflow-hidden bg-[#060913]">
+        <div class="relative z-10 max-w-4xl mx-auto px-6">
+            <div class="relative overflow-hidden rounded-3xl p-12 sm:p-16 border border-white/5"
+                 style="background: radial-gradient(circle at center, rgba(59, 130, 246, 0.12) 0%, transparent 70%);">
+                <h3 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 text-white">
+                    Lleva el control total de tu tecnología
                 </h3>
-                <p class="text-gray-300 max-w-2xl mx-auto text-lg">Módulos disponibles en la plataforma</p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                @foreach ([
-                    ['🖥️', 'Inventario de Equipos', 'Registra y clasifica activos tecnológicos con categorías configurables, estados, ubicaciones y atributos dinámicos por tipo de equipo (RAM, disco, S/N, etc.).'],
-                    ['📋', 'Asignaciones', 'Asigna equipos a usuarios o áreas comunes de forma permanente. Soporta periféricos vinculados al equipo principal con devoluciones independientes.'],
-                    ['🔄', 'Préstamos', 'Gestiona préstamos temporales con fechas de vencimiento, alertas de expiración, renovaciones y seguimiento de devoluciones.'],
-                    ['🚚', 'Traslados', 'Registra movimientos físicos de equipos entre ubicaciones con numeración automática (TRA-YYYY-NNN) y documentación del proceso.'],
-                    ['🔍', 'Auditoría', 'Cada acción queda registrada: quién la realizó, cuándo, y qué cambió. Trazabilidad completa para cumplimiento y control.'],
-                    ['⚙️', 'Configuración', 'Administra categorías, estados, ubicaciones, departamentos, cargos y empresas desde un panel centralizado.'],
-                ] as [$icon, $title, $desc])
-                    <div class="group p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10
-                                hover:border-[#A9D6E5]/40 hover:bg-white/10 transition-all duration-500 text-left
-                                hover:-translate-y-2 motion-reduce:hover:-translate-y-0
-                                hover:shadow-2xl hover:shadow-[#A9D6E5]/5">
-                        <div class="text-5xl mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500 motion-reduce:transform-none">
-                            {{ $icon }}</div>
-                        <h4 class="text-xl font-semibold mb-3 text-[#A9D6E5] group-hover:text-white transition-colors duration-300">
-                            {{ $title }}</h4>
-                        <p class="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                            {{ $desc }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════════════════════
-         ROLES — fondo que cambia con el tema: tokens cerberus-*
-         ══════════════════════════════════════════════════════════ -->
-    <section class="py-24 w-full relative bg-[#F0F4F8] dark:bg-[#0D1B2A] transition-colors duration-500">
-        <div class="relative z-10 max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <span class="inline-block px-4 py-2 rounded-full
-                             bg-cerberus-primary/10 dark:bg-[#A9D6E5]/10
-                             border border-cerberus-primary/20 dark:border-[#A9D6E5]/20
-                             text-cerberus-primary dark:text-[#A9D6E5]
-                             text-sm font-medium mb-4 backdrop-blur-sm">
-                    🔐 Control de acceso
-                </span>
-                <h3 class="text-4xl md:text-5xl font-bold text-[#0D1B2A] dark:text-white transition-colors duration-500">
-                    Acceso diferenciado por <span class="text-cerberus-primary dark:text-[#A9D6E5]">roles</span>
-                </h3>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                @foreach ([
-                    ['Administrador', 'Control total del sistema: configuración, usuarios, empresas y todos los datos del inventario.',    'border-[#1E40AF]/20 dark:border-red-500/30   bg-[#1E40AF]/5 dark:bg-red-500/5',   '👑', 'text-[#1E40AF] dark:text-red-400'],
-                    ['Analista',      'Gestión operativa de equipos, asignaciones, préstamos y traslados en su contexto de empresa.',       'border-[#1E40AF]/20 dark:border-blue-500/30  bg-[#1E40AF]/5 dark:bg-blue-500/5',  '📊', 'text-[#1E40AF] dark:text-blue-400'],
-                    ['Usuario',       'Visualización del inventario asignado y préstamos activos asociados a su perfil.',                   'border-[#1E40AF]/20 dark:border-green-500/30 bg-[#1E40AF]/5 dark:bg-green-500/5', '👤', 'text-[#1E40AF] dark:text-green-400'],
-                ] as [$rol, $desc, $style, $emoji, $color])
-                    <div class="group p-8 rounded-2xl border {{ $style }} bg-white/80 dark:bg-transparent
-                                backdrop-blur-sm hover:-translate-y-3 motion-reduce:hover:-translate-y-0
-                                transition-all duration-500 hover:shadow-xl">
-                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-500 motion-reduce:transform-none">
-                            {{ $emoji }}</div>
-                        <h4 class="font-bold text-2xl mb-3 {{ $color }} group-hover:text-[#0D1B2A] dark:group-hover:text-white transition-colors duration-300">
-                            {{ $rol }}</h4>
-                        <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-300">
-                            {{ $desc }}</p>
-                        <div class="mt-6 h-0.5 w-12 bg-[#1E40AF]/20 dark:bg-white/20
-                                    group-hover:w-full group-hover:bg-[#1E40AF] dark:group-hover:bg-[#A9D6E5]/50
-                                    transition-all duration-500 rounded-full">
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════════════════════
-         CTA FINAL — fondo que cambia con el tema
-         ══════════════════════════════════════════════════════════ -->
-    <section class="py-24 w-full text-center relative bg-[#E8EEF2] dark:bg-[#162a3f] transition-colors duration-500">
-        <div class="relative z-10 max-w-7xl mx-auto px-6">
-            <div class="relative overflow-hidden rounded-3xl p-12
-                        bg-gradient-to-r from-[#1E40AF]/20 to-[#1E40AF]/5
-                        dark:from-[#1E40AF]/30 dark:to-[#A9D6E5]/30
-                        border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20 backdrop-blur-sm">
-                <div class="absolute -top-20 -right-20 w-64 h-64 bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
-                <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-[#1E40AF]/5 dark:bg-[#1E40AF]/10 rounded-full blur-3xl"></div>
-
-                <div class="relative z-10">
-                    <span class="inline-block px-4 py-2 rounded-full
-                                 bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10
-                                 border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20
-                                 text-[#1E40AF] dark:text-[#A9D6E5]
-                                 text-sm font-medium mb-6 backdrop-blur-sm">
-                        🎯 Comienza ahora
-                    </span>
-                    <h3 class="text-4xl md:text-5xl font-bold mb-6 text-[#0D1B2A] dark:text-white transition-colors duration-500">
-                        Controla tu infraestructura con <span class="text-[#1E40AF] dark:text-[#A9D6E5]">Cerberus</span>
-                    </h3>
-                    <p class="text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto text-lg transition-colors duration-500">
-                        Solución moderna, segura y multiempresa para la gestión completa del ciclo de vida de tus
-                        activos tecnológicos.
-                    </p>
-                    <div class="flex flex-wrap justify-center gap-4">
-                        <a href="{{ route('login') }}"
-                            class="group inline-flex items-center gap-2 px-10 py-5
-                                  bg-[#1E40AF] hover:bg-[#1E3A8A] dark:bg-[#A9D6E5] dark:hover:bg-[#89C2D9]
-                                  text-white dark:text-[#0D1B2A] rounded-lg font-semibold text-xl
-                                  transition-all duration-300 shadow-lg
-                                  hover:scale-105 motion-reduce:transform-none
-                                  hover:shadow-2xl hover:shadow-[#1E40AF]/20 dark:hover:shadow-[#A9D6E5]/20">
-                            Comenzar ahora
-                            <span class="group-hover:translate-x-1 transition-transform duration-300 motion-reduce:transform-none">→</span>
-                        </a>
-                        <a href="#features"
-                            class="px-10 py-5 border-2 border-[#1E40AF]/30 dark:border-white/30
-                                  hover:border-[#1E40AF]/50 dark:hover:border-[#A9D6E5]/50
-                                  text-[#1E40AF] dark:text-white hover:text-[#0D1B2A] dark:hover:text-[#A9D6E5]
-                                  rounded-lg font-semibold text-xl transition-all duration-300
-                                  backdrop-blur-sm hover:scale-105 motion-reduce:transform-none
-                                  hover:shadow-xl hover:bg-white/50 dark:hover:bg-white/5">
-                            Explorar características
-                        </a>
-                    </div>
-                </div>
+                <p class="text-gray-400 mb-10 max-w-xl mx-auto text-lg">
+                    Optimiza los recursos, automatiza la trazabilidad y asegura el rendimiento de tu
+                    infraestructura con Cerberus 2.0.
+                </p>
+                <a href="{{ route('login') }}"
+                    class="group inline-flex items-center gap-3 px-9 py-4
+                          bg-gradient-to-r from-[#3b82f6] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1d4ed8]
+                          text-white rounded-full font-semibold text-lg
+                          shadow-[0_10px_25px_rgba(59,130,246,0.4)] hover:shadow-[0_15px_30px_rgba(59,130,246,0.6)]
+                          transition-all duration-300 hover:-translate-y-0.5 motion-reduce:transform-none">
+                    Comenzar Ahora
+                    <span class="group-hover:translate-x-1 transition-transform duration-300 motion-reduce:transform-none">→</span>
+                </a>
             </div>
         </div>
     </section>
