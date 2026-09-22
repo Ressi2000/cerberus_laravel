@@ -31,6 +31,21 @@
              text-[#1E293B] dark:text-[#F1F5F9]
              flex items-center justify-center px-6">
 
+    {{-- Botón volver al welcome (esquina superior izquierda) --}}
+    <div class="fixed top-4 left-4 z-50">
+        <a href="{{ url('/') }}"
+            class="flex items-center gap-1.5 px-3 py-2 rounded-full text-sm font-medium
+                   bg-white/60 dark:bg-white/10
+                   border border-gray-300 dark:border-white/20
+                   text-gray-700 dark:text-gray-200
+                   hover:bg-white dark:hover:bg-white/20
+                   shadow transition-all duration-200"
+        >
+            <span class="material-icons text-base">arrow_back</span>
+            <span class="hidden sm:inline">Volver al inicio</span>
+        </a>
+    </div>
+
     {{-- Botón toggle dark mode (esquina superior derecha) --}}
     <div class="fixed top-4 right-4 z-50">
         <button

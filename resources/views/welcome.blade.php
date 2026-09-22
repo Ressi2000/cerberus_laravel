@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="cerberusDarkMode()" :class="{ 'dark': isDark }">
 
 <head>
     <meta charset="utf-8">
@@ -12,8 +12,20 @@
     <meta property="og:description" content="Gestión inteligente de tu inventario tecnológico: asignaciones, préstamos, traslados y auditoría completa.">
     <meta property="og:type" content="website">
 
+    {{-- Anti-flash: misma clave de localStorage que el resto del sistema --}}
+    <script>
+        (function () {
+            const saved = localStorage.getItem('cerberus-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (saved === null && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700,800&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -75,47 +87,60 @@
         <!-- NAVBAR -->
         <header class="absolute top-0 left-0 right-0 z-20 w-full px-6 sm:px-8 py-6 flex justify-between items-center max-w-7xl mx-auto">
             <div class="flex items-center gap-3">
-                <img src="{{ asset('images/cerberusLight.png') }}" alt="Cerberus Logo"
-                    class="h-12 w-auto brightness-0 invert">
+                <img src="{{ asset('images/CBRS2.0S_frW.png') }}" alt="Cerberus Logo"
+                    class="h-12 w-auto">
                 <h1 class="text-2xl font-semibold tracking-tight text-white">
                     Cerberus <span class="text-[#A9D6E5]">2.0</span>
                 </h1>
             </div>
 
-            @if (Route::has('login'))
-                <!-- Nav desktop -->
-                <nav class="hidden sm:flex items-center gap-4 text-sm">
-                    @auth
-                        <a href="{{ url('/dashboard') }}"
-                            class="px-5 py-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white rounded-md shadow transition">
-                            Dashboard
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}"
-                            class="px-5 py-2 border border-white/30 hover:border-white/60
-                                  text-white hover:bg-white/10 rounded-md transition font-medium backdrop-blur-sm">
-                            Iniciar sesión
-                        </a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}"
-                                class="px-5 py-2 bg-[#A9D6E5] hover:bg-[#89C2D9]
-                                      text-[#0D1B2A] rounded-md shadow transition font-medium">
-                                Registrarse
-                            </a>
-                        @endif
-                    @endauth
-                </nav>
-
-                <!-- Botón hamburguesa mobile -->
-                <button type="button" @click="mobileNavOpen = !mobileNavOpen"
-                    class="sm:hidden p-2 rounded-md border border-white/30 text-white"
-                    aria-label="Abrir menú de navegación">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path x-show="!mobileNavOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path x-show="mobileNavOpen" x-cloak stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+            <div class="flex items-center gap-3">
+                <!-- Toggle modo oscuro/claro -->
+                <button type="button" @click="toggle()"
+                    class="p-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm text-white transition-all duration-300"
+                    :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+                    aria-label="Cambiar tema">
+                    <span class="material-icons text-base" x-show="isDark" style="display:none">light_mode</span>
+                    <span class="material-icons text-base" x-show="!isDark">dark_mode</span>
                 </button>
 
+                @if (Route::has('login'))
+                    <!-- Nav desktop -->
+                    <nav class="hidden sm:flex items-center gap-4 text-sm">
+                        @auth
+                            <a href="{{ url('/dashboard') }}"
+                                class="px-5 py-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white rounded-md shadow transition">
+                                Dashboard
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}"
+                                class="px-5 py-2 border border-white/30 hover:border-white/60
+                                      text-white hover:bg-white/10 rounded-md transition font-medium backdrop-blur-sm">
+                                Iniciar sesión
+                            </a>
+                            @if (Route::has('register'))
+                                <a href="{{ route('register') }}"
+                                    class="px-5 py-2 bg-[#A9D6E5] hover:bg-[#89C2D9]
+                                          text-[#0D1B2A] rounded-md shadow transition font-medium">
+                                    Registrarse
+                                </a>
+                            @endif
+                        @endauth
+                    </nav>
+
+                    <!-- Botón hamburguesa mobile -->
+                    <button type="button" @click="mobileNavOpen = !mobileNavOpen"
+                        class="sm:hidden p-2 rounded-md border border-white/30 text-white"
+                        aria-label="Abrir menú de navegación">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path x-show="!mobileNavOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            <path x-show="mobileNavOpen" x-cloak stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                @endif
+            </div>
+
+            @if (Route::has('login'))
                 <!-- Nav mobile desplegable -->
                 <nav x-show="mobileNavOpen" x-cloak x-transition
                     class="sm:hidden absolute top-full left-0 right-0 mt-2 mx-6 p-4 rounded-xl bg-[#0D1B2A]/95 border border-white/10 backdrop-blur-sm flex flex-col gap-3 text-sm">
@@ -310,7 +335,7 @@
             <div class="max-w-7xl mx-auto px-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                     <div class="flex items-center gap-3">
-                        <img src="{{ asset('images/cerberusLight.png') }}" alt="Cerberus Logo" loading="lazy"
+                        <img src="{{ asset('images/CBRS2.0S_frW.png') }}" alt="Cerberus Logo" loading="lazy"
                             class="h-8 w-auto opacity-70">
                         <span class="text-white/80 font-semibold">Cerberus 2.0</span>
                     </div>
