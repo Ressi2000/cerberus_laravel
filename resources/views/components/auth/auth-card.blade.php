@@ -7,7 +7,10 @@
 
     {{-- LOGO + TÍTULO --}}
     <div class="flex flex-col items-center mb-8">
-        <img src="{{ asset('images/CBRS2.0S_frW.png') }}"
+        {{-- Sigue el toggle de isDark (cerberusDarkMode(), definido en el <html> del layout).
+             src="" de respaldo antes de que Alpine hidrate, para no mostrar un ícono roto. --}}
+        <img src="{{ asset('images/logos/crb2-dark.png') }}"
+             :src="isDark ? '{{ asset('images/logos/crb2-dark.png') }}' : '{{ asset('images/logos/crb2-ligth.png') }}'"
              alt="Cerberus Logo"
              class="h-16 w-16 mb-3 transition-all duration-500">
 

@@ -87,7 +87,8 @@
         <!-- NAVBAR -->
         <header class="absolute top-0 left-0 right-0 z-20 w-full px-6 sm:px-8 py-6 flex justify-between items-center max-w-7xl mx-auto">
             <div class="flex items-center gap-3">
-                <img src="{{ asset('images/CBRS2.0S_frW.png') }}" alt="Cerberus Logo"
+                {{-- Logo fijo (variante "dark"): el Hero siempre tiene fondo oscuro --}}
+                <img src="{{ asset('images/logos/crb2-dark.png') }}" alt="Cerberus Logo"
                     class="h-12 w-auto">
                 <h1 class="text-2xl font-semibold tracking-tight text-white">
                     Cerberus <span class="text-[#A9D6E5]">2.0</span>
@@ -335,7 +336,8 @@
             <div class="max-w-7xl mx-auto px-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                     <div class="flex items-center gap-3">
-                        <img src="{{ asset('images/CBRS2.0S_frW.png') }}" alt="Cerberus Logo" loading="lazy"
+                        {{-- Logo fijo (variante "dark"): el footer siempre tiene fondo oscuro --}}
+                        <img src="{{ asset('images/logos/crb2-dark.png') }}" alt="Cerberus Logo" loading="lazy"
                             class="h-8 w-auto opacity-70">
                         <span class="text-white/80 font-semibold">Cerberus 2.0</span>
                     </div>
