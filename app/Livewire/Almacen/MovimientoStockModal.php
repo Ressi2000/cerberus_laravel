@@ -42,6 +42,22 @@ class MovimientoStockModal extends Component
         return $this->componenteId ? ComponenteAlmacen::find($this->componenteId) : null;
     }
 
+    /** Historial de uso: en qué mantenimientos/reparaciones se consumió este componente. */
+    #[Computed]
+    public function usosEnMantenimiento()
+    {
+        if (! $this->componenteId) {
+            return collect();
+        }
+
+        return \App\Models\MantenimientoComponente::with(['mantenimiento.equipo', 'entregadoPor'])
+            ->where('componente_id', $this->componenteId)
+            ->where('estado', 'Entregado')
+            ->latest('fecha_entrega')
+            ->limit(10)
+            ->get();
+    }
+
     protected function rules(): array
     {
         return [

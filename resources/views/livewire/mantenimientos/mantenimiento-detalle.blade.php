@@ -161,33 +161,60 @@
     @endcan
 
     {{-- ── DIAGNÓSTICO / COSTO ────────────────────────────────────────────── --}}
-    @can('update', $m)
+    {{-- Editable solo mientras el caso está abierto. Cerrado/Completado/Cancelado/
+         Dado de baja: se muestra en modo lectura, incluso para Administrador —
+         el diagnóstico de un caso ya cerrado no debe poder seguir cambiando. --}}
+    @if ($m->estaAbierto())
+        @can('update', $m)
+            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <span class="material-icons text-cerberus-accent text-base">fact_check</span>
+                    Diagnóstico
+                </h3>
+
+                <div class="space-y-4">
+                    @if ($m->esCorrectivo())
+                        <x-form.textarea label="Diagnóstico" wire:model="diagnostico" rows="2" placeholder="Resultado del análisis técnico..." />
+                        <x-form.textarea label="Causa raíz" wire:model="causa_raiz" rows="2" placeholder="Por qué ocurrió la falla..." />
+                    @endif
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <x-form.input label="Costo" type="number" wire:model="costo" placeholder="0.00" suffix="$" />
+                    </div>
+
+                    <x-form.textarea label="Observaciones" wire:model="observaciones" rows="2" placeholder="Notas adicionales..." />
+
+                    <div class="flex justify-end">
+                        <button wire:click="guardarDiagnostico" class="px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition">
+                            Guardar diagnóstico
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endcan
+    @elseif ($m->diagnostico || $m->causa_raiz || $m->costo || $m->observaciones)
         <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span class="material-icons text-cerberus-accent text-base">fact_check</span>
                 Diagnóstico
+                <span class="text-xs font-normal text-gray-400 dark:text-cerberus-steel">(caso cerrado, solo lectura)</span>
             </h3>
-
-            <div class="space-y-4">
-                @if ($m->esCorrectivo())
-                    <x-form.textarea label="Diagnóstico" wire:model="diagnostico" rows="2" placeholder="Resultado del análisis técnico..." />
-                    <x-form.textarea label="Causa raíz" wire:model="causa_raiz" rows="2" placeholder="Por qué ocurrió la falla..." />
+            <div class="space-y-3 text-sm">
+                @if ($m->diagnostico)
+                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Diagnóstico</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->diagnostico }}</p></div>
                 @endif
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <x-form.input label="Costo" type="number" wire:model="costo" placeholder="0.00" suffix="$" />
-                </div>
-
-                <x-form.textarea label="Observaciones" wire:model="observaciones" rows="2" placeholder="Notas adicionales..." />
-
-                <div class="flex justify-end">
-                    <button wire:click="guardarDiagnostico" class="px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition">
-                        Guardar diagnóstico
-                    </button>
-                </div>
+                @if ($m->causa_raiz)
+                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Causa raíz</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->causa_raiz }}</p></div>
+                @endif
+                @if ($m->costo)
+                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Costo</p><p class="text-gray-700 dark:text-cerberus-light">${{ number_format($m->costo, 2) }}</p></div>
+                @endif
+                @if ($m->observaciones)
+                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Observaciones</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->observaciones }}</p></div>
+                @endif
             </div>
         </div>
-    @endcan
+    @endif
 
     {{-- ── COMPONENTES ─────────────────────────────────────────────────────── --}}
     @livewire('mantenimientos.mantenimiento-componentes-panel', ['mantenimientoId' => $m->id], key('comp-' . $m->id))

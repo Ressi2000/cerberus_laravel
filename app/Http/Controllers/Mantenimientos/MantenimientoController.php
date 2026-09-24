@@ -20,13 +20,6 @@ class MantenimientoController extends Controller
         return view('mantenimientos.index');
     }
 
-    /** Vista "En Reparación" del sidebar: mismo listado, filtrado a correctivos abiertos. */
-    public function enReparacion()
-    {
-        $this->authorize('viewAny', Mantenimiento::class);
-        return view('mantenimientos.en-reparacion');
-    }
-
     public function create()
     {
         $this->authorize('create', Mantenimiento::class);

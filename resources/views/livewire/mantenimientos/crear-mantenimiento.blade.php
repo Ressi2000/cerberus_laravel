@@ -74,6 +74,41 @@
             </div>
         </div>
 
+        {{-- Foto "Antes" — evidencia obligatoria del estado inicial del equipo --}}
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">
+                Foto "Antes" <span class="text-red-500">*</span>
+            </label>
+            <div class="flex items-center gap-4">
+                @if ($fotoAntes)
+                    <img src="{{ $fotoAntes->temporaryUrl() }}" class="w-16 h-16 rounded-lg object-cover border border-gray-200 dark:border-cerberus-steel">
+                @endif
+
+                <label class="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg text-sm
+                              bg-gray-100 dark:bg-cerberus-dark
+                              border border-gray-300 dark:border-cerberus-steel
+                              text-gray-700 dark:text-cerberus-light
+                              hover:bg-gray-200 dark:hover:bg-cerberus-steel/50 transition">
+                    <span class="material-icons text-base">upload</span>
+                    {{ $fotoAntes ? 'Cambiar foto' : 'Subir foto' }}
+                    <input type="file" wire:model="fotoAntes" class="hidden" accept="image/*">
+                </label>
+
+                <div wire:loading wire:target="fotoAntes" class="text-xs text-gray-400 flex items-center gap-1">
+                    <span class="material-icons text-sm animate-spin">refresh</span>
+                    Subiendo...
+                </div>
+            </div>
+            <p class="text-xs text-gray-400 dark:text-cerberus-steel mt-1">
+                Evidencia del estado del equipo antes de intervenirlo. JPG, PNG · máx. 5MB.
+            </p>
+            @error('fotoAntes')
+                <p class="text-red-500 text-xs mt-1 flex items-center gap-1">
+                    <span class="material-icons text-xs">error_outline</span> {{ $message }}
+                </p>
+            @enderror
+        </div>
+
         @if ($tipo === 'Correctivo')
             <x-form.textarea
                 label="Falla reportada"

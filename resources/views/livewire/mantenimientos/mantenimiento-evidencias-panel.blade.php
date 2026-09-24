@@ -4,25 +4,46 @@
         Evidencia fotográfica
     </h3>
 
-    @if ($this->mantenimiento->estaAbierto())
-        <div class="flex flex-wrap items-end gap-3 mb-4">
+    @if (! empty($this->momentosDisponibles))
+        <div class="flex flex-wrap items-start gap-4 mb-4">
             <div class="min-w-[140px]">
-                <x-form.select label="Momento" :options="['Antes' => 'Antes', 'Durante' => 'Durante', 'Después' => 'Después']" wire:model="tipoFoto" />
+                <x-form.select label="Momento" :options="$this->momentosDisponibles" wire:model="tipoFoto" />
             </div>
-            <div class="flex-1 min-w-[200px]">
+
+            <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">Foto</label>
-                <input type="file" wire:model="foto" accept="image/*"
-                    class="w-full text-sm text-gray-600 dark:text-cerberus-light
-                           file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0
-                           file:bg-cerberus-primary/10 file:text-cerberus-primary dark:file:text-cerberus-accent
-                           file:text-xs file:font-medium">
+                <div class="flex items-center gap-3">
+                    <label class="cursor-pointer flex items-center gap-2 px-4 py-2 rounded-lg text-sm
+                                  bg-gray-100 dark:bg-cerberus-dark
+                                  border border-gray-300 dark:border-cerberus-steel
+                                  text-gray-700 dark:text-cerberus-light
+                                  hover:bg-gray-200 dark:hover:bg-cerberus-steel/50 transition">
+                        <span class="material-icons text-base">upload</span>
+                        Elegir foto
+                        <input type="file" wire:model="foto" class="hidden" accept="image/*">
+                    </label>
+
+                    <div wire:loading wire:target="foto" class="text-xs text-gray-400 flex items-center gap-1">
+                        <span class="material-icons text-sm animate-spin">refresh</span>
+                        Subiendo...
+                    </div>
+
+                    @if ($foto)
+                        <img src="{{ $foto->temporaryUrl() }}" class="w-10 h-10 rounded-lg object-cover border border-gray-200 dark:border-cerberus-steel">
+                    @endif
+                </div>
                 @error('foto') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
-            <button wire:click="subir" wire:loading.attr="disabled" wire:target="subir,foto"
-                class="px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition disabled:opacity-60">
+
+            <button wire:click="subir" wire:loading.attr="disabled" wire:target="subir"
+                class="mt-6 px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition disabled:opacity-60">
                 Subir
             </button>
         </div>
+    @elseif ($this->mantenimiento->estaAbierto())
+        <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-4">
+            Ya se registró la evidencia de este momento del caso.
+        </p>
     @endif
 
     @if ($this->mantenimiento->evidencias->isEmpty())

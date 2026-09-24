@@ -11,17 +11,12 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 /**
- * Listado reactivo de Mantenimientos y Reparaciones.
- *
- * $soloReparacion=true es la vista "En Reparación" del sidebar: mismo
- * componente, mismos filtros, pero fijado a tipo=Correctivo y solo casos
- * abiertos (sin selector de tipo ni de "mostrar cerrados").
+ * Listado reactivo de Mantenimientos y Reparaciones (un solo listado para
+ * ambos tipos, filtrable por tipo/estado/empresa).
  */
 class MantenimientosTable extends Component
 {
     use WithPagination;
-
-    public bool $soloReparacion = false;
 
     #[Url(as: 'empresa')]
     public string $empresa_id = '';
@@ -31,19 +26,13 @@ class MantenimientosTable extends Component
     public bool   $mostrar_cerrados = false;
     public string $search           = '';
 
-    public function mount(bool $soloReparacion = false): void
+    public function mount(): void
     {
         $this->authorize('viewAny', Mantenimiento::class);
-
-        $this->soloReparacion = $soloReparacion;
 
         $actor = Auth::user();
         if (! $actor->hasRole('Administrador')) {
             $this->empresa_id = (string) ($actor->empresa_activa_id ?? '');
-        }
-
-        if ($this->soloReparacion) {
-            $this->tipo = Mantenimiento::TIPO_CORRECTIVO;
         }
     }
 
@@ -55,11 +44,8 @@ class MantenimientosTable extends Component
     public function resetFilters(): void
     {
         $actor = Auth::user();
-        $this->reset(['search', 'estado', 'mostrar_cerrados']);
+        $this->reset(['search', 'tipo', 'estado', 'mostrar_cerrados']);
         $this->empresa_id = $actor->hasRole('Administrador') ? '' : (string) ($actor->empresa_activa_id ?? '');
-        if (! $this->soloReparacion) {
-            $this->tipo = '';
-        }
         $this->resetPage();
     }
 
@@ -83,10 +69,15 @@ class MantenimientosTable extends Component
         return collect([
             $this->search !== '',
             $this->estado !== '',
+            $this->tipo !== '',
             $this->mostrar_cerrados,
-            ! $this->soloReparacion && $this->tipo !== '',
             $actor->hasRole('Administrador') && $this->empresa_id !== '',
         ])->filter()->count();
+    }
+
+    private function baseQuery()
+    {
+        return Mantenimiento::visiblePara(Auth::user());
     }
 
     #[Computed]
@@ -113,21 +104,13 @@ class MantenimientosTable extends Component
         return $this->baseQuery()->preventivos()->abiertos()->count();
     }
 
-    private function baseQuery()
-    {
-        return Mantenimiento::visiblePara(Auth::user());
-    }
-
     #[Computed]
     public function mantenimientos()
     {
         return Mantenimiento::with(['equipo.categoria', 'empresa', 'responsable'])
             ->visiblePara(Auth::user())
-            ->when($this->soloReparacion, fn ($q) => $q->correctivos()->abiertos())
-            ->when(! $this->soloReparacion, function ($q) {
-                $q->when($this->tipo, fn ($q) => $q->where('tipo', $this->tipo))
-                  ->when(! $this->mostrar_cerrados, fn ($q) => $q->abiertos());
-            })
+            ->when($this->tipo, fn ($q) => $q->where('tipo', $this->tipo))
+            ->when(! $this->mostrar_cerrados, fn ($q) => $q->abiertos())
             ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))
             ->when($this->estado, fn ($q) => $q->where('estado', $this->estado))
             ->when($this->search, fn ($q) => $q->whereHas('equipo', fn ($q) =>

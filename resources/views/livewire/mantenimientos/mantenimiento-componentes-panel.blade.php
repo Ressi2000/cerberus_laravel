@@ -14,14 +14,40 @@
 
     @if ($formAbierto)
         <div class="bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-4 mb-4 space-y-3">
-            <x-form.select
-                searchable
-                label="Componente"
-                placeholder="Selecciona del almacén"
-                :options="$this->componentesDisponibles"
-                wire:model="componente_id"
-                :error="$errors->first('componente_id')"
-            />
+
+            @if (! $solicitarNuevo)
+                <div wire:key="select-existente">
+                    <x-form.select
+                        searchable
+                        label="Componente"
+                        placeholder="Selecciona del almacén"
+                        :options="$this->componentesDisponibles"
+                        wire:model="componente_id"
+                        :error="$errors->first('componente_id')"
+                    />
+                </div>
+
+                @can('create', \App\Models\ComponenteAlmacen::class)
+                    <button type="button" wire:click="$set('solicitarNuevo', true)"
+                        class="text-xs text-cerberus-primary dark:text-cerberus-accent hover:underline flex items-center gap-1">
+                        <span class="material-icons text-sm">add_circle_outline</span>
+                        No está en el almacén — solicitar componente nuevo
+                    </button>
+                @endcan
+            @else
+                <div class="bg-purple-50 dark:bg-purple-500/10 border border-purple-200 dark:border-purple-500/30 rounded-lg p-3 space-y-3">
+                    <p class="text-xs text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                        <span class="material-icons text-sm">info</span>
+                        Se dará de alta en el almacén con stock 0 y quedará pedido como "Pendiente".
+                    </p>
+                    <x-form.input label="Nombre del componente" wire:model="nuevoNombre" placeholder="Ej: Pantalla LCD 15.6&quot;" :error="$errors->first('nuevoNombre')" />
+                    <x-form.input label="Unidad" wire:model="nuevaUnidad" placeholder="unidad, par, metro..." :error="$errors->first('nuevaUnidad')" />
+                    <button type="button" wire:click="$set('solicitarNuevo', false)" class="text-xs text-gray-500 dark:text-cerberus-light hover:underline">
+                        Cancelar, elegir del almacén
+                    </button>
+                </div>
+            @endif
+
             <x-form.input
                 label="Cantidad"
                 type="number"
@@ -33,7 +59,7 @@
                     Cancelar
                 </button>
                 <button wire:click="pedir" class="px-3 py-1.5 text-xs rounded-lg bg-[#1E40AF] text-white">
-                    Pedir
+                    {{ $solicitarNuevo ? 'Solicitar' : 'Pedir' }}
                 </button>
             </div>
         </div>

@@ -175,7 +175,6 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
         ->group(function () {
             Route::get('/',              [MantenimientoController::class, 'index'])->name('index');
-            Route::get('/en-reparacion', [MantenimientoController::class, 'enReparacion'])->name('en-reparacion');
             Route::get('/crear',         [MantenimientoController::class, 'create'])->name('create');
             Route::get('/{mantenimiento}', [MantenimientoController::class, 'show'])->name('show');
         });

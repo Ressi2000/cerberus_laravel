@@ -12,19 +12,25 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 /**
  * Formulario de creación de un mantenimiento/reparación.
  *
  * Al guardar: vincula automáticamente la asignación activa del equipo (si
  * tiene una), arranca en el primer estado de su flujo según el tipo, y
- * bloquea el equipo (bloquearEquipo()) sin tocar esa asignación.
+ * bloquea el equipo (bloquearEquipo()) sin tocar esa asignación. Exige una
+ * foto "Antes" como evidencia inicial del estado del equipo.
  */
 class CrearMantenimiento extends Component
 {
+    use WithFileUploads;
+
     public string $empresa_id  = '';
     public string $equipo_id   = '';
     public string $tipo        = 'Correctivo';
+
+    public $fotoAntes = null;
 
     public string $descripcion        = '';
     public string $fecha_inicio       = '';
@@ -106,6 +112,7 @@ class CrearMantenimiento extends Component
             'empresa_id'         => 'required|exists:empresas,id',
             'equipo_id'          => 'required|exists:equipos,id',
             'tipo'               => 'required|in:Preventivo,Correctivo',
+            'fotoAntes'          => 'required|image|max:5120',
             'fecha_inicio'       => 'required|date',
             'fecha_fin_estimada' => 'nullable|date|after_or_equal:fecha_inicio',
             'responsable_id'     => 'nullable|exists:users,id',
@@ -129,6 +136,8 @@ class CrearMantenimiento extends Component
         return [
             'equipo_id.required'        => 'Selecciona un equipo.',
             'falla_reportada.required'  => 'Describe la falla reportada.',
+            'fotoAntes.required'        => 'La foto "Antes" es obligatoria para dejar evidencia del estado inicial del equipo.',
+            'fotoAntes.image'           => 'El archivo debe ser una imagen.',
             'fecha_fin_estimada.after_or_equal' => 'La fecha estimada no puede ser anterior al inicio.',
         ];
     }
@@ -139,7 +148,12 @@ class CrearMantenimiento extends Component
         $this->validate();
 
         try {
-            $mantenimiento = DB::transaction(function () {
+            // El archivo se guarda antes de la transacción: Storage no es
+            // transaccional y no tiene sentido bloquear la fila mientras se
+            // escribe a disco.
+            $rutaFotoAntes = $this->fotoAntes->store('mantenimientos', 'public');
+
+            $mantenimiento = DB::transaction(function () use ($rutaFotoAntes) {
                 $equipo = Equipo::findOrFail($this->equipo_id);
 
                 // Defensa adicional: si en el instante de guardar ya hay un caso
@@ -179,6 +193,12 @@ class CrearMantenimiento extends Component
 
                 $mantenimiento = Mantenimiento::create($data);
                 $mantenimiento->bloquearEquipo();
+
+                $mantenimiento->evidencias()->create([
+                    'ruta_archivo'  => $rutaFotoAntes,
+                    'tipo'          => 'Antes',
+                    'subido_por_id' => Auth::id(),
+                ]);
 
                 return $mantenimiento;
             });

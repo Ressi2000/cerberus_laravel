@@ -273,12 +273,12 @@
                 </a>
 
                 <a href="{{ route('admin.mantenimientos.index') }}"
-                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.mantenimientos.index', 'admin.mantenimientos.create', 'admin.mantenimientos.show') ? $on : $off }}"
-                    title="Mantenimientos">
-                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.mantenimientos.index', 'admin.mantenimientos.create', 'admin.mantenimientos.show') ? $ion : $ioff }}">
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.mantenimientos.*') ? $on : $off }}"
+                    title="Mantenimientos / Reparación">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.mantenimientos.*') ? $ion : $ioff }}">
                         build
                     </span>
-                    <span class="whitespace-nowrap">Mantenimientos</span>
+                    <span class="whitespace-nowrap">Mantenimientos / Reparación</span>
                 </a>
 
                 <a href="{{ route('admin.almacen.index') }}"
@@ -320,14 +320,6 @@
                     </span>
                 </span>
 
-                <a href="{{ route('admin.mantenimientos.en-reparacion') }}"
-                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.mantenimientos.en-reparacion') ? $on : $off }}"
-                    title="En Reparación">
-                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.mantenimientos.en-reparacion') ? $ion : $ioff }}">
-                        construction
-                    </span>
-                    <span class="whitespace-nowrap">En Reparación</span>
-                </a>
             </div>
         </div>
 

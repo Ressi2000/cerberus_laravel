@@ -47,10 +47,27 @@ class MantenimientoDetalle extends Component
         unset($this->mantenimiento);
     }
 
+    /**
+     * Tras cualquier acción que cambie el estado del caso (avanzar, cerrar,
+     * completar, cancelar...), hay que avisarle a los paneles hermanos
+     * (Componentes, Evidencias) — son otros componentes Livewire con su
+     * propia caché, no se enteran solos de que el caso ya no está abierto.
+     */
+    private function notificarActualizacion(): void
+    {
+        unset($this->mantenimiento);
+        $this->dispatch('mantenimientoActualizado');
+    }
+
     public function guardarDiagnostico(): void
     {
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
+
+        if (! $m->estaAbierto()) {
+            $this->dispatch('toast', type: 'error', message: 'Este caso ya está cerrado, no se puede editar el diagnóstico.');
+            return;
+        }
 
         $this->validate([
             'diagnostico'   => 'nullable|string|max:2000',
@@ -79,7 +96,7 @@ class MantenimientoDetalle extends Component
             $this->dispatch('toast', type: 'success', message: "Caso avanzado a «{$m->fresh()->estado}».");
         }
 
-        $this->refrescar();
+        $this->notificarActualizacion();
     }
 
     public function marcarReparado(): void
@@ -88,7 +105,7 @@ class MantenimientoDetalle extends Component
         $this->authorize('update', $m);
         $m->marcarReparado();
         $this->dispatch('toast', type: 'success', message: 'Marcado como reparado.');
-        $this->refrescar();
+        $this->notificarActualizacion();
     }
 
     public function cerrar(): void
@@ -97,7 +114,7 @@ class MantenimientoDetalle extends Component
         $this->authorize('update', $m);
         $m->cerrar();
         $this->dispatch('toast', type: 'success', message: 'Caso cerrado. El equipo fue liberado.');
-        $this->refrescar();
+        $this->notificarActualizacion();
     }
 
     public function completar(): void
@@ -106,7 +123,7 @@ class MantenimientoDetalle extends Component
         $this->authorize('update', $m);
         $m->completar();
         $this->dispatch('toast', type: 'success', message: 'Mantenimiento completado. El equipo fue liberado.');
-        $this->refrescar();
+        $this->notificarActualizacion();
     }
 
     public function cancelar(): void
@@ -122,7 +139,7 @@ class MantenimientoDetalle extends Component
             $this->dispatch('toast', type: 'error', message: 'Error al cancelar.');
         }
 
-        $this->refrescar();
+        $this->notificarActualizacion();
     }
 
     public function render()

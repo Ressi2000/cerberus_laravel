@@ -16,10 +16,7 @@
     @endphp
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
-    <x-ui.stats-cards :items="$soloReparacion ? [
-        ['title' => 'Reparaciones abiertas', 'value' => $this->totalAbiertos,              'icon' => 'construction'],
-        ['title' => 'Esperando repuesto',    'value' => $this->totalEsperandoComponente,   'icon' => 'hourglass_empty'],
-    ] : [
+    <x-ui.stats-cards :items="[
         ['title' => 'Casos abiertos',      'value' => $this->totalAbiertos,             'icon' => 'pending_actions'],
         ['title' => 'Mantenimientos',      'value' => $this->totalPreventivos,          'icon' => 'build'],
         ['title' => 'Reparaciones',        'value' => $this->totalCorrectivos,          'icon' => 'construction'],
@@ -28,10 +25,8 @@
 
     {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
     <x-table.crud-header
-        :title="$soloReparacion ? 'En Reparación' : 'Mantenimientos y Reparaciones'"
-        :subtitle="$soloReparacion
-            ? 'Equipos con una reparación correctiva en curso'
-            : 'Trazabilidad de mantenimiento preventivo y reparación correctiva'"
+        title="Mantenimientos / Reparación"
+        subtitle="Trazabilidad de mantenimiento preventivo y reparación correctiva"
         buttonLabel="Nuevo caso"
         :buttonUrl="route('admin.mantenimientos.create')">
 
@@ -59,11 +54,9 @@
                         <x-form.select label="Empresa" placeholder="Todas" :options="$this->empresasOpciones" wire:model.live="empresa_id" />
                     @endif
 
-                    @unless ($soloReparacion)
-                        <x-form.select label="Tipo" placeholder="Todos"
-                            :options="['Preventivo' => 'Mantenimiento', 'Correctivo' => 'Reparación']"
-                            wire:model.live="tipo" />
-                    @endunless
+                    <x-form.select label="Tipo" placeholder="Todos"
+                        :options="['Preventivo' => 'Mantenimiento', 'Correctivo' => 'Reparación']"
+                        wire:model.live="tipo" />
 
                     <x-form.select label="Estado" placeholder="Todos"
                         :options="collect(\App\Models\Mantenimiento::ESTADOS_PREVENTIVO)
@@ -72,19 +65,17 @@
                         wire:model.live="estado" />
                 </div>
 
-                @unless ($soloReparacion)
-                    <div class="flex items-center gap-3 pt-1">
-                        <button wire:click="$toggle('mostrar_cerrados')" role="switch"
-                            class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full
-                                   border-2 border-transparent transition-colors duration-200
-                                   {{ $mostrar_cerrados ? 'bg-cerberus-primary' : 'bg-gray-300 dark:bg-cerberus-steel/40' }}">
-                            <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white
-                                         shadow ring-0 transition duration-200
-                                         {{ $mostrar_cerrados ? 'translate-x-4' : 'translate-x-0' }}"></span>
-                        </button>
-                        <span class="text-sm text-gray-600 dark:text-cerberus-light select-none">Mostrar casos cerrados</span>
-                    </div>
-                @endunless
+                <div class="flex items-center gap-3 pt-1">
+                    <button wire:click="$toggle('mostrar_cerrados')" role="switch"
+                        class="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full
+                               border-2 border-transparent transition-colors duration-200
+                               {{ $mostrar_cerrados ? 'bg-cerberus-primary' : 'bg-gray-300 dark:bg-cerberus-steel/40' }}">
+                        <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white
+                                     shadow ring-0 transition duration-200
+                                     {{ $mostrar_cerrados ? 'translate-x-4' : 'translate-x-0' }}"></span>
+                    </button>
+                    <span class="text-sm text-gray-600 dark:text-cerberus-light select-none">Mostrar casos cerrados</span>
+                </div>
             </div>
         </x-slot>
     </x-table.crud-header>

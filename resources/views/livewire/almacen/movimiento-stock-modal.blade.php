@@ -78,6 +78,25 @@
                         </div>
                     @endif
 
+                    @if ($this->usosEnMantenimiento->isNotEmpty())
+                        <div>
+                            <p class="text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-2">Historial de uso</p>
+                            <div class="max-h-40 overflow-y-auto space-y-1.5">
+                                @foreach ($this->usosEnMantenimiento as $uso)
+                                    <div wire:key="uso-{{ $uso->id }}" class="flex items-center justify-between text-xs bg-gray-50 dark:bg-cerberus-dark/40 rounded-lg px-3 py-2">
+                                        <span class="text-gray-700 dark:text-cerberus-light">
+                                            {{ $uso->cantidad_requerida }} en
+                                            <a href="{{ route('admin.mantenimientos.show', $uso->mantenimiento_id) }}" target="_blank" class="text-cerberus-primary dark:text-cerberus-accent hover:underline">
+                                                {{ $uso->mantenimiento?->equipo?->codigo_interno ?? '#' . $uso->mantenimiento_id }}
+                                            </a>
+                                        </span>
+                                        <span class="text-gray-400 dark:text-cerberus-steel whitespace-nowrap">{{ $uso->fecha_entrega?->format('d/m/Y') }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
                 </div>
 
                 <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel">
