@@ -18,18 +18,19 @@ use Livewire\Component;
  */
 class CategoriaModal extends Component
 {
-    public bool   $open        = false;
-    public ?int   $categoriaId = null;
-    public string $nombre      = '';
-    public string $descripcion = '';
-    public bool   $asignable   = false;
+    public bool    $open        = false;
+    public ?int    $categoriaId = null;
+    public string  $nombre      = '';
+    public string  $descripcion = '';
+    public bool    $asignable   = false;
+    public ?int    $mesesRotacionAsignacion = null;
 
     // ── Abrir ─────────────────────────────────────────────────────────────────
 
     #[On('openCategoriaCrear')]
     public function abrirCrear(): void
     {
-        $this->reset(['categoriaId', 'nombre', 'descripcion', 'asignable']);
+        $this->reset(['categoriaId', 'nombre', 'descripcion', 'asignable', 'mesesRotacionAsignacion']);
         $this->resetValidation();
         $this->open = true;
     }
@@ -42,6 +43,7 @@ class CategoriaModal extends Component
         $this->nombre      = $c->nombre;
         $this->descripcion = $c->descripcion ?? '';
         $this->asignable   = (bool) $c->asignable;
+        $this->mesesRotacionAsignacion = $c->meses_rotacion_asignacion;
         $this->resetValidation();
         $this->open = true;
     }
@@ -66,6 +68,7 @@ class CategoriaModal extends Component
             'nombre'      => ['required', 'string', 'max:100', $uniqueRule],
             'descripcion' => 'nullable|string|max:500',
             'asignable'   => 'boolean',
+            'mesesRotacionAsignacion' => 'nullable|integer|min:1|max:240',
         ];
     }
 
@@ -75,6 +78,9 @@ class CategoriaModal extends Component
             'nombre.required' => 'El nombre es obligatorio.',
             'nombre.unique'   => 'Ya existe una categoría activa con ese nombre.',
             'nombre.max'      => 'Máximo 100 caracteres.',
+            'mesesRotacionAsignacion.integer' => 'Debe ser un número de meses.',
+            'mesesRotacionAsignacion.min'     => 'Debe ser al menos 1 mes.',
+            'mesesRotacionAsignacion.max'     => 'Máximo 240 meses (20 años).',
         ];
     }
 
@@ -89,6 +95,7 @@ class CategoriaModal extends Component
                 'nombre'      => trim($this->nombre),
                 'descripcion' => trim($this->descripcion) ?: null,
                 'asignable'   => $this->asignable,
+                'meses_rotacion_asignacion' => $this->mesesRotacionAsignacion,
             ];
 
             if ($this->categoriaId) {
@@ -127,7 +134,7 @@ class CategoriaModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['categoriaId', 'nombre', 'descripcion', 'asignable']);
+        $this->reset(['categoriaId', 'nombre', 'descripcion', 'asignable', 'mesesRotacionAsignacion']);
         $this->resetValidation();
     }
 

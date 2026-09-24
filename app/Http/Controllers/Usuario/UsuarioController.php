@@ -64,6 +64,19 @@ class UsuarioController extends Controller
     }
 
     /**
+     * Trazabilidad completa: todos los equipos que ha tenido el usuario
+     * (asignaciones, préstamos) y cambios en sus propios datos, en una
+     * sola línea de tiempo. Complementa a historial() (que solo muestra
+     * auditoría de datos) sin reemplazarlo.
+     */
+    public function trazabilidad(User $usuario)
+    {
+        $this->authorize('view', $usuario);
+
+        return view('usuarios.trazabilidad-usuario', compact('usuario'));
+    }
+
+    /**
      * Inactivar usuario (soft delete lógico).
      * El store() y update() ya no existen aquí — los maneja Livewire.
      */

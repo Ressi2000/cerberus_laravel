@@ -64,6 +64,15 @@
                                          {{ $asignable ? 'translate-x-6' : 'translate-x-1' }}"></span>
                         </button>
                     </div>
+
+                    <x-form.input
+                        label="Periodo de rotación recomendado"
+                        type="number"
+                        wire:model="mesesRotacionAsignacion"
+                        placeholder="Ej: 36"
+                        :error="$errors->first('mesesRotacionAsignacion')"
+                        hint="En meses. Cuando una asignación de esta categoría supera este tiempo con la misma persona, el sistema sugiere evaluar una rotación del equipo. No tiene relación con el estado físico ni la obsolescencia del equipo — es solo una referencia de permanencia. Déjalo vacío si esta categoría no necesita seguimiento."
+                    />
                 </div>
 
                 <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel">

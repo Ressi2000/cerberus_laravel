@@ -128,6 +128,25 @@ class Dashboard extends Component
             ->limit(6)
             ->get();
 
+        // ── Rotación de asignaciones recomendada ────────────────────────────────
+        // NO es vida útil/obsolescencia del equipo: es cuánto tiempo lleva la
+        // misma persona con el mismo equipo, comparado contra el periodo de
+        // rotación configurado por categoría (Configuración → Categorías).
+        $rotacionRecomendada = AsignacionItem::with(['equipo.categoria', 'asignacion.usuario', 'asignacion.empresa'])
+            ->whereHas('asignacion', function ($q) use ($user) {
+                $q->visiblePara($user)->where('estado', 'Activa')
+                    ->when($this->empresaFiltroId, fn($qq) => $qq->where('empresa_id', $this->empresaFiltroId));
+            })
+            ->where('devuelto', false)
+            ->whereNull('equipo_padre_id')
+            ->whereHas('equipo.categoria', fn($q) => $q->whereNotNull('meses_rotacion_asignacion'))
+            ->get()
+            ->filter(fn($item) => $item->superaRotacionRecomendada())
+            ->sortByDesc(fn($item) => $item->mesesConReceptor())
+            ->values();
+
+        $rotacionRecomendadaLista = $rotacionRecomendada->take(6);
+
         // ── Actividad reciente ─────────────────────────────────────────────────
         $actividadReciente = Auditoria::visiblePara($user)
             ->with('usuario:id,name,foto')
@@ -165,6 +184,8 @@ class Dashboard extends Component
             'equiposPorCategoria'    => $equiposPorCategoria,
             'prestamosVencidosLista' => $prestamosVencidosLista,
             'garantiasPorVencer'     => $garantiasPorVencer,
+            'rotacionRecomendadaLista'  => $rotacionRecomendadaLista,
+            'rotacionRecomendadaCount'  => $rotacionRecomendada->count(),
             'actividadReciente'      => $actividadReciente,
             'ultimosTraslados'       => $ultimosTraslados,
             'empresas'               => $empresas,

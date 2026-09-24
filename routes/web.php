@@ -98,6 +98,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
         Route::resource('/usuarios', UsuarioController::class);
         Route::get('/usuarios/{usuario}/historial', [UsuarioController::class, 'historial'])->name('usuarios.historial');
+        Route::get('/usuarios/{usuario}/trazabilidad', [UsuarioController::class, 'trazabilidad'])->name('usuarios.trazabilidad');
     });
 
     // Auditoria
@@ -143,6 +144,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/',                              [AsignacionController::class, 'index'])->name('index');
             Route::get('/crear',                         [AsignacionController::class, 'create'])->name('create');
             Route::get('/historial/{usuario}',           [AsignacionController::class, 'historial'])->name('historial');
+            Route::get('/rotacion-recomendada',          [AsignacionController::class, 'rotacionRecomendada'])->name('rotacion-recomendada');
             Route::get('/devolver/usuario/{usuario}',    [AsignacionController::class, 'devolverUsuario'])->name('devolver.usuario');
             Route::get('/{asignacion}/devolver',         [AsignacionController::class, 'devolver'])->name('devolver');
 

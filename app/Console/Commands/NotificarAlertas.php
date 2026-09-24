@@ -2,12 +2,14 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AsignacionItem;
 use App\Models\Equipo;
 use App\Models\Prestamo;
 use App\Models\User;
 use App\Notifications\GarantiaProximaVencerNotification;
 use App\Notifications\PrestamoProximoAVencerNotification;
 use App\Notifications\PrestamoVencidoNotification;
+use App\Notifications\RotacionAsignacionRecomendadaNotification;
 use Illuminate\Console\Command;
 
 class NotificarAlertas extends Command
@@ -25,6 +27,7 @@ class NotificarAlertas extends Command
         $this->notificarPrestamosVencidos();
         $this->notificarPrestamosProximos();
         $this->notificarGarantiasProximas();
+        $this->notificarRotacionesRecomendadas();
 
         $this->info('Alertas Cerberus enviadas correctamente.');
         return self::SUCCESS;
@@ -122,6 +125,40 @@ class NotificarAlertas extends Command
                 }
 
                 $this->line("  ✓ Garantía {$equipo->nombre} (en {$dias}d)");
+            });
+    }
+
+    /**
+     * NO es vida útil/obsolescencia del equipo: alerta cuando un mismo
+     * receptor lleva más tiempo con un mismo equipo que el periodo de
+     * rotación recomendado configurado en la categoría.
+     */
+    private function notificarRotacionesRecomendadas(): void
+    {
+        AsignacionItem::with(['equipo.categoria', 'asignacion.usuario', 'asignacion.empresa'])
+            ->whereHas('asignacion', fn ($q) => $q->where('estado', 'Activa'))
+            ->where('devuelto', false)
+            ->whereNull('equipo_padre_id')
+            ->whereHas('equipo.categoria', fn ($q) => $q->whereNotNull('meses_rotacion_asignacion'))
+            ->get()
+            ->filter(fn (AsignacionItem $item) => $item->superaRotacionRecomendada())
+            ->each(function (AsignacionItem $item) {
+                $meses  = $item->mesesConReceptor();
+                $umbral = $item->mesesRotacionRecomendada();
+                $notif  = new RotacionAsignacionRecomendadaNotification($item, $meses, $umbral);
+
+                $empresaId      = $item->asignacion->empresa_id;
+                $destinatarios  = $empresaId
+                    ? $this->analistasDeEmpresa($empresaId)
+                    : collect();
+
+                foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
+                    if (! $this->yaNotificadoHoy($user, RotacionAsignacionRecomendadaNotification::class, 'asignacion_item_id', $item->id)) {
+                        $user->notify($notif);
+                    }
+                }
+
+                $this->line("  ✓ Rotación recomendada: {$item->equipo->codigo_interno} ({$meses}m/{$umbral}m)");
             });
     }
 

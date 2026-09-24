@@ -98,6 +98,53 @@ class AsignacionItem extends Model
         return $this->equipo_padre_id !== null;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Antigüedad de la asignación (permanencia con el mismo receptor)
+    //
+    // IMPORTANTE: esto NO mide vida útil ni obsolescencia del equipo, solo
+    // cuánto tiempo lleva ESTE receptor con ESTE equipo. Se usa para sugerir
+    // una revisión de rotación, no para señalar que el equipo esté dañado
+    // o desactualizado.
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Fecha desde la que este item está con su receptor actual. */
+    public function fechaInicioAsignacion(): ?\Carbon\Carbon
+    {
+        $fecha = $this->asignacion?->fecha_asignacion ?? $this->created_at;
+
+        return $fecha ? \Carbon\Carbon::parse($fecha) : null;
+    }
+
+    /** Meses que lleva este item con su receptor actual (null si no aplica). */
+    public function mesesConReceptor(): ?int
+    {
+        $inicio = $this->fechaInicioAsignacion();
+
+        return $inicio ? (int) $inicio->diffInMonths(now()) : null;
+    }
+
+    /** Periodo de rotación recomendado (meses) configurado en la categoría del equipo, si existe. */
+    public function mesesRotacionRecomendada(): ?int
+    {
+        return $this->equipo?->categoria?->meses_rotacion_asignacion;
+    }
+
+    /**
+     * Indica si esta asignación ya superó el periodo de rotación recomendado
+     * para la categoría del equipo. False si la categoría no tiene política
+     * configurada (meses_rotacion_asignacion nulo).
+     */
+    public function superaRotacionRecomendada(): bool
+    {
+        $umbral = $this->mesesRotacionRecomendada();
+
+        if ($umbral === null) {
+            return false;
+        }
+
+        return ($this->mesesConReceptor() ?? 0) >= $umbral;
+    }
+
     public function esPrincipal(): bool
     {
         return $this->equipo_padre_id === null;

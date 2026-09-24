@@ -214,6 +214,17 @@
                     >
                         <x-slot name="acciones">
                             <li>
+                                <a href="{{ route('admin.usuarios.trazabilidad', $u) }}"
+                                   wire:navigate
+                                   @click="close()"
+                                   class="flex items-center gap-3 px-4 py-2.5 w-full
+                                          text-cerberus-light hover:bg-cerberus-steel/20
+                                          hover:text-cerberus-accent transition-colors duration-100">
+                                    <span class="material-icons text-base text-cerberus-accent">timeline</span>
+                                    Trazabilidad completa
+                                </a>
+                            </li>
+                            <li>
                                 <a href="{{ route('admin.usuarios.historial', $u) }}"
                                    wire:navigate
                                    @click="close()"
@@ -221,7 +232,7 @@
                                           text-cerberus-light hover:bg-cerberus-steel/20
                                           hover:text-purple-400 transition-colors duration-100">
                                     <span class="material-icons text-base text-purple-400">history</span>
-                                    Historial
+                                    Historial de datos
                                 </a>
                             </li>
                         </x-slot>

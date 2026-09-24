@@ -466,6 +466,72 @@
                 @endif
             </div>
 
+            {{-- Tabla: Rotación de Asignaciones Recomendada --}}
+            <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-orange-400 {{ $rotacionRecomendadaLista->isEmpty() ? 'opacity-30' : 'animate-pulse' }}"></div>
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Rotación de asignaciones recomendada</h2>
+                        @if($rotacionRecomendadaCount > 0)
+                            <span class="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold rounded-full px-2 py-0.5">
+                                {{ $rotacionRecomendadaCount }}
+                            </span>
+                        @endif
+                    </div>
+                    <a href="{{ route('admin.asignaciones.rotacion-recomendada') }}"
+                       class="text-cerberus-accent hover:text-cerberus-light text-xs flex items-center gap-1 transition-colors">
+                        Ver todos <span class="material-icons text-sm">arrow_forward</span>
+                    </a>
+                </div>
+
+                @if($rotacionRecomendadaLista->isEmpty())
+                    <div class="flex flex-col items-center justify-center py-8 text-cerberus-accent">
+                        <span class="material-icons text-4xl mb-2 text-emerald-400/60">check_circle</span>
+                        <p class="text-sm">Ninguna asignación supera su periodo de rotación</p>
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-cerberus-accent text-xs bg-cerberus-darkest/30">
+                                    <th class="px-5 py-2.5 text-left font-medium">Receptor</th>
+                                    <th class="px-3 py-2.5 text-left font-medium hidden sm:table-cell">Equipo</th>
+                                    <th class="px-3 py-2.5 text-left font-medium hidden sm:table-cell">Categoría</th>
+                                    <th class="px-3 py-2.5 text-center font-medium">Permanencia</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-cerberus-steel/40">
+                                @foreach($rotacionRecomendadaLista as $item)
+                                    <tr class="hover:bg-cerberus-darkest/20 transition-colors">
+                                        <td class="px-5 py-3">
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                                                    <span class="material-icons text-orange-400 text-sm">person</span>
+                                                </div>
+                                                <span class="text-gray-900 dark:text-white text-sm font-medium truncate max-w-[150px]">
+                                                    {{ $item->asignacion->usuario->name ?? '—' }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-3 text-cerberus-accent text-xs hidden sm:table-cell font-mono">
+                                            {{ $item->equipo->codigo_interno ?? '—' }}
+                                        </td>
+                                        <td class="px-3 py-3 text-cerberus-accent text-xs hidden sm:table-cell">
+                                            {{ $item->equipo->categoria->nombre ?? '—' }}
+                                        </td>
+                                        <td class="px-3 py-3 text-center">
+                                            <span class="bg-orange-500/20 text-orange-400 text-xs font-bold rounded px-2 py-0.5">
+                                                {{ $item->mesesConReceptor() }}m / {{ $item->mesesRotacionRecomendada() }}m
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+
         </div>
 
         {{-- Columna derecha (1/3): Actividad Reciente --}}
