@@ -113,35 +113,25 @@
 
     {{-- FILTROS --}}
     <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4">
-        <div class="flex flex-wrap gap-4 items-end">
+        <div class="flex flex-wrap gap-4 items-start">
 
             {{-- Filtro por tipo de evento --}}
-            <div>
-                <label class="block text-cerberus-accent text-xs mb-1">Tipo de evento</label>
-                <select wire:model.live="tipo"
-                    class="bg-cerberus-dark border border-cerberus-steel text-cerberus-light text-sm rounded-lg px-3 py-2
-                           focus:ring-2 focus:ring-cerberus-primary outline-none transition min-w-[160px]">
-                    <option value="">Todos</option>
-                    <option value="asignacion">Asignación</option>
-                    <option value="prestamo">Préstamo</option>
-                    <option value="datos">Datos del usuario</option>
-                </select>
+            <div class="min-w-[160px]">
+                <x-form.select label="Tipo de evento" placeholder="Todos" wire:model.live="tipo" :options="[
+                    'asignacion' => 'Asignación',
+                    'prestamo'   => 'Préstamo',
+                    'datos'      => 'Datos del usuario',
+                ]" />
             </div>
 
             {{-- Fecha desde --}}
             <div>
-                <label class="block text-cerberus-accent text-xs mb-1">Desde</label>
-                <input type="date" wire:model.live="fecha_desde"
-                    class="bg-cerberus-dark border border-cerberus-steel text-cerberus-light text-sm rounded-lg px-3 py-2
-                           focus:ring-2 focus:ring-cerberus-primary outline-none transition">
+                <x-form.input label="Desde" type="date" wire:model.live="fecha_desde" />
             </div>
 
             {{-- Fecha hasta --}}
             <div>
-                <label class="block text-cerberus-accent text-xs mb-1">Hasta</label>
-                <input type="date" wire:model.live="fecha_hasta"
-                    class="bg-cerberus-dark border border-cerberus-steel text-cerberus-light text-sm rounded-lg px-3 py-2
-                           focus:ring-2 focus:ring-cerberus-primary outline-none transition">
+                <x-form.input label="Hasta" type="date" wire:model.live="fecha_hasta" />
             </div>
 
             <button wire:click="resetFilters"

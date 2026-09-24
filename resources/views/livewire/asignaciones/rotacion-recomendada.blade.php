@@ -29,29 +29,13 @@
 
     {{-- FILTROS --}}
     <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4">
-        <div class="flex flex-wrap gap-4 items-end">
-            <div>
-                <label class="block text-cerberus-accent text-xs mb-1">Empresa</label>
-                <select wire:model.live="empresaId"
-                    class="bg-cerberus-dark border border-cerberus-steel text-cerberus-light text-sm rounded-lg px-3 py-2
-                           focus:ring-2 focus:ring-cerberus-primary outline-none transition min-w-[180px]">
-                    <option value="">Todas</option>
-                    @foreach($this->empresas as $empresa)
-                        <option value="{{ $empresa->id }}">{{ $empresa->nombre }}</option>
-                    @endforeach
-                </select>
+        <div class="flex flex-wrap gap-4 items-start">
+            <div class="min-w-[180px]">
+                <x-form.select label="Empresa" placeholder="Todas" :options="$this->empresasOpciones" wire:model.live="empresaId" />
             </div>
 
-            <div>
-                <label class="block text-cerberus-accent text-xs mb-1">Categoría</label>
-                <select wire:model.live="categoriaId"
-                    class="bg-cerberus-dark border border-cerberus-steel text-cerberus-light text-sm rounded-lg px-3 py-2
-                           focus:ring-2 focus:ring-cerberus-primary outline-none transition min-w-[180px]">
-                    <option value="">Todas</option>
-                    @foreach($this->categorias as $categoria)
-                        <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
-                    @endforeach
-                </select>
+            <div class="min-w-[180px]">
+                <x-form.select label="Categoría" placeholder="Todas" :options="$this->categoriasOpciones" wire:model.live="categoriaId" />
             </div>
 
             <button wire:click="resetFiltros"

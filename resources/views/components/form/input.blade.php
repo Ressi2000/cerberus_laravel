@@ -9,6 +9,7 @@
     'hint'        => null,       // Texto de ayuda que aparece al hacer hover en el ícono (?)
     'placeholder' => '',
     'error'       => null,
+    'suffix'      => null,       // Texto corto a la derecha dentro del input, ej. "meses"
 ])
 
 @php
@@ -127,11 +128,17 @@
                      dark:focus:ring-cerberus-primary/30 dark:focus:border-cerberus-primary
                      read-only:bg-gray-50 read-only:dark:bg-cerberus-dark/60 read-only:cursor-default
                      disabled:opacity-50 disabled:cursor-not-allowed'
+                     . ($suffix ? ' pr-14' : '')
                      . ($error || (!$hasWireModel && $errors->has($name ?? ''))
                          ? ' border-red-400 dark:border-red-500 focus:ring-red-400/30 focus:border-red-400'
                          : '')
             ]) }}
         >
+        @if ($suffix)
+            <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-400 dark:text-cerberus-steel pointer-events-none">
+                {{ $suffix }}
+            </span>
+        @endif
     </div>
 
     {{-- ── ERROR ──────────────────────────────────────────────────────────── --}}

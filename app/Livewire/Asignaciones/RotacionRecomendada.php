@@ -45,15 +45,15 @@ class RotacionRecomendada extends Component
     }
 
     #[Computed]
-    public function empresas()
+    public function empresasOpciones(): array
     {
-        return Empresa::activas()->orderBy('nombre')->get(['id', 'nombre']);
+        return Empresa::activas()->orderBy('nombre')->pluck('nombre', 'id')->toArray();
     }
 
     #[Computed]
-    public function categorias()
+    public function categoriasOpciones(): array
     {
-        return CategoriaEquipo::activos()->whereNotNull('meses_rotacion_asignacion')->orderBy('nombre')->get(['id', 'nombre']);
+        return CategoriaEquipo::activos()->whereNotNull('meses_rotacion_asignacion')->orderBy('nombre')->pluck('nombre', 'id')->toArray();
     }
 
     #[Computed]
