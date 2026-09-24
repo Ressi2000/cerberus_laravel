@@ -65,14 +65,36 @@
                         </button>
                     </div>
 
-                    <x-form.input
-                        label="Periodo de rotación recomendado"
-                        type="number"
-                        wire:model="mesesRotacionAsignacion"
-                        placeholder="Ej: 36"
-                        :error="$errors->first('mesesRotacionAsignacion')"
-                        hint="En meses. Cuando una asignación de esta categoría supera este tiempo con la misma persona, el sistema sugiere evaluar una rotación del equipo. No tiene relación con el estado físico ni la obsolescencia del equipo — es solo una referencia de permanencia. Déjalo vacío si esta categoría no necesita seguimiento."
-                    />
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">
+                            Periodo de rotación recomendado
+                        </label>
+                        <div class="relative">
+                            <input type="number" wire:model="mesesRotacionAsignacion"
+                                placeholder="Ej: 36"
+                                class="w-full rounded-lg pl-4 pr-16 py-2 text-sm transition
+                                       bg-white dark:bg-cerberus-dark
+                                       border border-gray-300 dark:border-cerberus-steel
+                                       text-gray-900 dark:text-white
+                                       placeholder-gray-400 dark:placeholder-gray-500
+                                       focus:outline-none focus:ring-2
+                                       focus:ring-[#1E40AF]/30 focus:border-[#1E40AF]
+                                       dark:focus:ring-cerberus-primary/30 dark:focus:border-cerberus-primary
+                                       @error('mesesRotacionAsignacion') border-red-400 @enderror">
+                            <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-400 dark:text-cerberus-steel pointer-events-none">
+                                meses
+                            </span>
+                        </div>
+                        @error('mesesRotacionAsignacion')
+                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                        <p class="text-xs text-gray-500 dark:text-cerberus-light mt-1">
+                            Cuando una asignación de esta categoría supera este tiempo con la misma persona,
+                            el sistema sugiere evaluar una rotación del equipo. No tiene relación con el
+                            estado físico ni la obsolescencia del equipo. Déjalo vacío si esta categoría
+                            no necesita seguimiento.
+                        </p>
+                    </div>
                 </div>
 
                 <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel">
