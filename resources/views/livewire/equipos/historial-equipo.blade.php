@@ -56,6 +56,7 @@
                     <option value="asignacion">Asignación</option>
                     <option value="traslado">Traslado</option>
                     <option value="prestamo">Préstamo</option>
+                    <option value="mantenimiento">Mantenimiento/Reparación</option>
                     <option value="estado">Estado</option>
                 </select>
             </div>
@@ -117,6 +118,7 @@
                             'amber'  => 'bg-amber-700/20 border-amber-700/40 text-amber-300',
                             'yellow' => 'bg-yellow-700/20 border-yellow-700/40 text-yellow-300',
                             'slate'  => 'bg-slate-700/20 border-slate-700/40 text-slate-300',
+                            'orange' => 'bg-orange-700/20 border-orange-700/40 text-orange-300',
                             'green'  => 'bg-green-700/20 border-green-700/40 text-green-300',
                             'red'    => 'bg-red-700/20 border-red-700/40 text-red-300',
                             'gray'   => 'bg-gray-700/20 border-gray-700/40 text-gray-300',

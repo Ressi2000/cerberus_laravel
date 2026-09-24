@@ -7,6 +7,7 @@ use App\Models\AsignacionItem;
 use App\Models\Auditoria;
 use App\Models\AtributoEquipo;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\Prestamo;
 use App\Models\PrestamoItem;
 use App\Models\TrasladoItem;
@@ -241,6 +242,54 @@ class HistorialEquipo extends Component
             ]);
     }
 
+    /**
+     * Mantenimientos y reparaciones: un evento al iniciar el caso y, si ya
+     * cerró, uno más con el desenlace (Completado/Cerrado/Cancelado/Dado de
+     * baja). Igual patrón que asignaciones/préstamos (entrega + devolución).
+     */
+    protected function eventosMantenimientos(): Collection
+    {
+        $casos = Mantenimiento::with(['reportadoPor', 'aprobadoPor', 'asignacion.usuario'])
+            ->where('equipo_id', $this->equipo->id)
+            ->get();
+
+        $eventos = collect();
+
+        foreach ($casos as $m) {
+            $esReparacion = $m->esCorrectivo();
+
+            $eventos->push([
+                'fecha'   => $m->fecha_inicio ?? $m->created_at,
+                'tipo'    => 'mantenimiento',
+                'icono'   => $esReparacion ? 'construction' : 'build',
+                'color'   => $esReparacion ? 'orange' : 'sky',
+                'titulo'  => $esReparacion
+                    ? 'Reparación reportada: ' . ($m->falla_reportada ?: 'sin descripción')
+                    : 'Mantenimiento programado: ' . ($m->descripcion ?: 'revisión preventiva'),
+                'detalle' => $m->asignacion?->usuario ? 'Equipo asignado a ' . $m->asignacion->usuario->name . ' al momento del hallazgo.' : null,
+                'estado'  => null,
+                'usuario' => $m->reportadoPor?->name ?? 'Sistema',
+            ]);
+
+            if (! $m->estaAbierto()) {
+                $eventos->push([
+                    'fecha'   => $m->fecha_fin_real ?? $m->updated_at,
+                    'tipo'    => 'mantenimiento',
+                    'icono'   => $m->estado === 'Dado de baja' ? 'report' : ($m->estado === 'Cancelado' ? 'cancel' : 'check_circle'),
+                    'color'   => $m->estado === 'Dado de baja' ? 'red' : ($m->estado === 'Cancelado' ? 'gray' : 'green'),
+                    'titulo'  => $esReparacion
+                        ? "Reparación {$m->estado}"
+                        : "Mantenimiento {$m->estado}",
+                    'detalle' => $m->estado === 'Dado de baja' ? $m->motivo_baja : null,
+                    'estado'  => null,
+                    'usuario' => $m->aprobadoPor?->name ?? $m->reportadoPor?->name ?? 'Sistema',
+                ]);
+            }
+        }
+
+        return $eventos;
+    }
+
     /** Cambios en características estáticas del equipo (vía auditoría general). */
     protected function eventosEstaticos(AuditoriaResolverService $resolver): Collection
     {
@@ -298,11 +347,12 @@ class HistorialEquipo extends Component
             ->pluck('nombre', 'id');
 
         $fuentes = [
-            'tecnico'    => fn() => $this->eventosTecnicos()->merge($this->eventosGrupos()),
-            'asignacion' => fn() => $this->eventosAsignaciones(),
-            'traslado'   => fn() => $this->eventosTraslados(),
-            'prestamo'   => fn() => $this->eventosPrestamos(),
-            'estado'     => fn() => $this->eventosEstaticos($resolver),
+            'tecnico'       => fn() => $this->eventosTecnicos()->merge($this->eventosGrupos()),
+            'asignacion'    => fn() => $this->eventosAsignaciones(),
+            'traslado'      => fn() => $this->eventosTraslados(),
+            'prestamo'      => fn() => $this->eventosPrestamos(),
+            'mantenimiento' => fn() => $this->eventosMantenimientos(),
+            'estado'        => fn() => $this->eventosEstaticos($resolver),
         ];
 
         $eventos = collect();

@@ -4,9 +4,12 @@ namespace App\Console\Commands;
 
 use App\Models\AsignacionItem;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\Prestamo;
 use App\Models\User;
+use App\Notifications\EquipoReparacionExtendidaNotification;
 use App\Notifications\GarantiaProximaVencerNotification;
+use App\Notifications\MantenimientoProximoNotification;
 use App\Notifications\PrestamoProximoAVencerNotification;
 use App\Notifications\PrestamoVencidoNotification;
 use App\Notifications\RotacionAsignacionRecomendadaNotification;
@@ -28,6 +31,8 @@ class NotificarAlertas extends Command
         $this->notificarPrestamosProximos();
         $this->notificarGarantiasProximas();
         $this->notificarRotacionesRecomendadas();
+        $this->notificarReparacionesExtendidas();
+        $this->notificarMantenimientosProximos();
 
         $this->info('Alertas Cerberus enviadas correctamente.');
         return self::SUCCESS;
@@ -159,6 +164,68 @@ class NotificarAlertas extends Command
                 }
 
                 $this->line("  ✓ Rotación recomendada: {$item->equipo->codigo_interno} ({$meses}m/{$umbral}m)");
+            });
+    }
+
+    /**
+     * Reparaciones correctivas abiertas por demasiado tiempo. NO tiene
+     * relación con "días de garantía" ni con vida útil — solo mide cuánto
+     * lleva el caso abierto desde fecha_inicio.
+     */
+    private function notificarReparacionesExtendidas(): void
+    {
+        $umbralDias = 7;
+
+        Mantenimiento::correctivos()->abiertos()
+            ->where('fecha_inicio', '<=', now()->subDays($umbralDias)->toDateString())
+            ->with('equipo.empresa')
+            ->get()
+            ->each(function (Mantenimiento $mantenimiento) {
+                $equipo = $mantenimiento->equipo;
+                if (! $equipo) return;
+
+                $dias  = (int) \Carbon\Carbon::parse($mantenimiento->fecha_inicio)->diffInDays(now());
+                $notif = new EquipoReparacionExtendidaNotification($equipo, $dias);
+
+                $destinatarios = $mantenimiento->empresa_id
+                    ? $this->analistasDeEmpresa($mantenimiento->empresa_id)
+                    : collect();
+
+                foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
+                    if (! $this->yaNotificadoHoy($user, EquipoReparacionExtendidaNotification::class, 'equipo_id', $equipo->id)) {
+                        $user->notify($notif);
+                    }
+                }
+
+                $this->line("  ✓ Reparación extendida: {$equipo->codigo_interno} ({$dias}d)");
+            });
+    }
+
+    /** Mantenimientos preventivos con fecha programada próxima a cumplirse. */
+    private function notificarMantenimientosProximos(): void
+    {
+        $umbralDias = 7;
+
+        Mantenimiento::preventivos()->abiertos()
+            ->whereNotNull('proxima_fecha_programada')
+            ->whereBetween('proxima_fecha_programada', [now()->startOfDay(), now()->addDays($umbralDias)->endOfDay()])
+            ->with('equipo')
+            ->get()
+            ->each(function (Mantenimiento $mantenimiento) {
+                $dias  = (int) now()->startOfDay()->diffInDays($mantenimiento->proxima_fecha_programada);
+                $notif = new MantenimientoProximoNotification($mantenimiento, $dias);
+
+                $destinatarios = $mantenimiento->empresa_id
+                    ? $this->analistasDeEmpresa($mantenimiento->empresa_id)
+                    : collect();
+
+                foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
+                    if (! $this->yaNotificadoHoy($user, MantenimientoProximoNotification::class, 'mantenimiento_id', $mantenimiento->id)) {
+                        $user->notify($notif);
+                    }
+                }
+
+                $this->line("  ✓ Mantenimiento próximo: {$mantenimiento->equipo?->codigo_interno} (en {$dias}d)");
             });
     }
 

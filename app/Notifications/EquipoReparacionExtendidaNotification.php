@@ -28,11 +28,10 @@ class EquipoReparacionExtendidaNotification extends Notification implements Shou
             'icono'   => 'build',
             'color'   => 'orange',
             'titulo'  => 'Equipo en reparación extendida',
-            'mensaje' => "{$e->nombre} lleva {$this->diasEnReparacion} días en estado «En reparación».",
+            'mensaje' => "{$e->codigo_interno} lleva {$this->diasEnReparacion} días en estado «En reparación».",
             'url'     => route('admin.equipos.show', $e->id),
             'meta'    => [
                 'equipo_id'        => $e->id,
-                'equipo_nombre'    => $e->nombre,
                 'codigo_interno'   => $e->codigo_interno,
                 'dias_reparacion'  => $this->diasEnReparacion,
             ],
@@ -48,15 +47,14 @@ class EquipoReparacionExtendidaNotification extends Notification implements Shou
     {
         $e = $this->equipo;
         return (new MailMessage)
-            ->subject("Cerberus · {$e->nombre} lleva {$this->diasEnReparacion} días en reparación")
+            ->subject("Cerberus · {$e->codigo_interno} lleva {$this->diasEnReparacion} días en reparación")
             ->view('emails.notificacion', [
                 'titulo'   => 'Equipo en reparación extendida',
                 'icono'    => '🔧',
                 'tipo'     => 'warning',
                 'etiqueta' => 'Reparación',
-                'mensaje'  => "El equipo \"{$e->nombre}\" lleva {$this->diasEnReparacion} días consecutivos en estado «En reparación». Se recomienda revisar el estado del proceso.",
+                'mensaje'  => "El equipo \"{$e->codigo_interno}\" lleva {$this->diasEnReparacion} días consecutivos en estado «En reparación». Se recomienda revisar el estado del proceso.",
                 'detalles' => [
-                    'Equipo'         => $e->nombre,
                     'Código interno' => $e->codigo_interno ?? '—',
                     'Empresa'        => $e->empresa?->nombre ?? '—',
                     'Días en reparación' => $this->diasEnReparacion,
