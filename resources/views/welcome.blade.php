@@ -87,8 +87,10 @@
         <!-- NAVBAR -->
         <header class="absolute top-0 left-0 right-0 z-20 w-full px-6 sm:px-8 py-6 flex justify-between items-center max-w-7xl mx-auto">
             <div class="flex items-center gap-3">
-                {{-- Logo fijo (variante "dark"): el Hero siempre tiene fondo oscuro --}}
-                <img src="{{ asset('images/logos/crb2-dark.png') }}" alt="Cerberus Logo"
+                {{-- Sigue el toggle de isDark, igual que el logo del footer/sidebar/auth-card --}}
+                <img src="{{ asset('images/logos/crb2-dark.png') }}"
+                    :src="isDark ? '{{ asset('images/logos/crb2-dark.png') }}' : '{{ asset('images/logos/crb2-ligth.png') }}'"
+                    alt="Cerberus Logo"
                     class="h-12 w-auto">
                 <h1 class="text-2xl font-semibold tracking-tight text-white">
                     Cerberus <span class="text-[#A9D6E5]">2.0</span>
@@ -119,13 +121,6 @@
                                       text-white hover:bg-white/10 rounded-md transition font-medium backdrop-blur-sm">
                                 Iniciar sesión
                             </a>
-                            @if (Route::has('register'))
-                                <a href="{{ route('register') }}"
-                                    class="px-5 py-2 bg-[#A9D6E5] hover:bg-[#89C2D9]
-                                          text-[#0D1B2A] rounded-md shadow transition font-medium">
-                                    Registrarse
-                                </a>
-                            @endif
                         @endauth
                     </nav>
 
@@ -155,12 +150,6 @@
                             class="px-5 py-2 border border-white/30 hover:border-white/60 text-white hover:bg-white/10 rounded-md transition font-medium text-center">
                             Iniciar sesión
                         </a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}"
-                                class="px-5 py-2 bg-[#A9D6E5] hover:bg-[#89C2D9] text-[#0D1B2A] rounded-md shadow transition font-medium text-center">
-                                Registrarse
-                            </a>
-                        @endif
                     @endauth
                 </nav>
             @endif
