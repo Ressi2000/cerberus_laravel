@@ -286,33 +286,40 @@ class AuditoriaResolverService
      */
     public function cambiosLegibles(string $tabla, ?array $previos, ?array $nuevos): array
     {
-        $previos = $previos ? $this->resolver($tabla, $previos) : [];
-        $nuevos  = $nuevos  ? $this->resolver($tabla, $nuevos)  : [];
+        $previosCrudos = $previos ?? [];
+        $nuevosCrudos  = $nuevos  ?? [];
 
         $excluir = [
             'updated_at', 'created_at', 'deleted_at',
             'remember_token', 'email_verified_at', 'password',
         ];
 
-        $cambios = [];
-
-        // Unimos todas las claves (sin las __label y sin excluidas)
-        $claves = collect(array_merge(array_keys($previos), array_keys($nuevos)))
+        // 1. Detectar qué campos realmente cambiaron ANTES de resolver
+        //    ninguna FK. Un registro de auditoría puede no tener cambios
+        //    reales (ej. un LOGIN, que re-guarda el mismo snapshot del
+        //    usuario) — resolver cada campo "_id" ahí sería cientos de
+        //    queries desperdiciadas por cada fila de ese tipo.
+        $claves = collect(array_merge(array_keys($previosCrudos), array_keys($nuevosCrudos)))
             ->unique()
             ->reject(fn($k) => str_ends_with($k, '__label') || in_array($k, $excluir))
+            ->filter(fn($campo) => $this->aTexto($previosCrudos[$campo] ?? null) !== $this->aTexto($nuevosCrudos[$campo] ?? null))
             ->values();
 
-        foreach ($claves as $campo) {
-            $valorAntes  = $previos[$campo] ?? null;
-            $valorDespues = $nuevos[$campo]  ?? null;
+        if ($claves->isEmpty()) {
+            return [];
+        }
 
-            // Si no cambió, omitir. Comparación segura: algún campo puede
-            // guardar un array (ej. datos legados o un cast a array) y un
-            // (string) directo sobre un array revienta con
-            // "Array to string conversion".
-            if ($this->aTexto($valorAntes) === $this->aTexto($valorDespues)) {
-                continue;
-            }
+        // 2. Resolver labels SOLO para los campos que cambiaron (nunca los
+        //    ~10 campos "_id" que un usuario/equipo puede tener sin tocar).
+        $soloCambiados = $claves->all();
+        $previos = $this->resolver($tabla, collect($previosCrudos)->only($soloCambiados)->all());
+        $nuevos  = $this->resolver($tabla, collect($nuevosCrudos)->only($soloCambiados)->all());
+
+        $cambios = [];
+
+        foreach ($claves as $campo) {
+            $valorAntes   = $previosCrudos[$campo] ?? null;
+            $valorDespues = $nuevosCrudos[$campo]  ?? null;
 
             // Preferir label legible si existe
             $labelAntes   = $previos[$campo . '__label'] ?? $this->formatearValor($valorAntes);

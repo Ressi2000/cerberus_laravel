@@ -180,11 +180,18 @@ class TrazabilidadUsuario extends Component
         return $eventos;
     }
 
-    /** Cambios en los datos propios del usuario (vía auditoría general). */
+    /**
+     * Cambios en los datos propios del usuario (vía auditoría general).
+     * Excluye LOGIN: cada inicio de sesión re-audita el usuario completo
+     * (ver App\Listeners\LogLogin) sin que sus datos cambien, así que para
+     * un usuario activo esto puede ser cientos de filas sin ningún cambio
+     * real que mostrar en esta línea de tiempo.
+     */
     protected function eventosDatos(AuditoriaResolverService $resolver): Collection
     {
         return Auditoria::where('tabla', 'users')
             ->where('registro_id', $this->usuario->id)
+            ->where('accion', '!=', 'LOGIN')
             ->with('usuario')
             ->get()
             ->map(function ($a) use ($resolver) {
