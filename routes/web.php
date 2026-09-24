@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\DepartamentoController;
+use App\Http\Controllers\Almacen\AlmacenController;
 use App\Http\Controllers\Asignaciones\AsignacionController;
+use App\Http\Controllers\Mantenimientos\MantenimientoController;
 use App\Http\Controllers\Prestamos\PrestamoController;
 use App\Http\Controllers\Traslados\TrasladoController;
 use App\Http\Controllers\Usuario\UsuarioController;
@@ -165,6 +167,25 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/{prestamo}/devolver',                 [PrestamoController::class, 'devolver'])->name('devolver');
             Route::get('/{prestamo}/planilla/prestamo',        [PrestamoController::class, 'planillaPrestamo'])->name('planilla.prestamo');
             Route::get('/{prestamo}/planilla/devolucion',      [PrestamoController::class, 'planillaDevolucion'])->name('planilla.devolucion');
+        });
+
+    // Mantenimientos y Reparaciones
+    Route::prefix('admin/mantenimientos')
+        ->name('admin.mantenimientos.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/',              [MantenimientoController::class, 'index'])->name('index');
+            Route::get('/en-reparacion', [MantenimientoController::class, 'enReparacion'])->name('en-reparacion');
+            Route::get('/crear',         [MantenimientoController::class, 'create'])->name('create');
+            Route::get('/{mantenimiento}', [MantenimientoController::class, 'show'])->name('show');
+        });
+
+    // Almacén de componentes
+    Route::prefix('admin/almacen')
+        ->name('admin.almacen.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/', [AlmacenController::class, 'index'])->name('index');
         });
 
     // Traslados

@@ -38,12 +38,13 @@ class EstadoEquipo extends Model
     //   if ($equipo->estado->nombre === EstadoEquipo::DISPONIBLE)
     //   EstadoEquipo::where('nombre', EstadoEquipo::BAJA)->first()
 
-    const DISPONIBLE    = 'Disponible';
-    const ASIGNADO      = 'Asignado';
-    const EN_PRESTAMO   = 'En préstamo';
-    const EN_REPARACION = 'En reparación';
-    const BAJA          = 'Dado de baja';
-    const NO_ASIGNABLE  = 'No asignable';
+    const DISPONIBLE      = 'Disponible';
+    const ASIGNADO        = 'Asignado';
+    const EN_PRESTAMO     = 'En préstamo';
+    const EN_MANTENIMIENTO = 'En mantenimiento';
+    const EN_REPARACION   = 'En reparación';
+    const BAJA            = 'Dado de baja';
+    const NO_ASIGNABLE    = 'No asignable';
 
     // ── Relaciones ────────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ class EstadoEquipo extends Model
     {
         return $query->whereIn('nombre', [
             self::BAJA,
+            self::EN_MANTENIMIENTO,
             self::EN_REPARACION,
         ]);
     }

@@ -272,15 +272,23 @@
                     <span class="whitespace-nowrap">Asignaciones</span>
                 </a>
 
-                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
-                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">build</span>
-                    <span class="whitespace-nowrap">Mantenimientos</span>
-                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
-                                 bg-amber-100 dark:bg-amber-900/30
-                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
-                        Pronto
+                <a href="{{ route('admin.mantenimientos.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.mantenimientos.index', 'admin.mantenimientos.create', 'admin.mantenimientos.show') ? $on : $off }}"
+                    title="Mantenimientos">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.mantenimientos.index', 'admin.mantenimientos.create', 'admin.mantenimientos.show') ? $ion : $ioff }}">
+                        build
                     </span>
-                </span>
+                    <span class="whitespace-nowrap">Mantenimientos</span>
+                </a>
+
+                <a href="{{ route('admin.almacen.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.almacen.*') ? $on : $off }}"
+                    title="Almacén">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.almacen.*') ? $ion : $ioff }}">
+                        warehouse
+                    </span>
+                    <span class="whitespace-nowrap">Almacén</span>
+                </a>
 
                 <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
                     <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">apps</span>
@@ -312,15 +320,14 @@
                     </span>
                 </span>
 
-                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
-                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">construction</span>
-                    <span class="whitespace-nowrap">En Reparación</span>
-                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
-                                 bg-amber-100 dark:bg-amber-900/30
-                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
-                        Pronto
+                <a href="{{ route('admin.mantenimientos.en-reparacion') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.mantenimientos.en-reparacion') ? $on : $off }}"
+                    title="En Reparación">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.mantenimientos.en-reparacion') ? $ion : $ioff }}">
+                        construction
                     </span>
-                </span>
+                    <span class="whitespace-nowrap">En Reparación</span>
+                </a>
             </div>
         </div>
 

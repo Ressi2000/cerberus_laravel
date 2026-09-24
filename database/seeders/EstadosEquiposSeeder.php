@@ -13,12 +13,13 @@ class EstadosEquiposSeeder extends Seeder
     public function run(): void
     {
         $estados = [
-            'Disponible'    => '#22C55E',
-            'Asignado'      => '#3B82F6',
-            'En préstamo'   => '#F59E0B',
-            'En reparación' => '#F97316',
-            'Dado de baja'  => '#EF4444',
-            'No asignable'  => '#64748B',
+            'Disponible'       => '#22C55E',
+            'Asignado'         => '#3B82F6',
+            'En préstamo'      => '#F59E0B',
+            'En mantenimiento' => '#0EA5E9',
+            'En reparación'    => '#F97316',
+            'Dado de baja'     => '#EF4444',
+            'No asignable'     => '#64748B',
         ];
 
         foreach ($estados as $nombre => $color) {

@@ -82,6 +82,18 @@ class Equipo extends Model
         return $this->belongsTo(Ubicacion::class);
     }
 
+    /** Historial completo de mantenimientos y reparaciones de este equipo. */
+    public function mantenimientos()
+    {
+        return $this->hasMany(Mantenimiento::class);
+    }
+
+    /** Mantenimiento/reparación abierto actualmente sobre este equipo, si hay uno. */
+    public function mantenimientoAbierto()
+    {
+        return $this->hasOne(Mantenimiento::class)->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES)->latestOfMany();
+    }
+
     public function scopeVisiblePara(Builder $query, User $actor): Builder
     {
         if ($actor->hasRole('Administrador')) {

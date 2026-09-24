@@ -184,6 +184,14 @@ class AsignacionItem extends Model
      */
     public function registrarDevolucion(?string $observaciones = null): void
     {
+        $bloqueo = \App\Models\Mantenimiento::where('equipo_id', $this->equipo_id)->abiertos()->first();
+
+        if ($bloqueo) {
+            throw new \App\Exceptions\ModuloBloqueadoException(
+                "No se puede devolver este equipo: tiene un {$bloqueo->tipo} en curso (estado: «{$bloqueo->estado}»). Cierra ese caso primero desde Mantenimientos."
+            );
+        }
+
         DB::transaction(function () use ($observaciones) {
 
             $estadoDisponible = EstadoEquipo::where('nombre', 'Disponible')->value('id');
