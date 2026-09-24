@@ -71,27 +71,7 @@
             font-size: 0.95rem;
             color: #cbd5e1;
             line-height: 1.6;
-            margin: 0 0 2rem;
-        }
-
-        .error-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.8rem 2rem;
-            border-radius: 9999px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            background: linear-gradient(135deg, #3b82f6, #2563eb);
-            color: #ffffff;
-            text-decoration: none;
-            box-shadow: 0 10px 25px rgba(59, 130, 246, 0.35);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .error-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.5);
+            margin: 0;
         }
     </style>
 </head>
@@ -101,7 +81,6 @@
         <img src="{{ asset('images/banner-error/' . $badge) }}" alt="Error {{ $code }}" class="error-badge">
         <p class="error-title">{{ $title }}</p>
         <p class="error-message">{{ $message }}</p>
-        <a href="{{ url('/') }}" class="error-btn">← Volver al inicio</a>
     </div>
 </body>
 
