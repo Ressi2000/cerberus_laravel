@@ -306,8 +306,11 @@ class AuditoriaResolverService
             $valorAntes  = $previos[$campo] ?? null;
             $valorDespues = $nuevos[$campo]  ?? null;
 
-            // Si no cambió, omitir
-            if ((string) $valorAntes === (string) $valorDespues) {
+            // Si no cambió, omitir. Comparación segura: algún campo puede
+            // guardar un array (ej. datos legados o un cast a array) y un
+            // (string) directo sobre un array revienta con
+            // "Array to string conversion".
+            if ($this->aTexto($valorAntes) === $this->aTexto($valorDespues)) {
                 continue;
             }
 
@@ -355,9 +358,33 @@ class AuditoriaResolverService
         if ($valor === null || $valor === '') {
             return '—';
         }
+        if (is_array($valor)) {
+            return $this->aTexto($valor);
+        }
         if (is_bool($valor) || $valor === 1 || $valor === 0 || $valor === '1' || $valor === '0') {
             return filter_var($valor, FILTER_VALIDATE_BOOLEAN) ? 'Sí' : 'No';
         }
         return (string) $valor;
+    }
+
+    /**
+     * Convierte cualquier valor crudo (incluyendo arrays) a texto plano,
+     * sin arriesgar un "Array to string conversion". Usado tanto para
+     * comparar antes/después como para el formateo final cuando no hay
+     * __label ni mapeo manual.
+     */
+    private function aTexto(mixed $valor): string
+    {
+        if ($valor === null || $valor === '') {
+            return '';
+        }
+        if (is_array($valor)) {
+            return json_encode($valor) ?: '';
+        }
+        if (is_scalar($valor)) {
+            return (string) $valor;
+        }
+
+        return '';
     }
 }
