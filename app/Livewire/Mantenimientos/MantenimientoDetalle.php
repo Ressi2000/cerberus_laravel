@@ -35,7 +35,7 @@ class MantenimientoDetalle extends Component
         return Mantenimiento::with([
             'equipo.categoria', 'equipo.empresa', 'empresa', 'asignacion.usuario',
             'reportadoPor', 'responsable', 'ubicacionTaller', 'aprobadoPor',
-            'mantenimientoOrigen', 'evidencias.subidoPor',
+            'mantenimientoOrigen', 'reparacionesOriginadas', 'evidencias.subidoPor',
         ])->findOrFail($this->mantenimientoId);
     }
 

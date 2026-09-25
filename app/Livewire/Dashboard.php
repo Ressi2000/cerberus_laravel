@@ -6,6 +6,7 @@ use App\Models\AsignacionItem;
 use App\Models\Auditoria;
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\Prestamo;
 use App\Models\Traslado;
 use App\Models\User;
@@ -154,6 +155,18 @@ class Dashboard extends Component
             ->limit(12)
             ->get();
 
+        // ── Mantenimiento preventivo: equipos que necesitan atención ahora ─────
+        // El Administrador ve el calendario completo del cronograma (componente
+        // aparte). El Analista ve algo más simple y accionable: los equipos que
+        // YA tienen un caso preventivo abierto (Programado o En proceso).
+        $equiposPendientesMantenimiento = $esAdmin ? collect() : $this->porEmpresa(
+            Mantenimiento::visiblePara($user)->preventivos()->abiertos()
+        )
+            ->with('equipo.categoria:id,nombre')
+            ->orderBy('proxima_fecha_programada')
+            ->limit(6)
+            ->get();
+
         // ── Últimos traslados ──────────────────────────────────────────────────
         $ultimosTraslados = $this->porEmpresa(
             Traslado::visiblePara($user)
@@ -188,6 +201,7 @@ class Dashboard extends Component
             'rotacionRecomendadaCount'  => $rotacionRecomendada->count(),
             'actividadReciente'      => $actividadReciente,
             'ultimosTraslados'       => $ultimosTraslados,
+            'equiposPendientesMantenimiento' => $equiposPendientesMantenimiento,
             'empresas'               => $empresas,
             'empresaSeleccionada'    => $empresaSeleccionada,
             'esAdmin'                => $esAdmin,

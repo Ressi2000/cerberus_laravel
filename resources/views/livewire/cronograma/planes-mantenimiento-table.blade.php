@@ -12,7 +12,7 @@
     {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
     <x-table.crud-header
         title="Cronograma de Mantenimiento Preventivo"
-        subtitle="Un plan por equipo: cada cuánto le toca revisión y con qué checklist"
+        subtitle="Un plan por categoría de equipos, por empresa: cada cuánto le toca revisión y con qué checklist"
         buttonLabel="Nuevo plan"
         buttonEvent="openPlanCrear">
 
@@ -34,7 +34,7 @@
                 @endif
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <x-form.input label="Buscar" wire:model.live.400ms="search" placeholder="Código de equipo..." />
+                    <x-form.select label="Categoría" placeholder="Todas" :options="$this->categoriasOpciones" wire:model.live="categoria_id" />
 
                     @if (Auth::user()->hasRole('Administrador'))
                         <x-form.select label="Empresa" placeholder="Todas" :options="$this->empresasOpciones" wire:model.live="empresa_id" />
@@ -58,7 +58,7 @@
 
     {{-- ── TABLA ───────────────────────────────────────────────────────────── --}}
     <x-table.crud-table
-        :headers="['Equipo', 'Empresa', 'Frecuencia', 'Próxima fecha', 'Estado', 'Caso generado', 'Acciones']"
+        :headers="['Categoría', 'Empresa', 'Frecuencia', 'Próxima fecha', 'Estado', 'Lote actual', 'Acciones']"
         :paginated="$this->planes">
 
         @forelse ($this->planes as $plan)
@@ -67,8 +67,8 @@
                        {{ ! $plan->activo ? 'opacity-60 bg-gray-50 dark:bg-cerberus-dark/30' : '' }}
                        hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
                 <td class="px-4 py-3">
-                    <p class="text-[#1E293B] dark:text-white font-medium text-sm">{{ $plan->equipo->codigo_interno ?? '—' }}</p>
-                    <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $plan->equipo->categoria->nombre ?? '—' }}</p>
+                    <p class="text-[#1E293B] dark:text-white font-medium text-sm">{{ $plan->categoria->nombre ?? '—' }}</p>
+                    <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $plan->equiposAlcanzados()->count() }} equipo(s) activo(s)</p>
                 </td>
                 <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">{{ $plan->empresa->nombre ?? '—' }}</td>
                 <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">Cada {{ $plan->frecuencia_meses }} {{ $plan->frecuencia_meses == 1 ? 'mes' : 'meses' }}</td>
@@ -101,13 +101,16 @@
                     @endif
                 </td>
                 <td class="px-4 py-3">
-                    @if ($plan->casoAbierto)
-                        <a href="{{ route('admin.mantenimientos.show', $plan->casoAbierto) }}"
-                           class="text-cerberus-primary dark:text-cerberus-accent hover:underline text-xs font-medium">
-                            {{ $plan->casoAbierto->estado }}
-                        </a>
+                    @php $progreso = $plan->progresoLoteActual(); @endphp
+                    @if ($progreso)
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium
+                                     {{ $progreso['completados'] === $progreso['total']
+                                         ? 'bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30'
+                                         : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30' }}">
+                            {{ $progreso['completados'] }}/{{ $progreso['total'] }} completados
+                        </span>
                     @else
-                        <span class="text-gray-400 dark:text-cerberus-steel text-xs">—</span>
+                        <span class="text-gray-400 dark:text-cerberus-steel text-xs">Sin generar todavía</span>
                     @endif
                 </td>
                 <td class="px-4 py-3 text-center">

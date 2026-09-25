@@ -136,6 +136,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/ubicaciones', [ConfiguracionController::class, 'ubicaciones'])->name('ubicaciones');
             Route::get('/empresas',    [ConfiguracionController::class, 'empresas'])->name('empresas');
             Route::get('/licencias-microsoft', [ConfiguracionController::class, 'licenciasMicrosoft'])->name('licencias-microsoft');
+            Route::get('/tareas-mantenimiento', [ConfiguracionController::class, 'tareasMantenimiento'])->name('tareas-mantenimiento');
         });
 
     Route::prefix('admin/asignaciones')

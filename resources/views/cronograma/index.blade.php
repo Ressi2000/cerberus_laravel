@@ -7,6 +7,8 @@
 
     <x-form.success />
 
+    @livewire('cronograma.cronograma-calendario')
+
     @livewire('cronograma.planes-mantenimiento-table')
 
 </x-app-layout>

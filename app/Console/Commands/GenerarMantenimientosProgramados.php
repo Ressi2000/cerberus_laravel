@@ -7,53 +7,67 @@ use App\Models\PlanMantenimiento;
 use Illuminate\Console\Command;
 
 /**
- * Revisa los planes de mantenimiento preventivo activos y, cuando se acerca
- * su fecha_proximo (dentro de PlanMantenimiento::DIAS_ANTELACION_GENERACION),
- * crea el caso "Programado" en Mantenimientos con la checklist de la
- * plantilla — el analista no tiene que acordarse de crear cada uno.
+ * Revisa los planes de mantenimiento preventivo activos (por categoría +
+ * empresa) y, cuando se acerca su fecha_proximo (dentro de
+ * PlanMantenimiento::DIAS_ANTELACION_GENERACION), genera el LOTE completo:
+ * un caso "Programado" por cada equipo activo de esa categoría/empresa que
+ * todavía no tenga un mantenimiento abierto — el analista no tiene que
+ * armar el lote a mano ni acordarse de crear cada caso.
  *
  * El equipo NO se bloquea acá: un Preventivo recién bloquea al pasar a
- * "En proceso" (ver Mantenimiento::avanzarEstado()).
+ * "En proceso" (ver Mantenimiento::avanzarEstado()). El plan solo avanza a
+ * su siguiente fecha_proximo cuando TODOS los casos del lote se cierran
+ * (ver PlanMantenimiento::avanzarSiLoteCompleto()).
  */
 class GenerarMantenimientosProgramados extends Command
 {
     protected $signature   = 'cerberus:generar-mantenimientos-programados';
-    protected $description = 'Genera los casos de mantenimiento preventivo programados según el cronograma (planes de mantenimiento).';
+    protected $description = 'Genera los lotes de mantenimiento preventivo programados según el cronograma (planes por categoría/empresa).';
 
     public function handle(): int
     {
         PlanMantenimiento::pendientesDeGenerar()
-            ->whereDoesntHave('casoAbierto')
-            ->with('equipo')
             ->get()
             ->each(function (PlanMantenimiento $plan) {
-                $equipo = $plan->equipo;
-                if (! $equipo) return;
+                // Ya se generó el lote de esta fecha_proximo — no duplicar.
+                if ($plan->loteGenerado()) {
+                    return;
+                }
+
+                $equipos = $plan->equiposAlcanzados()
+                    ->whereDoesntHave('mantenimientos', fn ($q) => $q->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES))
+                    ->get();
+
+                if ($equipos->isEmpty()) {
+                    return;
+                }
 
                 $checklist = collect($plan->checklist_plantilla ?: [])
                     ->map(fn ($tarea) => ['tarea' => $tarea, 'hecho' => false])
                     ->values()
                     ->toArray();
 
-                Mantenimiento::create([
-                    'empresa_id'               => $plan->empresa_id,
-                    'equipo_id'                => $equipo->id,
-                    'plan_mantenimiento_id'    => $plan->id,
-                    'tipo'                     => Mantenimiento::TIPO_PREVENTIVO,
-                    'estado'                   => 'Programado',
-                    'reportado_por_id'         => $plan->creado_por,
-                    'fecha_inicio'             => $plan->fecha_proximo,
-                    'proxima_fecha_programada' => $plan->fecha_proximo,
-                    'frecuencia_meses'         => $plan->frecuencia_meses,
-                    'descripcion'              => 'Generado automáticamente por el cronograma de mantenimiento.',
-                    'checklist'                => $checklist,
-                    'en_garantia'              => $equipo->fecha_garantia_fin && $equipo->fecha_garantia_fin->isFuture(),
-                ]);
+                foreach ($equipos as $equipo) {
+                    Mantenimiento::create([
+                        'empresa_id'               => $plan->empresa_id,
+                        'equipo_id'                => $equipo->id,
+                        'plan_mantenimiento_id'    => $plan->id,
+                        'tipo'                     => Mantenimiento::TIPO_PREVENTIVO,
+                        'estado'                   => 'Programado',
+                        'reportado_por_id'         => $plan->creado_por,
+                        'fecha_inicio'             => $plan->fecha_proximo,
+                        'proxima_fecha_programada' => $plan->fecha_proximo,
+                        'frecuencia_meses'         => $plan->frecuencia_meses,
+                        'descripcion'              => 'Generado automáticamente por el cronograma de mantenimiento.',
+                        'checklist'                => $checklist,
+                        'en_garantia'              => $equipo->fecha_garantia_fin && $equipo->fecha_garantia_fin->isFuture(),
+                    ]);
 
-                $this->line("  ✓ Caso generado: {$equipo->codigo_interno} (plan #{$plan->id})");
+                    $this->line("  ✓ Caso generado: {$equipo->codigo_interno} (plan #{$plan->id})");
+                }
             });
 
-        $this->info('Generación de mantenimientos programados completada.');
+        $this->info('Generación de lotes de mantenimiento programados completada.');
         return self::SUCCESS;
     }
 }

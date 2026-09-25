@@ -46,4 +46,9 @@ class ConfiguracionController extends Controller
     {
         return view('configuracion.licencias-microsoft.licencias-microsoft');
     }
+
+    public function tareasMantenimiento()
+    {
+        return view('configuracion.tareas-mantenimiento.tareas-mantenimiento');
+    }
 }

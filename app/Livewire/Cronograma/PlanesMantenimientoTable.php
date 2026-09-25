@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Cronograma;
 
+use App\Models\CategoriaEquipo;
 use App\Models\Empresa;
 use App\Models\PlanMantenimiento;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +19,7 @@ class PlanesMantenimientoTable extends Component
     #[Url(as: 'empresa')]
     public string $empresa_id = '';
 
-    public string $search           = '';
+    public string $categoria_id     = '';
     public bool   $mostrar_inactivos = false;
 
     public function mount(): void
@@ -46,7 +47,7 @@ class PlanesMantenimientoTable extends Component
     public function resetFilters(): void
     {
         $actor = Auth::user();
-        $this->reset(['search', 'mostrar_inactivos']);
+        $this->reset(['categoria_id', 'mostrar_inactivos']);
         $this->empresa_id = $actor->hasRole('Administrador') ? '' : (string) ($actor->empresa_activa_id ?? '');
         $this->resetPage();
     }
@@ -64,12 +65,18 @@ class PlanesMantenimientoTable extends Component
     }
 
     #[Computed]
+    public function categoriasOpciones()
+    {
+        return CategoriaEquipo::orderBy('nombre')->pluck('nombre', 'id');
+    }
+
+    #[Computed]
     public function activeFiltersCount(): int
     {
         $actor = Auth::user();
 
         return collect([
-            $this->search !== '',
+            $this->categoria_id !== '',
             $this->mostrar_inactivos,
             $actor->hasRole('Administrador') && $this->empresa_id !== '',
         ])->filter()->count();
@@ -105,13 +112,11 @@ class PlanesMantenimientoTable extends Component
     #[Computed]
     public function planes()
     {
-        return PlanMantenimiento::with(['equipo.categoria', 'empresa', 'casoAbierto'])
+        return PlanMantenimiento::with(['categoria', 'empresa'])
             ->visiblePara(Auth::user())
             ->when(! $this->mostrar_inactivos, fn ($q) => $q->where('activo', true))
             ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))
-            ->when($this->search, fn ($q) => $q->whereHas('equipo', fn ($q) =>
-                $q->where('codigo_interno', 'like', "%{$this->search}%")
-            ))
+            ->when($this->categoria_id, fn ($q) => $q->where('categoria_id', $this->categoria_id))
             ->orderBy('fecha_proximo')
             ->paginate(15);
     }

@@ -11,10 +11,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Modelo PlanMantenimiento
  *
- * El cronograma de mantenimiento preventivo: un plan por equipo, con su
- * frecuencia y checklist. GenerarMantenimientosProgramados (comando
- * programado) revisa fecha_proximo y crea el caso en Mantenimientos con
- * antelación — el analista no tiene que acordarse de crear cada uno.
+ * El cronograma de mantenimiento preventivo: un plan por CATEGORÍA +
+ * EMPRESA (ej. "todas las laptops de Empresa Test cada 6 meses"), no por
+ * equipo individual — es un evento masivo. GenerarMantenimientosProgramados
+ * (comando programado) revisa fecha_proximo y crea, con antelación, un caso
+ * "Programado" por cada equipo activo de esa categoría/empresa — el
+ * analista no tiene que armar el lote a mano.
+ *
+ * fecha_proximo solo avanza cuando TODOS los casos del lote generado
+ * llegan a un estado terminal (ver Mantenimiento::completar()/cancelar()),
+ * y avanza desde la fecha programada del lote (no desde el cierre real),
+ * para mantener una cadencia fija de calendario.
  */
 class PlanMantenimiento extends Model
 {
@@ -22,12 +29,12 @@ class PlanMantenimiento extends Model
 
     protected $table = 'planes_mantenimiento';
 
-    /** Días de antelación con los que se genera el caso antes de fecha_proximo. */
+    /** Días de antelación con los que se genera el lote antes de fecha_proximo. */
     const DIAS_ANTELACION_GENERACION = 7;
 
     protected $fillable = [
         'empresa_id',
-        'equipo_id',
+        'categoria_id',
         'frecuencia_meses',
         'fecha_proximo',
         'checklist_plantilla',
@@ -51,9 +58,9 @@ class PlanMantenimiento extends Model
         return $this->belongsTo(Empresa::class);
     }
 
-    public function equipo()
+    public function categoria()
     {
-        return $this->belongsTo(Equipo::class);
+        return $this->belongsTo(CategoriaEquipo::class, 'categoria_id');
     }
 
     public function creadoPor()
@@ -66,12 +73,18 @@ class PlanMantenimiento extends Model
         return $this->hasMany(Mantenimiento::class, 'plan_mantenimiento_id');
     }
 
-    /** El caso "Programado"/"En proceso" que este plan ya generó y sigue abierto, si hay uno. */
-    public function casoAbierto()
+    /** Casos que este plan ya generó y siguen abiertos (el lote en curso). */
+    public function casosAbiertos()
     {
-        return $this->hasOne(Mantenimiento::class, 'plan_mantenimiento_id')
-            ->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES)
-            ->latestOfMany();
+        return $this->mantenimientos()->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES);
+    }
+
+    /** Equipos activos alcanzados por este plan (misma categoría + empresa). */
+    public function equiposAlcanzados()
+    {
+        return Equipo::where('empresa_id', $this->empresa_id)
+            ->where('categoria_id', $this->categoria_id)
+            ->where('activo', true);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -96,7 +109,7 @@ class PlanMantenimiento extends Model
         return $query->where('activo', true);
     }
 
-    /** Planes activos a los que ya les toca generar el caso (dentro del margen de antelación). */
+    /** Planes activos a los que ya les toca generar el lote (dentro del margen de antelación). */
     public function scopePendientesDeGenerar(Builder $query): Builder
     {
         return $query->activos()
@@ -118,14 +131,68 @@ class PlanMantenimiento extends Model
             && $this->fecha_proximo->lte(now()->addDays(self::DIAS_ANTELACION_GENERACION));
     }
 
-    /**
-     * Recalcula fecha_proximo a partir de una fecha base (normalmente la
-     * fecha de cierre del caso que este plan generó) + frecuencia_meses.
-     */
-    public function avanzarProximaFecha(\DateTimeInterface|string $desde): void
+    /** Casos generados para el lote que corresponde a la fecha_proximo actual. */
+    public function casosDelCicloActual()
     {
+        return $this->mantenimientos()->where('proxima_fecha_programada', $this->fecha_proximo);
+    }
+
+    /** ¿Ya se generó el lote de esta fecha_proximo? */
+    public function loteGenerado(): bool
+    {
+        return $this->casosDelCicloActual()->exists();
+    }
+
+    /**
+     * Progreso del lote en curso: [completados, total]. Null si el lote de
+     * la fecha_proximo actual todavía no se generó.
+     */
+    public function progresoLoteActual(): ?array
+    {
+        $casos = $this->casosDelCicloActual()->get();
+
+        if ($casos->isEmpty()) {
+            return null;
+        }
+
+        $completados = $casos->whereIn('estado', Mantenimiento::ESTADOS_TERMINALES)->count();
+
+        return ['completados' => $completados, 'total' => $casos->count()];
+    }
+
+    /** ¿Todos los casos del lote en curso llegaron a un estado terminal? */
+    public function loteCompleto(): bool
+    {
+        $progreso = $this->progresoLoteActual();
+
+        return $progreso !== null && $progreso['completados'] === $progreso['total'];
+    }
+
+    /**
+     * Recalcula fecha_proximo a partir de una fecha base (por defecto, la
+     * propia fecha_proximo actual, para mantener una cadencia fija de
+     * calendario en vez de ir corriéndose según cuándo se cierre cada lote)
+     * + frecuencia_meses.
+     */
+    public function avanzarProximaFecha(\DateTimeInterface|string|null $desde = null): void
+    {
+        $base = $desde ? \Carbon\Carbon::parse($desde) : $this->fecha_proximo->copy();
+
         $this->update([
-            'fecha_proximo' => \Carbon\Carbon::parse($desde)->addMonths($this->frecuencia_meses)->toDateString(),
+            'fecha_proximo' => $base->addMonths($this->frecuencia_meses)->toDateString(),
         ]);
+    }
+
+    /**
+     * Si el lote en curso ya está completo, avanza el plan a la próxima
+     * fecha. Se llama al cerrar cada caso individual del lote (ver
+     * Mantenimiento::completar()/cancelar()) — el plan solo avanza cuando
+     * el ÚLTIMO caso pendiente del lote se cierra.
+     */
+    public function avanzarSiLoteCompleto(): void
+    {
+        if ($this->loteCompleto()) {
+            $this->avanzarProximaFecha();
+        }
     }
 }

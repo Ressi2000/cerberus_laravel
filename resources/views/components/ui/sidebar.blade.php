@@ -473,6 +473,17 @@
                         <span class="whitespace-nowrap">Empresas</span>
                     </a>
 
+                    <a href="{{ route('admin.configuracion.tareas-mantenimiento') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.tareas-mantenimiento') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.tareas-mantenimiento') ? $ion : $ioff }}">
+                            checklist
+                        </span>
+                        <span class="whitespace-nowrap">Tareas de Mantenimiento</span>
+                    </a>
+
                     <a href="{{ route('admin.configuracion.licencias-microsoft') }}"
                         class="{{ $li }} py-1.5 text-sm
                           {{ $active('admin.configuracion.licencias-microsoft') ? $on : $off }}">

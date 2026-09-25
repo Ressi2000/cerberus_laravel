@@ -94,12 +94,6 @@ class Equipo extends Model
         return $this->hasOne(Mantenimiento::class)->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES)->latestOfMany();
     }
 
-    /** Plan de mantenimiento preventivo (cronograma) de este equipo, si tiene uno. */
-    public function planMantenimiento()
-    {
-        return $this->hasOne(PlanMantenimiento::class);
-    }
-
     public function scopeVisiblePara(Builder $query, User $actor): Builder
     {
         if ($actor->hasRole('Administrador')) {

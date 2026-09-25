@@ -6,6 +6,7 @@ use App\Models\AsignacionItem;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\Mantenimiento;
+use App\Models\TareaMantenimientoCatalogo;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -104,7 +105,7 @@ class CrearMantenimiento extends Component
 
     private function cargarChecklistDefault(): void
     {
-        $this->checklist = collect(Mantenimiento::CHECKLIST_PREVENTIVO_DEFAULT)
+        $this->checklist = TareaMantenimientoCatalogo::activas()->ordenadas()->pluck('nombre')
             ->map(fn ($tarea) => ['tarea' => $tarea, 'incluir' => true])
             ->toArray();
     }

@@ -29,19 +29,32 @@
                         />
                     @endif
 
-                    <div wire:key="plan-equipo-select-{{ $empresa_id ?: 'sin-empresa' }}">
+                    <div wire:key="plan-categoria-select-{{ $empresa_id ?: 'sin-empresa' }}">
                         <x-form.select
                             searchable
-                            label="Equipo"
-                            placeholder="{{ $empresa_id ? 'Selecciona un equipo' : 'Primero selecciona la empresa' }}"
-                            :options="$this->equiposOpciones"
-                            wire:model="equipo_id"
-                            :error="$errors->first('equipo_id')"
+                            label="Categoría"
+                            placeholder="{{ $empresa_id ? 'Selecciona una categoría' : 'Primero selecciona la empresa' }}"
+                            :options="$this->categoriasOpciones"
+                            wire:model.live="categoria_id"
+                            :error="$errors->first('categoria_id')"
                             :disabled="! $empresa_id || $planId"
-                            hint="Un equipo solo puede tener un plan activo a la vez."
+                            hint="El plan aplica a TODOS los equipos activos de esta categoría, en esta empresa."
                             required
                         />
                     </div>
+
+                    @if ($this->equiposAlcanzadosCount !== null)
+                        <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-cerberus-light
+                                    bg-gray-50 dark:bg-cerberus-dark/40 rounded-lg px-4 py-2.5">
+                            <span class="material-icons text-base text-cerberus-accent">devices</span>
+                            @if ($this->equiposAlcanzadosCount > 0)
+                                Este plan aplicará a <strong class="text-gray-900 dark:text-white">{{ $this->equiposAlcanzadosCount }}</strong>
+                                equipo(s) actualmente.
+                            @else
+                                No hay equipos activos de esta categoría en esta empresa todavía.
+                            @endif
+                        </div>
+                    @endif
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <x-form.input

@@ -5,10 +5,13 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Plan de mantenimiento preventivo por equipo: define cada cuánto le toca
- * revisión y con qué checklist. Un comando programado (GenerarMantenimientosProgramados)
- * revisa los planes activos y crea el caso "Programado" en Mantenimientos
- * cuando se acerca la fecha, sin que el analista tenga que acordarse.
+ * Plan de mantenimiento preventivo por CATEGORÍA + EMPRESA (no por equipo
+ * individual — un plan es un evento masivo: "cada 6 meses, revisar todas
+ * las laptops de esta empresa"). Un comando programado
+ * (GenerarMantenimientosProgramados) revisa los planes activos y, cuando se
+ * acerca fecha_proximo, crea un caso "Programado" en Mantenimientos por
+ * cada equipo activo de esa categoría/empresa — el analista no tiene que
+ * acordarse de crear cada uno ni de armar el lote a mano.
  */
 return new class extends Migration
 {
@@ -18,7 +21,7 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('empresa_id')->constrained('empresas')->restrictOnDelete();
-            $table->foreignId('equipo_id')->unique()->constrained('equipos')->cascadeOnDelete();
+            $table->foreignId('categoria_id')->constrained('categorias_equipos')->restrictOnDelete();
 
             $table->unsignedSmallInteger('frecuencia_meses');
             $table->date('fecha_proximo');
@@ -31,7 +34,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index('empresa_id');
+            $table->unique(['empresa_id', 'categoria_id']);
             $table->index(['activo', 'fecha_proximo']);
         });
     }

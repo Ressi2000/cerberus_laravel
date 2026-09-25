@@ -33,7 +33,7 @@ class MantenimientoPermisosSeeder extends Seeder
         'editar almacen'          => 'Editar componentes del almacén',
         'eliminar almacen'        => 'Desactivar componentes del almacén',
         'ver planes'              => 'Ver el cronograma de mantenimiento preventivo',
-        'crear planes'            => 'Crear planes de mantenimiento preventivo por equipo',
+        'crear planes'            => 'Crear planes de mantenimiento preventivo por categoría de equipos',
         'editar planes'           => 'Editar planes de mantenimiento preventivo',
         'eliminar planes'         => 'Desactivar planes de mantenimiento preventivo',
     ];

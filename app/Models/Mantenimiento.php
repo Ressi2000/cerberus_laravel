@@ -40,22 +40,6 @@ class Mantenimiento extends Model
     /** Estados que cierran el caso y liberan al equipo del bloqueo. */
     const ESTADOS_TERMINALES = ['Completado', 'Cerrado', 'Dado de baja', 'Cancelado'];
 
-    /**
-     * Checklist genérica de mantenimiento preventivo, punto de partida
-     * editable (no hay una lista fija impuesta por el negocio todavía).
-     */
-    const CHECKLIST_PREVENTIVO_DEFAULT = [
-        'Limpieza externa e interna (polvo, ventiladores)',
-        'Revisión/cambio de pasta térmica',
-        'Estado de la batería',
-        'Actualización de firmware/BIOS',
-        'Actualizaciones del sistema operativo',
-        'Verificación de antivirus/seguridad',
-        'Salud del disco (SMART) y espacio disponible',
-        'Estado de cables, puertos y conexiones',
-        'Prueba general de encendido y funcionamiento',
-    ];
-
     protected $fillable = [
         'empresa_id',
         'equipo_id',
@@ -353,8 +337,10 @@ class Mantenimiento extends Model
 
     /**
      * Cierra un mantenimiento preventivo como completado. Si el caso nació
-     * de un plan de mantenimiento (cronograma), el plan avanza solo a la
-     * siguiente fecha (cierre + frecuencia_meses) — así el ciclo se repite
+     * de un plan de mantenimiento (cronograma), el plan revisa si con este
+     * cierre ya se completó TODO el lote que generó (puede haber más
+     * equipos de la misma categoría/empresa con su caso todavía abierto) y,
+     * si es así, avanza solo a la siguiente fecha — así el ciclo se repite
      * sin que nadie tenga que acordarse de crear el próximo.
      */
     public function completar(): void
@@ -364,7 +350,7 @@ class Mantenimiento extends Model
             $this->update(['estado' => 'Completado', 'fecha_fin_real' => $fechaCierre]);
             $this->liberarEquipo();
 
-            $this->planMantenimiento?->avanzarProximaFecha($fechaCierre);
+            $this->planMantenimiento?->avanzarSiLoteCompleto();
         });
     }
 
@@ -389,6 +375,8 @@ class Mantenimiento extends Model
         DB::transaction(function () {
             $this->update(['estado' => 'Cancelado', 'fecha_fin_real' => now()->toDateString()]);
             $this->liberarEquipo();
+
+            $this->planMantenimiento?->avanzarSiLoteCompleto();
         });
     }
 

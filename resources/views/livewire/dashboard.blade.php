@@ -532,6 +532,91 @@
                 @endif
             </div>
 
+            {{-- Mantenimiento Preventivo (Cronograma) --}}
+            @if ($esAdmin)
+                <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
+                        <div class="flex items-center gap-2">
+                            <span class="material-icons text-cerberus-accent text-base">event_repeat</span>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Cronograma de Mantenimiento</h2>
+                        </div>
+                        <a href="{{ route('admin.cronograma.index') }}"
+                           class="text-cerberus-accent hover:text-cerberus-light text-xs flex items-center gap-1 transition-colors">
+                            Ver cronograma completo <span class="material-icons text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                    <div class="p-4">
+                        @livewire('cronograma.cronograma-calendario', ['modo' => 'compact'])
+                    </div>
+                </div>
+            @else
+                <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-blue-400 {{ $equiposPendientesMantenimiento->isEmpty() ? 'opacity-30' : 'animate-pulse' }}"></div>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Equipos con mantenimiento pendiente</h2>
+                            @if($equiposPendientesMantenimiento->isNotEmpty())
+                                <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-semibold rounded-full px-2 py-0.5">
+                                    {{ $equiposPendientesMantenimiento->count() }}
+                                </span>
+                            @endif
+                        </div>
+                        <a href="{{ route('admin.mantenimientos.index') }}"
+                           class="text-cerberus-accent hover:text-cerberus-light text-xs flex items-center gap-1 transition-colors">
+                            Ver todos <span class="material-icons text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+
+                    @if($equiposPendientesMantenimiento->isEmpty())
+                        <div class="flex flex-col items-center justify-center py-8 text-cerberus-accent">
+                            <span class="material-icons text-4xl mb-2 text-emerald-400/60">check_circle</span>
+                            <p class="text-sm">Sin mantenimientos pendientes por ahora</p>
+                        </div>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-cerberus-accent text-xs bg-cerberus-darkest/30">
+                                        <th class="px-5 py-2.5 text-left font-medium">Equipo</th>
+                                        <th class="px-3 py-2.5 text-left font-medium hidden sm:table-cell">Categoría</th>
+                                        <th class="px-3 py-2.5 text-left font-medium">Estado</th>
+                                        <th class="px-3 py-2.5 text-right font-medium"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-cerberus-steel/40">
+                                    @foreach($equiposPendientesMantenimiento as $caso)
+                                        <tr class="hover:bg-cerberus-darkest/20 transition-colors">
+                                            <td class="px-5 py-3">
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-7 h-7 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+                                                        <span class="material-icons text-sm text-blue-400">build</span>
+                                                    </div>
+                                                    <span class="text-gray-900 dark:text-white text-sm font-mono">{{ $caso->equipo->codigo_interno ?? '—' }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-3 py-3 text-cerberus-accent text-xs hidden sm:table-cell">
+                                                {{ $caso->equipo->categoria?->nombre ?? '—' }}
+                                            </td>
+                                            <td class="px-3 py-3">
+                                                <span class="text-xs font-bold rounded px-2 py-0.5 bg-blue-500/20 text-blue-400">
+                                                    {{ $caso->estado }}
+                                                </span>
+                                            </td>
+                                            <td class="px-3 py-3 text-right">
+                                                <a href="{{ route('admin.mantenimientos.show', $caso) }}"
+                                                   class="text-cerberus-light hover:text-gray-900 dark:hover:text-white text-xs flex items-center justify-end gap-1 transition-colors">
+                                                    Ver <span class="material-icons text-sm">open_in_new</span>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
         </div>
 
         {{-- Columna derecha (1/3): Actividad Reciente --}}

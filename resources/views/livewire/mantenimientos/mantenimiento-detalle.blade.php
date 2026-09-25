@@ -17,6 +17,7 @@
 <div class="space-y-6">
 
     @livewire('mantenimientos.mantenimiento-baja-modal')
+    @livewire('mantenimientos.reportar-problema-modal')
 
     {{-- ── HEADER ──────────────────────────────────────────────────────────── --}}
     <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-6">
@@ -68,6 +69,20 @@
                 <span class="material-icons text-base">link</span>
                 Originado por el mantenimiento
                 <a href="{{ route('admin.mantenimientos.show', $m->mantenimientoOrigen) }}" class="text-cerberus-primary dark:text-cerberus-accent hover:underline">#{{ $m->mantenimientoOrigen->id }}</a>
+            </div>
+        @endif
+
+        @if ($m->reparacionesOriginadas->isNotEmpty())
+            <div class="mt-2 space-y-1">
+                @foreach ($m->reparacionesOriginadas as $reparacion)
+                    <div class="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                        <span class="material-icons text-base">report_problem</span>
+                        Se reportó un problema durante este mantenimiento →
+                        <a href="{{ route('admin.mantenimientos.show', $reparacion) }}" class="text-cerberus-primary dark:text-cerberus-accent hover:underline">
+                            Reparación #{{ $reparacion->id }} ({{ $reparacion->estado }})
+                        </a>
+                    </div>
+                @endforeach
             </div>
         @endif
 
@@ -179,6 +194,11 @@
                     @if ($m->esPreventivo() && $m->estado === 'En proceso')
                         <button wire:click="completar" class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1.5">
                             <span class="material-icons text-sm">check_circle</span> Completar
+                        </button>
+
+                        <button wire:click="$dispatch('openReportarProblema', { mantenimientoId: {{ $m->id }} })"
+                            class="px-4 py-2 text-sm rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700/40 transition flex items-center gap-1.5">
+                            <span class="material-icons text-sm">report_problem</span> Reportar problema encontrado
                         </button>
                     @endif
 

@@ -2,12 +2,13 @@
 
 namespace App\Livewire\Cronograma;
 
+use App\Models\CategoriaEquipo;
 use App\Models\Empresa;
-use App\Models\Equipo;
-use App\Models\Mantenimiento;
 use App\Models\PlanMantenimiento;
+use App\Models\TareaMantenimientoCatalogo;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -18,7 +19,7 @@ class PlanMantenimientoModal extends Component
     public ?int   $planId = null;
 
     public string $empresa_id       = '';
-    public string $equipo_id        = '';
+    public string $categoria_id     = '';
     public ?int   $frecuencia_meses = null;
     public string $fecha_proximo    = '';
     public string $observaciones    = '';
@@ -32,7 +33,7 @@ class PlanMantenimientoModal extends Component
     {
         $this->authorize('create', PlanMantenimiento::class);
 
-        $this->reset(['planId', 'equipo_id', 'frecuencia_meses', 'observaciones']);
+        $this->reset(['planId', 'categoria_id', 'frecuencia_meses', 'observaciones']);
         $this->activo = true;
         $this->fecha_proximo = now()->addMonths(1)->format('Y-m-d');
 
@@ -52,7 +53,7 @@ class PlanMantenimientoModal extends Component
 
         $this->planId           = $plan->id;
         $this->empresa_id       = (string) $plan->empresa_id;
-        $this->equipo_id        = (string) $plan->equipo_id;
+        $this->categoria_id     = (string) $plan->categoria_id;
         $this->frecuencia_meses = $plan->frecuencia_meses;
         $this->fecha_proximo    = $plan->fecha_proximo->format('Y-m-d');
         $this->observaciones    = $plan->observaciones ?? '';
@@ -67,7 +68,7 @@ class PlanMantenimientoModal extends Component
 
     private function cargarChecklistDefault(): void
     {
-        $this->checklist = collect(Mantenimiento::CHECKLIST_PREVENTIVO_DEFAULT)
+        $this->checklist = TareaMantenimientoCatalogo::activas()->ordenadas()->pluck('nombre')
             ->map(fn ($tarea) => ['tarea' => $tarea, 'incluir' => true])
             ->toArray();
     }
@@ -99,34 +100,35 @@ class PlanMantenimientoModal extends Component
         return Empresa::where('id', $actor->empresa_activa_id)->pluck('nombre', 'id');
     }
 
-    /** Equipos de la empresa elegida sin un plan activo todavía (o el propio, si se está editando). */
     #[Computed]
-    public function equiposOpciones()
+    public function categoriasOpciones()
     {
-        if (! $this->empresa_id) {
-            return collect();
+        return CategoriaEquipo::activos()->orderBy('nombre')->pluck('nombre', 'id');
+    }
+
+    /** Cuántos equipos activos de esta empresa+categoría alcanzaría el plan (vista previa). */
+    #[Computed]
+    public function equiposAlcanzadosCount(): ?int
+    {
+        if (! $this->empresa_id || ! $this->categoria_id) {
+            return null;
         }
 
-        return Equipo::with('categoria')
-            ->where('empresa_id', $this->empresa_id)
+        return \App\Models\Equipo::where('empresa_id', $this->empresa_id)
+            ->where('categoria_id', $this->categoria_id)
             ->where('activo', true)
-            ->whereDoesntHave('planMantenimiento', function ($q) {
-                if ($this->planId) {
-                    $q->where('id', '!=', $this->planId);
-                }
-            })
-            ->orderBy('codigo_interno')
-            ->get()
-            ->mapWithKeys(fn ($e) => [
-                $e->id => trim(($e->codigo_interno ?? "Equipo #{$e->id}") . ' — ' . ($e->categoria->nombre ?? '')),
-            ]);
+            ->count();
     }
 
     protected function rules(): array
     {
+        $uniqueRule = Rule::unique('planes_mantenimiento', 'categoria_id')
+            ->where(fn ($q) => $q->where('empresa_id', $this->empresa_id))
+            ->ignore($this->planId);
+
         return [
             'empresa_id'       => 'required|exists:empresas,id',
-            'equipo_id'        => 'required|exists:equipos,id',
+            'categoria_id'     => ['required', 'exists:categorias_equipos,id', $uniqueRule],
             'frecuencia_meses' => 'required|integer|min:1|max:60',
             'fecha_proximo'    => 'required|date',
             'observaciones'    => 'nullable|string|max:1000',
@@ -136,7 +138,8 @@ class PlanMantenimientoModal extends Component
     protected function messages(): array
     {
         return [
-            'equipo_id.required'        => 'Selecciona un equipo.',
+            'categoria_id.required'     => 'Selecciona una categoría.',
+            'categoria_id.unique'       => 'Ya existe un plan para esta categoría en esta empresa.',
             'frecuencia_meses.required'  => 'Indica cada cuántos meses se repite.',
         ];
     }
@@ -148,7 +151,7 @@ class PlanMantenimientoModal extends Component
         try {
             $data = [
                 'empresa_id'       => $this->empresa_id,
-                'equipo_id'        => $this->equipo_id,
+                'categoria_id'     => $this->categoria_id,
                 'frecuencia_meses' => $this->frecuencia_meses,
                 'fecha_proximo'    => $this->fecha_proximo,
                 'observaciones'    => $this->observaciones ?: null,
@@ -182,7 +185,7 @@ class PlanMantenimientoModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['planId', 'empresa_id', 'equipo_id', 'frecuencia_meses', 'fecha_proximo', 'observaciones', 'checklist', 'nuevaTareaChecklist']);
+        $this->reset(['planId', 'empresa_id', 'categoria_id', 'frecuencia_meses', 'fecha_proximo', 'observaciones', 'checklist', 'nuevaTareaChecklist']);
         $this->resetValidation();
     }
 
