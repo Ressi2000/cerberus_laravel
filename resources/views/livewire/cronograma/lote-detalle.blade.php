@@ -78,6 +78,18 @@
 
             <span class="text-xs text-gray-400 dark:text-cerberus-steel">{{ count($seleccionados) }} seleccionado(s)</span>
 
+            <div class="flex items-center gap-2 ml-2">
+                <label class="text-xs text-gray-500 dark:text-cerberus-light">Agrupar por</label>
+                <select wire:model.live="agruparPor"
+                    class="text-sm rounded-lg px-2 py-1.5
+                           bg-white dark:bg-cerberus-dark border border-gray-300 dark:border-cerberus-steel
+                           text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/30">
+                    <option value="equipo">Equipo</option>
+                    <option value="usuario">Usuario</option>
+                    <option value="departamento">Departamento</option>
+                </select>
+            </div>
+
             <div class="flex-1"></div>
 
             <button wire:click="avanzarSeleccionados"
@@ -95,53 +107,64 @@
 
         {{-- ── TABLA DE CASOS DEL LOTE ─────────────────────────────────────────── --}}
         <x-table.crud-table :headers="['', 'Equipo', 'Estado', 'Checklist', '', 'Acciones']" :paginated="null">
-            @foreach ($casos as $caso)
-                @php
-                    $totalTareas = count($caso->checklist ?? []);
-                    $hechas = collect($caso->checklist ?? [])->filter(fn ($i) => $i['hecho'] ?? false)->count();
-                @endphp
-                <tr wire:key="lote-caso-{{ $caso->id }}"
-                    class="border-b border-gray-100 dark:border-cerberus-steel/30 hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
-                    <td class="px-4 py-3">
-                        <input type="checkbox" wire:model="seleccionados" value="{{ $caso->id }}"
-                            class="rounded border-gray-300 dark:border-cerberus-steel text-cerberus-primary focus:ring-cerberus-primary/30">
-                    </td>
-                    <td class="px-4 py-3">
-                        <p class="text-[#1E293B] dark:text-white font-medium text-sm font-mono">{{ $caso->equipo->codigo_interno ?? '—' }}</p>
-                        <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $caso->equipo->categoria->nombre ?? '—' }}</p>
-                    </td>
-                    <td class="px-4 py-3">
-                        <span @class(['inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border font-medium', $coloresEstado[$caso->estado] ?? 'bg-gray-50 text-gray-500 border-gray-200'])>
-                            {{ $caso->estado }}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-xs">
-                        @if ($totalTareas > 0)
-                            {{ $hechas }}/{{ $totalTareas }}
-                        @else
-                            —
-                        @endif
-                    </td>
-                    <td class="px-4 py-3">
-                        @if ($caso->en_garantia)
-                            <span class="material-icons text-sm text-blue-500" title="En garantía">verified_user</span>
-                        @endif
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                        <div class="flex items-center justify-end gap-2">
-                            @if ($caso->estado === 'En proceso')
-                                <button wire:click="$dispatch('openReportarProblema', { mantenimientoId: {{ $caso->id }} })"
-                                    class="text-amber-600 dark:text-amber-400 hover:underline text-xs flex items-center gap-1">
-                                    <span class="material-icons text-sm">report_problem</span> Reportar
-                                </button>
+            @foreach ($this->gruposCasos as $nombreGrupo => $casosGrupo)
+                @if ($nombreGrupo !== null)
+                    <tr wire:key="lote-grupo-{{ Str::slug($nombreGrupo) }}" class="bg-gray-50 dark:bg-cerberus-dark/40">
+                        <td colspan="6" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-cerberus-accent">
+                            <span class="material-icons text-sm align-middle mr-1">{{ $agruparPor === 'departamento' ? 'apartment' : 'person' }}</span>
+                            {{ $nombreGrupo }} <span class="font-normal normal-case text-gray-400">({{ $casosGrupo->count() }})</span>
+                        </td>
+                    </tr>
+                @endif
+
+                @foreach ($casosGrupo as $caso)
+                    @php
+                        $totalTareas = count($caso->checklist ?? []);
+                        $hechas = collect($caso->checklist ?? [])->filter(fn ($i) => $i['hecho'] ?? false)->count();
+                    @endphp
+                    <tr wire:key="lote-caso-{{ $caso->id }}"
+                        class="border-b border-gray-100 dark:border-cerberus-steel/30 hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
+                        <td class="px-4 py-3">
+                            <input type="checkbox" wire:model="seleccionados" value="{{ $caso->id }}"
+                                class="rounded border-gray-300 dark:border-cerberus-steel text-cerberus-primary focus:ring-cerberus-primary/30">
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="text-[#1E293B] dark:text-white font-medium text-sm font-mono">{{ $caso->equipo->codigo_interno ?? '—' }}</p>
+                            <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $caso->equipo->categoria->nombre ?? '—' }}</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span @class(['inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border font-medium', $coloresEstado[$caso->estado] ?? 'bg-gray-50 text-gray-500 border-gray-200'])>
+                                {{ $caso->estado }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-xs">
+                            @if ($totalTareas > 0)
+                                {{ $hechas }}/{{ $totalTareas }}
+                            @else
+                                —
                             @endif
-                            <a href="{{ route('admin.mantenimientos.show', $caso) }}"
-                               class="text-cerberus-primary dark:text-cerberus-accent hover:underline text-xs flex items-center gap-1">
-                                Ver <span class="material-icons text-sm">open_in_new</span>
-                            </a>
-                        </div>
-                    </td>
-                </tr>
+                        </td>
+                        <td class="px-4 py-3">
+                            @if ($caso->en_garantia)
+                                <span class="material-icons text-sm text-blue-500" title="En garantía">verified_user</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                @if ($caso->estado === 'En proceso')
+                                    <button wire:click="$dispatch('openReportarProblema', { mantenimientoId: {{ $caso->id }} })"
+                                        class="text-amber-600 dark:text-amber-400 hover:underline text-xs flex items-center gap-1">
+                                        <span class="material-icons text-sm">report_problem</span> Reportar
+                                    </button>
+                                @endif
+                                <a href="{{ route('admin.mantenimientos.show', $caso) }}"
+                                   class="text-cerberus-primary dark:text-cerberus-accent hover:underline text-xs flex items-center gap-1">
+                                    Ver <span class="material-icons text-sm">open_in_new</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
             @endforeach
         </x-table.crud-table>
     @endif

@@ -25,6 +25,9 @@ class LoteDetalle extends Component
     /** IDs de casos marcados con checkbox para las acciones masivas. */
     public array $seleccionados = [];
 
+    /** 'equipo' (sin agrupar) | 'usuario' | 'departamento'. */
+    public string $agruparPor = 'equipo';
+
     public function mount(int $planId): void
     {
         // withTrashed(): el historial de un plan eliminado debe poder
@@ -39,7 +42,7 @@ class LoteDetalle extends Component
     #[On('planGuardado')]
     public function refrescar(): void
     {
-        unset($this->plan, $this->casos);
+        unset($this->plan, $this->casos, $this->gruposCasos);
         $this->seleccionados = [];
     }
 
@@ -61,9 +64,39 @@ class LoteDetalle extends Component
 
         return $this->plan->mantenimientos()
             ->where('proxima_fecha_programada', $fechaCiclo)
-            ->with('equipo.categoria')
+            ->with(['equipo.categoria', 'asignacion.usuario.departamento'])
             ->orderBy('id')
             ->get();
+    }
+
+    /**
+     * Los casos del lote agrupados según $agruparPor, para que el analista
+     * pueda ir procesando por persona o por departamento cuando hace la
+     * ronda física — un equipo sin asignación activa cae en "Sin asignar".
+     * Cuando $agruparPor es 'equipo' devuelve un único grupo sin título
+     * (la tabla plana de siempre).
+     */
+    #[Computed]
+    public function gruposCasos()
+    {
+        if ($this->agruparPor === 'equipo') {
+            return collect([null => $this->casos]);
+        }
+
+        $grupos = $this->casos->groupBy(function ($caso) {
+            $usuario = $caso->asignacion?->usuario;
+
+            if (! $usuario) {
+                return 'Sin asignar';
+            }
+
+            return $this->agruparPor === 'departamento'
+                ? ($usuario->departamento?->nombre ?? 'Sin asignar')
+                : $usuario->name;
+        });
+
+        // Alfabético, con "Sin asignar" siempre al final (sortBy es estable).
+        return $grupos->sortKeys()->sortBy(fn ($casos, $nombre) => $nombre === 'Sin asignar' ? 1 : 0);
     }
 
     #[Computed]
