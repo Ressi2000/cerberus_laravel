@@ -187,7 +187,9 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
         ->group(function () {
             Route::get('/', [CronogramaController::class, 'index'])->name('index');
-            Route::get('/lotes/{plan}', [CronogramaController::class, 'lote'])->name('lotes.show');
+            // withTrashed(): si el plan fue eliminado, su historial de lotes
+            // ya generados debe poder seguir consultándose.
+            Route::get('/lotes/{plan}', [CronogramaController::class, 'lote'])->name('lotes.show')->withTrashed();
         });
 
     // Almacén de componentes

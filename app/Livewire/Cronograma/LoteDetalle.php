@@ -27,7 +27,9 @@ class LoteDetalle extends Component
 
     public function mount(int $planId): void
     {
-        $plan = PlanMantenimiento::findOrFail($planId);
+        // withTrashed(): el historial de un plan eliminado debe poder
+        // seguir consultándose (los casos que ya generó no desaparecen).
+        $plan = PlanMantenimiento::withTrashed()->findOrFail($planId);
         $this->authorize('view', $plan);
 
         $this->planId = $planId;
@@ -44,7 +46,7 @@ class LoteDetalle extends Component
     #[Computed]
     public function plan(): PlanMantenimiento
     {
-        return PlanMantenimiento::with(['categoria', 'empresa'])->findOrFail($this->planId);
+        return PlanMantenimiento::withTrashed()->with(['categoria', 'empresa'])->findOrFail($this->planId);
     }
 
     /** Los casos del ciclo más reciente que este plan generó (el lote a procesar). */

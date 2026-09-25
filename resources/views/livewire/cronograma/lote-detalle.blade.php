@@ -12,6 +12,15 @@
 
 <div class="space-y-6">
 
+    @if ($plan->trashed())
+        <div class="flex items-center gap-2 px-4 py-3 rounded-lg text-sm
+                    bg-gray-50 dark:bg-cerberus-dark/40 border border-gray-200 dark:border-cerberus-steel
+                    text-gray-600 dark:text-cerberus-light">
+            <span class="material-icons text-base">info</span>
+            Este plan fue eliminado — no se generarán lotes nuevos, pero puedes seguir procesando los casos de este historial.
+        </div>
+    @endif
+
     {{-- ── HEADER DEL LOTE ─────────────────────────────────────────────────── --}}
     <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-6">
         <div class="flex items-start justify-between flex-wrap gap-4">
