@@ -278,7 +278,7 @@
                     <span class="material-icons text-base flex-shrink-0 {{ $active('admin.mantenimientos.*') ? $ion : $ioff }}">
                         build
                     </span>
-                    <span class="whitespace-nowrap">Mantenimientos / Reparación</span>
+                    <span class="whitespace-nowrap">Mantenimientos</span>
                 </a>
 
                 <a href="{{ route('admin.almacen.index') }}"
