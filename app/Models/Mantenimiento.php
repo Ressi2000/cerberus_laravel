@@ -40,6 +40,22 @@ class Mantenimiento extends Model
     /** Estados que cierran el caso y liberan al equipo del bloqueo. */
     const ESTADOS_TERMINALES = ['Completado', 'Cerrado', 'Dado de baja', 'Cancelado'];
 
+    /**
+     * Checklist genérica de mantenimiento preventivo, punto de partida
+     * editable (no hay una lista fija impuesta por el negocio todavía).
+     */
+    const CHECKLIST_PREVENTIVO_DEFAULT = [
+        'Limpieza externa e interna (polvo, ventiladores)',
+        'Revisión/cambio de pasta térmica',
+        'Estado de la batería',
+        'Actualización de firmware/BIOS',
+        'Actualizaciones del sistema operativo',
+        'Verificación de antivirus/seguridad',
+        'Salud del disco (SMART) y espacio disponible',
+        'Estado de cables, puertos y conexiones',
+        'Prueba general de encendido y funcionamiento',
+    ];
+
     protected $fillable = [
         'empresa_id',
         'equipo_id',
@@ -66,6 +82,7 @@ class Mantenimiento extends Model
         'causa_raiz',
         'en_garantia',
         'mantenimiento_origen_id',
+        'plan_mantenimiento_id',
         'motivo_baja',
         'fecha_baja',
         'aprobado_por_id',
@@ -137,6 +154,12 @@ class Mantenimiento extends Model
     public function reparacionesOriginadas()
     {
         return $this->hasMany(Mantenimiento::class, 'mantenimiento_origen_id');
+    }
+
+    /** Plan de mantenimiento del que nació este caso, si fue generado automáticamente. */
+    public function planMantenimiento()
+    {
+        return $this->belongsTo(PlanMantenimiento::class, 'plan_mantenimiento_id');
     }
 
     public function evidencias()
@@ -224,9 +247,30 @@ class Mantenimiento extends Model
     }
 
     /**
-     * Bloquea el equipo al iniciar el caso: guarda su estado actual (para
-     * poder restaurarlo tal cual al cerrar) y lo pasa a "En mantenimiento"
-     * o "En reparación" según el tipo. NO toca ninguna asignación activa.
+     * ¿El equipo de este caso sigue dentro de su periodo de garantía?
+     * Solo informativo — no bloquea ni cambia nada, se usa para avisar al
+     * analista al crear el caso (Preventivo o Correctivo).
+     */
+    public function equipoEnGarantia(): bool
+    {
+        $fin = $this->equipo?->fecha_garantia_fin;
+
+        return $fin !== null && $fin->isFuture();
+    }
+
+    /**
+     * Bloquea el equipo: guarda su estado actual (para poder restaurarlo tal
+     * cual al cerrar) y lo pasa a "En mantenimiento" o "En reparación" según
+     * el tipo. NO toca ninguna asignación activa.
+     *
+     * Correctivo: se bloquea al CREAR el caso — el equipo ya falló, no tiene
+     * sentido que siga disponible para asignar/prestar mientras se diagnostica.
+     *
+     * Preventivo: se bloquea recién al pasar a "En proceso" (avanzarEstado()),
+     * no al crear el caso — un mantenimiento "Programado" con días de
+     * antelación (generado por el cronograma o creado a mano) no debe dejar
+     * el equipo inutilizable antes de que alguien lo esté trabajando de
+     * verdad.
      */
     public function bloquearEquipo(): void
     {
@@ -246,21 +290,28 @@ class Mantenimiento extends Model
         }
     }
 
-    /** Restaura el equipo al estado que tenía antes de bloquearse (ej. vuelve a "Asignado"). */
+    /** ¿Este caso llegó a bloquear el equipo? (false para un Preventivo cancelado desde "Programado"). */
+    public function estaBloqueado(): bool
+    {
+        return $this->estado_equipo_anterior_id !== null;
+    }
+
+    /**
+     * Restaura el equipo al estado que tenía antes de bloquearse (ej. vuelve
+     * a "Asignado"). No hace nada si el caso nunca llegó a bloquear el
+     * equipo (ej. un Preventivo cancelado directo desde "Programado", antes
+     * de pasar por "En proceso") — de lo contrario forzaría el equipo a
+     * "Disponible" aunque en realidad seguía asignado normalmente.
+     */
     public function liberarEquipo(): void
     {
         $equipo = $this->equipo;
 
-        if (! $equipo) {
+        if (! $equipo || ! $this->estaBloqueado()) {
             return;
         }
 
-        $estadoDestino = $this->estado_equipo_anterior_id
-            ?? EstadoEquipo::where('nombre', EstadoEquipo::DISPONIBLE)->value('id');
-
-        if ($estadoDestino) {
-            $equipo->update(['estado_id' => $estadoDestino]);
-        }
+        $equipo->update(['estado_id' => $this->estado_equipo_anterior_id]);
     }
 
     /**
@@ -275,7 +326,12 @@ class Mantenimiento extends Model
         'Diagnosticado' => 'En reparación',
     ];
 
-    /** Avanza al siguiente estado "simple" de la secuencia, sin tocar el equipo. */
+    /**
+     * Avanza al siguiente estado "simple" de la secuencia. Para Preventivo,
+     * el paso Programado -> En proceso es el que bloquea el equipo (ver
+     * bloquearEquipo()); para Correctivo el equipo ya estaba bloqueado
+     * desde la creación, así que los pasos intermedios no tocan nada más.
+     */
     public function avanzarEstado(): bool
     {
         $siguiente = self::SIGUIENTE_ESTADO_SIMPLE[$this->estado] ?? null;
@@ -284,17 +340,31 @@ class Mantenimiento extends Model
             return false;
         }
 
+        $bloquearAhora = $this->esPreventivo() && $this->estado === 'Programado' && $siguiente === 'En proceso';
+
         $this->update(['estado' => $siguiente]);
+
+        if ($bloquearAhora) {
+            $this->bloquearEquipo();
+        }
 
         return true;
     }
 
-    /** Cierra un mantenimiento preventivo como completado. */
+    /**
+     * Cierra un mantenimiento preventivo como completado. Si el caso nació
+     * de un plan de mantenimiento (cronograma), el plan avanza solo a la
+     * siguiente fecha (cierre + frecuencia_meses) — así el ciclo se repite
+     * sin que nadie tenga que acordarse de crear el próximo.
+     */
     public function completar(): void
     {
         DB::transaction(function () {
-            $this->update(['estado' => 'Completado', 'fecha_fin_real' => now()->toDateString()]);
+            $fechaCierre = now()->toDateString();
+            $this->update(['estado' => 'Completado', 'fecha_fin_real' => $fechaCierre]);
             $this->liberarEquipo();
+
+            $this->planMantenimiento?->avanzarProximaFecha($fechaCierre);
         });
     }
 

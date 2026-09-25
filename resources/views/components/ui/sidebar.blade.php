@@ -290,6 +290,15 @@
                     <span class="whitespace-nowrap">Almacén</span>
                 </a>
 
+                <a href="{{ route('admin.cronograma.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.cronograma.*') ? $on : $off }}"
+                    title="Cronograma">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.cronograma.*') ? $ion : $ioff }}">
+                        event_repeat
+                    </span>
+                    <span class="whitespace-nowrap">Cronograma</span>
+                </a>
+
                 <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
                     <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">apps</span>
                     <span class="whitespace-nowrap">Software y Licencias</span>

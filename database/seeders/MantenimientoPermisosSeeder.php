@@ -32,16 +32,22 @@ class MantenimientoPermisosSeeder extends Seeder
         'crear almacen'           => 'Dar de alta componentes y registrar entradas/salidas de stock',
         'editar almacen'          => 'Editar componentes del almacén',
         'eliminar almacen'        => 'Desactivar componentes del almacén',
+        'ver planes'              => 'Ver el cronograma de mantenimiento preventivo',
+        'crear planes'            => 'Crear planes de mantenimiento preventivo por equipo',
+        'editar planes'           => 'Editar planes de mantenimiento preventivo',
+        'eliminar planes'         => 'Desactivar planes de mantenimiento preventivo',
     ];
 
     private array $asignacionesPorRol = [
         'Administrador' => [
             'ver mantenimientos', 'crear mantenimientos', 'editar mantenimientos', 'eliminar mantenimientos',
             'ver almacen', 'crear almacen', 'editar almacen', 'eliminar almacen',
+            'ver planes', 'crear planes', 'editar planes', 'eliminar planes',
         ],
         'Analista' => [
             'ver mantenimientos', 'crear mantenimientos', 'editar mantenimientos',
             'ver almacen', 'crear almacen', 'editar almacen',
+            'ver planes', 'crear planes', 'editar planes',
         ],
     ];
 

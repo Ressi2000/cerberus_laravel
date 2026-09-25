@@ -44,6 +44,14 @@
                         <span class="material-icons text-sm">hourglass_empty</span> Esperando repuesto
                     </span>
                 @endif
+                @if ($m->en_garantia)
+                    <span class="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-full
+                                 bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400
+                                 border border-blue-200 dark:border-blue-500/30"
+                          title="{{ $m->equipo?->fecha_garantia_fin ? 'Vence el ' . $m->equipo->fecha_garantia_fin->format('d/m/Y') : '' }}">
+                        <span class="material-icons text-sm">verified_user</span> En garantía
+                    </span>
+                @endif
             </div>
         </div>
 
@@ -109,6 +117,51 @@
             </div>
         @endif
     </div>
+
+    {{-- ── CHECKLIST (solo Preventivo) ──────────────────────────────────────── --}}
+    @if ($m->esPreventivo() && ! empty($m->checklist))
+        <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                <span class="material-icons text-cerberus-accent text-base">checklist</span>
+                Checklist de la revisión
+            </h3>
+            @php
+                $totalTareas = count($m->checklist);
+                $hechas = collect($m->checklist)->filter(fn ($i) => $i['hecho'] ?? false)->count();
+            @endphp
+            <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-3">{{ $hechas }} de {{ $totalTareas }} completadas</p>
+
+            <div class="space-y-1.5">
+                @foreach ($m->checklist as $i => $item)
+                    <div wire:key="det-checklist-{{ $i }}" class="flex items-center gap-2">
+                        @if ($m->estaAbierto())
+                            <button wire:click="toggleChecklistItem({{ $i }})"
+                                class="flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition
+                                       {{ ($item['hecho'] ?? false)
+                                           ? 'bg-green-600 border-green-600 text-white'
+                                           : 'border-gray-300 dark:border-cerberus-steel' }}">
+                                @if ($item['hecho'] ?? false)
+                                    <span class="material-icons text-xs">check</span>
+                                @endif
+                            </button>
+                        @else
+                            <span class="flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center
+                                       {{ ($item['hecho'] ?? false)
+                                           ? 'bg-green-600 border-green-600 text-white'
+                                           : 'border-gray-300 dark:border-cerberus-steel opacity-50' }}">
+                                @if ($item['hecho'] ?? false)
+                                    <span class="material-icons text-xs">check</span>
+                                @endif
+                            </span>
+                        @endif
+                        <span class="text-sm {{ ($item['hecho'] ?? false) ? 'text-gray-500 dark:text-cerberus-light line-through' : 'text-gray-700 dark:text-white' }}">
+                            {{ $item['tarea'] }}
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     {{-- ── ACCIONES DE FLUJO ──────────────────────────────────────────────── --}}
     @can('update', $m)

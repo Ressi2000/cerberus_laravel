@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\DepartamentoController;
 use App\Http\Controllers\Almacen\AlmacenController;
 use App\Http\Controllers\Asignaciones\AsignacionController;
+use App\Http\Controllers\Cronograma\CronogramaController;
 use App\Http\Controllers\Mantenimientos\MantenimientoController;
 use App\Http\Controllers\Prestamos\PrestamoController;
 use App\Http\Controllers\Traslados\TrasladoController;
@@ -177,6 +178,14 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/',              [MantenimientoController::class, 'index'])->name('index');
             Route::get('/crear',         [MantenimientoController::class, 'create'])->name('create');
             Route::get('/{mantenimiento}', [MantenimientoController::class, 'show'])->name('show');
+        });
+
+    // Cronograma de mantenimiento preventivo
+    Route::prefix('admin/cronograma')
+        ->name('admin.cronograma.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/', [CronogramaController::class, 'index'])->name('index');
         });
 
     // Almacén de componentes

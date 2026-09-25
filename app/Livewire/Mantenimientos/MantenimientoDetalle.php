@@ -126,6 +126,22 @@ class MantenimientoDetalle extends Component
         $this->notificarActualizacion();
     }
 
+    public function toggleChecklistItem(int $index): void
+    {
+        $m = $this->mantenimiento;
+        $this->authorize('update', $m);
+
+        if (! $m->estaAbierto()) return;
+
+        $checklist = $m->checklist ?? [];
+        if (! isset($checklist[$index])) return;
+
+        $checklist[$index]['hecho'] = ! ($checklist[$index]['hecho'] ?? false);
+        $m->update(['checklist' => $checklist]);
+
+        $this->refrescar();
+    }
+
     public function cancelar(): void
     {
         $m = $this->mantenimiento;
