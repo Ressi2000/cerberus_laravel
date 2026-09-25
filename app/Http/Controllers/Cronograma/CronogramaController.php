@@ -15,4 +15,10 @@ class CronogramaController extends Controller
         $this->authorize('viewAny', PlanMantenimiento::class);
         return view('cronograma.index');
     }
+
+    public function lote(PlanMantenimiento $plan)
+    {
+        $this->authorize('view', $plan);
+        return view('cronograma.lote', ['plan' => $plan]);
+    }
 }

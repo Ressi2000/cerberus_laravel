@@ -22,6 +22,7 @@ class PlanMantenimientoModal extends Component
     public string $categoria_id     = '';
     public ?int   $frecuencia_meses = null;
     public string $fecha_proximo    = '';
+    public ?int   $duracion_dias_estimada = 1;
     public string $observaciones    = '';
     public bool   $activo           = true;
 
@@ -36,6 +37,7 @@ class PlanMantenimientoModal extends Component
         $this->reset(['planId', 'categoria_id', 'frecuencia_meses', 'observaciones']);
         $this->activo = true;
         $this->fecha_proximo = now()->addMonths(1)->format('Y-m-d');
+        $this->duracion_dias_estimada = 1;
 
         $actor = Auth::user();
         $this->empresa_id = $actor->hasRole('Analista') ? (string) ($actor->empresa_activa_id ?? '') : '';
@@ -56,6 +58,7 @@ class PlanMantenimientoModal extends Component
         $this->categoria_id     = (string) $plan->categoria_id;
         $this->frecuencia_meses = $plan->frecuencia_meses;
         $this->fecha_proximo    = $plan->fecha_proximo->format('Y-m-d');
+        $this->duracion_dias_estimada = $plan->duracion_dias_estimada;
         $this->observaciones    = $plan->observaciones ?? '';
         $this->activo           = $plan->activo;
         $this->checklist = collect($plan->checklist_plantilla ?: [])
@@ -131,6 +134,7 @@ class PlanMantenimientoModal extends Component
             'categoria_id'     => ['required', 'exists:categorias_equipos,id', $uniqueRule],
             'frecuencia_meses' => 'required|integer|min:1|max:60',
             'fecha_proximo'    => 'required|date',
+            'duracion_dias_estimada' => 'required|integer|min:1|max:60',
             'observaciones'    => 'nullable|string|max:1000',
         ];
     }
@@ -154,6 +158,7 @@ class PlanMantenimientoModal extends Component
                 'categoria_id'     => $this->categoria_id,
                 'frecuencia_meses' => $this->frecuencia_meses,
                 'fecha_proximo'    => $this->fecha_proximo,
+                'duracion_dias_estimada' => $this->duracion_dias_estimada,
                 'observaciones'    => $this->observaciones ?: null,
                 'checklist_plantilla' => collect($this->checklist)
                     ->filter(fn ($item) => $item['incluir'] ?? false)
@@ -185,7 +190,7 @@ class PlanMantenimientoModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['planId', 'empresa_id', 'categoria_id', 'frecuencia_meses', 'fecha_proximo', 'observaciones', 'checklist', 'nuevaTareaChecklist']);
+        $this->reset(['planId', 'empresa_id', 'categoria_id', 'frecuencia_meses', 'fecha_proximo', 'duracion_dias_estimada', 'observaciones', 'checklist', 'nuevaTareaChecklist']);
         $this->resetValidation();
     }
 

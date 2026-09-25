@@ -1,6 +1,7 @@
 <div
     x-data="cerberusCronogramaCalendario(@js($eventos))"
     x-init="init($el.querySelector('.cerberus-calendario'))"
+    x-on:cronograma-calendario-visible.window="$nextTick(() => calendar && calendar.updateSize())"
     wire:ignore
 >
     @once

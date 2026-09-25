@@ -56,6 +56,7 @@ class GenerarMantenimientosProgramados extends Command
                         'estado'                   => 'Programado',
                         'reportado_por_id'         => $plan->creado_por,
                         'fecha_inicio'             => $plan->fecha_proximo,
+                        'fecha_fin_estimada'       => $plan->fechaFinEstimada(),
                         'proxima_fecha_programada' => $plan->fecha_proximo,
                         'frecuencia_meses'         => $plan->frecuencia_meses,
                         'descripcion'              => 'Generado automáticamente por el cronograma de mantenimiento.',

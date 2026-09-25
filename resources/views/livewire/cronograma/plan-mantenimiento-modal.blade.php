@@ -75,6 +75,17 @@
                         />
                     </div>
 
+                    <x-form.input
+                        label="Duración estimada del lote"
+                        type="number"
+                        wire:model="duracion_dias_estimada"
+                        placeholder="Ej: 5"
+                        suffix="día(s)"
+                        hint="Cuántos días le toma en total procesar todos los equipos de esta categoría (si son muchos, puede tomar más de un día)."
+                        :error="$errors->first('duracion_dias_estimada')"
+                        required
+                    />
+
                     {{-- Checklist --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-2">

@@ -37,6 +37,7 @@ class PlanMantenimiento extends Model
         'categoria_id',
         'frecuencia_meses',
         'fecha_proximo',
+        'duracion_dias_estimada',
         'checklist_plantilla',
         'activo',
         'observaciones',
@@ -119,6 +120,12 @@ class PlanMantenimiento extends Model
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers de negocio
     // ─────────────────────────────────────────────────────────────────────────
+
+    /** Fecha estimada de cierre del lote: fecha_proximo + duracion_dias_estimada. */
+    public function fechaFinEstimada(): \Carbon\Carbon
+    {
+        return $this->fecha_proximo->copy()->addDays(max(0, $this->duracion_dias_estimada - 1));
+    }
 
     public function estaVencido(): bool
     {

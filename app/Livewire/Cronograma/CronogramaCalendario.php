@@ -49,12 +49,20 @@ class CronogramaCalendario extends Component
                 $titulo .= " ({$equiposCount} equipo(s))";
             }
 
-            return [
+            $evento = [
                 'title' => $titulo,
                 'start' => $plan->fecha_proximo->toDateString(),
                 'color' => $color,
-                'url'   => route('admin.cronograma.index'),
+                'url'   => $progreso ? route('admin.cronograma.lotes.show', $plan) : route('admin.cronograma.index'),
             ];
+
+            // FullCalendar: 'end' es exclusivo, así que sumamos la duración
+            // completa (no duracion-1) para cubrir los N días del lote.
+            if ($plan->duracion_dias_estimada > 1) {
+                $evento['end'] = $plan->fecha_proximo->copy()->addDays($plan->duracion_dias_estimada)->toDateString();
+            }
+
+            return $evento;
         })->values()->toArray();
     }
 

@@ -72,7 +72,14 @@
                 </td>
                 <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">{{ $plan->empresa->nombre ?? '—' }}</td>
                 <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">Cada {{ $plan->frecuencia_meses }} {{ $plan->frecuencia_meses == 1 ? 'mes' : 'meses' }}</td>
-                <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm whitespace-nowrap">{{ $plan->fecha_proximo->format('d/m/Y') }}</td>
+                <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm whitespace-nowrap">
+                    {{ $plan->fecha_proximo->format('d/m/Y') }}
+                    @if ($plan->duracion_dias_estimada > 1)
+                        <span class="block text-xs text-gray-400 dark:text-cerberus-steel">
+                            hasta {{ $plan->fechaFinEstimada()->format('d/m/Y') }} ({{ $plan->duracion_dias_estimada }} días)
+                        </span>
+                    @endif
+                </td>
                 <td class="px-4 py-3">
                     @if (! $plan->activo)
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
@@ -103,12 +110,13 @@
                 <td class="px-4 py-3">
                     @php $progreso = $plan->progresoLoteActual(); @endphp
                     @if ($progreso)
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium
+                        <a href="{{ route('admin.cronograma.lotes.show', $plan) }}"
+                           class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full font-medium hover:underline
                                      {{ $progreso['completados'] === $progreso['total']
                                          ? 'bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/30'
                                          : 'bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30' }}">
                             {{ $progreso['completados'] }}/{{ $progreso['total'] }} completados
-                        </span>
+                        </a>
                     @else
                         <span class="text-gray-400 dark:text-cerberus-steel text-xs">Sin generar todavía</span>
                     @endif
