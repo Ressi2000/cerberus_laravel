@@ -122,7 +122,28 @@
                     @endif
                 </td>
                 <td class="px-4 py-3 text-center">
-                    <x-table.table-actions :model="$plan" editEvent="openPlanEditar" />
+                    <x-table.table-actions :model="$plan" editEvent="openPlanEditar">
+                        @can('delete', $plan)
+                            <x-slot name="acciones">
+                                <li>
+                                    <div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div>
+                                </li>
+                                <li>
+                                    <button
+                                        @click="close()"
+                                        wire:click="eliminar({{ $plan->id }})"
+                                        wire:confirm="¿Eliminar el plan de «{{ $plan->categoria->nombre }} — {{ $plan->empresa->nombre }}»? Los casos ya generados no se ven afectados, pero no se generarán lotes nuevos."
+                                        class="flex items-center gap-3 px-4 py-2.5 w-full text-left
+                                               text-red-600 dark:text-red-400
+                                               hover:bg-red-50 dark:hover:bg-red-500/10
+                                               transition-colors duration-100">
+                                        <span class="material-icons text-base">delete</span>
+                                        Eliminar
+                                    </button>
+                                </li>
+                            </x-slot>
+                        @endcan
+                    </x-table.table-actions>
                 </td>
             </tr>
         @empty

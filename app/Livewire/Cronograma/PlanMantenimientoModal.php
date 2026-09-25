@@ -125,8 +125,11 @@ class PlanMantenimientoModal extends Component
 
     protected function rules(): array
     {
+        // whereNull('deleted_at'): un plan eliminado no debe bloquear crear
+        // uno nuevo para la misma categoría/empresa — guardar() lo detecta
+        // y lo reactiva en vez de chocar con el unique de la base de datos.
         $uniqueRule = Rule::unique('planes_mantenimiento', 'categoria_id')
-            ->where(fn ($q) => $q->where('empresa_id', $this->empresa_id))
+            ->where(fn ($q) => $q->where('empresa_id', $this->empresa_id)->whereNull('deleted_at'))
             ->ignore($this->planId);
 
         return [
@@ -174,7 +177,22 @@ class PlanMantenimientoModal extends Component
                 $msg = 'Plan de mantenimiento actualizado.';
             } else {
                 $this->authorize('create', PlanMantenimiento::class);
-                PlanMantenimiento::create(array_merge($data, ['activo' => true, 'creado_por' => Auth::id()]));
+
+                // Si había un plan eliminado para esta misma categoría/empresa,
+                // se reactiva con los datos nuevos en vez de chocar con el
+                // unique (empresa_id, categoria_id) de la base de datos.
+                $eliminado = PlanMantenimiento::onlyTrashed()
+                    ->where('empresa_id', $this->empresa_id)
+                    ->where('categoria_id', $this->categoria_id)
+                    ->first();
+
+                if ($eliminado) {
+                    $eliminado->restore();
+                    $eliminado->update(array_merge($data, ['activo' => true]));
+                } else {
+                    PlanMantenimiento::create(array_merge($data, ['activo' => true, 'creado_por' => Auth::id()]));
+                }
+
                 $msg = 'Plan de mantenimiento creado.';
             }
 

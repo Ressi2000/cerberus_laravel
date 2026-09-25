@@ -6,6 +6,7 @@ use App\Models\CategoriaEquipo;
 use App\Models\Empresa;
 use App\Models\PlanMantenimiento;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
@@ -37,6 +38,27 @@ class PlanesMantenimientoTable extends Component
     public function refrescar(): void
     {
         $this->resetPage();
+    }
+
+    /**
+     * Borra el plan (soft delete) — deja de generar lotes nuevos. Los casos
+     * ya generados no se tocan: siguen existiendo y se procesan igual.
+     */
+    public function eliminar(int $id): void
+    {
+        try {
+            $plan = PlanMantenimiento::findOrFail($id);
+            $this->authorize('delete', $plan);
+
+            $nombre = "{$plan->categoria->nombre} — {$plan->empresa->nombre}";
+            $plan->delete();
+
+            $this->dispatch('planEliminado');
+            $this->dispatch('toast', type: 'success', message: "Plan «{$nombre}» eliminado.");
+        } catch (\Exception $e) {
+            Log::error('PlanesMantenimientoTable@eliminar: ' . $e->getMessage());
+            $this->dispatch('toast', type: 'error', message: 'Error al eliminar el plan.');
+        }
     }
 
     public function updated(string $property): void
