@@ -192,27 +192,24 @@
                 />
             </div>
 
-            {{-- Checklist --}}
-            <div>
+            {{-- Checklist — manipulado 100% en el cliente (Alpine + $wire diferido):
+                 tildar/quitar/agregar no dispara ida y vuelta al servidor por cada
+                 clic, solo se sincroniza en la próxima acción real (ej. Guardar). --}}
+            <div x-data="{ nuevaTarea: '' }">
                 <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-2">
                     Checklist de la revisión
                 </label>
                 <div class="space-y-1.5">
                     @foreach ($checklist as $i => $item)
                         <div wire:key="checklist-{{ $i }}" class="flex items-center gap-2">
-                            <button type="button" wire:click="$set('checklist.{{ $i }}.incluir', {{ $item['incluir'] ? 'false' : 'true' }})"
-                                class="flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition
-                                       {{ $item['incluir']
-                                           ? 'bg-cerberus-primary border-cerberus-primary text-white'
-                                           : 'border-gray-300 dark:border-cerberus-steel' }}">
-                                @if ($item['incluir'])
-                                    <span class="material-icons text-xs">check</span>
-                                @endif
-                            </button>
-                            <span class="text-sm flex-1 {{ $item['incluir'] ? 'text-gray-700 dark:text-cerberus-light' : 'text-gray-400 dark:text-cerberus-steel line-through' }}">
+                            <input type="checkbox" wire:model="checklist.{{ $i }}.incluir"
+                                class="peer flex-shrink-0 w-4 h-4 rounded border-gray-300 dark:border-cerberus-steel
+                                       text-cerberus-primary focus:ring-cerberus-primary/30 cursor-pointer">
+                            <span class="text-sm flex-1 text-gray-700 dark:text-cerberus-light transition-colors
+                                         peer-checked:text-gray-400 dark:peer-checked:text-cerberus-steel peer-checked:line-through">
                                 {{ $item['tarea'] }}
                             </span>
-                            <button type="button" wire:click="quitarTareaChecklist({{ $i }})"
+                            <button type="button" @click="$wire.checklist = $wire.checklist.filter((_, idx) => idx !== {{ $i }})"
                                 class="text-gray-400 hover:text-red-500 transition">
                                 <span class="material-icons text-sm">close</span>
                             </button>
@@ -221,14 +218,16 @@
                 </div>
 
                 <div class="flex items-center gap-2 mt-3">
-                    <input type="text" wire:model="nuevaTareaChecklist" wire:keydown.enter.prevent="agregarTareaChecklist"
+                    <input type="text" x-model="nuevaTarea"
+                        @keydown.enter.prevent="if (nuevaTarea.trim()) { $wire.checklist = [...$wire.checklist, { tarea: nuevaTarea.trim(), incluir: true }]; nuevaTarea = ''; }"
                         placeholder="Agregar otra tarea..."
                         class="flex-1 rounded-lg px-3 py-1.5 text-sm
                                bg-white dark:bg-cerberus-dark
                                border border-gray-300 dark:border-cerberus-steel
                                text-gray-900 dark:text-white
                                focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/30">
-                    <button type="button" wire:click="agregarTareaChecklist"
+                    <button type="button"
+                        @click="if (nuevaTarea.trim()) { $wire.checklist = [...$wire.checklist, { tarea: nuevaTarea.trim(), incluir: true }]; nuevaTarea = ''; }"
                         class="px-3 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
                         <span class="material-icons text-sm">add</span>
                     </button>

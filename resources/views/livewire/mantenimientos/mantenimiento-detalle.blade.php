@@ -150,15 +150,17 @@
                 @foreach ($m->checklist as $i => $item)
                     <div wire:key="det-checklist-{{ $i }}" class="flex items-center gap-2">
                         @if ($m->estaAbierto())
-                            <button wire:click="toggleChecklistItem({{ $i }})"
-                                class="flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition
-                                       {{ ($item['hecho'] ?? false)
-                                           ? 'bg-green-600 border-green-600 text-white'
-                                           : 'border-gray-300 dark:border-cerberus-steel' }}">
-                                @if ($item['hecho'] ?? false)
-                                    <span class="material-icons text-xs">check</span>
-                                @endif
-                            </button>
+                            {{-- Checkbox real: tilda al instante (comportamiento nativo del
+                                 navegador), sin esperar la ida y vuelta al servidor que
+                                 igual persiste el cambio en segundo plano. --}}
+                            <input type="checkbox" wire:click="toggleChecklistItem({{ $i }})"
+                                @checked($item['hecho'] ?? false)
+                                class="peer flex-shrink-0 w-4 h-4 rounded border-gray-300 dark:border-cerberus-steel
+                                       text-green-600 focus:ring-green-600/30 cursor-pointer">
+                            <span class="text-sm flex-1 text-gray-700 dark:text-white transition-colors
+                                         peer-checked:text-gray-500 dark:peer-checked:text-cerberus-light peer-checked:line-through">
+                                {{ $item['tarea'] }}
+                            </span>
                         @else
                             <span class="flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center
                                        {{ ($item['hecho'] ?? false)
@@ -168,10 +170,10 @@
                                     <span class="material-icons text-xs">check</span>
                                 @endif
                             </span>
+                            <span class="text-sm {{ ($item['hecho'] ?? false) ? 'text-gray-500 dark:text-cerberus-light line-through' : 'text-gray-700 dark:text-white' }}">
+                                {{ $item['tarea'] }}
+                            </span>
                         @endif
-                        <span class="text-sm {{ ($item['hecho'] ?? false) ? 'text-gray-500 dark:text-cerberus-light line-through' : 'text-gray-700 dark:text-white' }}">
-                            {{ $item['tarea'] }}
-                        </span>
                     </div>
                 @endforeach
             </div>

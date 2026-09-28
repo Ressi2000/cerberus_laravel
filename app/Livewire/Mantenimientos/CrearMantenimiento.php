@@ -58,7 +58,6 @@ class CrearMantenimiento extends Component
     public ?int   $frecuencia_meses          = null;
     public string $proxima_fecha_programada  = '';
     public array  $checklist                 = [];
-    public string $nuevaTareaChecklist        = '';
 
     public function mount(): void
     {
@@ -108,21 +107,6 @@ class CrearMantenimiento extends Component
         $this->checklist = TareaMantenimientoCatalogo::activas()->ordenadas()->pluck('nombre')
             ->map(fn ($tarea) => ['tarea' => $tarea, 'incluir' => true])
             ->toArray();
-    }
-
-    public function agregarTareaChecklist(): void
-    {
-        $tarea = trim($this->nuevaTareaChecklist);
-        if ($tarea === '') return;
-
-        $this->checklist[] = ['tarea' => $tarea, 'incluir' => true];
-        $this->nuevaTareaChecklist = '';
-    }
-
-    public function quitarTareaChecklist(int $index): void
-    {
-        unset($this->checklist[$index]);
-        $this->checklist = array_values($this->checklist);
     }
 
     #[Computed]

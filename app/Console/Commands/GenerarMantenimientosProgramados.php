@@ -55,6 +55,7 @@ class GenerarMantenimientosProgramados extends Command
                         'tipo'                     => Mantenimiento::TIPO_PREVENTIVO,
                         'estado'                   => 'Programado',
                         'reportado_por_id'         => $plan->creado_por,
+                        'responsable_id'           => $plan->responsable_id,
                         'fecha_inicio'             => $plan->fecha_proximo,
                         'fecha_fin_estimada'       => $plan->fechaFinEstimada(),
                         'proxima_fecha_programada' => $plan->fecha_proximo,

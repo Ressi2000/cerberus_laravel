@@ -6,6 +6,7 @@ use App\Models\CategoriaEquipo;
 use App\Models\Empresa;
 use App\Models\PlanMantenimiento;
 use App\Models\TareaMantenimientoCatalogo;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
@@ -23,18 +24,18 @@ class PlanMantenimientoModal extends Component
     public ?int   $frecuencia_meses = null;
     public string $fecha_proximo    = '';
     public ?int   $duracion_dias_estimada = 1;
+    public string $responsable_id   = '';
     public string $observaciones    = '';
     public bool   $activo           = true;
 
     public array  $checklist            = [];
-    public string $nuevaTareaChecklist   = '';
 
     #[On('openPlanCrear')]
     public function abrirCrear(): void
     {
         $this->authorize('create', PlanMantenimiento::class);
 
-        $this->reset(['planId', 'categoria_id', 'frecuencia_meses', 'observaciones']);
+        $this->reset(['planId', 'categoria_id', 'frecuencia_meses', 'observaciones', 'responsable_id']);
         $this->activo = true;
         $this->fecha_proximo = now()->addMonths(1)->format('Y-m-d');
         $this->duracion_dias_estimada = 1;
@@ -59,6 +60,7 @@ class PlanMantenimientoModal extends Component
         $this->frecuencia_meses = $plan->frecuencia_meses;
         $this->fecha_proximo    = $plan->fecha_proximo->format('Y-m-d');
         $this->duracion_dias_estimada = $plan->duracion_dias_estimada;
+        $this->responsable_id   = (string) ($plan->responsable_id ?? '');
         $this->observaciones    = $plan->observaciones ?? '';
         $this->activo           = $plan->activo;
         $this->checklist = collect($plan->checklist_plantilla ?: [])
@@ -76,19 +78,16 @@ class PlanMantenimientoModal extends Component
             ->toArray();
     }
 
-    public function agregarTareaChecklist(): void
+    #[Computed]
+    public function responsablesOpciones()
     {
-        $tarea = trim($this->nuevaTareaChecklist);
-        if ($tarea === '') return;
-
-        $this->checklist[] = ['tarea' => $tarea, 'incluir' => true];
-        $this->nuevaTareaChecklist = '';
-    }
-
-    public function quitarTareaChecklist(int $index): void
-    {
-        unset($this->checklist[$index]);
-        $this->checklist = array_values($this->checklist);
+        return User::whereIn('id', function ($q) {
+            $q->select('model_id')
+              ->from('model_has_roles')
+              ->whereIn('role_id', function ($q2) {
+                  $q2->select('id')->from('roles')->whereIn('name', ['Administrador', 'Analista']);
+              });
+        })->orderBy('name')->pluck('name', 'id');
     }
 
     #[Computed]
@@ -138,6 +137,7 @@ class PlanMantenimientoModal extends Component
             'frecuencia_meses' => 'required|integer|min:1|max:60',
             'fecha_proximo'    => 'required|date',
             'duracion_dias_estimada' => 'required|integer|min:1|max:60',
+            'responsable_id'   => 'nullable|exists:users,id',
             'observaciones'    => 'nullable|string|max:1000',
         ];
     }
@@ -162,6 +162,7 @@ class PlanMantenimientoModal extends Component
                 'frecuencia_meses' => $this->frecuencia_meses,
                 'fecha_proximo'    => $this->fecha_proximo,
                 'duracion_dias_estimada' => $this->duracion_dias_estimada,
+                'responsable_id'   => $this->responsable_id ?: null,
                 'observaciones'    => $this->observaciones ?: null,
                 'checklist_plantilla' => collect($this->checklist)
                     ->filter(fn ($item) => $item['incluir'] ?? false)
@@ -208,7 +209,7 @@ class PlanMantenimientoModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['planId', 'empresa_id', 'categoria_id', 'frecuencia_meses', 'fecha_proximo', 'duracion_dias_estimada', 'observaciones', 'checklist', 'nuevaTareaChecklist']);
+        $this->reset(['planId', 'empresa_id', 'categoria_id', 'frecuencia_meses', 'fecha_proximo', 'duracion_dias_estimada', 'responsable_id', 'observaciones', 'checklist']);
         $this->resetValidation();
     }
 

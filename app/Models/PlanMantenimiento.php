@@ -38,6 +38,7 @@ class PlanMantenimiento extends Model
         'frecuencia_meses',
         'fecha_proximo',
         'duracion_dias_estimada',
+        'responsable_id',
         'checklist_plantilla',
         'activo',
         'observaciones',
@@ -67,6 +68,12 @@ class PlanMantenimiento extends Model
     public function creadoPor()
     {
         return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    /** Responsable por defecto que heredan los casos que este plan genere. */
+    public function responsable()
+    {
+        return $this->belongsTo(User::class, 'responsable_id');
     }
 
     public function mantenimientos()
