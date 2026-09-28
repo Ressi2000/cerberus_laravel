@@ -88,6 +88,11 @@ class ProfileController extends Controller
 
     public function profileActivity(Request $request): View
     {
+        // Temporalmente deshabilitado mientras se mejora el módulo — el
+        // código real de abajo queda intacto, solo hay que quitar este
+        // return anticipado cuando se reactive.
+        return view('profile.activity-en-mejora');
+
         $query = Auditoria::where('usuario_id', Auth::id());
 
         if ($request->filled('accion')) {
