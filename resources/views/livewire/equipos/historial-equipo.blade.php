@@ -1,5 +1,7 @@
 <div class="space-y-6">
 
+    @livewire('equipos.equipo-delete-modal')
+
     {{-- HEADER DEL EQUIPO --}}
     <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -16,12 +18,25 @@
                 </div>
             </div>
 
-            <a href="{{ route('admin.equipos.index') }}"
-               class="flex items-center gap-2 px-4 py-2 bg-cerberus-dark border border-cerberus-steel
-                      text-cerberus-light hover:text-cerberus-accent rounded-lg text-sm transition">
-                <span class="material-icons text-sm">arrow_back</span>
-                Volver al listado
-            </a>
+            <div class="flex items-center gap-3">
+                @can('delete', $equipo)
+                    @if ($equipo->activo)
+                        <button wire:click="$dispatch('openEquipoDelete', { id: {{ $equipo->id }} })"
+                           class="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700
+                                  text-white rounded-lg text-sm transition">
+                            <span class="material-icons text-sm">do_not_disturb_on</span>
+                            Dar de baja
+                        </button>
+                    @endif
+                @endcan
+
+                <a href="{{ route('admin.equipos.index') }}"
+                   class="flex items-center gap-2 px-4 py-2 bg-cerberus-dark border border-cerberus-steel
+                          text-cerberus-light hover:text-cerberus-accent rounded-lg text-sm transition">
+                    <span class="material-icons text-sm">arrow_back</span>
+                    Volver al listado
+                </a>
+            </div>
         </div>
 
         {{-- Datos clave del equipo --}}

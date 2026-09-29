@@ -392,10 +392,16 @@ class Mantenimiento extends Model
      * Administrador, y si el equipo tenía una asignación activa la cierra
      * en el mismo paso (motivo "Equipo dado de baja") — no puede quedar
      * "asignado" en el sistema un equipo que ya no está operativo.
+     *
+     * Antes de archivar el equipo en el depósito indicado, extrae las
+     * piezas que el usuario decidió rescatar (cada una con su propio
+     * destino Almacén/Depósito) — ver ObsolescenciaService.
+     *
+     * @param array<int, array{tipo:string, atributo_id:int, grupo_instancia_id:?int, destino:string}> $piezas
      */
-    public function marcarDadoDeBaja(User $aprobador, string $motivo): void
+    public function marcarDadoDeBaja(User $aprobador, string $motivo, Deposito $deposito, array $piezas = []): void
     {
-        DB::transaction(function () use ($aprobador, $motivo) {
+        DB::transaction(function () use ($aprobador, $motivo, $deposito, $piezas) {
             $this->update([
                 'estado'         => 'Dado de baja',
                 'motivo_baja'    => $motivo,
@@ -412,12 +418,9 @@ class Mantenimiento extends Model
                 $itemActivo->registrarDevolucion('Equipo dado de baja');
             }
 
-            $estadoBaja = EstadoEquipo::where('nombre', EstadoEquipo::BAJA)->value('id');
-
-            $this->equipo?->update([
-                'activo'    => false,
-                'estado_id' => $estadoBaja ?? $this->equipo->estado_id,
-            ]);
+            $obsolescencia = app(\App\Services\ObsolescenciaService::class);
+            $obsolescencia->extraerPiezas($this->equipo, $piezas, $aprobador, $deposito, mantenimiento: $this);
+            $obsolescencia->archivarEquipo($this->equipo, $deposito);
         });
     }
 

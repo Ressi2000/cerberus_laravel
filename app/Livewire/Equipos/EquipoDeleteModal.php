@@ -2,18 +2,30 @@
 
 namespace App\Livewire\Equipos;
 
+use App\Models\AsignacionItem;
+use App\Models\Deposito;
 use App\Models\Equipo;
-use App\Models\EstadoEquipo;
+use App\Models\PiezaExtraida;
 use App\Models\User;
 use App\Notifications\EquipoDadoDeBajaNotification;
-use Livewire\Component;
-use Livewire\Attributes\On;
+use App\Services\ExtraccionPiezaService;
+use App\Services\ObsolescenciaService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\On;
+use Livewire\Component;
 
 class EquipoDeleteModal extends Component
 {
     public bool $open = false;
     public ?Equipo $equipo = null;
+
+    /** @var array<int, array{tipo:string, atributo_id:int, grupo_instancia_id:?int, descripcion:string}> */
+    public array $candidatos = [];
+    /** @var array<int, array{extraer:bool, destino:string}> */
+    public array $seleccion = [];
+    public ?int $depositoId = null;
+    public string $observaciones = '';
 
     #[On('openEquipoDelete')]
     public function openEquipoDelete(int $id): void
@@ -23,7 +35,7 @@ class EquipoDeleteModal extends Component
         $this->authorize('delete', $equipo);
 
         // ── Bloquear si el equipo está asignado ──────────────────────────────
-        $tieneAsignacionActiva = \App\Models\AsignacionItem::where('equipo_id', $id)
+        $tieneAsignacionActiva = AsignacionItem::where('equipo_id', $id)
             ->where('devuelto', false)
             ->whereHas('asignacion', fn($q) => $q->where('estado', 'Activa'))
             ->exists();
@@ -38,7 +50,25 @@ class EquipoDeleteModal extends Component
         }
 
         $this->equipo = $equipo;
-        $this->open   = true;
+        $this->depositoId = null;
+        $this->observaciones = '';
+
+        $this->candidatos = app(ExtraccionPiezaService::class)->candidatos($equipo)
+            ->map(fn ($c) => [
+                'tipo'               => $c['tipo'],
+                'atributo_id'        => $c['atributo']->id,
+                'grupo_instancia_id' => $c['grupoInstancia']?->id,
+                'descripcion'        => $c['descripcion'],
+            ])
+            ->values()
+            ->toArray();
+
+        $this->seleccion = collect($this->candidatos)
+            ->mapWithKeys(fn ($c, $i) => [$i => ['extraer' => true, 'destino' => PiezaExtraida::ESTADO_EN_ALMACEN]])
+            ->toArray();
+
+        $this->resetValidation();
+        $this->open = true;
     }
 
     public function desactivar(): void
@@ -47,16 +77,24 @@ class EquipoDeleteModal extends Component
 
         $this->authorize('delete', $this->equipo);
 
-        $equipo = $this->equipo;
+        $this->validate([
+            'depositoId' => 'required|exists:depositos,id',
+        ], [
+            'depositoId.required' => 'Selecciona en qué depósito quedará guardado el equipo.',
+        ]);
+
+        $equipo   = $this->equipo;
+        $deposito = Deposito::findOrFail($this->depositoId);
+        $codigo   = $equipo->codigo_interno;
 
         try {
-            $estadoBaja = EstadoEquipo::where('nombre', 'Dado de baja')->value('id');
-            $codigo     = $equipo->codigo_interno;
-
-            $equipo->update([
-                'activo'    => false,
-                'estado_id' => $estadoBaja ?? $equipo->estado_id,
-            ]);
+            app(ObsolescenciaService::class)->darDeBaja(
+                $equipo,
+                $deposito,
+                $this->piezasAExtraer(),
+                Auth::user(),
+                observaciones: $this->observaciones ?: null,
+            );
 
             $this->close();
             $this->dispatch('toast', type: 'success', message: "Equipo «{$codigo}» dado de baja correctamente.");
@@ -64,7 +102,6 @@ class EquipoDeleteModal extends Component
         } catch (\Exception $e) {
             Log::error('Error desactivando equipo: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Ocurrió un error al dar de baja el equipo.');
-            $this->close();
             return;
         }
 
@@ -74,13 +111,35 @@ class EquipoDeleteModal extends Component
         }, report: true);
     }
 
+    /** @return array<int, array{tipo:string, atributo_id:int, grupo_instancia_id:?int, destino:string}> */
+    private function piezasAExtraer(): array
+    {
+        return collect($this->seleccion)
+            ->filter(fn ($s) => $s['extraer'])
+            ->map(fn ($s, $i) => [
+                'tipo'               => $this->candidatos[$i]['tipo'],
+                'atributo_id'        => $this->candidatos[$i]['atributo_id'],
+                'grupo_instancia_id' => $this->candidatos[$i]['grupo_instancia_id'],
+                'destino'            => $s['destino'],
+            ])
+            ->values()
+            ->toArray();
+    }
+
     public function close(): void
     {
-        $this->reset(['open', 'equipo']);
+        $this->reset(['open', 'equipo', 'candidatos', 'seleccion', 'depositoId', 'observaciones']);
+        $this->resetValidation();
     }
 
     public function render()
     {
-        return view('livewire.equipos.equipo-delete-modal');
+        $depositos = $this->equipo
+            ? Deposito::where('empresa_id', $this->equipo->empresa_id)->activos()->orderBy('nombre')->get()
+            : collect();
+
+        return view('livewire.equipos.equipo-delete-modal', [
+            'depositos' => $depositos,
+        ]);
     }
 }

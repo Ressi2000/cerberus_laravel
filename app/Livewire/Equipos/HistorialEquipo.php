@@ -14,6 +14,7 @@ use App\Models\TrasladoItem;
 use App\Services\AuditoriaResolverService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -58,6 +59,13 @@ class HistorialEquipo extends Component
         if ($property !== 'page') {
             $this->resetPage();
         }
+    }
+
+    /** Refresca el encabezado (activo/estado/depósito) tras dar de baja el equipo desde esta misma ficha. */
+    #[On('equipoActualizado')]
+    public function refrescarEquipo(): void
+    {
+        $this->equipo->refresh();
     }
 
     public function resetFilters(): void
