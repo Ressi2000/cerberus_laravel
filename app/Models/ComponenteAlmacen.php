@@ -25,6 +25,7 @@ class ComponenteAlmacen extends Model
 
     protected $fillable = [
         'empresa_id',
+        'deposito_id',
         'nombre',
         'descripcion',
         'unidad',
@@ -44,6 +45,12 @@ class ComponenteAlmacen extends Model
     public function empresa()
     {
         return $this->belongsTo(Empresa::class);
+    }
+
+    /** Depósito físico donde vive este stock. */
+    public function deposito()
+    {
+        return $this->belongsTo(Deposito::class);
     }
 
     public function creadoPor()

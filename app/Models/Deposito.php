@@ -52,9 +52,17 @@ class Deposito extends Model
         return $this->belongsTo(User::class, 'creado_por');
     }
 
-    // Nota: la relación hacia equipos()/componentes() guardados en este
-    // depósito se agrega en la Fase 2, cuando exista deposito_id en esas
-    // tablas.
+    /** Equipos dados de baja guardados en este depósito. */
+    public function equipos()
+    {
+        return $this->hasMany(Equipo::class);
+    }
+
+    /** Stock de componentes (piezas buenas o descartadas) guardado en este depósito. */
+    public function componentesAlmacen()
+    {
+        return $this->hasMany(ComponenteAlmacen::class);
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Scopes

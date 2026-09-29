@@ -23,6 +23,7 @@ class AtributoEquipo extends Model
         'filtrable',
         'visible_en_tabla',
         'ver_en_reporte',
+        'reutilizable',
         'orden',
         'opciones',    // JSON — solo aplica cuando tipo = 'select'
         'sub_campos',  // JSON — solo aplica cuando tipo = 'group'
@@ -33,6 +34,7 @@ class AtributoEquipo extends Model
         'filtrable'        => 'boolean',
         'visible_en_tabla' => 'boolean',
         'ver_en_reporte'   => 'boolean',
+        'reutilizable'     => 'boolean',
         'orden'            => 'integer',
         'opciones'         => 'array',
         'sub_campos'       => 'array',
@@ -128,6 +130,12 @@ class AtributoEquipo extends Model
     public function scopeDeTipoSelect($query)
     {
         return $query->where('tipo', self::TIPO_SELECT);
+    }
+
+    /** Atributos que se pueden rescatar como pieza (Almacén/Depósito) al extraerlos de un equipo. */
+    public function scopeReutilizables($query)
+    {
+        return $query->where('reutilizable', true);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

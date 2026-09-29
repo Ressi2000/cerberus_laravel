@@ -20,6 +20,7 @@ class AtributoModal extends Component
     public bool   $filtrable        = false;
     public bool   $visible_en_tabla = false;
     public bool   $ver_en_reporte   = false;
+    public bool   $reutilizable     = false;
     public int    $orden            = 0;
     public array  $opciones         = [];   // [['id'=>uuid, 'valor'=>'...'], ...] — solo tipo 'select'
     public array  $subCampos        = [];   // solo tipo 'group'
@@ -51,7 +52,7 @@ class AtributoModal extends Component
     {
         $this->reset([
             'atributoId', 'nombre', 'requerido', 'filtrable',
-            'visible_en_tabla', 'ver_en_reporte', 'opciones', 'subCampos',
+            'visible_en_tabla', 'ver_en_reporte', 'reutilizable', 'opciones', 'subCampos',
         ]);
         $this->tipo         = 'string';
         $this->orden        = 0;
@@ -72,6 +73,7 @@ class AtributoModal extends Component
         $this->filtrable        = (bool) $a->filtrable;
         $this->visible_en_tabla = (bool) $a->visible_en_tabla;
         $this->ver_en_reporte   = (bool) $a->ver_en_reporte;
+        $this->reutilizable     = (bool) $a->reutilizable;
         $this->orden            = (int) $a->orden;
 
         // Opciones del tipo 'select'
@@ -154,6 +156,7 @@ class AtributoModal extends Component
             'filtrable'        => 'boolean',
             'visible_en_tabla' => 'boolean',
             'ver_en_reporte'   => 'boolean',
+            'reutilizable'     => 'boolean',
             'orden'            => 'integer|min:0',
         ];
 
@@ -230,6 +233,7 @@ class AtributoModal extends Component
                 'filtrable'        => $this->filtrable,
                 'visible_en_tabla' => $this->visible_en_tabla,
                 'ver_en_reporte'   => $this->ver_en_reporte,
+                'reutilizable'     => $this->reutilizable,
                 'orden'            => $this->orden,
                 'opciones'         => $opcionesJson,
                 'sub_campos'       => $subCamposJson,
@@ -273,7 +277,7 @@ class AtributoModal extends Component
         $this->open = false;
         $this->reset([
             'atributoId', 'categoria_id', 'nombre', 'tipo',
-            'requerido', 'filtrable', 'visible_en_tabla', 'ver_en_reporte', 'orden',
+            'requerido', 'filtrable', 'visible_en_tabla', 'ver_en_reporte', 'reutilizable', 'orden',
             'opciones', 'subCampos',
         ]);
         $this->tipo = 'string';

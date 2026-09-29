@@ -37,6 +37,7 @@ class Equipo extends Model
         'activo',
         'observaciones',
         'creado_por',         // FK al usuario que registró el equipo
+        'deposito_id',        // Depósito donde queda guardado si se da de baja
     ];
 
     protected $casts = [
@@ -80,6 +81,12 @@ class Equipo extends Model
     public function ubicacion()
     {
         return $this->belongsTo(Ubicacion::class);
+    }
+
+    /** Depósito donde queda guardado, si el equipo está dado de baja. */
+    public function deposito()
+    {
+        return $this->belongsTo(Deposito::class);
     }
 
     /** Historial completo de mantenimientos y reparaciones de este equipo. */
