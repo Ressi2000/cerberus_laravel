@@ -32,13 +32,14 @@
                             border-b border-gray-100 dark:border-cerberus-steel/30">
                     <div class="grid items-center gap-2 text-xs font-semibold
                                 text-gray-500 dark:text-cerberus-accent uppercase tracking-wide"
-                         style="grid-template-columns: 2fr 1.2fr 40px 40px 40px 40px 60px 32px 32px;">
+                         style="grid-template-columns: 2fr 1.2fr 40px 40px 40px 40px 40px 60px 32px 32px;">
                         <span>Nombre del atributo</span>
                         <span>Tipo de dato</span>
                         <span class="text-center" title="Requerido">Req.</span>
                         <span class="text-center" title="Filtrable">Filt.</span>
                         <span class="text-center" title="Visible en tabla">Tab.</span>
                         <span class="text-center" title="Ver en reporte">Rep.</span>
+                        <span class="text-center" title="Reutilizable">Reut.</span>
                         <span class="text-center">Orden</span>
                         <span></span>
                         <span></span>
@@ -57,7 +58,7 @@
 
                             {{-- Fila principal --}}
                             <div class="grid items-center gap-2 px-3 py-2.5"
-                                 style="grid-template-columns: 2fr 1.2fr 40px 40px 40px 40px 60px 32px 32px;">
+                                 style="grid-template-columns: 2fr 1.2fr 40px 40px 40px 40px 40px 60px 32px 32px;">
 
                                 {{-- Nombre --}}
                                 <div>
@@ -161,6 +162,22 @@
                                                    : 'text-gray-300 dark:text-cerberus-steel/40 hover:text-gray-400' }}
                                                disabled:opacity-50 disabled:cursor-not-allowed">
                                         <span class="material-icons text-base">description</span>
+                                    </button>
+                                </div>
+
+                                {{-- Toggle: Reutilizable --}}
+                                @php $noReutilizable = $fila['eliminar'] || $fila['tipo'] === 'file'; @endphp
+                                <div class="flex justify-center">
+                                    <button wire:click="$set('filas.{{ $i }}.reutilizable', {{ $fila['reutilizable'] ? 'false' : 'true' }})"
+                                        type="button"
+                                        {{ $noReutilizable ? 'disabled' : '' }}
+                                        title="Reutilizable{{ $fila['tipo'] === 'file' ? ' (deshabilitado para este tipo)' : '' }}"
+                                        class="w-7 h-7 rounded-lg flex items-center justify-center transition
+                                               {{ $fila['reutilizable'] && !$noReutilizable
+                                                   ? 'bg-teal-50 dark:bg-teal-500/15 text-teal-600 dark:text-teal-400'
+                                                   : 'text-gray-300 dark:text-cerberus-steel/40 hover:text-gray-400' }}
+                                               disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <span class="material-icons text-base">autorenew</span>
                                     </button>
                                 </div>
 
@@ -392,6 +409,10 @@
                         <span class="flex items-center gap-1">
                             <span class="material-icons text-sm text-amber-500">description</span>
                             Ver en reporte
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <span class="material-icons text-sm text-teal-500">autorenew</span>
+                            Reutilizable
                         </span>
                         <span class="flex items-center gap-1">
                             <span class="material-icons text-sm text-amber-500">lock</span>
