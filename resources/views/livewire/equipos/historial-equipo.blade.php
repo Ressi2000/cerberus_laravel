@@ -56,6 +56,86 @@
         </div>
     </div>
 
+    {{-- TRAZABILIDAD DE PIEZAS (Obsolescencia) --}}
+    @if ($piezasExtraidas->isNotEmpty() || $piezasInstaladas->isNotEmpty())
+        <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
+            <h3 class="text-lg font-bold text-cerberus-light flex items-center gap-2 mb-4">
+                <span class="material-icons text-cerberus-accent">memory</span>
+                Trazabilidad de piezas
+            </h3>
+
+            @if ($piezasExtraidas->isNotEmpty())
+                <div class="{{ $piezasInstaladas->isNotEmpty() ? 'mb-5' : '' }}">
+                    <p class="text-xs font-medium text-cerberus-accent uppercase tracking-wide mb-2">
+                        Piezas que se le extrajeron a este equipo
+                    </p>
+                    <div class="space-y-2">
+                        @foreach ($piezasExtraidas as $p)
+                            <div class="flex items-center justify-between gap-3 bg-cerberus-dark rounded-lg px-4 py-2.5 border border-cerberus-steel/50">
+                                <div class="min-w-0">
+                                    <p class="text-sm text-cerberus-light truncate">
+                                        {{ $p->atributo?->describirValor($p->valor_extraido) ?? 'Pieza' }}
+                                    </p>
+                                    <p class="text-xs text-cerberus-steel">
+                                        @if ($p->estado === 'en_almacen')
+                                            En stock del Almacén de Componentes
+                                        @elseif ($p->estado === 'instalada' && $p->equipoDestino)
+                                            Instalada en
+                                            <a href="{{ route('admin.equipos.show', $p->equipoDestino) }}" wire:navigate
+                                               class="text-cerberus-accent hover:underline">
+                                                {{ $p->equipoDestino->codigo_interno }}
+                                            </a>
+                                        @elseif ($p->estado === 'en_deposito')
+                                            Descartada en {{ $p->deposito?->nombre ?? 'depósito' }}
+                                        @endif
+                                    </p>
+                                </div>
+                                <span @class([
+                                    'flex-shrink-0 px-2 py-0.5 text-xs rounded-full border whitespace-nowrap',
+                                    'bg-blue-500/10 text-blue-400 border-blue-500/30' => $p->estado === 'en_almacen',
+                                    'bg-green-500/10 text-green-400 border-green-500/30' => $p->estado === 'instalada',
+                                    'bg-gray-500/10 text-gray-400 border-gray-500/30' => $p->estado === 'en_deposito',
+                                ])>
+                                    {{ $p->labelEstado() }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if ($piezasInstaladas->isNotEmpty())
+                <div>
+                    <p class="text-xs font-medium text-cerberus-accent uppercase tracking-wide mb-2">
+                        Piezas rescatadas instaladas en este equipo
+                    </p>
+                    <div class="space-y-2">
+                        @foreach ($piezasInstaladas as $p)
+                            <div class="flex items-center justify-between gap-3 bg-cerberus-dark rounded-lg px-4 py-2.5 border border-cerberus-steel/50">
+                                <div class="min-w-0">
+                                    <p class="text-sm text-cerberus-light truncate">
+                                        {{ $p->atributo?->describirValor($p->valor_extraido) ?? 'Pieza' }}
+                                    </p>
+                                    <p class="text-xs text-cerberus-steel">
+                                        Proviene de
+                                        @if ($p->equipoOrigen)
+                                            <a href="{{ route('admin.equipos.show', $p->equipoOrigen) }}" wire:navigate
+                                               class="text-cerberus-accent hover:underline">
+                                                {{ $p->equipoOrigen->codigo_interno }}
+                                            </a>
+                                        @else
+                                            un equipo eliminado
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
+
     {{-- FILTROS --}}
     <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4">
         <div class="flex flex-wrap gap-4 items-end">
@@ -72,6 +152,7 @@
                     <option value="traslado">Traslado</option>
                     <option value="prestamo">Préstamo</option>
                     <option value="mantenimiento">Mantenimiento/Reparación</option>
+                    <option value="pieza">Piezas</option>
                     <option value="estado">Estado</option>
                 </select>
             </div>

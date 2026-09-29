@@ -8,6 +8,7 @@ use App\Models\Auditoria;
 use App\Models\AtributoEquipo;
 use App\Models\Equipo;
 use App\Models\Mantenimiento;
+use App\Models\PiezaExtraidaMovimiento;
 use App\Models\Prestamo;
 use App\Models\PrestamoItem;
 use App\Models\TrasladoItem;
@@ -298,6 +299,28 @@ class HistorialEquipo extends Component
         return $eventos;
     }
 
+    /**
+     * Movimientos de piezas que involucran a este equipo: extraídas de él
+     * (baja o sustitución en reparación) o instaladas en él (rescatadas de
+     * otro equipo). Ver PiezaExtraidaMovimiento::equipo_relacionado_id.
+     */
+    protected function eventosPiezas(): Collection
+    {
+        return PiezaExtraidaMovimiento::where('equipo_relacionado_id', $this->equipo->id)
+            ->with(['pieza.atributo', 'registradoPor'])
+            ->get()
+            ->map(fn($mov) => [
+                'fecha'   => $mov->created_at,
+                'tipo'    => 'pieza',
+                'icono'   => $mov->tipo === PiezaExtraidaMovimiento::TIPO_EXTRACCION ? 'output' : 'input',
+                'color'   => $mov->tipo === PiezaExtraidaMovimiento::TIPO_EXTRACCION ? 'red' : 'green',
+                'titulo'  => $mov->labelTipo() . ': ' . ($mov->pieza?->atributo?->describirValor($mov->pieza->valor_extraido) ?? 'Pieza'),
+                'detalle' => null,
+                'estado'  => null,
+                'usuario' => $mov->registradoPor?->name ?? 'Sistema',
+            ]);
+    }
+
     /** Cambios en características estáticas del equipo (vía auditoría general). */
     protected function eventosEstaticos(AuditoriaResolverService $resolver): Collection
     {
@@ -348,6 +371,28 @@ class HistorialEquipo extends Component
     // Render
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Piezas que se le extrajeron a este equipo (baja o sustitución en
+     * reparación) y dónde están ahora — la "etiqueta" de trazabilidad que
+     * permite ubicar cada pieza rescatada. Ver PiezaExtraida.
+     */
+    protected function piezasExtraidas(): Collection
+    {
+        return $this->equipo->piezasExtraidas()
+            ->with(['atributo', 'equipoDestino', 'deposito'])
+            ->latest()
+            ->get();
+    }
+
+    /** Piezas rescatadas de OTROS equipos que terminaron instaladas en este. */
+    protected function piezasInstaladas(): Collection
+    {
+        return $this->equipo->piezasInstaladas()
+            ->with(['atributo', 'equipoOrigen'])
+            ->latest()
+            ->get();
+    }
+
     public function render(AuditoriaResolverService $resolver)
     {
         $atributos = AtributoEquipo::where('categoria_id', $this->equipo->categoria_id)
@@ -360,6 +405,7 @@ class HistorialEquipo extends Component
             'traslado'      => fn() => $this->eventosTraslados(),
             'prestamo'      => fn() => $this->eventosPrestamos(),
             'mantenimiento' => fn() => $this->eventosMantenimientos(),
+            'pieza'         => fn() => $this->eventosPiezas(),
             'estado'        => fn() => $this->eventosEstaticos($resolver),
         ];
 
@@ -390,8 +436,10 @@ class HistorialEquipo extends Component
         );
 
         return view('livewire.equipos.historial-equipo', [
-            'eventos'   => $eventos,
-            'atributos' => $atributos,
+            'eventos'          => $eventos,
+            'atributos'        => $atributos,
+            'piezasExtraidas'  => $this->piezasExtraidas(),
+            'piezasInstaladas' => $this->piezasInstaladas(),
         ]);
     }
 }
