@@ -51,4 +51,9 @@ class ConfiguracionController extends Controller
     {
         return view('configuracion.tareas-mantenimiento.tareas-mantenimiento');
     }
+
+    public function depositos()
+    {
+        return view('configuracion.depositos.depositos');
+    }
 }

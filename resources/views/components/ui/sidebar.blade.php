@@ -484,6 +484,17 @@
                         <span class="whitespace-nowrap">Tareas de Mantenimiento</span>
                     </a>
 
+                    <a href="{{ route('admin.configuracion.depositos') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.depositos') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.depositos') ? $ion : $ioff }}">
+                            warehouse
+                        </span>
+                        <span class="whitespace-nowrap">Depósitos</span>
+                    </a>
+
                     <a href="{{ route('admin.configuracion.licencias-microsoft') }}"
                         class="{{ $li }} py-1.5 text-sm
                           {{ $active('admin.configuracion.licencias-microsoft') ? $on : $off }}">
