@@ -56,7 +56,7 @@
         @endif
     </div>
 
-    @if ($casos->isEmpty())
+    @if (! $progreso)
         <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-10 text-center">
             <span class="material-icons text-4xl text-gray-300 dark:text-cerberus-steel mb-2">event_busy</span>
             <p class="text-sm text-gray-500 dark:text-cerberus-light">
@@ -90,6 +90,15 @@
                 </select>
             </div>
 
+            <div class="relative flex-1 min-w-[180px] max-w-xs">
+                <span class="material-icons text-base text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2">search</span>
+                <input type="text" wire:model.live.debounce.300ms="search"
+                    placeholder="Buscar equipo, usuario o departamento..."
+                    class="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg
+                           bg-white dark:bg-cerberus-dark border border-gray-300 dark:border-cerberus-steel
+                           text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/30">
+            </div>
+
             <div class="flex-1"></div>
 
             <button wire:click="avanzarSeleccionados"
@@ -105,6 +114,14 @@
             </button>
         </div>
 
+        @if ($casos->isEmpty())
+            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-10 text-center">
+                <span class="material-icons text-4xl text-gray-300 dark:text-cerberus-steel mb-2">search_off</span>
+                <p class="text-sm text-gray-500 dark:text-cerberus-light">
+                    Ningún equipo del lote coincide con «{{ $search }}».
+                </p>
+            </div>
+        @else
         {{-- ── TABLA DE CASOS DEL LOTE ─────────────────────────────────────────── --}}
         <x-table.crud-table :headers="['', 'Equipo', 'Estado', 'Checklist', '', 'Acciones']" :paginated="null">
             @foreach ($this->gruposCasos as $nombreGrupo => $casosGrupo)
@@ -157,7 +174,7 @@
                                         <span class="material-icons text-sm">report_problem</span> Reportar
                                     </button>
                                 @endif
-                                <a href="{{ route('admin.mantenimientos.show', $caso) }}"
+                                <a href="{{ route('admin.mantenimientos.show', $caso) }}?lote={{ $plan->id }}"
                                    class="text-cerberus-primary dark:text-cerberus-accent hover:underline text-xs flex items-center gap-1">
                                     Ver <span class="material-icons text-sm">open_in_new</span>
                                 </a>
@@ -167,6 +184,7 @@
                 @endforeach
             @endforeach
         </x-table.crud-table>
+        @endif
     @endif
 
 </div>

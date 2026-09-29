@@ -5,6 +5,7 @@ namespace App\Livewire\Mantenimientos;
 use App\Models\Empresa;
 use App\Models\Mantenimiento;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -104,18 +105,58 @@ class MantenimientosTable extends Component
         return $this->baseQuery()->preventivos()->abiertos()->count();
     }
 
+    /**
+     * Query base para las pestañas de estado y para el listado: todos los
+     * filtros MENOS `estado` — así cada pestaña puede mostrar cuántos casos
+     * le tocan sin heredar la pestaña actualmente seleccionada.
+     */
+    private function queryFiltrada()
+    {
+        return Mantenimiento::visiblePara(Auth::user())
+            ->when($this->tipo, fn ($q) => $q->where('tipo', $this->tipo))
+            ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))
+            ->when($this->search, fn ($q) => $q->whereHas('equipo', fn ($q) =>
+                $q->where('codigo_interno', 'like', "%{$this->search}%")
+            ));
+    }
+
+    /**
+     * Cantidad de casos por estado (respetando tipo/empresa/búsqueda, pero
+     * no la pestaña de estado en sí, ni el toggle de "mostrar cerrados" —
+     * cada pestaña necesita ver su propio conteo real). Alimenta las
+     * pestañas del listado para no tener que adivinar "¿cuál es mi caso?"
+     * en una tabla plana con todo mezclado.
+     */
+    #[Computed]
+    public function conteosPorEstado(): array
+    {
+        return $this->queryFiltrada()
+            ->select('estado', DB::raw('count(*) as total'))
+            ->groupBy('estado')
+            ->pluck('total', 'estado')
+            ->all();
+    }
+
+    #[Computed]
+    public function estadosDisponibles(): array
+    {
+        return collect(Mantenimiento::ESTADOS_PREVENTIVO)
+            ->merge(Mantenimiento::ESTADOS_CORRECTIVO)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     #[Computed]
     public function mantenimientos()
     {
-        return Mantenimiento::with(['equipo.categoria', 'empresa', 'responsable'])
-            ->visiblePara(Auth::user())
-            ->when($this->tipo, fn ($q) => $q->where('tipo', $this->tipo))
-            ->when(! $this->mostrar_cerrados, fn ($q) => $q->abiertos())
-            ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))
+        return $this->queryFiltrada()
+            ->with(['equipo.categoria', 'empresa', 'responsable'])
+            // Una pestaña de estado específica ya deja bien claro qué se
+            // quiere ver (incluidos los terminales, ej. "Completado"); el
+            // toggle "mostrar cerrados" solo aplica a la pestaña "Todos".
+            ->when(! $this->estado && ! $this->mostrar_cerrados, fn ($q) => $q->abiertos())
             ->when($this->estado, fn ($q) => $q->where('estado', $this->estado))
-            ->when($this->search, fn ($q) => $q->whereHas('equipo', fn ($q) =>
-                $q->where('codigo_interno', 'like', "%{$this->search}%")
-            ))
             ->latest('fecha_inicio')
             ->paginate(15);
     }

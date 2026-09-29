@@ -12,6 +12,12 @@
         'Cancelado'      => 'bg-gray-50 dark:bg-cerberus-steel/20 text-gray-500 dark:text-cerberus-light border-gray-200 dark:border-cerberus-steel/30',
         'Dado de baja'   => 'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30',
     ];
+
+    // Preventivo "Programado" todavía no arrancó: solo se ve el header, las
+    // acciones (para poder avanzar/cancelar) y la evidencia (foto "Antes").
+    // El checklist, observaciones y componentes recién aparecen al pasar a
+    // "En proceso" — no tiene sentido pedir nada de eso antes de empezar.
+    $preventivoSinEmpezar = $m->esPreventivo() && $m->estado === 'Programado';
 @endphp
 
 <div class="space-y-6">
@@ -133,54 +139,9 @@
         @endif
     </div>
 
-    {{-- ── CHECKLIST (solo Preventivo) ──────────────────────────────────────── --}}
-    @if ($m->esPreventivo() && ! empty($m->checklist))
-        <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                <span class="material-icons text-cerberus-accent text-base">checklist</span>
-                Checklist de la revisión
-            </h3>
-            @php
-                $totalTareas = count($m->checklist);
-                $hechas = collect($m->checklist)->filter(fn ($i) => $i['hecho'] ?? false)->count();
-            @endphp
-            <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-3">{{ $hechas }} de {{ $totalTareas }} completadas</p>
-
-            <div class="space-y-1.5">
-                @foreach ($m->checklist as $i => $item)
-                    <div wire:key="det-checklist-{{ $i }}" class="flex items-center gap-2">
-                        @if ($m->estaAbierto())
-                            {{-- Checkbox real: tilda al instante (comportamiento nativo del
-                                 navegador), sin esperar la ida y vuelta al servidor que
-                                 igual persiste el cambio en segundo plano. --}}
-                            <input type="checkbox" wire:click="toggleChecklistItem({{ $i }})"
-                                @checked($item['hecho'] ?? false)
-                                class="peer flex-shrink-0 w-4 h-4 rounded border-gray-300 dark:border-cerberus-steel
-                                       text-green-600 focus:ring-green-600/30 cursor-pointer">
-                            <span class="text-sm flex-1 text-gray-700 dark:text-white transition-colors
-                                         peer-checked:text-gray-500 dark:peer-checked:text-cerberus-light peer-checked:line-through">
-                                {{ $item['tarea'] }}
-                            </span>
-                        @else
-                            <span class="flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center
-                                       {{ ($item['hecho'] ?? false)
-                                           ? 'bg-green-600 border-green-600 text-white'
-                                           : 'border-gray-300 dark:border-cerberus-steel opacity-50' }}">
-                                @if ($item['hecho'] ?? false)
-                                    <span class="material-icons text-xs">check</span>
-                                @endif
-                            </span>
-                            <span class="text-sm {{ ($item['hecho'] ?? false) ? 'text-gray-500 dark:text-cerberus-light line-through' : 'text-gray-700 dark:text-white' }}">
-                                {{ $item['tarea'] }}
-                            </span>
-                        @endif
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
     {{-- ── ACCIONES DE FLUJO ──────────────────────────────────────────────── --}}
+    {{-- Primero que todo: es lo que se usa a cada momento, no tiene sentido
+         tener que bajar hasta el final para encontrar el botón de avanzar. --}}
     @can('update', $m)
         @if ($m->estaAbierto())
             <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
@@ -235,53 +196,101 @@
         @endif
     @endcan
 
-    {{-- ── DIAGNÓSTICO / COSTO ────────────────────────────────────────────── --}}
-    {{-- Editable solo mientras el caso está abierto. Cerrado/Completado/Cancelado/
-         Dado de baja: se muestra en modo lectura, incluso para Administrador —
-         el diagnóstico de un caso ya cerrado no debe poder seguir cambiando. --}}
-    @if ($m->estaAbierto())
+    {{-- ── CHECKLIST (Preventivo, desde "En proceso") ───────────────────────── --}}
+    @if ($m->esPreventivo() && ! $preventivoSinEmpezar && ! empty($m->checklist))
+        <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                <span class="material-icons text-cerberus-accent text-base">checklist</span>
+                Checklist de la revisión
+            </h3>
+            @php
+                $totalTareas = count($m->checklist);
+                $hechas = collect($m->checklist)->filter(fn ($i) => $i['hecho'] ?? false)->count();
+            @endphp
+            <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-3">{{ $hechas }} de {{ $totalTareas }} completadas</p>
+
+            <div class="space-y-1.5">
+                @foreach ($m->checklist as $i => $item)
+                    <div wire:key="det-checklist-{{ $i }}" class="flex items-center gap-2">
+                        @if ($m->estaAbierto())
+                            {{-- Checkbox real: tilda al instante (comportamiento nativo del
+                                 navegador), sin esperar la ida y vuelta al servidor que
+                                 igual persiste el cambio en segundo plano. --}}
+                            <input type="checkbox" wire:click="toggleChecklistItem({{ $i }})"
+                                @checked($item['hecho'] ?? false)
+                                class="peer flex-shrink-0 w-4 h-4 rounded border-gray-300 dark:border-cerberus-steel
+                                       text-green-600 focus:ring-green-600/30 cursor-pointer">
+                            <span class="text-sm flex-1 text-gray-700 dark:text-white transition-colors
+                                         peer-checked:text-gray-500 dark:peer-checked:text-cerberus-light peer-checked:line-through">
+                                {{ $item['tarea'] }}
+                            </span>
+                        @else
+                            <span class="flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center
+                                       {{ ($item['hecho'] ?? false)
+                                           ? 'bg-green-600 border-green-600 text-white'
+                                           : 'border-gray-300 dark:border-cerberus-steel opacity-50' }}">
+                                @if ($item['hecho'] ?? false)
+                                    <span class="material-icons text-xs">check</span>
+                                @endif
+                            </span>
+                            <span class="text-sm {{ ($item['hecho'] ?? false) ? 'text-gray-500 dark:text-cerberus-light line-through' : 'text-gray-700 dark:text-white' }}">
+                                {{ $item['tarea'] }}
+                            </span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    {{-- ── DIAGNÓSTICO (Correctivo) / OBSERVACIONES (Preventivo) ───────────── --}}
+    {{-- Editable solo mientras el caso está abierto, y para Preventivo recién
+         desde "En proceso" — mientras está "Programado" no hay nada que
+         observar todavía. Cerrado/Completado/Cancelado/Dado de baja: modo
+         lectura, incluso para Administrador. --}}
+    @if ($m->estaAbierto() && ! $preventivoSinEmpezar)
         @can('update', $m)
             <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <span class="material-icons text-cerberus-accent text-base">fact_check</span>
-                    Diagnóstico
+                    {{ $m->esCorrectivo() ? 'Diagnóstico' : 'Observaciones' }}
                 </h3>
 
                 <div class="space-y-4">
                     @if ($m->esCorrectivo())
                         <x-form.textarea label="Diagnóstico" wire:model="diagnostico" rows="2" placeholder="Resultado del análisis técnico..." />
                         <x-form.textarea label="Causa raíz" wire:model="causa_raiz" rows="2" placeholder="Por qué ocurrió la falla..." />
-                    @endif
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <x-form.input label="Costo" type="number" wire:model="costo" placeholder="0.00" suffix="$" />
-                    </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <x-form.input label="Costo" type="number" wire:model="costo" placeholder="0.00" suffix="$" />
+                        </div>
+                    @endif
 
                     <x-form.textarea label="Observaciones" wire:model="observaciones" rows="2" placeholder="Notas adicionales..." />
 
                     <div class="flex justify-end">
                         <button wire:click="guardarDiagnostico" class="px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition">
-                            Guardar diagnóstico
+                            Guardar
                         </button>
                     </div>
                 </div>
             </div>
         @endcan
-    @elseif ($m->diagnostico || $m->causa_raiz || $m->costo || $m->observaciones)
+    @elseif (! $preventivoSinEmpezar && ($m->diagnostico || $m->causa_raiz || $m->costo || $m->observaciones))
         <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span class="material-icons text-cerberus-accent text-base">fact_check</span>
-                Diagnóstico
+                {{ $m->esCorrectivo() ? 'Diagnóstico' : 'Observaciones' }}
                 <span class="text-xs font-normal text-gray-400 dark:text-cerberus-steel">(caso cerrado, solo lectura)</span>
             </h3>
             <div class="space-y-3 text-sm">
-                @if ($m->diagnostico)
+                @if ($m->esCorrectivo() && $m->diagnostico)
                     <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Diagnóstico</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->diagnostico }}</p></div>
                 @endif
-                @if ($m->causa_raiz)
+                @if ($m->esCorrectivo() && $m->causa_raiz)
                     <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Causa raíz</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->causa_raiz }}</p></div>
                 @endif
-                @if ($m->costo)
+                @if ($m->esCorrectivo() && $m->costo)
                     <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Costo</p><p class="text-gray-700 dark:text-cerberus-light">${{ number_format($m->costo, 2) }}</p></div>
                 @endif
                 @if ($m->observaciones)
@@ -291,8 +300,10 @@
         </div>
     @endif
 
-    {{-- ── COMPONENTES ─────────────────────────────────────────────────────── --}}
-    @livewire('mantenimientos.mantenimiento-componentes-panel', ['mantenimientoId' => $m->id], key('comp-' . $m->id))
+    {{-- ── COMPONENTES (Preventivo, desde "En proceso") ─────────────────────── --}}
+    @unless ($preventivoSinEmpezar)
+        @livewire('mantenimientos.mantenimiento-componentes-panel', ['mantenimientoId' => $m->id], key('comp-' . $m->id))
+    @endunless
 
     {{-- ── EVIDENCIA FOTOGRÁFICA ───────────────────────────────────────────── --}}
     @livewire('mantenimientos.mantenimiento-evidencias-panel', ['mantenimientoId' => $m->id], key('evi-' . $m->id))

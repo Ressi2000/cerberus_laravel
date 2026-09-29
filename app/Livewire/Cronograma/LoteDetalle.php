@@ -28,6 +28,9 @@ class LoteDetalle extends Component
     /** 'equipo' (sin agrupar) | 'usuario' | 'departamento'. */
     public string $agruparPor = 'equipo';
 
+    /** Filtra por código de equipo, nombre de usuario o departamento. */
+    public string $search = '';
+
     public function mount(int $planId): void
     {
         // withTrashed(): el historial de un plan eliminado debe poder
@@ -65,6 +68,11 @@ class LoteDetalle extends Component
         return $this->plan->mantenimientos()
             ->where('proxima_fecha_programada', $fechaCiclo)
             ->with(['equipo.categoria', 'asignacion.usuario.departamento'])
+            ->when($this->search, fn ($q) => $q->where(function ($qq) {
+                $qq->whereHas('equipo', fn ($e) => $e->where('codigo_interno', 'like', "%{$this->search}%"))
+                   ->orWhereHas('asignacion.usuario', fn ($u) => $u->where('name', 'like', "%{$this->search}%"))
+                   ->orWhereHas('asignacion.usuario.departamento', fn ($d) => $d->where('nombre', 'like', "%{$this->search}%"));
+            }))
             ->orderBy('id')
             ->get();
     }

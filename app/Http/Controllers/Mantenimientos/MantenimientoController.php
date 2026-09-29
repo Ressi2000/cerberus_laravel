@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Mantenimientos;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mantenimiento;
+use App\Models\PlanMantenimiento;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 
 /**
  * Controller delgado — solo coordina, cero lógica de negocio.
@@ -26,9 +28,19 @@ class MantenimientoController extends Controller
         return view('mantenimientos.crear');
     }
 
-    public function show(Mantenimiento $mantenimiento)
+    public function show(Request $request, Mantenimiento $mantenimiento)
     {
         $this->authorize('view', $mantenimiento);
-        return view('mantenimientos.show', compact('mantenimiento'));
+
+        // Si se llegó desde el Lote de un plan (Cronograma), "volver" debe
+        // regresar ahí en vez de al listado general de Mantenimientos.
+        $lote = null;
+        if ($request->filled('lote')) {
+            $lote = PlanMantenimiento::withTrashed()
+                ->with(['categoria', 'empresa'])
+                ->find($request->query('lote'));
+        }
+
+        return view('mantenimientos.show', compact('mantenimiento', 'lote'));
     }
 }
