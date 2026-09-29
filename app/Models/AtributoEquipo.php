@@ -96,6 +96,12 @@ class AtributoEquipo extends Model
                     ->orderBy('orden');
     }
 
+    /** Piezas extraídas de este tipo (ej: todas las RAM extraídas de cualquier equipo). */
+    public function piezasExtraidas(): HasMany
+    {
+        return $this->hasMany(PiezaExtraida::class, 'atributo_id');
+    }
+
     // ── Scopes ────────────────────────────────────────────────────────────────
 
     /** Atributos que aparecen en los filtros de la tabla de equipos */

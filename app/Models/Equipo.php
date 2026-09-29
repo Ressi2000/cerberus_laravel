@@ -187,4 +187,16 @@ class Equipo extends Model
                     ->orderBy('atributo_id')
                     ->orderBy('orden');
     }
+
+    /** Piezas que se extrajeron de este equipo (baja o sustitución en reparación). */
+    public function piezasExtraidas()
+    {
+        return $this->hasMany(PiezaExtraida::class, 'equipo_origen_id');
+    }
+
+    /** Piezas de otros equipos que terminaron instaladas en este equipo. */
+    public function piezasInstaladas()
+    {
+        return $this->hasMany(PiezaExtraida::class, 'equipo_destino_id');
+    }
 }

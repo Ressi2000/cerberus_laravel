@@ -58,10 +58,16 @@ class Deposito extends Model
         return $this->hasMany(Equipo::class);
     }
 
-    /** Stock de componentes (piezas buenas o descartadas) guardado en este depósito. */
+    /** Stock de componentes que terminó descartado en este depósito. */
     public function componentesAlmacen()
     {
         return $this->hasMany(ComponenteAlmacen::class);
+    }
+
+    /** Piezas individuales descartadas (no reutilizables) guardadas directamente en este depósito. */
+    public function piezasExtraidas()
+    {
+        return $this->hasMany(PiezaExtraida::class);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

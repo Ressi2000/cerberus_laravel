@@ -68,6 +68,12 @@ class ComponenteAlmacen extends Model
         return $this->hasMany(MantenimientoComponente::class, 'componente_id');
     }
 
+    /** Piezas individuales rescatadas que suman a este bucket de stock. */
+    public function piezasExtraidas()
+    {
+        return $this->hasMany(PiezaExtraida::class, 'componente_almacen_id');
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Scopes
     // ─────────────────────────────────────────────────────────────────────────

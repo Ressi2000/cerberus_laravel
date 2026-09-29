@@ -166,6 +166,12 @@ class Mantenimiento extends Model
         return $this->hasMany(MovimientoComponente::class);
     }
 
+    /** Piezas extraídas de un equipo durante esta reparación (sustitución). */
+    public function piezasExtraidas()
+    {
+        return $this->hasMany(PiezaExtraida::class);
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Scopes
     // ─────────────────────────────────────────────────────────────────────────
