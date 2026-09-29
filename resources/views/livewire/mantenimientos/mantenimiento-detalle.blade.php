@@ -305,6 +305,11 @@
         @livewire('mantenimientos.mantenimiento-componentes-panel', ['mantenimientoId' => $m->id], key('comp-' . $m->id))
     @endunless
 
+    {{-- ── PIEZAS (Correctivo): retirar pieza vieja/dañada, instalar rescatada ── --}}
+    @if ($m->esCorrectivo())
+        @livewire('mantenimientos.mantenimiento-piezas-panel', ['mantenimientoId' => $m->id], key('piezas-' . $m->id))
+    @endif
+
     {{-- ── EVIDENCIA FOTOGRÁFICA ───────────────────────────────────────────── --}}
     @livewire('mantenimientos.mantenimiento-evidencias-panel', ['mantenimientoId' => $m->id], key('evi-' . $m->id))
 

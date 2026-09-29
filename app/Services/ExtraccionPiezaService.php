@@ -78,7 +78,7 @@ class ExtraccionPiezaService
                 'atributo'       => $instancia->atributo,
                 'valor'          => null,
                 'grupoInstancia' => $instancia,
-                'descripcion'    => $this->nombreStock($instancia->atributo, $instancia->valores),
+                'descripcion'    => $instancia->atributo->describirValor($instancia->valores),
             ]);
 
         return $simples->concat($grupos)
@@ -261,7 +261,7 @@ class ExtraccionPiezaService
      */
     private function bucketDeStock(Equipo $equipoOrigen, AtributoEquipo $atributo, array $valorExtraido, User $actor): ComponenteAlmacen
     {
-        $nombre = $this->nombreStock($atributo, $valorExtraido);
+        $nombre = $atributo->describirValor($valorExtraido);
 
         return ComponenteAlmacen::firstOrCreate(
             [
@@ -275,28 +275,5 @@ class ExtraccionPiezaService
                 'creado_por'   => $actor->id,
             ]
         );
-    }
-
-    /** Arma un nombre legible de stock a partir del atributo y su valor extraído. */
-    private function nombreStock(AtributoEquipo $atributo, array $valorExtraido): string
-    {
-        if ($atributo->esGrupo()) {
-            $subCampos = collect($atributo->sub_campos ?? [])->keyBy('id');
-            $texto = collect($valorExtraido)
-                ->map(function ($valor, $subCampoId) use ($subCampos) {
-                    if ($valor === null || $valor === '') {
-                        return null;
-                    }
-                    $label = $subCampos[$subCampoId]['nombre'] ?? null;
-
-                    return $label ? "{$label}: {$valor}" : (string) $valor;
-                })
-                ->filter()
-                ->implode(' / ');
-        } else {
-            $texto = (string) ($valorExtraido['valor'] ?? '');
-        }
-
-        return trim($atributo->nombre . ($texto !== '' ? " ({$texto})" : ''));
     }
 }

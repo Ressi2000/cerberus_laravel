@@ -205,4 +205,33 @@ class AtributoEquipo extends Model
     {
         return self::TIPOS[$this->tipo] ?? $this->tipo;
     }
+
+    /**
+     * Describe en texto un valor "crudo" de este atributo — el mismo shape
+     * que usa PiezaExtraida::valor_extraido: ['valor' => ...] para un
+     * atributo simple, o [sub_campo_id => valor, ...] para uno tipo 'group'.
+     * Usado para armar el nombre del bucket de stock al rescatar una pieza
+     * y para mostrar su ficha de trazabilidad.
+     */
+    public function describirValor(array $valor): string
+    {
+        if ($this->esGrupo()) {
+            $subCampos = collect($this->sub_campos ?? [])->keyBy('id');
+            $texto = collect($valor)
+                ->map(function ($v, $subCampoId) use ($subCampos) {
+                    if ($v === null || $v === '') {
+                        return null;
+                    }
+                    $label = $subCampos[$subCampoId]['nombre'] ?? null;
+
+                    return $label ? "{$label}: {$v}" : (string) $v;
+                })
+                ->filter()
+                ->implode(' / ');
+        } else {
+            $texto = (string) ($valor['valor'] ?? '');
+        }
+
+        return trim($this->nombre . ($texto !== '' ? " ({$texto})" : ''));
+    }
 }
