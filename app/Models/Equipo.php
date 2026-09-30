@@ -95,10 +95,29 @@ class Equipo extends Model
         return $this->hasMany(Mantenimiento::class);
     }
 
+    /** Item de asignación vigente (no devuelto) de este equipo, si tiene uno. */
+    public function asignacionItemActivo()
+    {
+        return $this->hasOne(AsignacionItem::class)->where('devuelto', false);
+    }
+
     /** Mantenimiento/reparación abierto actualmente sobre este equipo, si hay uno. */
     public function mantenimientoAbierto()
     {
         return $this->hasOne(Mantenimiento::class)->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES)->latestOfMany();
+    }
+
+    /**
+     * Equipos cuyo receptor actual (asignación vigente, personal o de área
+     * común) pertenece al departamento indicado. Usado por el cronograma
+     * para acotar un plan de mantenimiento a un departamento específico.
+     */
+    public function scopeDeDepartamento(Builder $query, int $departamentoId): Builder
+    {
+        return $query->whereHas('asignacionItemActivo.asignacion', function ($q) use ($departamentoId) {
+            $q->where('area_departamento_id', $departamentoId)
+              ->orWhereHas('usuario', fn ($u) => $u->where('departamento_id', $departamentoId));
+        });
     }
 
     public function scopeVisiblePara(Builder $query, User $actor): Builder

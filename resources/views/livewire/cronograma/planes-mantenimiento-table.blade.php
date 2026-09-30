@@ -67,8 +67,18 @@
                        {{ ! $plan->activo ? 'opacity-60 bg-gray-50 dark:bg-cerberus-dark/30' : '' }}
                        hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
                 <td class="px-4 py-3">
-                    <p class="text-[#1E293B] dark:text-white font-medium text-sm">{{ $plan->categoria->nombre ?? '—' }}</p>
-                    <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $plan->equiposAlcanzados()->count() }} equipo(s) activo(s)</p>
+                    <p class="text-[#1E293B] dark:text-white font-medium text-sm">
+                        {{ $plan->categoria->nombre ?? '—' }}
+                        @if ($plan->departamento)
+                            <span class="text-gray-400 dark:text-cerberus-steel font-normal text-xs">· {{ $plan->departamento->nombre }}</span>
+                        @endif
+                    </p>
+                    <p class="text-gray-500 dark:text-cerberus-light text-xs">
+                        {{ $plan->equiposAlcanzados()->count() }} equipo(s) activo(s)
+                        @if ($plan->equipos()->exists())
+                            <span class="text-cerberus-accent">(selección puntual)</span>
+                        @endif
+                    </p>
                 </td>
                 <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">{{ $plan->empresa->nombre ?? '—' }}</td>
                 <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">Cada {{ $plan->frecuencia_meses }} {{ $plan->frecuencia_meses == 1 ? 'mes' : 'meses' }}</td>

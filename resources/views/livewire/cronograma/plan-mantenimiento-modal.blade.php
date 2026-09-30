@@ -44,6 +44,19 @@
                         />
                     </div>
 
+                    <div wire:key="plan-depto-select-{{ $empresa_id ?: 'sin-empresa' }}">
+                        <x-form.select
+                            searchable
+                            label="Departamento (opcional)"
+                            placeholder="Todos los departamentos"
+                            :options="$this->departamentosOpciones"
+                            wire:model.live="departamento_id"
+                            :error="$errors->first('departamento_id')"
+                            :disabled="! $empresa_id || $planId"
+                            hint="Acota el plan a los equipos cuyo receptor actual (persona o área) pertenece a este departamento — útil para organizar la logística de entrega por jornadas."
+                        />
+                    </div>
+
                     @if ($this->equiposAlcanzadosCount !== null)
                         <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-cerberus-light
                                     bg-gray-50 dark:bg-cerberus-dark/40 rounded-lg px-4 py-2.5">
@@ -52,8 +65,32 @@
                                 Este plan aplicará a <strong class="text-gray-900 dark:text-white">{{ $this->equiposAlcanzadosCount }}</strong>
                                 equipo(s) actualmente.
                             @else
-                                No hay equipos activos de esta categoría en esta empresa todavía.
+                                No hay equipos activos con este alcance todavía.
                             @endif
+                        </div>
+                    @endif
+
+                    @if ($this->equiposDisponibles->isNotEmpty())
+                        <div x-data="{ expandido: {{ ! empty($equiposSeleccionados) ? 'true' : 'false' }} }">
+                            <button type="button" @click="expandido = ! expandido"
+                                class="text-xs font-medium text-cerberus-primary dark:text-cerberus-accent hover:underline flex items-center gap-1">
+                                <span class="material-icons text-sm" x-text="expandido ? 'expand_less' : 'expand_more'"></span>
+                                Elegir equipos puntuales (opcional)
+                            </button>
+                            <p x-show="! expandido" class="text-xs text-gray-400 dark:text-cerberus-steel mt-1">
+                                Por defecto el plan alcanza a todos los equipos de arriba. Ábrelo si en esta ronda solo quieres algunos puntuales.
+                            </p>
+
+                            <div x-show="expandido" x-cloak
+                                 class="mt-2 max-h-48 overflow-y-auto space-y-1 border border-gray-200 dark:border-cerberus-steel/40 rounded-lg p-3">
+                                @foreach ($this->equiposDisponibles as $eq)
+                                    <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-cerberus-light cursor-pointer">
+                                        <input type="checkbox" wire:model="equiposSeleccionados" value="{{ $eq->id }}"
+                                            class="rounded border-gray-300 dark:border-cerberus-steel text-cerberus-primary focus:ring-cerberus-primary">
+                                        {{ $eq->codigo_interno }}
+                                    </label>
+                                @endforeach
+                            </div>
                         </div>
                     @endif
 

@@ -134,7 +134,7 @@ class PlanesMantenimientoTable extends Component
     #[Computed]
     public function planes()
     {
-        return PlanMantenimiento::with(['categoria', 'empresa'])
+        return PlanMantenimiento::with(['categoria', 'empresa', 'departamento'])
             ->visiblePara(Auth::user())
             ->when(! $this->mostrar_inactivos, fn ($q) => $q->where('activo', true))
             ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))

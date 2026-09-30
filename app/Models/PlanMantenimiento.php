@@ -35,6 +35,7 @@ class PlanMantenimiento extends Model
     protected $fillable = [
         'empresa_id',
         'categoria_id',
+        'departamento_id',
         'frecuencia_meses',
         'fecha_proximo',
         'duracion_dias_estimada',
@@ -65,6 +66,18 @@ class PlanMantenimiento extends Model
         return $this->belongsTo(CategoriaEquipo::class, 'categoria_id');
     }
 
+    /** Departamento al que se acota el plan (null = todos los departamentos). */
+    public function departamento()
+    {
+        return $this->belongsTo(Departamento::class, 'departamento_id');
+    }
+
+    /** Selección explícita de equipos individuales — ver equiposAlcanzados(). */
+    public function equipos()
+    {
+        return $this->belongsToMany(Equipo::class, 'plan_mantenimiento_equipos');
+    }
+
     public function creadoPor()
     {
         return $this->belongsTo(User::class, 'creado_por');
@@ -87,12 +100,24 @@ class PlanMantenimiento extends Model
         return $this->mantenimientos()->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES);
     }
 
-    /** Equipos activos alcanzados por este plan (misma categoría + empresa). */
+    /**
+     * Equipos activos alcanzados por este plan. Si se eligieron equipos
+     * puntuales (equipos()), esos son el plan — no todos los de la
+     * categoría/departamento. Si no, el alcance normal: categoría + empresa,
+     * acotado a un departamento si se indicó uno.
+     */
     public function equiposAlcanzados()
     {
+        $idsExplicitos = $this->equipos()->pluck('equipos.id');
+
+        if ($idsExplicitos->isNotEmpty()) {
+            return Equipo::whereIn('id', $idsExplicitos)->where('activo', true);
+        }
+
         return Equipo::where('empresa_id', $this->empresa_id)
             ->where('categoria_id', $this->categoria_id)
-            ->where('activo', true);
+            ->where('activo', true)
+            ->when($this->departamento_id, fn ($q) => $q->deDepartamento($this->departamento_id));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
