@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\EquipoReparacionExtendidaNotification;
 use App\Notifications\GarantiaProximaVencerNotification;
 use App\Notifications\MantenimientoProximoNotification;
+use App\Notifications\MantenimientoProximoUsuarioNotification;
 use App\Notifications\PrestamoProximoAVencerNotification;
 use App\Notifications\PrestamoVencidoNotification;
 use App\Notifications\RotacionAsignacionRecomendadaNotification;
@@ -33,6 +34,7 @@ class NotificarAlertas extends Command
         $this->notificarRotacionesRecomendadas();
         $this->notificarReparacionesExtendidas();
         $this->notificarMantenimientosProximos();
+        $this->notificarUsuariosEquipoProximo();
 
         $this->info('Alertas Cerberus enviadas correctamente.');
         return self::SUCCESS;
@@ -226,6 +228,38 @@ class NotificarAlertas extends Command
                 }
 
                 $this->line("  ✓ Mantenimiento próximo: {$mantenimiento->equipo?->codigo_interno} (en {$dias}d)");
+            });
+    }
+
+    /**
+     * Correo al usuario que tiene el equipo asignado, exactamente una semana
+     * antes del mantenimiento preventivo programado — para que lo tenga
+     * listo el día de la jornada. Solo equipos con asignación PERSONAL (un
+     * equipo asignado a un área común no tiene un usuario individual a quién
+     * avisarle). Dispara una sola vez (diasRestantes === 7 exacto, no un
+     * rango) porque es un correo puntual, no una alerta de gestión que deba
+     * repetirse cada día mientras se acerca la fecha.
+     */
+    private function notificarUsuariosEquipoProximo(): void
+    {
+        $diasAntelacion = 7;
+
+        Mantenimiento::preventivos()->abiertos()
+            ->whereNotNull('proxima_fecha_programada')
+            ->whereDate('proxima_fecha_programada', now()->addDays($diasAntelacion)->toDateString())
+            ->with('equipo.asignacionItemActivo.asignacion.usuario')
+            ->get()
+            ->each(function (Mantenimiento $mantenimiento) use ($diasAntelacion) {
+                $equipo = $mantenimiento->equipo;
+                $usuario = $equipo?->asignacionItemActivo?->asignacion?->usuario;
+
+                if (! $usuario || ! $usuario->email) {
+                    return;
+                }
+
+                $usuario->notify(new MantenimientoProximoUsuarioNotification($mantenimiento, $diasAntelacion));
+
+                $this->line("  ✓ Aviso a usuario: {$equipo->codigo_interno} -> {$usuario->email}");
             });
     }
 
