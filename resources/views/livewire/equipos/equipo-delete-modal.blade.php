@@ -42,6 +42,20 @@
                     </div>
                 </div>
 
+                @if ($mantenimientoAbierto)
+                    <div class="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 flex items-start gap-3 text-sm">
+                        <span class="material-icons text-amber-400 text-base mt-0.5">warning</span>
+                        <div>
+                            <p class="text-amber-300 font-medium">
+                                Este equipo tiene {{ $mantenimientoAbierto->esCorrectivo() ? 'una reparación' : 'un mantenimiento' }} abierto (caso #{{ $mantenimientoAbierto->id }}).
+                            </p>
+                            <p class="text-amber-300/80 text-xs mt-0.5">
+                                Puedes darlo de baja igual, pero el caso quedará abierto sin equipo asociado. Considera cerrarlo primero si corresponde.
+                            </p>
+                        </div>
+                    </div>
+                @endif
+
                 <x-form.select
                     label="Depósito donde quedará guardado"
                     wire:model="depositoId"

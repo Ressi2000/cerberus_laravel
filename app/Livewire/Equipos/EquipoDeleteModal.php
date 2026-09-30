@@ -5,6 +5,7 @@ namespace App\Livewire\Equipos;
 use App\Models\AsignacionItem;
 use App\Models\Deposito;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\PiezaExtraida;
 use App\Models\User;
 use App\Notifications\EquipoDadoDeBajaNotification;
@@ -26,6 +27,7 @@ class EquipoDeleteModal extends Component
     public array $seleccion = [];
     public ?int $depositoId = null;
     public string $observaciones = '';
+    public ?Mantenimiento $mantenimientoAbierto = null;
 
     #[On('openEquipoDelete')]
     public function openEquipoDelete(int $id): void
@@ -52,6 +54,11 @@ class EquipoDeleteModal extends Component
         $this->equipo = $equipo;
         $this->depositoId = null;
         $this->observaciones = '';
+
+        // No bloquea — un equipo "en mantenimiento" sí se puede desincorporar
+        // (ej. se determinó que no tiene arreglo) — pero se avisa, porque
+        // queda un caso de mantenimiento/reparación abierto sin cerrar.
+        $this->mantenimientoAbierto = Mantenimiento::where('equipo_id', $id)->abiertos()->first();
 
         $this->candidatos = app(ExtraccionPiezaService::class)->candidatos($equipo)
             ->map(fn ($c) => [
@@ -128,7 +135,7 @@ class EquipoDeleteModal extends Component
 
     public function close(): void
     {
-        $this->reset(['open', 'equipo', 'candidatos', 'seleccion', 'depositoId', 'observaciones']);
+        $this->reset(['open', 'equipo', 'candidatos', 'seleccion', 'depositoId', 'observaciones', 'mantenimientoAbierto']);
         $this->resetValidation();
     }
 
