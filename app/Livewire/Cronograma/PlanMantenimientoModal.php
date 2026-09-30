@@ -156,11 +156,15 @@ class PlanMantenimientoModal extends Component
         $this->validate();
 
         try {
+            // El cronograma no programa trabajo en fin de semana: si se elige
+            // sábado/domingo, se corre automáticamente al lunes siguiente.
+            $fechaProximo = PlanMantenimiento::siguienteDiaHabil(\Carbon\Carbon::parse($this->fecha_proximo));
+
             $data = [
                 'empresa_id'       => $this->empresa_id,
                 'categoria_id'     => $this->categoria_id,
                 'frecuencia_meses' => $this->frecuencia_meses,
-                'fecha_proximo'    => $this->fecha_proximo,
+                'fecha_proximo'    => $fechaProximo->toDateString(),
                 'duracion_dias_estimada' => $this->duracion_dias_estimada,
                 'responsable_id'   => $this->responsable_id ?: null,
                 'observaciones'    => $this->observaciones ?: null,
@@ -195,6 +199,10 @@ class PlanMantenimientoModal extends Component
                 }
 
                 $msg = 'Plan de mantenimiento creado.';
+            }
+
+            if ($fechaProximo->toDateString() !== $this->fecha_proximo) {
+                $msg .= " La fecha se corrió al lunes {$fechaProximo->format('d/m/Y')} (no se programa en fin de semana).";
             }
 
             $this->close();

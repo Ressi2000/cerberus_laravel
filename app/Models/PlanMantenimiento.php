@@ -128,10 +128,47 @@ class PlanMantenimiento extends Model
     // Helpers de negocio
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Fecha estimada de cierre del lote: fecha_proximo + duracion_dias_estimada. */
+    /**
+     * Fecha estimada de cierre del lote: fecha_proximo + duracion_dias_estimada,
+     * contando solo días hábiles — el equipo de mantenimiento no trabaja
+     * fines de semana, así que una ventana de "3 días" no debe incluir un
+     * sábado/domingo de por medio.
+     */
     public function fechaFinEstimada(): \Carbon\Carbon
     {
-        return $this->fecha_proximo->copy()->addDays(max(0, $this->duracion_dias_estimada - 1));
+        $dias = max(0, $this->duracion_dias_estimada - 1);
+
+        return $dias === 0
+            ? $this->fecha_proximo->copy()
+            : self::sumarDiasHabiles($this->fecha_proximo, $dias);
+    }
+
+    /** Si la fecha cae en fin de semana, la mueve al lunes siguiente. */
+    public static function siguienteDiaHabil(\Carbon\Carbon $fecha): \Carbon\Carbon
+    {
+        $fecha = $fecha->copy();
+
+        while ($fecha->isWeekend()) {
+            $fecha->addDay();
+        }
+
+        return $fecha;
+    }
+
+    /** Suma $dias días HÁBILES (sin contar sábados/domingos) a partir de $desde. */
+    public static function sumarDiasHabiles(\Carbon\Carbon $desde, int $dias): \Carbon\Carbon
+    {
+        $fecha      = $desde->copy();
+        $restantes  = $dias;
+
+        while ($restantes > 0) {
+            $fecha->addDay();
+            if (! $fecha->isWeekend()) {
+                $restantes--;
+            }
+        }
+
+        return $fecha;
     }
 
     public function estaVencido(): bool
@@ -190,10 +227,11 @@ class PlanMantenimiento extends Model
      */
     public function avanzarProximaFecha(\DateTimeInterface|string|null $desde = null): void
     {
-        $base = $desde ? \Carbon\Carbon::parse($desde) : $this->fecha_proximo->copy();
+        $base  = $desde ? \Carbon\Carbon::parse($desde) : $this->fecha_proximo->copy();
+        $nueva = self::siguienteDiaHabil($base->addMonths($this->frecuencia_meses));
 
         $this->update([
-            'fecha_proximo' => $base->addMonths($this->frecuencia_meses)->toDateString(),
+            'fecha_proximo' => $nueva->toDateString(),
         ]);
     }
 
