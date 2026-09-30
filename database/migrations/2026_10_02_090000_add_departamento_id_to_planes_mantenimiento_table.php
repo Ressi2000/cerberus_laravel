@@ -19,29 +19,69 @@ use Illuminate\Support\Facades\Schema;
  * incluye departamento_id: permite un plan "todos los departamentos"
  * (departamento_id NULL) y, además, un plan por cada departamento
  * específico dentro de la misma categoría+empresa.
+ *
+ * IMPORTANTE (MySQL/InnoDB): el índice unique(empresa_id, categoria_id)
+ * original es el único índice que empieza por empresa_id, así que InnoDB
+ * lo necesita para respaldar la foreign key de esa columna — soltarlo
+ * ANTES de tener otro índice que también empiece por empresa_id falla con
+ * el error 1553 ("needed in a foreign key constraint"). Por eso el nuevo
+ * unique se crea PRIMERO y el viejo se suelta DESPUÉS. Cada paso está
+ * envuelto en try/catch porque esta migración falló a mitad de camino en
+ * MySQL antes de este fix (dejó la columna creada pero no el cambio de
+ * índice) — así el reintento no choca con lo que ya haya quedado aplicado.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('planes_mantenimiento', function (Blueprint $table) {
-            $table->unsignedBigInteger('departamento_id')->nullable()->after('categoria_id');
-            $table->index('departamento_id');
-        });
+        if (! Schema::hasColumn('planes_mantenimiento', 'departamento_id')) {
+            Schema::table('planes_mantenimiento', function (Blueprint $table) {
+                $table->unsignedBigInteger('departamento_id')->nullable()->after('categoria_id');
+                $table->index('departamento_id');
+            });
+        }
 
-        Schema::table('planes_mantenimiento', function (Blueprint $table) {
-            $table->dropUnique(['empresa_id', 'categoria_id']);
-            $table->unique(['empresa_id', 'categoria_id', 'departamento_id']);
-        });
+        try {
+            Schema::table('planes_mantenimiento', function (Blueprint $table) {
+                $table->unique(
+                    ['empresa_id', 'categoria_id', 'departamento_id'],
+                    'planes_mantenimiento_empresa_categoria_departamento_unique'
+                );
+            });
+        } catch (\Throwable $e) {
+            // Ya existe (reintento tras una corrida parcial) — seguir.
+        }
+
+        try {
+            Schema::table('planes_mantenimiento', function (Blueprint $table) {
+                $table->dropUnique('planes_mantenimiento_empresa_id_categoria_id_unique');
+            });
+        } catch (\Throwable $e) {
+            // Ya no existe, o nunca existió — seguir.
+        }
     }
 
     public function down(): void
     {
-        Schema::table('planes_mantenimiento', function (Blueprint $table) {
-            $table->dropUnique(['empresa_id', 'categoria_id', 'departamento_id']);
-            $table->dropIndex(['departamento_id']);
-            $table->dropColumn('departamento_id');
-            $table->unique(['empresa_id', 'categoria_id']);
-        });
+        try {
+            Schema::table('planes_mantenimiento', function (Blueprint $table) {
+                $table->unique(['empresa_id', 'categoria_id'], 'planes_mantenimiento_empresa_id_categoria_id_unique');
+            });
+        } catch (\Throwable $e) {
+        }
+
+        try {
+            Schema::table('planes_mantenimiento', function (Blueprint $table) {
+                $table->dropUnique('planes_mantenimiento_empresa_categoria_departamento_unique');
+            });
+        } catch (\Throwable $e) {
+        }
+
+        if (Schema::hasColumn('planes_mantenimiento', 'departamento_id')) {
+            Schema::table('planes_mantenimiento', function (Blueprint $table) {
+                $table->dropIndex(['departamento_id']);
+                $table->dropColumn('departamento_id');
+            });
+        }
     }
 };
