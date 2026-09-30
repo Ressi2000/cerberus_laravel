@@ -75,6 +75,17 @@
                         <x-table.table-actions :model="$deposito" editEvent="openDepositoEditar">
                             <x-slot name="acciones">
                                 <li>
+                                    <a href="{{ route('admin.configuracion.depositos.show', $deposito) }}" wire:navigate
+                                       class="flex items-center gap-3 px-4 py-2.5 w-full
+                                              text-gray-600 dark:text-cerberus-light
+                                              hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                              hover:text-cerberus-primary dark:hover:text-cerberus-accent
+                                              transition-colors duration-100">
+                                        <span class="material-icons text-base text-cerberus-primary dark:text-cerberus-accent">visibility</span>
+                                        Ver contenido
+                                    </a>
+                                </li>
+                                <li>
                                     <button wire:click="desactivar({{ $deposito->id }})"
                                             wire:confirm="¿Desactivar el depósito «{{ $deposito->nombre }}»?"
                                             @click="close()"

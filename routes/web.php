@@ -138,6 +138,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/licencias-microsoft', [ConfiguracionController::class, 'licenciasMicrosoft'])->name('licencias-microsoft');
             Route::get('/tareas-mantenimiento', [ConfiguracionController::class, 'tareasMantenimiento'])->name('tareas-mantenimiento');
             Route::get('/depositos', [ConfiguracionController::class, 'depositos'])->name('depositos');
+            Route::get('/depositos/{deposito}', [ConfiguracionController::class, 'depositoDetalle'])->name('depositos.show');
         });
 
     Route::prefix('admin/asignaciones')

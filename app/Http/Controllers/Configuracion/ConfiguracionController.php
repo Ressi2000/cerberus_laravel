@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Configuracion;
 
 use App\Http\Controllers\Controller;
+use App\Models\Deposito;
 use Illuminate\Http\Request;
 
 class ConfiguracionController extends Controller
@@ -55,5 +56,10 @@ class ConfiguracionController extends Controller
     public function depositos()
     {
         return view('configuracion.depositos.depositos');
+    }
+
+    public function depositoDetalle(Deposito $deposito)
+    {
+        return view('configuracion.depositos.detalle', compact('deposito'));
     }
 }

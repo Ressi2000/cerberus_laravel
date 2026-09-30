@@ -4,9 +4,10 @@
             <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" wire:click="close"></div>
 
             <div class="relative z-50 w-full max-w-lg mx-4 bg-white dark:bg-cerberus-mid
-                        border border-gray-200 dark:border-cerberus-steel rounded-xl shadow-xl">
+                        border border-gray-200 dark:border-cerberus-steel rounded-xl shadow-xl
+                        flex flex-col" style="max-height: 90vh;">
 
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-cerberus-steel">
+                <div class="flex items-center justify-between px-6 py-4 flex-shrink-0 border-b border-gray-100 dark:border-cerberus-steel">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <span class="material-icons text-cerberus-accent">swap_vert</span>
                         Movimiento de stock
@@ -19,7 +20,7 @@
                     </button>
                 </div>
 
-                <div class="px-6 py-5 space-y-4">
+                <div class="px-6 py-5 space-y-4 overflow-y-auto flex-1">
 
                     @if ($this->componente)
                         <div class="bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg px-4 py-3 text-sm">
@@ -30,7 +31,7 @@
                     <x-form.select
                         label="Tipo de movimiento"
                         :options="['Entrada' => 'Entrada (suma al stock)', 'Salida' => 'Salida (resta del stock)']"
-                        wire:model="tipo"
+                        wire:model.live="tipo"
                         :error="$errors->first('tipo')"
                     />
 
@@ -43,12 +44,49 @@
                         required
                     />
 
-                    <x-form.input
-                        label="Motivo"
-                        wire:model="motivo"
-                        placeholder="Ej: Compra, ajuste de inventario..."
-                        :error="$errors->first('motivo')"
-                    />
+                    @if ($tipo === 'Salida')
+                        <div class="flex items-center gap-3">
+                            <button type="button" wire:click="$toggle('danado')" role="switch"
+                                class="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full
+                                       border-2 border-transparent transition-colors duration-200
+                                       {{ $danado ? 'bg-red-600' : 'bg-gray-300 dark:bg-cerberus-steel/40' }}">
+                                <span class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white
+                                             shadow ring-0 transition duration-200
+                                             {{ $danado ? 'translate-x-4' : 'translate-x-0' }}"></span>
+                            </button>
+                            <span class="text-sm text-gray-600 dark:text-cerberus-light select-none">
+                                Se dañó estando guardado — pasa a un depósito
+                            </span>
+                        </div>
+                    @endif
+
+                    @if ($tipo === 'Salida' && $danado)
+                        <x-form.select
+                            label="Depósito"
+                            placeholder="Selecciona un depósito..."
+                            :options="$this->depositosDisponibles->pluck('nombre', 'id')"
+                            wire:model="depositoId"
+                            :error="$errors->first('depositoId')"
+                            required
+                        />
+
+                        @if ($this->piezasEnAlmacen->isNotEmpty())
+                            <x-form.select
+                                label="¿Es una unidad trazada específica? (opcional)"
+                                placeholder="No — es stock genérico"
+                                :options="$this->piezasEnAlmacen->mapWithKeys(fn ($p) => [$p->id => $p->atributo->describirValor($p->valor_extraido)])"
+                                wire:model="piezaId"
+                                hint="Si esta unidad viene de un equipo rescatado, vincúlala para conservar su historial completo."
+                            />
+                        @endif
+                    @else
+                        <x-form.input
+                            label="Motivo"
+                            wire:model="motivo"
+                            placeholder="Ej: Compra, ajuste de inventario..."
+                            :error="$errors->first('motivo')"
+                        />
+                    @endif
 
                     <x-form.textarea
                         label="Observaciones"
@@ -99,7 +137,7 @@
 
                 </div>
 
-                <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel">
+                <div class="flex justify-end gap-3 px-6 py-4 flex-shrink-0 border-t border-gray-100 dark:border-cerberus-steel">
                     <button wire:click="close"
                         class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30
                                text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-cerberus-steel/50 transition">
