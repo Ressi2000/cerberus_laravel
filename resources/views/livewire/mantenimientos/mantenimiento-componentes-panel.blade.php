@@ -4,7 +4,7 @@
             <span class="material-icons text-cerberus-accent text-base">inventory_2</span>
             Componentes del almacén
         </h3>
-        @if ($this->mantenimiento->estaAbierto())
+        @if ($this->mantenimiento->permiteRegistrarTrabajo())
             <button wire:click="abrirForm"
                 class="text-xs font-medium text-cerberus-primary dark:text-cerberus-accent hover:underline flex items-center gap-1">
                 <span class="material-icons text-sm">add</span> Pedir componente
@@ -78,7 +78,7 @@
                                  border border-purple-200 dark:border-purple-500/30">
                         <span class="material-icons text-xs">hourglass_empty</span> Pendiente
                     </span>
-                    @if ($this->mantenimiento->estaAbierto())
+                    @if ($this->mantenimiento->permiteRegistrarTrabajo())
                         <button wire:click="entregarPendiente({{ $item->id }})"
                             class="text-xs text-cerberus-primary dark:text-cerberus-accent hover:underline">
                             Entregar ahora

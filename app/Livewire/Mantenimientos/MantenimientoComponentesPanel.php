@@ -61,7 +61,7 @@ class MantenimientoComponentesPanel extends Component
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
-        if (! $m->estaAbierto()) {
+        if (! $m->permiteRegistrarTrabajo()) {
             $this->dispatch('toast', type: 'error', message: 'Este caso ya está cerrado.');
             return;
         }
@@ -137,6 +137,11 @@ class MantenimientoComponentesPanel extends Component
     {
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
+
+        if (! $m->permiteRegistrarTrabajo()) {
+            $this->dispatch('toast', type: 'error', message: 'No se pueden entregar componentes en este estado.');
+            return;
+        }
 
         $item = MantenimientoComponente::findOrFail($itemId);
 

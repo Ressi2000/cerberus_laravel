@@ -4,7 +4,7 @@
             <span class="material-icons text-cerberus-accent text-base">memory</span>
             Piezas del equipo
         </h3>
-        @if ($this->mantenimiento->estaAbierto())
+        @if ($this->mantenimiento->permiteRegistrarTrabajo())
             <div class="flex items-center gap-3">
                 @if (count($this->candidatosRetiro) > 0)
                     <button wire:click="abrirRetirar"

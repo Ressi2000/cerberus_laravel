@@ -147,7 +147,7 @@
             <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Acciones</h3>
                 <div class="flex flex-wrap gap-2">
-                    @if (isset(\App\Models\Mantenimiento::SIGUIENTE_ESTADO_SIMPLE[$m->estado]))
+                    @if (isset(\App\Models\Mantenimiento::SIGUIENTE_ESTADO_SIMPLE[$m->estado]) && ! ($m->esCorrectivo() && $m->estado === 'Reportado'))
                         <button wire:click="avanzarEstado" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1.5">
                             <span class="material-icons text-sm">arrow_forward</span>
                             Avanzar a «{{ \App\Models\Mantenimiento::SIGUIENTE_ESTADO_SIMPLE[$m->estado] }}»
@@ -191,9 +191,88 @@
                             </button>
                         @endif
                     @endcan
+
+                    @if ($m->esCorrectivo() && count($this->estadosRetrocedibles) > 0)
+                        <button wire:click="abrirRetroceder" class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white transition flex items-center gap-1.5">
+                            <span class="material-icons text-sm">undo</span> Retroceder (faltó algo)
+                        </button>
+                    @endif
                 </div>
+
+                {{-- ── Retroceder a un estado anterior ──────────────────────── --}}
+                @if ($retrocederAbierto)
+                    <div class="mt-4 bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-4 space-y-3">
+                        <p class="text-xs text-gray-500 dark:text-cerberus-light">
+                            Vuelve el caso a un estado anterior — lo que ya quedó registrado (componentes, piezas, fotos) no se borra.
+                        </p>
+                        <x-form.select
+                            label="Retroceder a"
+                            placeholder="Selecciona..."
+                            :options="array_combine($this->estadosRetrocedibles, $this->estadosRetrocedibles)"
+                            wire:model="estadoRetroceso"
+                            :error="$errors->first('estadoRetroceso')"
+                        />
+                        <div class="flex justify-end gap-2">
+                            <button wire:click="cerrarRetroceder" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
+                                Cancelar
+                            </button>
+                            <button wire:click="confirmarRetroceder" class="px-3 py-1.5 text-xs rounded-lg bg-gray-700 hover:bg-gray-800 text-white">
+                                Retroceder
+                            </button>
+                        </div>
+                    </div>
+                @endif
             </div>
         @endif
+
+        {{-- ── Reabrir caso (Correctivo, Cerrado) ──────────────────────────── --}}
+        @if ($m->esCorrectivo() && $m->estado === 'Cerrado')
+            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+                <div class="flex items-center justify-between flex-wrap gap-3">
+                    <p class="text-sm text-gray-600 dark:text-cerberus-light">
+                        Caso cerrado. Si el mismo problema volvió, reabre este caso — si es una falla distinta, crea una reparación nueva.
+                    </p>
+                    <button wire:click="abrirReabrir" class="px-4 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition flex items-center gap-1.5 flex-shrink-0">
+                        <span class="material-icons text-sm">restore</span> Reabrir caso
+                    </button>
+                </div>
+
+                @if ($reabrirAbierto)
+                    <div class="mt-4 bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-4 space-y-3">
+                        <x-form.textarea
+                            label="Motivo de la reapertura"
+                            wire:model="motivoReapertura"
+                            rows="2"
+                            placeholder="Ej: El equipo volvió a fallar con el mismo diagnóstico..."
+                            :error="$errors->first('motivoReapertura')"
+                            required
+                        />
+                        <div class="flex justify-end gap-2">
+                            <button wire:click="cerrarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
+                                Cancelar
+                            </button>
+                            <button wire:click="confirmarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-amber-600 hover:bg-amber-700 text-white">
+                                Reabrir
+                            </button>
+                        </div>
+                    </div>
+                @endif
+            </div>
+        @endif
+    @endcan
+
+    {{-- ── Eliminar caso (Administrador) ───────────────────────────────────── --}}
+    @can('delete', $m)
+        <div class="bg-white dark:bg-cerberus-mid border border-red-200 dark:border-red-700/40 rounded-xl p-5 flex items-center justify-between flex-wrap gap-3">
+            <p class="text-sm text-gray-500 dark:text-cerberus-light">
+                Eliminar este caso lo quita de los listados (queda guardado para auditoría). Si estaba bloqueando el equipo, lo libera.
+            </p>
+            <button wire:click="eliminar"
+                wire:confirm="¿Eliminar este caso? El equipo quedará liberado si estaba bloqueado por este caso."
+                class="px-4 py-2 text-sm rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700/40 transition flex items-center gap-1.5 flex-shrink-0">
+                <span class="material-icons text-sm">delete</span> Eliminar caso
+            </button>
+        </div>
     @endcan
 
     {{-- ── CHECKLIST (Preventivo, desde "En proceso") ───────────────────────── --}}
@@ -243,61 +322,103 @@
         </div>
     @endif
 
-    {{-- ── DIAGNÓSTICO (Correctivo) / OBSERVACIONES (Preventivo) ───────────── --}}
-    {{-- Editable solo mientras el caso está abierto, y para Preventivo recién
-         desde "En proceso" — mientras está "Programado" no hay nada que
-         observar todavía. Cerrado/Completado/Cancelado/Dado de baja: modo
-         lectura, incluso para Administrador. --}}
-    @if ($m->estaAbierto() && ! $preventivoSinEmpezar)
-        @can('update', $m)
+    @if ($m->esCorrectivo())
+        {{-- ── DIAGNÓSTICO: formulario solo en "Reportado", luego solo lectura ── --}}
+        @if ($m->estado === 'Reportado')
+            @can('update', $m)
+                <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <span class="material-icons text-cerberus-accent text-base">fact_check</span>
+                        Diagnóstico
+                    </h3>
+                    <div class="space-y-4">
+                        <x-form.textarea label="Diagnóstico" wire:model="diagnostico" rows="2" placeholder="Resultado del análisis técnico..." :error="$errors->first('diagnostico')" required />
+                        <x-form.textarea label="Causa raíz" wire:model="causa_raiz" rows="2" placeholder="Por qué ocurrió la falla..." :error="$errors->first('causa_raiz')" />
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <x-form.input label="Costo" type="number" wire:model="costo" placeholder="0.00" suffix="$" :error="$errors->first('costo')" />
+                        </div>
+                        <div class="flex justify-end">
+                            <button wire:click="guardarDiagnostico" class="px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition">
+                                Guardar diagnóstico
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endcan
+        @else
             <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <span class="material-icons text-cerberus-accent text-base">fact_check</span>
-                    {{ $m->esCorrectivo() ? 'Diagnóstico' : 'Observaciones' }}
+                    Diagnóstico
+                    <span class="text-xs font-normal text-gray-400 dark:text-cerberus-steel">(no editable)</span>
                 </h3>
-
-                <div class="space-y-4">
-                    @if ($m->esCorrectivo())
-                        <x-form.textarea label="Diagnóstico" wire:model="diagnostico" rows="2" placeholder="Resultado del análisis técnico..." />
-                        <x-form.textarea label="Causa raíz" wire:model="causa_raiz" rows="2" placeholder="Por qué ocurrió la falla..." />
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <x-form.input label="Costo" type="number" wire:model="costo" placeholder="0.00" suffix="$" />
-                        </div>
+                <div class="space-y-3 text-sm">
+                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Diagnóstico</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->diagnostico }}</p></div>
+                    @if ($m->causa_raiz)
+                        <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Causa raíz</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->causa_raiz }}</p></div>
                     @endif
+                    @if ($m->costo)
+                        <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Costo</p><p class="text-gray-700 dark:text-cerberus-light">${{ number_format($m->costo, 2) }}</p></div>
+                    @endif
+                </div>
+            </div>
+        @endif
 
-                    <x-form.textarea label="Observaciones" wire:model="observaciones" rows="2" placeholder="Notas adicionales..." />
-
+        {{-- ── OBSERVACIONES: editable solo en "En reparación" ──────────────── --}}
+        @if ($m->estado === 'En reparación')
+            @can('update', $m)
+                <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <span class="material-icons text-cerberus-accent text-base">notes</span>
+                        Observaciones
+                    </h3>
+                    <x-form.textarea label="Observaciones" wire:model="observaciones" rows="2" placeholder="Notas durante la reparación..." :error="$errors->first('observaciones')" />
                     <div class="flex justify-end">
-                        <button wire:click="guardarDiagnostico" class="px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition">
+                        <button wire:click="guardarObservaciones" class="px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition">
                             Guardar
                         </button>
                     </div>
                 </div>
+            @endcan
+        @elseif ($m->observaciones)
+            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    <span class="material-icons text-cerberus-accent text-base">notes</span>
+                    Observaciones
+                    <span class="text-xs font-normal text-gray-400 dark:text-cerberus-steel">(no editable)</span>
+                </h3>
+                <p class="text-sm text-gray-700 dark:text-cerberus-light whitespace-pre-line">{{ $m->observaciones }}</p>
             </div>
-        @endcan
-    @elseif (! $preventivoSinEmpezar && ($m->diagnostico || $m->causa_raiz || $m->costo || $m->observaciones))
-        <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <span class="material-icons text-cerberus-accent text-base">fact_check</span>
-                {{ $m->esCorrectivo() ? 'Diagnóstico' : 'Observaciones' }}
-                <span class="text-xs font-normal text-gray-400 dark:text-cerberus-steel">(caso cerrado, solo lectura)</span>
-            </h3>
-            <div class="space-y-3 text-sm">
-                @if ($m->esCorrectivo() && $m->diagnostico)
-                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Diagnóstico</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->diagnostico }}</p></div>
-                @endif
-                @if ($m->esCorrectivo() && $m->causa_raiz)
-                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Causa raíz</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->causa_raiz }}</p></div>
-                @endif
-                @if ($m->esCorrectivo() && $m->costo)
-                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Costo</p><p class="text-gray-700 dark:text-cerberus-light">${{ number_format($m->costo, 2) }}</p></div>
-                @endif
-                @if ($m->observaciones)
-                    <div><p class="text-xs text-gray-500 dark:text-cerberus-light mb-0.5">Observaciones</p><p class="text-gray-700 dark:text-cerberus-light">{{ $m->observaciones }}</p></div>
-                @endif
+        @endif
+    @else
+        {{-- ── OBSERVACIONES (Preventivo) — sin cambios ─────────────────────── --}}
+        @if ($m->estaAbierto() && ! $preventivoSinEmpezar)
+            @can('update', $m)
+                <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                        <span class="material-icons text-cerberus-accent text-base">fact_check</span>
+                        Observaciones
+                    </h3>
+                    <div class="space-y-4">
+                        <x-form.textarea label="Observaciones" wire:model="observaciones" rows="2" placeholder="Notas adicionales..." />
+                        <div class="flex justify-end">
+                            <button wire:click="guardarObservaciones" class="px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition">
+                                Guardar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            @endcan
+        @elseif (! $preventivoSinEmpezar && $m->observaciones)
+            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <span class="material-icons text-cerberus-accent text-base">fact_check</span>
+                    Observaciones
+                    <span class="text-xs font-normal text-gray-400 dark:text-cerberus-steel">(caso cerrado, solo lectura)</span>
+                </h3>
+                <p class="text-sm text-gray-700 dark:text-cerberus-light whitespace-pre-line">{{ $m->observaciones }}</p>
             </div>
-        </div>
+        @endif
     @endif
 
     {{-- ── COMPONENTES (Preventivo, desde "En proceso") ─────────────────────── --}}

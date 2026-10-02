@@ -230,6 +230,21 @@ class Mantenimiento extends Model
         return $this->tipo === self::TIPO_CORRECTIVO;
     }
 
+    /**
+     * ¿Se puede registrar trabajo ahora (componentes, piezas, observaciones)?
+     * Preventivo: mientras el caso esté abierto, igual que siempre. Correctivo:
+     * solo durante "En reparación" — en Reportado/Diagnosticado todavía no hay
+     * nada que registrar, y en Reparado/Cerrado ya se congeló lo hecho.
+     */
+    public function permiteRegistrarTrabajo(): bool
+    {
+        if (! $this->estaAbierto()) {
+            return false;
+        }
+
+        return $this->esPreventivo() || $this->estado === 'En reparación';
+    }
+
     /** Estados válidos según el tipo de esta intervención (para armar el select). */
     public function estadosDisponibles(): array
     {
@@ -372,6 +387,84 @@ class Mantenimiento extends Model
         DB::transaction(function () {
             $this->update(['estado' => 'Cerrado', 'fecha_fin_real' => now()->toDateString()]);
             $this->liberarEquipo();
+        });
+    }
+
+    /**
+     * Reabre un caso Cerrado — solo si el problema sigue siendo el mismo
+     * diagnóstico; si es otra falla, corresponde abrir un caso nuevo, no
+     * reabrir este. Vuelve a "En reparación" y re-bloquea el equipo
+     * directamente (bloquearEquipo() no sirve acá: se niega a correr dos
+     * veces sobre el mismo caso). El motivo queda anotado en observaciones
+     * para no perder por qué se reabrió.
+     */
+    public function reabrir(User $actor, string $motivo): void
+    {
+        if (! ($this->esCorrectivo() && $this->estado === 'Cerrado')) {
+            throw new \InvalidArgumentException('Solo se puede reabrir una reparación que esté Cerrada.');
+        }
+
+        DB::transaction(function () use ($actor, $motivo) {
+            $equipo = $this->equipo;
+
+            if ($equipo && $this->estado_equipo_anterior_id) {
+                $estadoReparacion = EstadoEquipo::where('nombre', EstadoEquipo::EN_REPARACION)->value('id');
+                $equipo->update(['estado_id' => $estadoReparacion ?? $equipo->estado_id]);
+            }
+
+            $nota = 'Reabierto el ' . now()->format('d/m/Y') . " por {$actor->name}: {$motivo}";
+
+            $this->update([
+                'estado'         => 'En reparación',
+                'fecha_fin_real' => null,
+                'observaciones'  => trim(($this->observaciones ? $this->observaciones . "\n\n" : '') . $nota),
+            ]);
+        });
+    }
+
+    /** Estados de Correctivo a los que se puede retroceder (excluye los terminales — ahí corresponde reabrir()). */
+    const ESTADOS_RETROCEDIBLES_CORRECTIVO = ['Reportado', 'Diagnosticado', 'En reparación', 'Reparado'];
+
+    /**
+     * Retrocede el caso a un estado anterior dentro del flujo normal (por si
+     * faltó algo). No aplica a Cerrado/Dado de baja — de ahí se sale con
+     * reabrir(), que además re-bloquea el equipo. El bloqueo del equipo no
+     * cambia entre estos estados (Correctivo lo bloquea una sola vez, al
+     * crear el caso), así que retroceder acá no tiene efectos secundarios.
+     */
+    public function retrocederA(string $estado): void
+    {
+        if (! $this->esCorrectivo()) {
+            throw new \InvalidArgumentException('Retroceder de estado solo aplica a reparaciones.');
+        }
+
+        $actual  = array_search($this->estado, self::ESTADOS_RETROCEDIBLES_CORRECTIVO, true);
+        $destino = array_search($estado, self::ESTADOS_RETROCEDIBLES_CORRECTIVO, true);
+
+        if ($destino === false) {
+            throw new \InvalidArgumentException('Ese estado no es válido para retroceder. Si el caso ya está cerrado, usa "Reabrir".');
+        }
+
+        if ($actual === false || $destino >= $actual) {
+            throw new \InvalidArgumentException('Solo se puede retroceder a un estado anterior al actual.');
+        }
+
+        $this->update(['estado' => $estado]);
+    }
+
+    /**
+     * Elimina el caso (soft delete, queda en BD para auditoría). Si el caso
+     * seguía abierto y bloqueando el equipo, lo libera antes — no puede
+     * quedar un equipo "En reparación" para siempre por un caso borrado.
+     */
+    public function eliminarCaso(): void
+    {
+        DB::transaction(function () {
+            if ($this->estaAbierto() && $this->estaBloqueado()) {
+                $this->liberarEquipo();
+            }
+
+            $this->delete();
         });
     }
 

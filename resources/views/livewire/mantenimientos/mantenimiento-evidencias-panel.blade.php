@@ -42,7 +42,7 @@
         </div>
     @elseif ($this->mantenimiento->estaAbierto())
         <p class="text-xs text-gray-400 dark:text-cerberus-steel mb-4">
-            Ya se registró la evidencia de este momento del caso.
+            No hay fotos para agregar en este momento del caso.
         </p>
     @endif
 

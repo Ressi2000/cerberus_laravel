@@ -54,9 +54,19 @@ class MantenimientoEvidenciasPanel extends Component
             return [];
         }
 
-        $ultimoEstadoActivo = $m->esCorrectivo() ? 'Reparado' : 'En proceso';
+        if ($m->esCorrectivo()) {
+            // Reportado/Diagnosticado: todavía no hay nada que fotografiar más
+            // allá del "Antes" (ya subido al crear el caso). "Durante" solo
+            // mientras se está reparando; "Después" solo al terminar.
+            return match ($m->estado) {
+                'En reparación' => ['Durante' => 'Durante'],
+                'Reparado'      => ['Después' => 'Después'],
+                default         => [],
+            };
+        }
 
-        if ($m->estado === $ultimoEstadoActivo) {
+        // Preventivo: sin cambios respecto a como ya funcionaba.
+        if ($m->estado === 'En proceso') {
             return ['Durante' => 'Durante', 'Después' => 'Después'];
         }
 

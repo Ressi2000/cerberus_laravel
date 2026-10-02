@@ -118,8 +118,8 @@ class MantenimientoPiezasPanel extends Component
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
-        if (! $m->estaAbierto()) {
-            $this->dispatch('toast', type: 'error', message: 'Este caso ya está cerrado.');
+        if (! $m->permiteRegistrarTrabajo()) {
+            $this->dispatch('toast', type: 'error', message: 'Solo se pueden retirar piezas mientras el caso está «En reparación».');
             return;
         }
 
@@ -184,8 +184,8 @@ class MantenimientoPiezasPanel extends Component
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
-        if (! $m->estaAbierto()) {
-            $this->dispatch('toast', type: 'error', message: 'Este caso ya está cerrado.');
+        if (! $m->permiteRegistrarTrabajo()) {
+            $this->dispatch('toast', type: 'error', message: 'Solo se pueden instalar piezas mientras el caso está «En reparación».');
             return;
         }
 
