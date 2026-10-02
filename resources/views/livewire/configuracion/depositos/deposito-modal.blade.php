@@ -45,6 +45,7 @@
                             label="Ubicación (opcional)"
                             placeholder="{{ $empresa_id ? 'Sin especificar' : 'Primero selecciona la empresa' }}"
                             :options="$this->ubicacionesOpciones"
+                            :selected="$ubicacion_id"
                             wire:model="ubicacion_id"
                             :disabled="! $empresa_id"
                             hint="Apóyate en una ubicación ya existente si quieres decir dónde queda este depósito."

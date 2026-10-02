@@ -32,14 +32,20 @@
      * constantemente y perdía el foco/estado al reabrir el dropdown.
      */
     $wireModelTarget = $wireModelKey ? $attributes->get($wireModelKey) : null;
+    $wireModelLive   = $wireModelKey && str_contains($wireModelKey, '.live');
 
     $fieldId = $name
         ?? ($wireModelTarget ? 'field-' . \Illuminate\Support\Str::slug($wireModelTarget) : 'field-' . uniqid());
     $hintId  = $fieldId . '-hint';
     $errorId = $fieldId . '-error';
 
-    // Valor inicial para el dropdown searchable (garantizar que sea escalar)
-    $rawInitial   = old($name, $selected) ?? '';
+    // Valor inicial para el dropdown searchable (garantizar que sea escalar).
+    // old($key, $default) con $key null IGNORA el default y devuelve el
+    // array completo de old-input de la sesión (Arr::get($array, null, ...)
+    // retorna $array, no $default) — pasa siempre que no se use `name`, que
+    // es el caso normal cuando el campo se controla por wire:model. Por eso
+    // solo se consulta old() cuando sí hay un $name explícito.
+    $rawInitial   = $name ? (old($name, $selected) ?? '') : ($selected ?? '');
     $initialValue = is_array($rawInitial) ? '' : (string) $rawInitial;
 
     // Convertir opciones a array indexado para Alpine (solo valores escalares)
