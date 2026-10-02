@@ -140,7 +140,37 @@ class PlanMantenimientoModal extends Component
             ->pluck('nombre', 'id');
     }
 
-    /** Equipos activos que calzan con empresa+categoría+departamento — fuente de la selección puntual opcional. */
+    /**
+     * Ids de equipos que YA están alcanzados por otro plan (misma empresa +
+     * categoría, cualquier departamento) — para no ofrecerlos de nuevo en
+     * "equipos puntuales" y evitar que dos planes choquen por el mismo
+     * equipo. Un plan sin departamento cubre TODOS los departamentos, así
+     * que se compara el alcance real de cada plan (equiposAlcanzados()), no
+     * solo si el departamento_id coincide — ver detectarConflictoEquipos().
+     */
+    #[Computed]
+    public function equiposYaCubiertos()
+    {
+        if (! $this->empresa_id || ! $this->categoria_id) {
+            return collect();
+        }
+
+        return PlanMantenimiento::where('empresa_id', $this->empresa_id)
+            ->where('categoria_id', $this->categoria_id)
+            ->when($this->planId, fn ($q) => $q->where('id', '!=', $this->planId))
+            ->get()
+            ->flatMap(fn (PlanMantenimiento $otro) => $otro->equiposAlcanzados()->pluck('id'))
+            ->unique()
+            ->values();
+    }
+
+    /**
+     * Equipos activos que calzan con empresa+categoría+departamento,
+     * EXCLUYENDO los que ya están cubiertos por otro plan — fuente de la
+     * selección puntual opcional. Si el plan que se está editando ya tenía
+     * alguno de esos equipos (porque es el mismo plan al que pertenecen),
+     * ese no se excluye — "cubierto por otro plan" no incluye a sí mismo.
+     */
     #[Computed]
     public function equiposDisponibles()
     {
@@ -153,6 +183,7 @@ class PlanMantenimientoModal extends Component
             ->where('categoria_id', $this->categoria_id)
             ->where('activo', true)
             ->when($this->departamento_id, fn ($q) => $q->deDepartamento((int) $this->departamento_id))
+            ->whereNotIn('id', $this->equiposYaCubiertos)
             ->orderBy('codigo_interno')
             ->get();
     }
@@ -170,6 +201,27 @@ class PlanMantenimientoModal extends Component
         }
 
         return $this->equiposDisponibles->count();
+    }
+
+    /**
+     * De los equipos que calzan con el alcance elegido, cuántos ya están
+     * cubiertos por otro plan (y por eso no aparecen en equiposDisponibles
+     * ni en equiposAlcanzadosCount) — para avisarlo en vez de dejar que la
+     * cuenta "se achique" sin explicación.
+     */
+    #[Computed]
+    public function equiposExcluidosCount(): int
+    {
+        if (! $this->empresa_id || ! $this->categoria_id || $this->equiposYaCubiertos->isEmpty()) {
+            return 0;
+        }
+
+        return Equipo::where('empresa_id', $this->empresa_id)
+            ->where('categoria_id', $this->categoria_id)
+            ->where('activo', true)
+            ->when($this->departamento_id, fn ($q) => $q->deDepartamento((int) $this->departamento_id))
+            ->whereIn('id', $this->equiposYaCubiertos)
+            ->count();
     }
 
     protected function rules(): array
@@ -195,18 +247,21 @@ class PlanMantenimientoModal extends Component
     }
 
     /**
-     * Varios planes pueden compartir empresa+categoría+departamento (para
-     * dividir un universo grande de equipos en tandas con fechas propias),
-     * pero nunca dos planes activos pueden alcanzar el MISMO equipo — eso sí
-     * generaría lotes duplicados. Un plan sin "equipos puntuales" alcanza
-     * TODOS los de su categoría/departamento, así que choca con cualquier
-     * otro plan de ese mismo alcance (puntual o no).
+     * Varios planes pueden compartir empresa+categoría (para dividir un
+     * universo grande de equipos en tandas con fechas propias), pero nunca
+     * dos planes activos pueden alcanzar el MISMO equipo — eso sí generaría
+     * lotes duplicados. Se compara el ALCANCE REAL de equipos de cada plan
+     * (equiposAlcanzados()), no si el departamento_id coincide: un plan sin
+     * departamento cubre TODOS los departamentos, así que un plan "ST" y
+     * uno "sin departamento" sí pueden chocar aunque sus departamento_id
+     * sean distintos — y uno "ST" y otro "Contabilidad" nunca chocan,
+     * aunque ambos sean "sin equipos puntuales", porque sus equipos reales
+     * no se superponen.
      */
     private function detectarConflictoEquipos(): ?string
     {
         $otros = PlanMantenimiento::where('empresa_id', $this->empresa_id)
             ->where('categoria_id', $this->categoria_id)
-            ->where('departamento_id', $this->departamento_id ?: null)
             ->when($this->planId, fn ($q) => $q->where('id', '!=', $this->planId))
             ->get();
 
@@ -214,21 +269,23 @@ class PlanMantenimientoModal extends Component
             return null;
         }
 
-        $misEquipos = collect($this->equiposSeleccionados)->map(fn ($id) => (int) $id);
+        $sinEquiposPuntuales = empty($this->equiposSeleccionados);
 
-        if ($misEquipos->isEmpty()) {
-            return 'Ya existe un plan para esta categoría/departamento. Para crear otro en paralelo, abre "Elegir equipos puntuales" y selecciona solo los que le correspondan a este.';
-        }
+        $misEquipos = $sinEquiposPuntuales
+            ? Equipo::where('empresa_id', $this->empresa_id)
+                ->where('categoria_id', $this->categoria_id)
+                ->where('activo', true)
+                ->when($this->departamento_id, fn ($q) => $q->deDepartamento((int) $this->departamento_id))
+                ->pluck('id')
+            : collect($this->equiposSeleccionados)->map(fn ($id) => (int) $id);
 
         foreach ($otros as $otro) {
-            $equiposOtro = $otro->equipos()->pluck('equipos.id');
-
-            if ($equiposOtro->isEmpty()) {
-                return "El plan #{$otro->id} ya cubre TODOS los equipos de esta categoría/departamento — no se puede crear otro en paralelo hasta que ese use \"equipos puntuales\".";
-            }
+            $equiposOtro = $otro->equiposAlcanzados()->pluck('id');
 
             if ($misEquipos->intersect($equiposOtro)->isNotEmpty()) {
-                return "Algunos de los equipos elegidos ya están cubiertos por el plan #{$otro->id} de esta misma categoría/departamento.";
+                return $sinEquiposPuntuales
+                    ? "Ya existe un plan (#{$otro->id}) que cubre algunos de estos equipos. Para crear otro en paralelo, abre \"Elegir equipos puntuales\" y selecciona solo los que no estén ya en otro plan."
+                    : "Algunos de los equipos elegidos ya están cubiertos por el plan #{$otro->id} de esta misma categoría.";
             }
         }
 

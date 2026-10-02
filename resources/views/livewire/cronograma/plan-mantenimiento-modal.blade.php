@@ -72,6 +72,14 @@
                         </div>
                     @endif
 
+                    @if (empty($equiposSeleccionados) && $this->equiposExcluidosCount > 0)
+                        <div class="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400
+                                    bg-amber-50 dark:bg-amber-500/10 rounded-lg px-4 py-2.5">
+                            <span class="material-icons text-base">info</span>
+                            {{ $this->equiposExcluidosCount }} equipo(s) de este alcance ya están en otro plan y no se cuentan aquí.
+                        </div>
+                    @endif
+
                     @if ($this->equiposDisponibles->isNotEmpty())
                         <div x-data="{ expandido: {{ ! empty($equiposSeleccionados) ? 'true' : 'false' }} }">
                             <button type="button" @click="expandido = ! expandido"
@@ -94,6 +102,10 @@
                                 @endforeach
                             </div>
                         </div>
+                    @elseif ($this->equiposExcluidosCount > 0)
+                        <p class="text-xs text-gray-400 dark:text-cerberus-steel italic">
+                            Todos los equipos de este alcance ya están en otro plan — no hay ninguno libre para elegir como puntual.
+                        </p>
                     @endif
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
