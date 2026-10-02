@@ -22,10 +22,6 @@ class MantenimientoDetalle extends Component
     public bool   $reabrirAbierto   = false;
     public string $motivoReapertura = '';
 
-    // Retroceder a un estado anterior — ver Mantenimiento::retrocederA().
-    public bool   $retrocederAbierto = false;
-    public string $estadoRetroceso   = '';
-
     public function mount(int $mantenimientoId): void
     {
         $mantenimiento = Mantenimiento::findOrFail($mantenimientoId);
@@ -240,52 +236,16 @@ class MantenimientoDetalle extends Component
         }
     }
 
-    // ── Retroceder a un estado anterior ──────────────────────────────────────
+    // ── Retroceder a un estado anterior (clic directo en un paso del stepper) ──
 
-    public function abrirRetroceder(): void
-    {
-        $this->authorize('update', $this->mantenimiento);
-        $this->estadoRetroceso = '';
-        $this->resetValidation();
-        $this->retrocederAbierto = true;
-    }
-
-    public function cerrarRetroceder(): void
-    {
-        $this->retrocederAbierto = false;
-        $this->resetValidation();
-    }
-
-    /** Estados anteriores al actual a los que se puede retroceder (para el select). */
-    #[Computed]
-    public function estadosRetrocedibles(): array
-    {
-        $m = $this->mantenimiento;
-        $actual = array_search($m->estado, Mantenimiento::ESTADOS_RETROCEDIBLES_CORRECTIVO, true);
-
-        if ($actual === false) {
-            return [];
-        }
-
-        return array_slice(Mantenimiento::ESTADOS_RETROCEDIBLES_CORRECTIVO, 0, $actual);
-    }
-
-    public function confirmarRetroceder(): void
+    public function retroceder(string $estado): void
     {
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
-        $this->validate([
-            'estadoRetroceso' => 'required|in:' . implode(',', $this->estadosRetrocedibles ?: ['__ninguno__']),
-        ], [
-            'estadoRetroceso.required' => 'Selecciona a qué estado retroceder.',
-            'estadoRetroceso.in'       => 'Ese estado no es válido para retroceder.',
-        ]);
-
         try {
-            $m->retrocederA($this->estadoRetroceso);
-            $this->dispatch('toast', type: 'success', message: "Caso retrocedido a «{$this->estadoRetroceso}».");
-            $this->cerrarRetroceder();
+            $m->retrocederA($estado);
+            $this->dispatch('toast', type: 'success', message: "Caso vuelto a «{$estado}».");
             $this->notificarActualizacion();
         } catch (\InvalidArgumentException $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());

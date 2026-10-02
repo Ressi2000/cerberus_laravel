@@ -425,21 +425,36 @@ class Mantenimiento extends Model
     /** Estados de Correctivo a los que se puede retroceder (excluye los terminales — ahí corresponde reabrir()). */
     const ESTADOS_RETROCEDIBLES_CORRECTIVO = ['Reportado', 'Diagnosticado', 'En reparación', 'Reparado'];
 
+    /** Estados de Preventivo a los que se puede retroceder (excluye Completado/Cancelado). */
+    const ESTADOS_RETROCEDIBLES_PREVENTIVO = ['Programado', 'En proceso'];
+
+    /** Estados retrocedibles según el tipo de esta intervención. */
+    public function estadosRetrocedibles(): array
+    {
+        return $this->esCorrectivo() ? self::ESTADOS_RETROCEDIBLES_CORRECTIVO : self::ESTADOS_RETROCEDIBLES_PREVENTIVO;
+    }
+
     /**
      * Retrocede el caso a un estado anterior dentro del flujo normal (por si
-     * faltó algo). No aplica a Cerrado/Dado de baja — de ahí se sale con
-     * reabrir(), que además re-bloquea el equipo. El bloqueo del equipo no
-     * cambia entre estos estados (Correctivo lo bloquea una sola vez, al
-     * crear el caso), así que retroceder acá no tiene efectos secundarios.
+     * faltó algo). No aplica a los estados terminales (Completado, Cerrado,
+     * Dado de baja, Cancelado) — de Cerrado se sale con reabrir(), que
+     * además re-bloquea el equipo.
+     *
+     * Correctivo: el bloqueo del equipo no cambia entre estos estados (se
+     * bloquea una sola vez, al crear el caso), así que retroceder acá no
+     * tiene efectos secundarios sobre el equipo.
+     *
+     * Preventivo: "En proceso" -> "Programado" deshace el bloqueo que hizo
+     * avanzarEstado() al entrar a "En proceso" — se libera el equipo y se
+     * limpia estado_equipo_anterior_id para que, si el caso vuelve a
+     * avanzar, bloquearEquipo() pueda tomar el estado actual del equipo de
+     * nuevo (no corre dos veces si ya está seteado).
      */
     public function retrocederA(string $estado): void
     {
-        if (! $this->esCorrectivo()) {
-            throw new \InvalidArgumentException('Retroceder de estado solo aplica a reparaciones.');
-        }
-
-        $actual  = array_search($this->estado, self::ESTADOS_RETROCEDIBLES_CORRECTIVO, true);
-        $destino = array_search($estado, self::ESTADOS_RETROCEDIBLES_CORRECTIVO, true);
+        $lista   = $this->estadosRetrocedibles();
+        $actual  = array_search($this->estado, $lista, true);
+        $destino = array_search($estado, $lista, true);
 
         if ($destino === false) {
             throw new \InvalidArgumentException('Ese estado no es válido para retroceder. Si el caso ya está cerrado, usa "Reabrir".');
@@ -449,7 +464,14 @@ class Mantenimiento extends Model
             throw new \InvalidArgumentException('Solo se puede retroceder a un estado anterior al actual.');
         }
 
-        $this->update(['estado' => $estado]);
+        DB::transaction(function () use ($estado) {
+            $this->update(['estado' => $estado]);
+
+            if ($this->esPreventivo() && $estado === 'Programado' && $this->estaBloqueado()) {
+                $this->liberarEquipo();
+                $this->update(['estado_equipo_anterior_id' => null]);
+            }
+        });
     }
 
     /**

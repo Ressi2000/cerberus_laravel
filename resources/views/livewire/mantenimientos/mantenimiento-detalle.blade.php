@@ -139,141 +139,43 @@
         @endif
     </div>
 
-    {{-- ── ACCIONES DE FLUJO ──────────────────────────────────────────────── --}}
-    {{-- Primero que todo: es lo que se usa a cada momento, no tiene sentido
-         tener que bajar hasta el final para encontrar el botón de avanzar. --}}
-    @can('update', $m)
-        @if ($m->estaAbierto())
-            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Acciones</h3>
-                <div class="flex flex-wrap gap-2">
-                    @if (isset(\App\Models\Mantenimiento::SIGUIENTE_ESTADO_SIMPLE[$m->estado]) && ! ($m->esCorrectivo() && $m->estado === 'Reportado'))
-                        <button wire:click="avanzarEstado" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1.5">
-                            <span class="material-icons text-sm">arrow_forward</span>
-                            Avanzar a «{{ \App\Models\Mantenimiento::SIGUIENTE_ESTADO_SIMPLE[$m->estado] }}»
+    {{-- ── LÍNEA DE TIEMPO DEL CASO ──────────────────────────────────────────── --}}
+    {{-- Arriba del todo: muestra en qué paso está el caso y deja retroceder
+         (o reabrir, desde "Cerrado") con un clic sobre un paso anterior. --}}
+    <x-mantenimientos.pasos :mantenimiento="$m" :editable="(bool) auth()->user()?->can('update', $m)" />
+
+    {{-- ── Reabrir caso (Correctivo, Cerrado) — form que abre el paso "Reparado" del stepper --}}
+    @if ($m->esCorrectivo() && $m->estado === 'Cerrado' && $reabrirAbierto)
+        @can('update', $m)
+            <div class="bg-white dark:bg-cerberus-mid border border-amber-200 dark:border-amber-700/40 rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                    <span class="material-icons text-amber-600 dark:text-amber-400 text-base">restore</span>
+                    Reabrir caso
+                </h3>
+                <p class="text-xs text-gray-500 dark:text-cerberus-light mb-3">
+                    Solo si el problema que volvió es el mismo diagnóstico — si es otra falla, crea una reparación nueva.
+                </p>
+                <div class="space-y-3">
+                    <x-form.textarea
+                        label="Motivo de la reapertura"
+                        wire:model="motivoReapertura"
+                        rows="2"
+                        placeholder="Ej: El equipo volvió a fallar con el mismo diagnóstico..."
+                        :error="$errors->first('motivoReapertura')"
+                        required
+                    />
+                    <div class="flex justify-end gap-2">
+                        <button wire:click="cerrarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
+                            Cancelar
                         </button>
-                    @endif
-
-                    @if ($m->esPreventivo() && $m->estado === 'En proceso')
-                        <button wire:click="completar" class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1.5">
-                            <span class="material-icons text-sm">check_circle</span> Completar
+                        <button wire:click="confirmarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-amber-600 hover:bg-amber-700 text-white">
+                            Reabrir
                         </button>
-
-                        <button wire:click="$dispatch('openReportarProblema', { mantenimientoId: {{ $m->id }} })"
-                            class="px-4 py-2 text-sm rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700/40 transition flex items-center gap-1.5">
-                            <span class="material-icons text-sm">report_problem</span> Reportar problema encontrado
-                        </button>
-                    @endif
-
-                    @if ($m->esPreventivo() && in_array($m->estado, ['Programado', 'En proceso']))
-                        <button wire:click="cancelar" wire:confirm="¿Cancelar este mantenimiento?" class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white transition flex items-center gap-1.5">
-                            <span class="material-icons text-sm">cancel</span> Cancelar
-                        </button>
-                    @endif
-
-                    @if ($m->esCorrectivo() && $m->estado === 'En reparación')
-                        <button wire:click="marcarReparado" class="px-4 py-2 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5">
-                            <span class="material-icons text-sm">check</span> Marcar reparado
-                        </button>
-                    @endif
-
-                    @if ($m->esCorrectivo() && $m->estado === 'Reparado')
-                        <button wire:click="cerrar" class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1.5">
-                            <span class="material-icons text-sm">check_circle</span> Cerrar caso
-                        </button>
-                    @endif
-
-                    @can('aprobarBaja', $m)
-                        @if ($m->esCorrectivo() && in_array($m->estado, ['Diagnosticado', 'En reparación']))
-                            <button wire:click="$dispatch('openMantenimientoBaja', { mantenimientoId: {{ $m->id }} })"
-                                class="px-4 py-2 text-sm rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700/40 transition flex items-center gap-1.5">
-                                <span class="material-icons text-sm">report</span> Dar de baja (sin solución)
-                            </button>
-                        @endif
-                    @endcan
-
-                    @if ($m->esCorrectivo() && count($this->estadosRetrocedibles) > 0)
-                        <button wire:click="abrirRetroceder" class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white transition flex items-center gap-1.5">
-                            <span class="material-icons text-sm">undo</span> Retroceder (faltó algo)
-                        </button>
-                    @endif
-                </div>
-
-                {{-- ── Retroceder a un estado anterior ──────────────────────── --}}
-                @if ($retrocederAbierto)
-                    <div class="mt-4 bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-4 space-y-3">
-                        <p class="text-xs text-gray-500 dark:text-cerberus-light">
-                            Vuelve el caso a un estado anterior — lo que ya quedó registrado (componentes, piezas, fotos) no se borra.
-                        </p>
-                        <x-form.select
-                            label="Retroceder a"
-                            placeholder="Selecciona..."
-                            :options="array_combine($this->estadosRetrocedibles, $this->estadosRetrocedibles)"
-                            wire:model="estadoRetroceso"
-                            :error="$errors->first('estadoRetroceso')"
-                        />
-                        <div class="flex justify-end gap-2">
-                            <button wire:click="cerrarRetroceder" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
-                                Cancelar
-                            </button>
-                            <button wire:click="confirmarRetroceder" class="px-3 py-1.5 text-xs rounded-lg bg-gray-700 hover:bg-gray-800 text-white">
-                                Retroceder
-                            </button>
-                        </div>
                     </div>
-                @endif
-            </div>
-        @endif
-
-        {{-- ── Reabrir caso (Correctivo, Cerrado) ──────────────────────────── --}}
-        @if ($m->esCorrectivo() && $m->estado === 'Cerrado')
-            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
-                <div class="flex items-center justify-between flex-wrap gap-3">
-                    <p class="text-sm text-gray-600 dark:text-cerberus-light">
-                        Caso cerrado. Si el mismo problema volvió, reabre este caso — si es una falla distinta, crea una reparación nueva.
-                    </p>
-                    <button wire:click="abrirReabrir" class="px-4 py-2 text-sm rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition flex items-center gap-1.5 flex-shrink-0">
-                        <span class="material-icons text-sm">restore</span> Reabrir caso
-                    </button>
                 </div>
-
-                @if ($reabrirAbierto)
-                    <div class="mt-4 bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-4 space-y-3">
-                        <x-form.textarea
-                            label="Motivo de la reapertura"
-                            wire:model="motivoReapertura"
-                            rows="2"
-                            placeholder="Ej: El equipo volvió a fallar con el mismo diagnóstico..."
-                            :error="$errors->first('motivoReapertura')"
-                            required
-                        />
-                        <div class="flex justify-end gap-2">
-                            <button wire:click="cerrarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
-                                Cancelar
-                            </button>
-                            <button wire:click="confirmarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-amber-600 hover:bg-amber-700 text-white">
-                                Reabrir
-                            </button>
-                        </div>
-                    </div>
-                @endif
             </div>
-        @endif
-    @endcan
-
-    {{-- ── Eliminar caso (Administrador) ───────────────────────────────────── --}}
-    @can('delete', $m)
-        <div class="bg-white dark:bg-cerberus-mid border border-red-200 dark:border-red-700/40 rounded-xl p-5 flex items-center justify-between flex-wrap gap-3">
-            <p class="text-sm text-gray-500 dark:text-cerberus-light">
-                Eliminar este caso lo quita de los listados (queda guardado para auditoría). Si estaba bloqueando el equipo, lo libera.
-            </p>
-            <button wire:click="eliminar"
-                wire:confirm="¿Eliminar este caso? El equipo quedará liberado si estaba bloqueado por este caso."
-                class="px-4 py-2 text-sm rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700/40 transition flex items-center gap-1.5 flex-shrink-0">
-                <span class="material-icons text-sm">delete</span> Eliminar caso
-            </button>
-        </div>
-    @endcan
+        @endcan
+    @endif
 
     {{-- ── CHECKLIST (Preventivo, desde "En proceso") ───────────────────────── --}}
     @if ($m->esPreventivo() && ! $preventivoSinEmpezar && ! empty($m->checklist))
@@ -421,17 +323,94 @@
         @endif
     @endif
 
-    {{-- ── COMPONENTES (Preventivo, desde "En proceso") ─────────────────────── --}}
-    @unless ($preventivoSinEmpezar)
+    {{-- Correctivo todavía no tiene nada que mostrar acá antes de "En reparación"
+         (ni componentes pedidos ni piezas retiradas) — recién aparece desde ahí,
+         y sigue visible (solo lectura) una vez que el caso avanza más. --}}
+    @php($correctivoSinEmpezarATrabajar = $m->esCorrectivo() && in_array($m->estado, ['Reportado', 'Diagnosticado'], true))
+
+    {{-- ── COMPONENTES (Preventivo, desde "En proceso"; Correctivo, desde "En reparación") ── --}}
+    @unless ($preventivoSinEmpezar || $correctivoSinEmpezarATrabajar)
         @livewire('mantenimientos.mantenimiento-componentes-panel', ['mantenimientoId' => $m->id], key('comp-' . $m->id))
     @endunless
 
-    {{-- ── PIEZAS (Correctivo): retirar pieza vieja/dañada, instalar rescatada ── --}}
-    @if ($m->esCorrectivo())
+    {{-- ── PIEZAS (Correctivo, desde "En reparación"): retirar pieza vieja/dañada, instalar rescatada ── --}}
+    @if ($m->esCorrectivo() && ! $correctivoSinEmpezarATrabajar)
         @livewire('mantenimientos.mantenimiento-piezas-panel', ['mantenimientoId' => $m->id], key('piezas-' . $m->id))
     @endif
 
     {{-- ── EVIDENCIA FOTOGRÁFICA ───────────────────────────────────────────── --}}
     @livewire('mantenimientos.mantenimiento-evidencias-panel', ['mantenimientoId' => $m->id], key('evi-' . $m->id))
+
+    {{-- ── ACCIONES DE FLUJO ──────────────────────────────────────────────── --}}
+    {{-- Al final: la línea de tiempo de arriba ya muestra en qué paso está el
+         caso y permite retroceder, así que acá solo quedan los botones que
+         avanzan o cierran el caso. --}}
+    @can('update', $m)
+        @if ($m->estaAbierto())
+            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-5">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Acciones</h3>
+                <div class="flex flex-wrap gap-2">
+                    @if (isset(\App\Models\Mantenimiento::SIGUIENTE_ESTADO_SIMPLE[$m->estado]) && ! ($m->esCorrectivo() && $m->estado === 'Reportado'))
+                        <button wire:click="avanzarEstado" class="px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1.5">
+                            <span class="material-icons text-sm">arrow_forward</span>
+                            Avanzar a «{{ \App\Models\Mantenimiento::SIGUIENTE_ESTADO_SIMPLE[$m->estado] }}»
+                        </button>
+                    @endif
+
+                    @if ($m->esPreventivo() && $m->estado === 'En proceso')
+                        <button wire:click="completar" class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1.5">
+                            <span class="material-icons text-sm">check_circle</span> Completar
+                        </button>
+
+                        <button wire:click="$dispatch('openReportarProblema', { mantenimientoId: {{ $m->id }} })"
+                            class="px-4 py-2 text-sm rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700/40 transition flex items-center gap-1.5">
+                            <span class="material-icons text-sm">report_problem</span> Reportar problema encontrado
+                        </button>
+                    @endif
+
+                    @if ($m->esPreventivo() && in_array($m->estado, ['Programado', 'En proceso']))
+                        <button wire:click="cancelar" wire:confirm="¿Cancelar este mantenimiento?" class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white transition flex items-center gap-1.5">
+                            <span class="material-icons text-sm">cancel</span> Cancelar
+                        </button>
+                    @endif
+
+                    @if ($m->esCorrectivo() && $m->estado === 'En reparación')
+                        <button wire:click="marcarReparado" class="px-4 py-2 text-sm rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1.5">
+                            <span class="material-icons text-sm">check</span> Marcar reparado
+                        </button>
+                    @endif
+
+                    @if ($m->esCorrectivo() && $m->estado === 'Reparado')
+                        <button wire:click="cerrar" class="px-4 py-2 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1.5">
+                            <span class="material-icons text-sm">check_circle</span> Cerrar caso
+                        </button>
+                    @endif
+
+                    @can('aprobarBaja', $m)
+                        @if ($m->esCorrectivo() && in_array($m->estado, ['Diagnosticado', 'En reparación']))
+                            <button wire:click="$dispatch('openMantenimientoBaja', { mantenimientoId: {{ $m->id }} })"
+                                class="px-4 py-2 text-sm rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700/40 transition flex items-center gap-1.5">
+                                <span class="material-icons text-sm">report</span> Dar de baja (sin solución)
+                            </button>
+                        @endif
+                    @endcan
+                </div>
+            </div>
+        @endif
+    @endcan
+
+    {{-- ── Eliminar caso (Administrador) ───────────────────────────────────── --}}
+    @can('delete', $m)
+        <div class="bg-white dark:bg-cerberus-mid border border-red-200 dark:border-red-700/40 rounded-xl p-5 flex items-center justify-between flex-wrap gap-3">
+            <p class="text-sm text-gray-500 dark:text-cerberus-light">
+                Eliminar este caso lo quita de los listados (queda guardado para auditoría). Si estaba bloqueando el equipo, lo libera.
+            </p>
+            <button wire:click="eliminar"
+                wire:confirm="¿Eliminar este caso? El equipo quedará liberado si estaba bloqueado por este caso."
+                class="px-4 py-2 text-sm rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700/40 transition flex items-center gap-1.5 flex-shrink-0">
+                <span class="material-icons text-sm">delete</span> Eliminar caso
+            </button>
+        </div>
+    @endcan
 
 </div>
