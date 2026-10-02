@@ -41,6 +41,7 @@ class PlanMantenimientoPolicy
 
     public function delete(User $user, PlanMantenimiento $plan): bool
     {
-        return false; // Solo Administrador, vía before()
+        return $user->hasRole('Analista')
+            && $user->empresa_activa_id === $plan->empresa_id;
     }
 }
