@@ -196,14 +196,25 @@ class PlanMantenimiento extends Model
         return $fecha;
     }
 
+    /**
+     * Estrictamente ANTES de hoy — no usa isPast() porque fecha_proximo es
+     * una fecha (medianoche) y isPast() la compara contra la hora actual:
+     * "hoy a las 00:00" ya "pasó" apenas pasa la medianoche, así que un
+     * plan programado para HOY mismo se veía como "Vencido" todo el día.
+     */
     public function estaVencido(): bool
     {
-        return $this->fecha_proximo->isPast();
+        return $this->fecha_proximo->lt(today());
+    }
+
+    public function esHoy(): bool
+    {
+        return $this->fecha_proximo->isToday();
     }
 
     public function estaProximo(): bool
     {
-        return ! $this->estaVencido()
+        return ! $this->estaVencido() && ! $this->esHoy()
             && $this->fecha_proximo->lte(now()->addDays(self::DIAS_ANTELACION_GENERACION));
     }
 

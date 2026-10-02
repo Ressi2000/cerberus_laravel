@@ -4,7 +4,7 @@
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
-        ['title' => 'Al día',      'value' => $this->totalAlDia,    'icon' => 'check_circle'],
+        ['title' => 'Programado',  'value' => $this->totalAlDia,    'icon' => 'check_circle'],
         ['title' => 'Próximos',    'value' => $this->totalProximos, 'icon' => 'hourglass_top'],
         ['title' => 'Vencidos',    'value' => $this->totalVencidos, 'icon' => 'error_outline'],
     ]" />
@@ -103,6 +103,12 @@
                                      border border-red-200 dark:border-red-500/30">
                             <span class="material-icons text-xs">error_outline</span> Vencido
                         </span>
+                    @elseif ($plan->esHoy())
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
+                                     bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400
+                                     border border-blue-200 dark:border-blue-500/30">
+                            <span class="material-icons text-xs">today</span> Es hoy
+                        </span>
                     @elseif ($plan->estaProximo())
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
                                      bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400
@@ -113,7 +119,7 @@
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
                                      bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400
                                      border border-green-200 dark:border-green-500/30">
-                            <span class="material-icons text-xs">check_circle</span> Al día
+                            <span class="material-icons text-xs">check_circle</span> Programado
                         </span>
                     @endif
                 </td>
