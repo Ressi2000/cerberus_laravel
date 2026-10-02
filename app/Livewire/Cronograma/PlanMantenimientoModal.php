@@ -11,7 +11,6 @@ use App\Models\TareaMantenimientoCatalogo;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -175,19 +174,9 @@ class PlanMantenimientoModal extends Component
 
     protected function rules(): array
     {
-        // whereNull('deleted_at'): un plan eliminado no debe bloquear crear
-        // uno nuevo para la misma categoría/empresa/departamento — guardar()
-        // lo detecta y lo reactiva en vez de chocar con el unique de la BD.
-        $uniqueRule = Rule::unique('planes_mantenimiento', 'categoria_id')
-            ->where(fn ($q) => $q
-                ->where('empresa_id', $this->empresa_id)
-                ->where('departamento_id', $this->departamento_id ?: null)
-                ->whereNull('deleted_at'))
-            ->ignore($this->planId);
-
         return [
             'empresa_id'       => 'required|exists:empresas,id',
-            'categoria_id'     => ['required', 'exists:categorias_equipos,id', $uniqueRule],
+            'categoria_id'     => 'required|exists:categorias_equipos,id',
             'departamento_id'  => 'nullable|exists:departamentos,id',
             'frecuencia_meses' => 'required|integer|min:1|max:60',
             'fecha_proximo'    => 'required|date',
@@ -201,14 +190,59 @@ class PlanMantenimientoModal extends Component
     {
         return [
             'categoria_id.required'     => 'Selecciona una categoría.',
-            'categoria_id.unique'       => 'Ya existe un plan para esta categoría en esta empresa.',
             'frecuencia_meses.required'  => 'Indica cada cuántos meses se repite.',
         ];
+    }
+
+    /**
+     * Varios planes pueden compartir empresa+categoría+departamento (para
+     * dividir un universo grande de equipos en tandas con fechas propias),
+     * pero nunca dos planes activos pueden alcanzar el MISMO equipo — eso sí
+     * generaría lotes duplicados. Un plan sin "equipos puntuales" alcanza
+     * TODOS los de su categoría/departamento, así que choca con cualquier
+     * otro plan de ese mismo alcance (puntual o no).
+     */
+    private function detectarConflictoEquipos(): ?string
+    {
+        $otros = PlanMantenimiento::where('empresa_id', $this->empresa_id)
+            ->where('categoria_id', $this->categoria_id)
+            ->where('departamento_id', $this->departamento_id ?: null)
+            ->when($this->planId, fn ($q) => $q->where('id', '!=', $this->planId))
+            ->get();
+
+        if ($otros->isEmpty()) {
+            return null;
+        }
+
+        $misEquipos = collect($this->equiposSeleccionados)->map(fn ($id) => (int) $id);
+
+        if ($misEquipos->isEmpty()) {
+            return 'Ya existe un plan para esta categoría/departamento. Para crear otro en paralelo, abre "Elegir equipos puntuales" y selecciona solo los que le correspondan a este.';
+        }
+
+        foreach ($otros as $otro) {
+            $equiposOtro = $otro->equipos()->pluck('equipos.id');
+
+            if ($equiposOtro->isEmpty()) {
+                return "El plan #{$otro->id} ya cubre TODOS los equipos de esta categoría/departamento — no se puede crear otro en paralelo hasta que ese use \"equipos puntuales\".";
+            }
+
+            if ($misEquipos->intersect($equiposOtro)->isNotEmpty()) {
+                return "Algunos de los equipos elegidos ya están cubiertos por el plan #{$otro->id} de esta misma categoría/departamento.";
+            }
+        }
+
+        return null;
     }
 
     public function guardar(): void
     {
         $this->validate();
+
+        if ($conflicto = $this->detectarConflictoEquipos()) {
+            $this->addError('categoria_id', $conflicto);
+            return;
+        }
 
         try {
             // El cronograma no programa trabajo en fin de semana: si se elige
