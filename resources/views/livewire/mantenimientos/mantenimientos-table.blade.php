@@ -119,91 +119,117 @@
 
     @if ($agruparPorPlan)
         {{-- ── TABLA AGRUPADA POR PLAN (sin paginar: un plan no puede quedar
-             partido entre páginas) ───────────────────────────────────────── --}}
-        <x-table.crud-table
-            :headers="['Caso', 'Equipo', 'Empresa', 'Tipo', 'Estado', 'Responsable', 'Inicio', 'Acciones']"
-            :paginated="null">
+             partido entre páginas) — acordeón: cada grupo arranca colapsado,
+             se despliega con la flechita del encabezado. expandidos vive en
+             este x-data que envuelve toda la tabla, para que el header de
+             cada grupo y sus filas compartan el mismo estado. --}}
+        <div x-data="{ expandidos: {} }">
+            <x-table.crud-table
+                :headers="['', 'Caso', 'Equipo', 'Empresa', 'Tipo', 'Estado', 'Responsable', 'Inicio', 'Acciones']"
+                :paginated="null">
 
-            @forelse ($this->mantenimientosAgrupados as $planId => $casosDelPlan)
-                @if ($planId)
-                    @php($planDelGrupo = $casosDelPlan->first()->planMantenimiento)
-                    <tr wire:key="plan-grupo-{{ $planId }}" class="bg-gray-50 dark:bg-cerberus-dark/40">
-                        <td colspan="8" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-cerberus-accent">
-                            <span class="material-icons text-sm align-middle mr-1">event_repeat</span>
-                            @if ($planDelGrupo)
-                                Plan: {{ $planDelGrupo->categoria->nombre ?? '—' }} — {{ $planDelGrupo->empresa->nombre ?? '—' }}
-                                <span class="font-normal normal-case text-gray-400">({{ $casosDelPlan->count() }})</span>
-                                <a href="{{ route('admin.cronograma.lotes.show', $planDelGrupo) }}"
-                                   class="font-normal normal-case text-cerberus-primary dark:text-cerberus-accent hover:underline ml-2">
-                                    Ver lote →
-                                </a>
-                            @else
-                                Plan #{{ $planId }} (eliminado)
-                                <span class="font-normal normal-case text-gray-400">({{ $casosDelPlan->count() }})</span>
-                            @endif
-                        </td>
-                    </tr>
-                @else
-                    <tr wire:key="plan-grupo-sin-plan" class="bg-gray-50 dark:bg-cerberus-dark/40">
-                        <td colspan="8" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-cerberus-steel">
-                            <span class="material-icons text-sm align-middle mr-1">block</span>
-                            Sin plan (reparaciones o casos creados a mano)
-                            <span class="font-normal normal-case text-gray-400">({{ $casosDelPlan->count() }})</span>
-                        </td>
-                    </tr>
-                @endif
-
-                @foreach ($casosDelPlan as $m)
-                    <tr wire:key="mant-grp-{{ $m->id }}" class="border-b border-gray-100 dark:border-cerberus-steel/30 hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
-                        <td class="px-4 py-3 text-gray-400 dark:text-cerberus-steel text-sm font-mono">#{{ $m->id }}</td>
-                        <td class="px-4 py-3">
-                            <p class="text-[#1E293B] dark:text-white font-medium text-sm">{{ $m->equipo->codigo_interno ?? '—' }}</p>
-                            <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $m->equipo->categoria->nombre ?? '—' }}</p>
-                        </td>
-                        <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">{{ $m->empresa->nombre ?? '—' }}</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-flex items-center gap-1 text-xs font-medium
-                                         {{ $m->esCorrectivo() ? 'text-orange-600 dark:text-orange-400' : 'text-sky-600 dark:text-sky-400' }}">
-                                <span class="material-icons text-sm">{{ $m->esCorrectivo() ? 'construction' : 'build' }}</span>
-                                {{ $m->esCorrectivo() ? 'Reparación' : 'Mantenimiento' }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-3">
-                            <span @class(['inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border font-medium', $coloresEstado[$m->estado] ?? 'bg-gray-50 text-gray-500 border-gray-200'])>
-                                {{ $m->estado }}
-                            </span>
-                            @if ($m->esperando_componente)
-                                <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full
-                                             bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400
-                                             border border-purple-200 dark:border-purple-500/30 mt-1">
-                                    <span class="material-icons text-[10px]">hourglass_empty</span>
-                                    Esperando repuesto
+                @forelse ($this->mantenimientosAgrupados as $planId => $casosDelPlan)
+                    @php($grupoKey = $planId ?: 'sin-plan')
+                    @if ($planId)
+                        @php($planDelGrupo = $casosDelPlan->first()->planMantenimiento)
+                        <tr wire:key="plan-grupo-{{ $planId }}"
+                            @click="expandidos['{{ $grupoKey }}'] = !expandidos['{{ $grupoKey }}']"
+                            class="bg-gray-50 dark:bg-cerberus-dark/40 cursor-pointer select-none">
+                            <td class="px-4 py-2 text-center">
+                                <span class="material-icons text-sm text-gray-400 dark:text-cerberus-steel transition-transform duration-200"
+                                      :class="{ 'rotate-90': expandidos['{{ $grupoKey }}'] }">
+                                    chevron_right
                                 </span>
-                            @endif
-                        </td>
-                        <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">
-                            {{ $m->responsable->name ?? $m->proveedor_externo ?? '—' }}
-                        </td>
-                        <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm whitespace-nowrap">
-                            {{ $m->fecha_inicio?->format('d/m/Y') ?? '—' }}
-                        </td>
-                        <td class="px-4 py-3 text-center">
-                            <a href="{{ route('admin.mantenimientos.show', $m) }}"
-                               class="inline-flex items-center gap-1 text-cerberus-primary dark:text-cerberus-accent hover:underline text-xs font-medium">
-                                Ver <span class="material-icons text-sm">chevron_right</span>
-                            </a>
+                            </td>
+                            <td colspan="8" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-cerberus-accent">
+                                <span class="material-icons text-sm align-middle mr-1">event_repeat</span>
+                                @if ($planDelGrupo)
+                                    Plan: {{ $planDelGrupo->categoria->nombre ?? '—' }} — {{ $planDelGrupo->empresa->nombre ?? '—' }}
+                                    <span class="font-normal normal-case text-gray-400">({{ $casosDelPlan->count() }})</span>
+                                    <a href="{{ route('admin.cronograma.lotes.show', $planDelGrupo) }}"
+                                       @click.stop
+                                       class="font-normal normal-case text-cerberus-primary dark:text-cerberus-accent hover:underline ml-2">
+                                        Ver lote →
+                                    </a>
+                                @else
+                                    Plan #{{ $planId }} (eliminado)
+                                    <span class="font-normal normal-case text-gray-400">({{ $casosDelPlan->count() }})</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @else
+                        <tr wire:key="plan-grupo-sin-plan"
+                            @click="expandidos['sin-plan'] = !expandidos['sin-plan']"
+                            class="bg-gray-50 dark:bg-cerberus-dark/40 cursor-pointer select-none">
+                            <td class="px-4 py-2 text-center">
+                                <span class="material-icons text-sm text-gray-400 dark:text-cerberus-steel transition-transform duration-200"
+                                      :class="{ 'rotate-90': expandidos['sin-plan'] }">
+                                    chevron_right
+                                </span>
+                            </td>
+                            <td colspan="8" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-cerberus-steel">
+                                <span class="material-icons text-sm align-middle mr-1">block</span>
+                                Sin plan (reparaciones o casos creados a mano)
+                                <span class="font-normal normal-case text-gray-400">({{ $casosDelPlan->count() }})</span>
+                            </td>
+                        </tr>
+                    @endif
+
+                    @foreach ($casosDelPlan as $m)
+                        <tr wire:key="mant-grp-{{ $m->id }}"
+                            x-show="expandidos['{{ $grupoKey }}']" x-cloak
+                            class="border-b border-gray-100 dark:border-cerberus-steel/30 hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
+                            <td></td>
+                            <td class="px-4 py-3 text-gray-400 dark:text-cerberus-steel text-sm font-mono">#{{ $m->id }}</td>
+                            <td class="px-4 py-3">
+                                <p class="text-[#1E293B] dark:text-white font-medium text-sm">{{ $m->equipo->codigo_interno ?? '—' }}</p>
+                                <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $m->equipo->categoria->nombre ?? '—' }}</p>
+                            </td>
+                            <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">{{ $m->empresa->nombre ?? '—' }}</td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex items-center gap-1 text-xs font-medium
+                                             {{ $m->esCorrectivo() ? 'text-orange-600 dark:text-orange-400' : 'text-sky-600 dark:text-sky-400' }}">
+                                    <span class="material-icons text-sm">{{ $m->esCorrectivo() ? 'construction' : 'build' }}</span>
+                                    {{ $m->esCorrectivo() ? 'Reparación' : 'Mantenimiento' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span @class(['inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border font-medium', $coloresEstado[$m->estado] ?? 'bg-gray-50 text-gray-500 border-gray-200'])>
+                                    {{ $m->estado }}
+                                </span>
+                                @if ($m->esperando_componente)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] rounded-full
+                                                 bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400
+                                                 border border-purple-200 dark:border-purple-500/30 mt-1">
+                                        <span class="material-icons text-[10px]">hourglass_empty</span>
+                                        Esperando repuesto
+                                    </span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">
+                                {{ $m->responsable->name ?? $m->proveedor_externo ?? '—' }}
+                            </td>
+                            <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm whitespace-nowrap">
+                                {{ $m->fecha_inicio?->format('d/m/Y') ?? '—' }}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{{ route('admin.mantenimientos.show', $m) }}"
+                                   class="inline-flex items-center gap-1 text-cerberus-primary dark:text-cerberus-accent hover:underline text-xs font-medium">
+                                    Ver <span class="material-icons text-sm">chevron_right</span>
+                                </a>
+                            </td>
+                        </tr>
+                    @endforeach
+                @empty
+                    <tr>
+                        <td colspan="9" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-cerberus-steel">
+                            No se encontraron casos.
                         </td>
                     </tr>
-                @endforeach
-            @empty
-                <tr>
-                    <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-cerberus-steel">
-                        No se encontraron casos.
-                    </td>
-                </tr>
-            @endforelse
+                @endforelse
 
-        </x-table.crud-table>
+            </x-table.crud-table>
+        </div>
     @else
         {{-- ── TABLA PLANA (más reciente primero, paginada) ────────────────────── --}}
         <x-table.crud-table
