@@ -27,6 +27,9 @@ class MantenimientosTable extends Component
     public bool   $mostrar_cerrados = false;
     public string $search           = '';
 
+    /** Agrupa el listado por el plan de mantenimiento que generó cada caso (los que no tienen plan quedan sueltos al final). */
+    public bool   $agruparPorPlan   = false;
+
     public function mount(): void
     {
         $this->authorize('viewAny', Mantenimiento::class);
@@ -159,6 +162,29 @@ class MantenimientosTable extends Component
             ->when($this->estado, fn ($q) => $q->where('estado', $this->estado))
             ->latest('fecha_inicio')
             ->paginate(15);
+    }
+
+    /**
+     * Mismos filtros que mantenimientos(), pero sin paginar y ordenado para
+     * que los casos del mismo plan queden contiguos — así la vista puede
+     * dibujar un encabezado por plan. Sin paginación a propósito: un plan
+     * podría quedar partido entre dos páginas y se perdería el agrupado.
+     * Los casos sin plan (Correctivo, o un Preventivo creado a mano) van al
+     * final, agrupados bajo null.
+     */
+    #[Computed]
+    public function mantenimientosAgrupados()
+    {
+        $casos = $this->queryFiltrada()
+            ->with(['equipo.categoria', 'empresa', 'responsable', 'planMantenimiento'])
+            ->when(! $this->estado && ! $this->mostrar_cerrados, fn ($q) => $q->abiertos())
+            ->when($this->estado, fn ($q) => $q->where('estado', $this->estado))
+            ->orderByRaw('plan_mantenimiento_id is null')
+            ->orderBy('plan_mantenimiento_id')
+            ->latest('fecha_inicio')
+            ->get();
+
+        return $casos->groupBy('plan_mantenimiento_id');
     }
 
     public function render()
