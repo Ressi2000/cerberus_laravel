@@ -573,6 +573,7 @@ class Mantenimiento extends Model
 
             if ($hayStock) {
                 $componente->registrarSalida($cantidad, $actor, 'Uso en mantenimiento', $this);
+                $this->consumirPiezasTrazadas($componente, $cantidad, $actor);
             }
 
             $this->recalcularEsperandoComponente();
@@ -596,6 +597,7 @@ class Mantenimiento extends Model
 
         DB::transaction(function () use ($item, $componente, $actor) {
             $componente->registrarSalida($item->cantidad_requerida, $actor, 'Uso en mantenimiento', $this);
+            $this->consumirPiezasTrazadas($componente, $item->cantidad_requerida, $actor);
 
             $item->update([
                 'estado'           => 'Entregado',
@@ -607,6 +609,38 @@ class Mantenimiento extends Model
         });
 
         return true;
+    }
+
+    /**
+     * Cuando se consume stock de un componente, marca como "instalada" una
+     * unidad trazada (PiezaExtraida) de ese mismo bucket por cada unidad
+     * consumida — si no, las piezas individuales quedarían para siempre en
+     * "en_almacen" aunque el stock agregado ya haya bajado, desincronizadas.
+     * Más antigua primero (FIFO). Si el bucket no tiene piezas trazadas
+     * (stock sin identidad, como lo era todo antes de esta función), no pasa
+     * nada — sigue siendo solo un descuento de stock, como siempre fue.
+     */
+    private function consumirPiezasTrazadas(ComponenteAlmacen $componente, int $cantidad, User $actor): void
+    {
+        $piezas = PiezaExtraida::where('componente_almacen_id', $componente->id)
+            ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
+            ->oldest()
+            ->limit($cantidad)
+            ->get();
+
+        foreach ($piezas as $pieza) {
+            $pieza->update([
+                'estado'            => PiezaExtraida::ESTADO_INSTALADA,
+                'equipo_destino_id' => $this->equipo_id,
+            ]);
+
+            $pieza->movimientos()->create([
+                'tipo'                  => PiezaExtraidaMovimiento::TIPO_INSTALACION,
+                'equipo_relacionado_id' => $this->equipo_id,
+                'mantenimiento_id'      => $this->id,
+                'registrado_por'        => $actor->id,
+            ]);
+        }
     }
 
     public function recalcularEsperandoComponente(): void

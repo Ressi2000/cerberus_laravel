@@ -28,6 +28,8 @@ class PiezaExtraida extends Model
         'grupo_instancia_id',
         'valor_extraido',
         'reutilizable',
+        'condicion',
+        'identificador',
         'estado',
         'componente_almacen_id',
         'deposito_id',
@@ -59,11 +61,23 @@ class PiezaExtraida extends Model
     const MOTIVO_SUSTITUCION_REPARACION = 'sustitucion_reparacion';
     /** Pieza sacada de un equipo que sigue activo — no pasó por baja ni por una reparación. */
     const MOTIVO_DESARME_MANUAL         = 'desarme_manual';
+    /** Pieza dada de alta a mano en Almacén — no vino de ningún atributo de equipo. */
+    const MOTIVO_REGISTRO_MANUAL        = 'registro_manual';
 
     const MOTIVOS = [
         self::MOTIVO_BAJA_EQUIPO            => 'Baja de equipo',
         self::MOTIVO_SUSTITUCION_REPARACION => 'Sustitución en reparación',
         self::MOTIVO_DESARME_MANUAL         => 'Desarme manual (equipo operativo)',
+        self::MOTIVO_REGISTRO_MANUAL        => 'Registro manual en Almacén',
+    ];
+
+    // ── Condición de la pieza ────────────────────────────────────────────────
+    const CONDICION_NUEVO       = 'nuevo';
+    const CONDICION_REUTILIZADO = 'reutilizado';
+
+    const CONDICIONES = [
+        self::CONDICION_NUEVO       => 'Nuevo',
+        self::CONDICION_REUTILIZADO => 'Reutilizado',
     ];
 
     // ── Relaciones ────────────────────────────────────────────────────────────
@@ -163,10 +177,27 @@ class PiezaExtraida extends Model
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /** Nombre legible de la pieza, tomado del atributo que la describe. */
+    /**
+     * Nombre legible de la pieza. Si nació de un atributo EAV, usa el
+     * atributo; si es un registro manual (sin atributo), cae al nombre del
+     * bucket de Almacén al que pertenece — y si tiene identificador propio,
+     * lo agrega para distinguirla de otras unidades idénticas.
+     */
     public function nombre(): string
     {
-        return $this->atributo?->nombre ?? 'Pieza';
+        $base = $this->atributo?->nombre ?? $this->componenteAlmacen?->nombre ?? 'Pieza';
+
+        return $this->identificador ? "{$base} ({$this->identificador})" : $base;
+    }
+
+    public function esManual(): bool
+    {
+        return $this->atributo_id === null;
+    }
+
+    public function labelCondicion(): string
+    {
+        return self::CONDICIONES[$this->condicion] ?? $this->condicion;
     }
 
     public function labelEstado(): string

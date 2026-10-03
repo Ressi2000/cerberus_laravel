@@ -4,8 +4,10 @@ namespace App\Livewire\Almacen;
 
 use App\Models\ComponenteAlmacen;
 use App\Models\Deposito;
+use App\Models\Equipo;
 use App\Models\PiezaExtraida;
 use App\Services\DescarteComponenteService;
+use App\Services\PiezaManualService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
@@ -35,6 +37,11 @@ class MovimientoStockModal extends Component
     public ?int   $depositoId  = null;
     public ?int   $piezaId     = null;
 
+    // ── Identidad de la(s) unidad(es) que entran (ver PiezaManualService) ────
+    public string $condicion      = PiezaExtraida::CONDICION_NUEVO;
+    public ?int   $equipoOrigenId = null;
+    public string $identificador  = '';
+
     #[On('openMovimientoStock')]
     public function abrir(int $componenteId): void
     {
@@ -42,10 +49,22 @@ class MovimientoStockModal extends Component
         $this->authorize('registrarMovimiento', $componente);
 
         $this->componenteId = $componenteId;
-        $this->reset(['cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaId']);
+        $this->reset(['cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaId', 'equipoOrigenId', 'identificador']);
         $this->tipo = 'Entrada';
+        $this->condicion = PiezaExtraida::CONDICION_NUEVO;
         $this->resetValidation();
         $this->open = true;
+    }
+
+    /** Equipos de la misma empresa del componente — de dónde pudo salir una pieza reutilizada. */
+    #[Computed]
+    public function equiposOpciones()
+    {
+        $componente = $this->componente;
+
+        return $componente
+            ? Equipo::where('empresa_id', $componente->empresa_id)->orderBy('codigo_interno')->pluck('codigo_interno', 'id')
+            : collect();
     }
 
     #[Computed]
@@ -110,16 +129,25 @@ class MovimientoStockModal extends Component
             }
         }
 
+        if ($this->tipo === 'Entrada') {
+            $rules['condicion'] = 'required|in:' . PiezaExtraida::CONDICION_NUEVO . ',' . PiezaExtraida::CONDICION_REUTILIZADO;
+            if ($this->condicion === PiezaExtraida::CONDICION_REUTILIZADO) {
+                $rules['equipoOrigenId'] = 'required|exists:equipos,id';
+            }
+            $rules['identificador'] = 'nullable|string|max:100';
+        }
+
         return $rules;
     }
 
     protected function messages(): array
     {
         return [
-            'cantidad.required'  => 'Indica la cantidad.',
-            'cantidad.min'       => 'La cantidad debe ser al menos 1.',
-            'cantidad.in'        => 'Solo se puede vincular una pieza trazada específica cuando la cantidad es 1.',
-            'depositoId.required'=> 'Selecciona en qué depósito queda la unidad dañada.',
+            'cantidad.required'      => 'Indica la cantidad.',
+            'cantidad.min'           => 'La cantidad debe ser al menos 1.',
+            'cantidad.in'            => 'Solo se puede vincular una pieza trazada específica cuando la cantidad es 1.',
+            'depositoId.required'    => 'Selecciona en qué depósito queda la unidad dañada.',
+            'equipoOrigenId.required'=> 'Indica de qué equipo salió esta pieza reutilizada.',
         ];
     }
 
@@ -143,11 +171,16 @@ class MovimientoStockModal extends Component
 
         try {
             if ($this->tipo === 'Entrada') {
-                $componente->registrarEntrada(
+                $equipoOrigen = $this->equipoOrigenId ? Equipo::find($this->equipoOrigenId) : null;
+
+                app(PiezaManualService::class)->registrar(
+                    $componente,
                     $this->cantidad,
+                    $this->condicion,
                     Auth::user(),
-                    $this->motivo ?: 'Entrada manual',
-                    $this->observaciones ?: null
+                    equipoOrigen: $equipoOrigen,
+                    identificador: $this->identificador ?: null,
+                    observaciones: $this->observaciones ?: null,
                 );
             } elseif ($this->danado) {
                 $deposito = Deposito::findOrFail($this->depositoId);
@@ -175,7 +208,7 @@ class MovimientoStockModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['componenteId', 'tipo', 'cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaId']);
+        $this->reset(['componenteId', 'tipo', 'cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaId', 'condicion', 'equipoOrigenId', 'identificador']);
         $this->resetValidation();
     }
 

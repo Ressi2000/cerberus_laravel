@@ -44,6 +44,35 @@
                         required
                     />
 
+                    @if ($tipo === 'Entrada')
+                        <x-form.select
+                            label="Condición"
+                            :options="\App\Models\PiezaExtraida::CONDICIONES"
+                            wire:model.live="condicion"
+                            :error="$errors->first('condicion')"
+                        />
+
+                        @if ($condicion === \App\Models\PiezaExtraida::CONDICION_REUTILIZADO)
+                            <x-form.select
+                                label="Equipo de origen"
+                                placeholder="¿De cuál equipo salió?"
+                                searchable
+                                :options="$this->equiposOpciones"
+                                wire:model="equipoOrigenId"
+                                :error="$errors->first('equipoOrigenId')"
+                                required
+                            />
+                        @endif
+
+                        <x-form.input
+                            label="Identificador / serial (opcional)"
+                            wire:model="identificador"
+                            placeholder="Déjalo vacío para que se genere uno automático"
+                            hint="{{ $cantidad > 1 ? 'Con más de 1 unidad, cada una recibe su propio identificador automático — este campo se ignora.' : 'Sirve para distinguir esta unidad de otras idénticas (ej. un código propio o de fábrica).' }}"
+                            :error="$errors->first('identificador')"
+                        />
+                    @endif
+
                     @if ($tipo === 'Salida')
                         <div class="flex items-center gap-3">
                             <button type="button" wire:click="$toggle('danado')" role="switch"
