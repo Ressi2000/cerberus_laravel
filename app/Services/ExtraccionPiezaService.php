@@ -189,6 +189,7 @@ class ExtraccionPiezaService
             PiezaExtraida::MOTIVO_BAJA_EQUIPO,
             PiezaExtraida::MOTIVO_SUSTITUCION_REPARACION,
             PiezaExtraida::MOTIVO_DESARME_MANUAL,
+            PiezaExtraida::MOTIVO_SUSTITUCION_PREVENTIVO,
         ], true)) {
             throw new \InvalidArgumentException("Motivo de extracción inválido: {$motivo}");
         }

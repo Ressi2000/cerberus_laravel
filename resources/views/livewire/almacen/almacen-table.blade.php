@@ -111,6 +111,19 @@
                     ])>
                         {{ $componente->stock_actual }}
                     </span>
+
+                    @php
+                        $sinTrazar = max(0, $componente->stock_actual - $componente->nuevas_en_stock - $componente->reutilizadas_en_stock);
+                    @endphp
+                    @if ($componente->nuevas_en_stock > 0 || $componente->reutilizadas_en_stock > 0 || $sinTrazar > 0)
+                        <p class="text-[10px] text-gray-400 dark:text-cerberus-steel mt-1 whitespace-nowrap">
+                            {!! collect([
+                                $componente->nuevas_en_stock > 0 ? '<span class="text-blue-500 dark:text-blue-400">' . $componente->nuevas_en_stock . ' nueva(s)</span>' : null,
+                                $componente->reutilizadas_en_stock > 0 ? '<span class="text-amber-600 dark:text-amber-400">' . $componente->reutilizadas_en_stock . ' reutilizada(s)</span>' : null,
+                                $sinTrazar > 0 ? $sinTrazar . ' sin trazar' : null,
+                            ])->filter()->implode(' · ') !!}
+                        </p>
+                    @endif
                 </td>
 
                 <td class="px-4 py-3">

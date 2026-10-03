@@ -119,7 +119,7 @@
         </div>
     @endif
 
-    {{-- ── Historial de esta reparación ─────────────────────────────────── --}}
+    {{-- ── Historial de piezas de este caso ─────────────────────────────── --}}
     @forelse ($this->historial as $mov)
         <div wire:key="pieza-mov-{{ $mov->id }}" class="flex items-center justify-between py-2.5 {{ ! $loop->last ? 'border-b border-gray-100 dark:border-cerberus-steel/30' : '' }}">
             <div>
@@ -131,6 +131,6 @@
             <span class="text-xs text-gray-400 dark:text-cerberus-steel">{{ $mov->created_at->format('d/m/Y H:i') }}</span>
         </div>
     @empty
-        <p class="text-sm text-gray-400 dark:text-cerberus-steel text-center py-4">No se han retirado ni instalado piezas en esta reparación.</p>
+        <p class="text-sm text-gray-400 dark:text-cerberus-steel text-center py-4">No se han retirado ni instalado piezas en este caso.</p>
     @endforelse
 </div>

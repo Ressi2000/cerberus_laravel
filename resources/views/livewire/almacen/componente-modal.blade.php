@@ -29,19 +29,39 @@
 
                     <x-form.input
                         label="Nombre"
-                        wire:model="nombre"
+                        wire:model.live.400ms="nombre"
                         placeholder="Ej: Memoria RAM 8GB DDR4"
-                        hint="Si ya existe un componente con este nombre en la lista, selecciónalo tal cual en vez de escribir uno parecido — evita duplicados como «RAM» y «RAMM»."
-                        list="componente-nombres-existentes"
                         autocomplete="off"
                         :error="$errors->first('nombre')"
                         required
                     />
-                    <datalist id="componente-nombres-existentes">
-                        @foreach ($this->nombresExistentes as $n)
-                            <option value="{{ $n }}"></option>
-                        @endforeach
-                    </datalist>
+
+                    @if ($this->coincidencias->isNotEmpty())
+                        <div class="-mt-2 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30
+                                    rounded-lg p-3 space-y-2">
+                            <p class="text-xs font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                                <span class="material-icons text-sm">info</span>
+                                Ya existe algo parecido — ¿es esto?
+                            </p>
+                            @foreach ($this->coincidencias as $match)
+                                <div class="flex items-center justify-between gap-3 bg-white dark:bg-cerberus-dark
+                                            border border-gray-200 dark:border-cerberus-steel/50 rounded-lg px-3 py-2">
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $match->nombre }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-cerberus-light">{{ $match->stock_actual }} {{ $match->unidad }} en stock</p>
+                                    </div>
+                                    <button type="button" wire:click="usarExistente({{ $match->id }})"
+                                        class="flex-shrink-0 px-3 py-1.5 text-xs font-medium rounded-lg
+                                               bg-amber-600 hover:bg-amber-700 text-white transition">
+                                        Usar este
+                                    </button>
+                                </div>
+                            @endforeach
+                            <p class="text-xs text-amber-700/80 dark:text-amber-400/70">
+                                Si de verdad es otra cosa, sigue escribiendo y créalo normal.
+                            </p>
+                        </div>
+                    @endif
 
                     <x-form.textarea
                         label="Descripción"

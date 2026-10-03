@@ -4,6 +4,7 @@ namespace App\Livewire\Almacen;
 
 use App\Models\ComponenteAlmacen;
 use App\Models\Empresa;
+use App\Models\PiezaExtraida;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
@@ -109,6 +110,13 @@ class AlmacenTable extends Component
         $this->dispatch('toast', type: 'success', message: "«{$componente->nombre}» reactivado.");
     }
 
+    /**
+     * Cuántas de las unidades en stock de cada componente son nuevas vs
+     * reutilizadas (ver PiezaManualService/ExtraccionPiezaService) — para
+     * que la tabla principal ya diga algo sin tener que entrar a "Ver
+     * piezas en stock" cada vez. Lo que no cuadra con nuevas+reutilizadas
+     * es stock viejo sin trazar (de antes de que existiera esta función).
+     */
     #[Computed]
     public function componentes()
     {
@@ -120,6 +128,14 @@ class AlmacenTable extends Component
                 $q->where('nombre', 'like', "%{$this->search}%")
                   ->orWhere('descripcion', 'like', "%{$this->search}%");
             }))
+            ->withCount([
+                'piezasExtraidas as nuevas_en_stock' => fn ($q) => $q
+                    ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
+                    ->where('condicion', PiezaExtraida::CONDICION_NUEVO),
+                'piezasExtraidas as reutilizadas_en_stock' => fn ($q) => $q
+                    ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
+                    ->where('condicion', PiezaExtraida::CONDICION_REUTILIZADO),
+            ])
             ->orderByDesc('activo')
             ->orderBy('nombre')
             ->paginate(15);

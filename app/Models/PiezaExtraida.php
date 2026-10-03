@@ -63,12 +63,15 @@ class PiezaExtraida extends Model
     const MOTIVO_DESARME_MANUAL         = 'desarme_manual';
     /** Pieza dada de alta a mano en Almacén — no vino de ningún atributo de equipo. */
     const MOTIVO_REGISTRO_MANUAL        = 'registro_manual';
+    /** Retiro/instalación de pieza durante un Preventivo (ej. subir la RAM) — no es una reparación. */
+    const MOTIVO_SUSTITUCION_PREVENTIVO = 'sustitucion_preventivo';
 
     const MOTIVOS = [
         self::MOTIVO_BAJA_EQUIPO            => 'Baja de equipo',
         self::MOTIVO_SUSTITUCION_REPARACION => 'Sustitución en reparación',
         self::MOTIVO_DESARME_MANUAL         => 'Desarme manual (equipo operativo)',
         self::MOTIVO_REGISTRO_MANUAL        => 'Registro manual en Almacén',
+        self::MOTIVO_SUSTITUCION_PREVENTIVO => 'Sustitución/mejora en mantenimiento preventivo',
     ];
 
     // ── Condición de la pieza ────────────────────────────────────────────────
