@@ -6,6 +6,7 @@ use App\Models\CategoriaEquipo;
 use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\PlanMantenimiento;
 use App\Models\TareaMantenimientoCatalogo;
 use App\Models\User;
@@ -141,12 +142,20 @@ class PlanMantenimientoModal extends Component
     }
 
     /**
-     * Ids de equipos que YA están alcanzados por otro plan (misma empresa +
-     * categoría, cualquier departamento) — para no ofrecerlos de nuevo en
-     * "equipos puntuales" y evitar que dos planes choquen por el mismo
-     * equipo. Un plan sin departamento cubre TODOS los departamentos, así
-     * que se compara el alcance real de cada plan (equiposAlcanzados()), no
-     * solo si el departamento_id coincide — ver detectarConflictoEquipos().
+     * Ids de equipos que NO conviene ofrecer en "equipos puntuales" porque
+     * ya están comprometidos — por dos motivos distintos:
+     *
+     *   1. Otro plan (misma empresa+categoría) ya los alcanza — evita que
+     *      dos planes choquen por el mismo equipo (ver
+     *      detectarConflictoEquipos(): un plan sin departamento cubre TODOS
+     *      los departamentos, así que se compara el alcance real de cada
+     *      plan, no solo si el departamento_id coincide).
+     *   2. El equipo ya tiene un caso abierto (Preventivo o Correctivo) de
+     *      CUALQUIER origen — GenerarMantenimientosProgramados jamás va a
+     *      generarle un caso nuevo mientras el actual siga abierto, así que
+     *      no tiene sentido dejarlo elegir y enterarse recién al generar el
+     *      lote. Los casos que pertenecen al plan que se está editando NO
+     *      cuentan acá — son su propio trabajo en curso, no un impedimento.
      */
     #[Computed]
     public function equiposYaCubiertos()
@@ -155,21 +164,32 @@ class PlanMantenimientoModal extends Component
             return collect();
         }
 
-        return PlanMantenimiento::where('empresa_id', $this->empresa_id)
+        $porOtroPlan = PlanMantenimiento::where('empresa_id', $this->empresa_id)
             ->where('categoria_id', $this->categoria_id)
             ->when($this->planId, fn ($q) => $q->where('id', '!=', $this->planId))
             ->get()
-            ->flatMap(fn (PlanMantenimiento $otro) => $otro->equiposAlcanzados()->pluck('id'))
-            ->unique()
-            ->values();
+            ->flatMap(fn (PlanMantenimiento $otro) => $otro->equiposAlcanzados()->pluck('id'));
+
+        $conCasoAbierto = Equipo::where('empresa_id', $this->empresa_id)
+            ->where('categoria_id', $this->categoria_id)
+            ->whereHas('mantenimientos', fn ($q) => $q
+                ->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES)
+                ->when($this->planId, fn ($q2) => $q2->where(fn ($q3) => $q3
+                    ->whereNull('plan_mantenimiento_id')
+                    ->orWhere('plan_mantenimiento_id', '!=', $this->planId)
+                ))
+            )
+            ->pluck('id');
+
+        return $porOtroPlan->merge($conCasoAbierto)->unique()->values();
     }
 
     /**
      * Equipos activos que calzan con empresa+categoría+departamento,
-     * EXCLUYENDO los que ya están cubiertos por otro plan — fuente de la
-     * selección puntual opcional. Si el plan que se está editando ya tenía
-     * alguno de esos equipos (porque es el mismo plan al que pertenecen),
-     * ese no se excluye — "cubierto por otro plan" no incluye a sí mismo.
+     * EXCLUYENDO los que ya están comprometidos (otro plan, o un caso
+     * abierto — ver equiposYaCubiertos()) — fuente de la selección puntual
+     * opcional. Los equipos y casos que pertenecen al plan que se está
+     * editando no se excluyen a sí mismos.
      */
     #[Computed]
     public function equiposDisponibles()
@@ -205,9 +225,9 @@ class PlanMantenimientoModal extends Component
 
     /**
      * De los equipos que calzan con el alcance elegido, cuántos ya están
-     * cubiertos por otro plan (y por eso no aparecen en equiposDisponibles
-     * ni en equiposAlcanzadosCount) — para avisarlo en vez de dejar que la
-     * cuenta "se achique" sin explicación.
+     * comprometidos (otro plan, o un caso abierto) y por eso no aparecen en
+     * equiposDisponibles ni en equiposAlcanzadosCount — para avisarlo en
+     * vez de dejar que la cuenta "se achique" sin explicación.
      */
     #[Computed]
     public function equiposExcluidosCount(): int
