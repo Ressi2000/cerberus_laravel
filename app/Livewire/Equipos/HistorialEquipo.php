@@ -8,6 +8,7 @@ use App\Models\Auditoria;
 use App\Models\AtributoEquipo;
 use App\Models\Equipo;
 use App\Models\Mantenimiento;
+use App\Models\PiezaExtraida;
 use App\Models\PiezaExtraidaMovimiento;
 use App\Models\Prestamo;
 use App\Models\PrestamoItem;
@@ -307,18 +308,43 @@ class HistorialEquipo extends Component
     protected function eventosPiezas(): Collection
     {
         return PiezaExtraidaMovimiento::where('equipo_relacionado_id', $this->equipo->id)
-            ->with(['pieza.atributo', 'registradoPor'])
+            ->with(['pieza.atributo', 'pieza.deposito', 'registradoPor'])
             ->get()
-            ->map(fn($mov) => [
-                'fecha'   => $mov->created_at,
-                'tipo'    => 'pieza',
-                'icono'   => $mov->tipo === PiezaExtraidaMovimiento::TIPO_EXTRACCION ? 'output' : 'input',
-                'color'   => $mov->tipo === PiezaExtraidaMovimiento::TIPO_EXTRACCION ? 'red' : 'green',
-                'titulo'  => $mov->labelTipo() . ': ' . ($mov->pieza?->atributo?->describirValor($mov->pieza->valor_extraido) ?? 'Pieza'),
-                'detalle' => null,
-                'estado'  => null,
-                'usuario' => $mov->registradoPor?->name ?? 'Sistema',
-            ]);
+            ->map(function ($mov) {
+                $pieza         = $mov->pieza;
+                $esExtraccion  = $mov->tipo === PiezaExtraidaMovimiento::TIPO_EXTRACCION;
+
+                // Para la extracción, arma un detalle específico aunque el
+                // analista no haya escrito nada: por qué salió (motivo) y a
+                // dónde fue (Almacén o un Depósito puntual) — así el
+                // historial del equipo deja rastro claro de cada pieza,
+                // incluida la del nuevo flujo "Desarmar" (equipo operativo).
+                $detalle = null;
+                if ($esExtraccion && $pieza) {
+                    $partes   = [];
+                    $partes[] = PiezaExtraida::MOTIVOS[$pieza->motivo] ?? $pieza->motivo;
+                    $partes[] = $pieza->estado === PiezaExtraida::ESTADO_EN_ALMACEN
+                        ? 'destino: Almacén de Componentes'
+                        : 'destino: Depósito ' . ($pieza->deposito?->nombre ?? '—');
+
+                    if ($mov->observaciones) {
+                        $partes[] = $mov->observaciones;
+                    }
+
+                    $detalle = implode(' · ', $partes);
+                }
+
+                return [
+                    'fecha'   => $mov->created_at,
+                    'tipo'    => 'pieza',
+                    'icono'   => $esExtraccion ? 'output' : 'input',
+                    'color'   => $esExtraccion ? 'red' : 'green',
+                    'titulo'  => $mov->labelTipo() . ': ' . ($pieza?->atributo?->describirValor($pieza->valor_extraido) ?? 'Pieza'),
+                    'detalle' => $detalle,
+                    'estado'  => null,
+                    'usuario' => $mov->registradoPor?->name ?? 'Sistema',
+                ];
+            });
     }
 
     /** Cambios en características estáticas del equipo (vía auditoría general). */

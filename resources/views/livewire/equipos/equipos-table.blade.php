@@ -3,6 +3,7 @@
     {{-- ── Modales ─────────────────────────────────────────────────────────── --}}
     @livewire('equipos.equipo-view-modal')
     @livewire('equipos.equipo-delete-modal')
+    @livewire('equipos.equipo-desarmar-modal')
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -335,6 +336,19 @@
                                         Imprimir etiqueta
                                     </a>
                                 </li>
+                                @can('desarmar', $equipo)
+                                    <li>
+                                        <button
+                                            @click="close()"
+                                            wire:click="$dispatch('openEquipoDesarmar', { id: {{ $equipo->id }} })"
+                                            class="flex items-center gap-3 px-4 py-2.5 w-full text-left
+                                                   text-cerberus-light hover:bg-cerberus-steel/20
+                                                   hover:text-amber-400 transition-colors duration-100">
+                                            <span class="material-icons text-base text-amber-500">construction</span>
+                                            Desarmar
+                                        </button>
+                                    </li>
+                                @endcan
                             </x-slot>
                         </x-table.table-actions>
                     </td>

@@ -1,6 +1,7 @@
 <div class="space-y-6">
 
     @livewire('equipos.equipo-delete-modal')
+    @livewire('equipos.equipo-desarmar-modal')
 
     {{-- HEADER DEL EQUIPO --}}
     <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
@@ -19,6 +20,15 @@
             </div>
 
             <div class="flex items-center gap-3">
+                @can('desarmar', $equipo)
+                    <button wire:click="$dispatch('openEquipoDesarmar', { id: {{ $equipo->id }} })"
+                       class="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700
+                              text-white rounded-lg text-sm transition">
+                        <span class="material-icons text-sm">construction</span>
+                        Desarmar
+                    </button>
+                @endcan
+
                 @can('delete', $equipo)
                     @if ($equipo->activo)
                         <button wire:click="$dispatch('openEquipoDelete', { id: {{ $equipo->id }} })"

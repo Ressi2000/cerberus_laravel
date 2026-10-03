@@ -74,6 +74,16 @@ class EquipoPolicy
     }
 
     /**
+     * Desarmar: extraer una pieza reutilizable sin dar de baja el equipo.
+     * El equipo sigue activo después — solo pierde ese atributo puntual.
+     */
+    public function desarmar(User $user, Equipo $equipo): bool
+    {
+        if (! $equipo->activo) return false;
+        return $this->analistaVeEquipo($user, $equipo);
+    }
+
+    /**
      * Eliminación administrativa definitiva (soft delete real / deleted_at).
      * Solo Administrador — cubierto por before(), este método nunca
      * llega a evaluarse para Analista.

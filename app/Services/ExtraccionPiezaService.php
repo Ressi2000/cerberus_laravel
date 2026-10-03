@@ -185,7 +185,11 @@ class ExtraccionPiezaService
             );
         }
 
-        if (! in_array($motivo, [PiezaExtraida::MOTIVO_BAJA_EQUIPO, PiezaExtraida::MOTIVO_SUSTITUCION_REPARACION], true)) {
+        if (! in_array($motivo, [
+            PiezaExtraida::MOTIVO_BAJA_EQUIPO,
+            PiezaExtraida::MOTIVO_SUSTITUCION_REPARACION,
+            PiezaExtraida::MOTIVO_DESARME_MANUAL,
+        ], true)) {
             throw new \InvalidArgumentException("Motivo de extracción inválido: {$motivo}");
         }
 

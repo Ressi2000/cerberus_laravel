@@ -55,12 +55,15 @@ class PiezaExtraida extends Model
     ];
 
     // ── Motivos de extracción ────────────────────────────────────────────────
-    const MOTIVO_BAJA_EQUIPO         = 'baja_equipo';
+    const MOTIVO_BAJA_EQUIPO            = 'baja_equipo';
     const MOTIVO_SUSTITUCION_REPARACION = 'sustitucion_reparacion';
+    /** Pieza sacada de un equipo que sigue activo — no pasó por baja ni por una reparación. */
+    const MOTIVO_DESARME_MANUAL         = 'desarme_manual';
 
     const MOTIVOS = [
         self::MOTIVO_BAJA_EQUIPO            => 'Baja de equipo',
         self::MOTIVO_SUSTITUCION_REPARACION => 'Sustitución en reparación',
+        self::MOTIVO_DESARME_MANUAL         => 'Desarme manual (equipo operativo)',
     ];
 
     // ── Relaciones ────────────────────────────────────────────────────────────
