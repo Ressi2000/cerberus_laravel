@@ -50,7 +50,8 @@ class MantenimientoPolicy
 
     public function delete(User $user, Mantenimiento $mantenimiento): bool
     {
-        return false; // Solo Administrador, vía before()
+        return $user->hasRole('Analista')
+            && $user->empresa_activa_id === $mantenimiento->empresa_id;
     }
 
     /** Aprobar la baja de un equipo sin solución — decisión patrimonial e irreversible. */
