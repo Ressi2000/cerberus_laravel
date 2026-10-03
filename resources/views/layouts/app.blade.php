@@ -106,6 +106,11 @@
     {{-- Recibe eventos 'toast' desde cualquier componente Livewire del sistema --}}
     <livewire:toast-notification />
 
+    {{-- ── Modal de confirmación global ──────────────────────────────────── --}}
+    {{-- Recibe el evento 'confirmar' desde cualquier componente Livewire del
+         sistema y reemplaza window.confirm() nativo (ver App\Livewire\Ui\ConfirmModal). --}}
+    <livewire:ui.confirm-modal />
+
     <script>
         // Activar transiciones sólo después de que Alpine esté listo
         document.addEventListener('alpine:initialized', function () {

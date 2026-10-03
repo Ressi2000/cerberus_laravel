@@ -103,8 +103,13 @@
                             <span class="material-icons text-base">check</span>
                         </button>
                     @endif
-                    <button wire:click="deleteNotification('{{ $notif->id }}')"
-                            wire:confirm="¿Eliminar esta notificación?"
+                    <button wire:click="$dispatch('confirmar', {
+                                titulo: 'Eliminar notificación',
+                                mensaje: '¿Eliminar esta notificación?',
+                                accionEvento: 'notificacionEliminarConfirmado',
+                                accionParams: ['{{ $notif->id }}'],
+                                confirmLabel: 'Eliminar',
+                            })"
                             class="p-1.5 rounded-lg text-cerberus-accent hover:text-red-400 hover:bg-cerberus-mid transition-colors"
                             title="Eliminar">
                         <span class="material-icons text-base">delete_outline</span>

@@ -92,6 +92,7 @@ class AlmacenTable extends Component
         return (int) ComponenteAlmacen::visiblePara(Auth::user())->activos()->sum('stock_actual');
     }
 
+    #[On('componenteDesactivarConfirmado')]
     public function desactivar(int $id): void
     {
         $componente = ComponenteAlmacen::findOrFail($id);

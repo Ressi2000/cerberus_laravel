@@ -26,6 +26,7 @@ class DepositosTable extends Component
         //
     }
 
+    #[On('depositoReactivarConfirmado')]
     public function reactivar(int $id): void
     {
         $deposito = Deposito::findOrFail($id);
@@ -34,6 +35,7 @@ class DepositosTable extends Component
         $this->dispatch('toast', type: 'success', message: "Depósito «{$deposito->nombre}» reactivado.");
     }
 
+    #[On('depositoDesactivarConfirmado')]
     public function desactivar(int $id): void
     {
         $deposito = Deposito::findOrFail($id);

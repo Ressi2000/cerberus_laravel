@@ -24,6 +24,7 @@ class TareasMantenimientoTable extends Component
         //
     }
 
+    #[On('tareaReactivarConfirmado')]
     public function reactivar(int $id): void
     {
         $tarea = TareaMantenimientoCatalogo::findOrFail($id);
@@ -32,6 +33,7 @@ class TareasMantenimientoTable extends Component
         $this->dispatch('toast', type: 'success', message: "Tarea «{$tarea->nombre}» reactivada.");
     }
 
+    #[On('tareaDesactivarConfirmado')]
     public function desactivar(int $id): void
     {
         $tarea = TareaMantenimientoCatalogo::findOrFail($id);

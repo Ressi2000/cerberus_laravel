@@ -137,8 +137,14 @@
                         <x-table.table-actions :model="$tipo">
                             <x-slot name="acciones">
                                 <li>
-                                    <button wire:click="$dispatch('reactivarLicenciaMicrosoft', { id: {{ $tipo->id }} })"
-                                            wire:confirm="¿Reactivar el tipo de licencia «{{ $tipo->nombre }}»?"
+                                    <button wire:click="$dispatch('confirmar', {
+                                                titulo: 'Reactivar tipo de licencia',
+                                                mensaje: '¿Reactivar el tipo de licencia «{{ $tipo->nombre }}»?',
+                                                accionEvento: 'reactivarLicenciaMicrosoft',
+                                                accionParams: [{{ $tipo->id }}],
+                                                variant: 'primary',
+                                                confirmLabel: 'Reactivar',
+                                            })"
                                             @click="close()"
                                             class="flex items-center gap-3 px-4 py-2.5 w-full
                                                    text-gray-600 dark:text-cerberus-light

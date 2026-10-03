@@ -370,7 +370,12 @@
                     @endif
 
                     @if ($m->esPreventivo() && in_array($m->estado, ['Programado', 'En proceso']))
-                        <button wire:click="cancelar" wire:confirm="¿Cancelar este mantenimiento?" class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white transition flex items-center gap-1.5">
+                        <button wire:click="$dispatch('confirmar', {
+                                titulo: 'Cancelar mantenimiento',
+                                mensaje: '¿Cancelar este mantenimiento?',
+                                accionEvento: 'casoCancelarConfirmado',
+                                confirmLabel: 'Cancelar caso',
+                            })" class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white transition flex items-center gap-1.5">
                             <span class="material-icons text-sm">cancel</span> Cancelar
                         </button>
                     @endif
@@ -406,8 +411,11 @@
             <p class="text-sm text-gray-500 dark:text-cerberus-light">
                 Eliminar este caso lo quita de los listados (queda guardado para auditoría). Si estaba bloqueando el equipo, lo libera.
             </p>
-            <button wire:click="eliminar"
-                wire:confirm="¿Eliminar este caso? El equipo quedará liberado si estaba bloqueado por este caso."
+            <button wire:click="$dispatch('confirmar', {
+                    titulo: 'Eliminar caso',
+                    mensaje: '¿Eliminar este caso? El equipo quedará liberado si estaba bloqueado por este caso.',
+                    accionEvento: 'casoEliminarConfirmado',
+                })"
                 class="px-4 py-2 text-sm rounded-lg bg-red-600/10 hover:bg-red-600/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-700/40 transition flex items-center gap-1.5 flex-shrink-0">
                 <span class="material-icons text-sm">delete</span> Eliminar caso
             </button>

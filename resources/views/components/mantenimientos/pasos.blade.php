@@ -41,8 +41,14 @@
                         @if ($accionReabrir)
                             wire:click="abrirReabrir"
                         @elseif ($accionRetroceder)
-                            wire:click="retroceder('{{ $paso }}')"
-                            wire:confirm="¿Volver el caso a «{{ $paso }}»? Lo que ya quedó registrado no se borra."
+                            wire:click="$dispatch('confirmar', {
+                                titulo: 'Volver de paso',
+                                mensaje: '¿Volver el caso a «{{ $paso }}»? Lo que ya quedó registrado no se borra.',
+                                accionEvento: 'casoRetrocederConfirmado',
+                                accionParams: ['{{ $paso }}'],
+                                variant: 'warning',
+                                confirmLabel: 'Volver',
+                            })"
                         @endif
                         @unless ($esClicable) disabled @endunless
                         title="{{ $esClicable ? ($accionReabrir ? 'Reabrir caso' : "Volver a «{$paso}»") : $paso }}"

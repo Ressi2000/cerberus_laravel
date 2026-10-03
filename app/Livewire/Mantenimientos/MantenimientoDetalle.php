@@ -183,6 +183,7 @@ class MantenimientoDetalle extends Component
         $this->refrescar();
     }
 
+    #[On('casoCancelarConfirmado')]
     public function cancelar(): void
     {
         $m = $this->mantenimiento;
@@ -238,6 +239,7 @@ class MantenimientoDetalle extends Component
 
     // ── Retroceder a un estado anterior (clic directo en un paso del stepper) ──
 
+    #[On('casoRetrocederConfirmado')]
     public function retroceder(string $estado): void
     {
         $m = $this->mantenimiento;
@@ -254,6 +256,7 @@ class MantenimientoDetalle extends Component
 
     // ── Eliminar caso (Administrador) ────────────────────────────────────────
 
+    #[On('casoEliminarConfirmado')]
     public function eliminar(): void
     {
         $m = $this->mantenimiento;

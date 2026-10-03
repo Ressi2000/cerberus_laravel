@@ -126,6 +126,7 @@ class LoteDetalle extends Component
             : [];
     }
 
+    #[On('loteAvanzarConfirmado')]
     public function avanzarSeleccionados(): void
     {
         $ids = array_intersect($this->seleccionados, array_map('strval', $this->idsProgramados));
@@ -151,6 +152,7 @@ class LoteDetalle extends Component
         $this->refrescar();
     }
 
+    #[On('loteCompletarConfirmado')]
     public function completarSeleccionados(): void
     {
         $ids = array_intersect($this->seleccionados, array_map('strval', $this->idsEnProceso));

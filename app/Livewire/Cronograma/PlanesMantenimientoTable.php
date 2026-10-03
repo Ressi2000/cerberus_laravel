@@ -49,6 +49,7 @@ class PlanesMantenimientoTable extends Component
      * Borra el plan (soft delete) — deja de generar lotes nuevos. Los casos
      * ya generados no se tocan: siguen existiendo y se procesan igual.
      */
+    #[On('planEliminarConfirmado')]
     public function eliminar(int $id): void
     {
         try {

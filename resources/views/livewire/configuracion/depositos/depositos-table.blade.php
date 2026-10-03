@@ -86,8 +86,13 @@
                                     </a>
                                 </li>
                                 <li>
-                                    <button wire:click="desactivar({{ $deposito->id }})"
-                                            wire:confirm="¿Desactivar el depósito «{{ $deposito->nombre }}»?"
+                                    <button wire:click="$dispatch('confirmar', {
+                                                titulo: 'Desactivar depósito',
+                                                mensaje: '¿Desactivar el depósito «{{ $deposito->nombre }}»?',
+                                                accionEvento: 'depositoDesactivarConfirmado',
+                                                accionParams: [{{ $deposito->id }}],
+                                                confirmLabel: 'Desactivar',
+                                            })"
                                             @click="close()"
                                             class="flex items-center gap-3 px-4 py-2.5 w-full
                                                    text-gray-600 dark:text-cerberus-light
@@ -101,8 +106,14 @@
                             </x-slot>
                         </x-table.table-actions>
                     @else
-                        <button wire:click="reactivar({{ $deposito->id }})"
-                                wire:confirm="¿Reactivar el depósito «{{ $deposito->nombre }}»?"
+                        <button wire:click="$dispatch('confirmar', {
+                                    titulo: 'Reactivar depósito',
+                                    mensaje: '¿Reactivar el depósito «{{ $deposito->nombre }}»?',
+                                    accionEvento: 'depositoReactivarConfirmado',
+                                    accionParams: [{{ $deposito->id }}],
+                                    variant: 'primary',
+                                    confirmLabel: 'Reactivar',
+                                })"
                                 class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium
                                        bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400
                                        border border-green-200 dark:border-green-500/30">

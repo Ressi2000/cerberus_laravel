@@ -174,8 +174,12 @@
                                 <li>
                                     <button
                                         @click="close()"
-                                        wire:click="eliminar({{ $plan->id }})"
-                                        wire:confirm="¿Eliminar el plan de «{{ $plan->categoria->nombre }} — {{ $plan->empresa->nombre }}»? Los casos ya generados no se ven afectados, pero no se generarán lotes nuevos."
+                                        wire:click="$dispatch('confirmar', {
+                                            titulo: 'Eliminar plan',
+                                            mensaje: '¿Eliminar el plan de «{{ $plan->categoria->nombre }} — {{ $plan->empresa->nombre }}»? Los casos ya generados no se ven afectados, pero no se generarán lotes nuevos.',
+                                            accionEvento: 'planEliminarConfirmado',
+                                            accionParams: [{{ $plan->id }}],
+                                        })"
                                         class="flex items-center gap-3 px-4 py-2.5 w-full text-left
                                                text-red-600 dark:text-red-400
                                                hover:bg-red-50 dark:hover:bg-red-500/10

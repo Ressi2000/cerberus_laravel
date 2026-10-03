@@ -65,8 +65,13 @@
                         <x-table.table-actions :model="$tarea" editEvent="openTareaEditar">
                             <x-slot name="acciones">
                                 <li>
-                                    <button wire:click="desactivar({{ $tarea->id }})"
-                                            wire:confirm="¿Desactivar la tarea «{{ $tarea->nombre }}»?"
+                                    <button wire:click="$dispatch('confirmar', {
+                                                titulo: 'Desactivar tarea',
+                                                mensaje: '¿Desactivar la tarea «{{ $tarea->nombre }}»?',
+                                                accionEvento: 'tareaDesactivarConfirmado',
+                                                accionParams: [{{ $tarea->id }}],
+                                                confirmLabel: 'Desactivar',
+                                            })"
                                             @click="close()"
                                             class="flex items-center gap-3 px-4 py-2.5 w-full
                                                    text-gray-600 dark:text-cerberus-light
@@ -80,8 +85,14 @@
                             </x-slot>
                         </x-table.table-actions>
                     @else
-                        <button wire:click="reactivar({{ $tarea->id }})"
-                                wire:confirm="¿Reactivar la tarea «{{ $tarea->nombre }}»?"
+                        <button wire:click="$dispatch('confirmar', {
+                                    titulo: 'Reactivar tarea',
+                                    mensaje: '¿Reactivar la tarea «{{ $tarea->nombre }}»?',
+                                    accionEvento: 'tareaReactivarConfirmado',
+                                    accionParams: [{{ $tarea->id }}],
+                                    variant: 'primary',
+                                    confirmLabel: 'Reactivar',
+                                })"
                                 class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium
                                        bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400
                                        border border-green-200 dark:border-green-500/30">

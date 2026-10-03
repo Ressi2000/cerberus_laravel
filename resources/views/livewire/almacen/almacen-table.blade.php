@@ -148,8 +148,13 @@
                                     <div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div>
                                 </li>
                                 <li>
-                                    <button wire:click="desactivar({{ $componente->id }})"
-                                            wire:confirm="¿Desactivar «{{ $componente->nombre }}»? Ya no se podrá usar en nuevos mantenimientos."
+                                    <button wire:click="$dispatch('confirmar', {
+                                                titulo: 'Desactivar componente',
+                                                mensaje: '¿Desactivar «{{ $componente->nombre }}»? Ya no se podrá usar en nuevos mantenimientos.',
+                                                accionEvento: 'componenteDesactivarConfirmado',
+                                                accionParams: [{{ $componente->id }}],
+                                                confirmLabel: 'Desactivar',
+                                            })"
                                             @click="close()"
                                             class="flex items-center gap-3 px-4 py-2.5 w-full text-left
                                                    text-red-600 dark:text-red-400

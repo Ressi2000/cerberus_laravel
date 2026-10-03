@@ -179,8 +179,12 @@
                     {{-- Desvincular (solo si tiene padre actualmente) --}}
                     <div>
                         @if ($item->padre)
-                            <button wire:click="desvincular"
-                                    wire:confirm="¿Desvincular este periférico de su equipo actual? Quedará como equipo independiente."
+                            <button wire:click="$dispatch('confirmar', {
+                                        titulo: 'Desvincular periférico',
+                                        mensaje: '¿Desvincular este periférico de su equipo actual? Quedará como equipo independiente.',
+                                        accionEvento: 'perifericoDesvincularConfirmado',
+                                        confirmLabel: 'Desvincular',
+                                    })"
                                     class="flex items-center gap-1.5 px-4 py-2 rounded-lg
                                            text-sm text-yellow-300 border border-yellow-500/40
                                            hover:bg-yellow-500/10 transition">

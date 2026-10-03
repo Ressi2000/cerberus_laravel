@@ -102,14 +102,24 @@
 
             <div class="flex-1"></div>
 
-            <button wire:click="avanzarSeleccionados"
-                wire:confirm="¿Avanzar los casos «Programado» seleccionados a «En proceso»? Esto bloquea sus equipos."
+            <button wire:click="$dispatch('confirmar', {
+                    titulo: 'Avanzar casos',
+                    mensaje: '¿Avanzar los casos «Programado» seleccionados a «En proceso»? Esto bloquea sus equipos.',
+                    accionEvento: 'loteAvanzarConfirmado',
+                    variant: 'primary',
+                    confirmLabel: 'Avanzar',
+                })"
                 class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition flex items-center gap-1.5">
                 <span class="material-icons text-sm">arrow_forward</span> Avanzar seleccionados
             </button>
 
-            <button wire:click="completarSeleccionados"
-                wire:confirm="¿Completar los casos «En proceso» seleccionados? Esto libera sus equipos."
+            <button wire:click="$dispatch('confirmar', {
+                    titulo: 'Completar casos',
+                    mensaje: '¿Completar los casos «En proceso» seleccionados? Esto libera sus equipos.',
+                    accionEvento: 'loteCompletarConfirmado',
+                    variant: 'primary',
+                    confirmLabel: 'Completar',
+                })"
                 class="px-3 py-1.5 text-sm rounded-lg bg-green-600 hover:bg-green-700 text-white transition flex items-center gap-1.5">
                 <span class="material-icons text-sm">check_circle</span> Completar seleccionados
             </button>
