@@ -70,13 +70,21 @@ class MantenimientoPiezasPanel extends Component
             ->toArray();
     }
 
+    /**
+     * Varias piezas en Almacén pueden tener exactamente la misma descripción
+     * (ej. dos "RAM (8GB)" de equipos distintos) — sin más contexto, el
+     * selector sería indistinguible. Se agrega de qué equipo vino y cuándo
+     * se extrajo para que cada opción sea identificable por sí sola.
+     */
     #[Computed]
     public function piezasDisponibles(): array
     {
         return app(SustitucionPiezaService::class)->piezasDisponibles($this->mantenimiento->equipo)
             ->map(fn (PiezaExtraida $p) => [
                 'id'          => $p->id,
-                'descripcion' => $p->atributo->describirValor($p->valor_extraido),
+                'descripcion' => $p->atributo->describirValor($p->valor_extraido)
+                    . ' — de ' . ($p->equipoOrigen->codigo_interno ?? 'equipo #' . $p->equipo_origen_id)
+                    . ' (' . $p->created_at->format('d/m/Y') . ')',
                 'es_grupo'    => $p->atributo->esGrupo(),
             ])
             ->values()

@@ -3,6 +3,7 @@
     {{-- ── Modales ─────────────────────────────────────────────────────────── --}}
     @livewire('almacen.componente-modal')
     @livewire('almacen.movimiento-stock-modal')
+    @livewire('almacen.componente-piezas-modal')
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -131,6 +132,20 @@
                 <td class="px-4 py-3 text-center">
                     <x-table.table-actions :model="$componente" editEvent="openComponenteEditar">
                         <x-slot name="acciones">
+                            @if ($componente->stock_actual > 0)
+                                <li>
+                                    <button wire:click="$dispatch('openComponentePiezas', { componenteId: {{ $componente->id }} })"
+                                            @click="close()"
+                                            class="flex items-center gap-3 px-4 py-2.5 w-full
+                                                   text-gray-600 dark:text-cerberus-light
+                                                   hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                                   hover:text-cerberus-primary dark:hover:text-cerberus-accent
+                                                   transition-colors duration-100">
+                                        <span class="material-icons text-base text-cerberus-accent">fact_check</span>
+                                        Ver piezas en stock
+                                    </button>
+                                </li>
+                            @endif
                             <li>
                                 <button wire:click="$dispatch('openMovimientoStock', { componenteId: {{ $componente->id }} })"
                                         @click="close()"

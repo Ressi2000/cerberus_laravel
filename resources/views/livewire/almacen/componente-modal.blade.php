@@ -31,9 +31,17 @@
                         label="Nombre"
                         wire:model="nombre"
                         placeholder="Ej: Memoria RAM 8GB DDR4"
+                        hint="Si ya existe un componente con este nombre en la lista, selecciónalo tal cual en vez de escribir uno parecido — evita duplicados como «RAM» y «RAMM»."
+                        list="componente-nombres-existentes"
+                        autocomplete="off"
                         :error="$errors->first('nombre')"
                         required
                     />
+                    <datalist id="componente-nombres-existentes">
+                        @foreach ($this->nombresExistentes as $n)
+                            <option value="{{ $n }}"></option>
+                        @endforeach
+                    </datalist>
 
                     <x-form.textarea
                         label="Descripción"

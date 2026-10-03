@@ -46,6 +46,25 @@ class ComponenteModal extends Component
         $this->open = true;
     }
 
+    /**
+     * Nombres ya usados en esta empresa — alimenta el <datalist> del campo
+     * "nombre" para que, al escribir "RAM", el analista vea que ya existe
+     * "RAM (8GB)" y lo reuse en vez de crear un duplicado por un typo
+     * ("RAMM", "Ram", etc.). No bloquea nombres nuevos, solo los sugiere.
+     */
+    #[Computed]
+    public function nombresExistentes()
+    {
+        if (! $this->empresa_id) {
+            return collect();
+        }
+
+        return ComponenteAlmacen::where('empresa_id', $this->empresa_id)
+            ->when($this->componenteId, fn ($q) => $q->where('id', '!=', $this->componenteId))
+            ->orderBy('nombre')
+            ->pluck('nombre');
+    }
+
     #[Computed]
     public function empresasOpciones()
     {

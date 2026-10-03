@@ -48,7 +48,7 @@ class SustitucionPiezaService
      */
     public function piezasDisponibles(Equipo $equipoDestino): Collection
     {
-        return PiezaExtraida::with('atributo')
+        return PiezaExtraida::with(['atributo', 'equipoOrigen'])
             ->where('empresa_id', $equipoDestino->empresa_id)
             ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
             ->whereHas('atributo', fn ($q) => $q->where('categoria_id', $equipoDestino->categoria_id))
