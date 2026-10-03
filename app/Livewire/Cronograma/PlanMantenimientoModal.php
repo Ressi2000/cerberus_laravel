@@ -350,22 +350,17 @@ class PlanMantenimientoModal extends Component
             } else {
                 $this->authorize('create', PlanMantenimiento::class);
 
-                // Si había un plan eliminado para esta misma categoría/empresa/
-                // departamento, se reactiva con los datos nuevos en vez de
-                // chocar con el unique de la base de datos.
-                $eliminado = PlanMantenimiento::onlyTrashed()
-                    ->where('empresa_id', $this->empresa_id)
-                    ->where('categoria_id', $this->categoria_id)
-                    ->where('departamento_id', $this->departamento_id ?: null)
-                    ->first();
-
-                if ($eliminado) {
-                    $eliminado->restore();
-                    $eliminado->update(array_merge($data, ['activo' => true]));
-                    $plan = $eliminado;
-                } else {
-                    $plan = PlanMantenimiento::create(array_merge($data, ['activo' => true, 'creado_por' => Auth::id()]));
-                }
+                // Siempre un plan nuevo, con su propio id. Antes, si había un
+                // plan eliminado para esta misma categoría/empresa/
+                // departamento, se reactivaba en silencio reutilizando su
+                // fila — eso era necesario para no chocar con el unique que
+                // existía en la base de datos. Ese unique ya no existe
+                // (varios planes pueden compartir categoría/empresa/
+                // departamento, ver detectarConflictoEquipos()), así que
+                // reactivar ya no hace falta y además mezclaba el historial
+                // de casos del plan eliminado con el plan "nuevo" sin que el
+                // usuario se enterara.
+                $plan = PlanMantenimiento::create(array_merge($data, ['activo' => true, 'creado_por' => Auth::id()]));
 
                 $msg = 'Plan de mantenimiento creado.';
             }
