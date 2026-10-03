@@ -22,7 +22,7 @@
                         label="Empresa"
                         placeholder="Selecciona una empresa"
                         :options="$this->empresasOpciones"
-                        wire:model="empresa_id"
+                        wire:model.live="empresa_id"
                         :error="$errors->first('empresa_id')"
                         required
                     />
