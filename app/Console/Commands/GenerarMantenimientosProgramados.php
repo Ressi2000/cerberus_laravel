@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Equipo;
 use App\Models\Mantenimiento;
 use App\Models\PlanMantenimiento;
 use Illuminate\Console\Command;
@@ -42,13 +43,31 @@ class GenerarMantenimientosProgramados extends Command
                 return;
             }
 
-            $equipos = $plan->equiposAlcanzados()
-                ->whereDoesntHave('mantenimientos', fn ($q) => $q->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES))
-                ->get();
+            $todosEnAlcance = $plan->equiposAlcanzados()->get();
+
+            if ($todosEnAlcance->isEmpty()) {
+                $this->warn("  → {$nombre}: no se generó nada — no hay equipos activos en este alcance (revisa la categoría/departamento o los equipos puntuales elegidos).");
+                return;
+            }
+
+            $equipos = $todosEnAlcance->filter(
+                fn (Equipo $equipo) => ! $equipo->mantenimientos()->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES)->exists()
+            );
 
             if ($equipos->isEmpty()) {
-                $this->warn("  → {$nombre}: no se generó nada — no hay equipos disponibles en este alcance (o todos ya tienen un caso abierto).");
+                $this->warn("  → {$nombre}: no se generó nada — los {$todosEnAlcance->count()} equipo(s) de este alcance ya tienen un caso abierto:");
+
+                foreach ($todosEnAlcance as $equipo) {
+                    $abierto = $equipo->mantenimientos()->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES)->first();
+                    $this->line("      · {$equipo->codigo_interno}: caso #{$abierto?->id} ({$abierto?->tipo}, {$abierto?->estado})");
+                }
+
                 return;
+            }
+
+            if ($equipos->count() < $todosEnAlcance->count()) {
+                $omitidos = $todosEnAlcance->count() - $equipos->count();
+                $this->line("  → {$nombre}: {$omitidos} equipo(s) de este alcance ya tenían un caso abierto y se omiten de este lote.");
             }
 
             $checklist = collect($plan->checklist_plantilla ?: [])
