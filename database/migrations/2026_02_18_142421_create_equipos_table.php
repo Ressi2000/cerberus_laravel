@@ -1,40 +1,21 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Duplicado muerto de create_equipos_table (2026_02_18_141629), con un
+     * subconjunto de columnas de esa misma tabla y sin ningún drop entre
+     * medio — en un migrate desde cero fallaba con "table already exists",
+     * mismo bug ya visto en create_users_table/create_cargos_table/
+     * create_departamentos_table. Acá no hay ninguna columna extra que
+     * rescatar (la versión 141629 ya las tiene todas), así que queda vacía
+     * en vez de convertirse en alter.
      */
     public function up(): void
     {
-        Schema::create('equipos', function (Blueprint $table) {
-            $table->id();
-
-            $table->foreignId('empresa_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('categoria_id')->constrained('categorias_equipos');
-            $table->foreignId('estado_id')->constrained('estados_equipos');
-            $table->foreignId('ubicacion_id')->nullable()->constrained('ubicaciones');
-
-            $table->string('codigo_interno')->unique();
-            $table->string('serial')->nullable()->unique();
-            $table->string('nombre_maquina')->nullable();
-
-            $table->date('fecha_adquisicion')->nullable();
-            $table->date('fecha_garantia_fin')->nullable();
-
-            $table->boolean('activo')->default(true);
-
-            $table->text('observaciones')->nullable();
-
-            $table->timestamps();
-            $table->softDeletes();
-
-            $table->index(['empresa_id', 'estado_id']);
-        });
+        //
     }
 
     /**
@@ -42,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('equipos');
+        //
     }
 };
