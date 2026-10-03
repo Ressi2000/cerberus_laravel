@@ -255,14 +255,14 @@
                  para que el texto blanco quede legible sobre cualquier imagen -->
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                 @foreach ([
-                    ['C', '🎛️', 'Control', 'Gestión centralizada y absoluta de todos los activos tecnológicos en un entorno unificado y seguro.', 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=900&q=70'],
-                    ['E', '⚡', 'Eficiencia', 'Optimización de procesos operativos diarios como asignaciones, préstamos y traslados de equipos.', 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=70'],
-                    ['R', '🛡️', 'Roles', 'Seguridad avanzada y acceso diferenciado según los permisos y perfiles específicos de los usuarios.', 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=900&q=70'],
-                    ['B', '🏢', 'Business (Multiempresa)', 'Capacidad corporativa de administrar múltiples organizaciones o divisiones desde una sola plataforma.', 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=900&q=70'],
-                    ['E', '🔧', 'Evolución', 'Adaptabilidad y flexibilidad total gracias a atributos dinámicos que se ajustan a cada necesidad.', 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=70'],
-                    ['R', '📡', 'Rastreo (Trazabilidad Total)', 'Seguimiento detallado del ciclo de vida completo de cada activo tecnológico registrado.', 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=70'],
-                    ['U', '📊', 'Unificación', 'Integración de reportes y auditorías con capacidad de exportación directa a Excel y PDF.', 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=900&q=70'],
-                    ['S', '🔒', 'Seguridad', 'Transparencia, protección de datos y cumplimiento normativo riguroso en cada movimiento.', 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=900&q=70'],
+                    ['C', '🎛️', 'Control', 'Gestión centralizada y absoluta de todos los activos tecnológicos en un entorno unificado y seguro.', asset('images/siglas/control.jpg')],
+                    ['E', '⚡', 'Eficiencia', 'Optimización de procesos operativos diarios como asignaciones, préstamos y traslados de equipos.', asset('images/siglas/eficiencia.jpg')],
+                    ['R', '🛡️', 'Roles', 'Seguridad avanzada y acceso diferenciado según los permisos y perfiles específicos de los usuarios.', asset('images/siglas/roles.jpg')],
+                    ['B', '🏢', 'Business (Multiempresa)', 'Capacidad corporativa de administrar múltiples organizaciones o divisiones desde una sola plataforma.', asset('images/siglas/business.jpg')],
+                    ['E', '🔧', 'Evolución', 'Adaptabilidad y flexibilidad total gracias a atributos dinámicos que se ajustan a cada necesidad.', asset('images/siglas/evolucion.jpg')],
+                    ['R', '📡', 'Rastreo (Trazabilidad Total)', 'Seguimiento detallado del ciclo de vida completo de cada activo tecnológico registrado.', asset('images/siglas/rastreo.jpg')],
+                    ['U', '📊', 'Unificación', 'Integración de reportes y auditorías con capacidad de exportación directa a Excel y PDF.', asset('images/siglas/unificacion.jpg')],
+                    ['S', '🔒', 'Seguridad', 'Transparencia, protección de datos y cumplimiento normativo riguroso en cada movimiento.', asset('images/siglas/seguridad.jpg')],
                 ] as [$letra, $icono, $titulo, $desc, $imagen])
                     <div class="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10
                                 hover:border-cerberus-primary/40 dark:hover:border-[#A9D6E5]/40 transition-all duration-500
