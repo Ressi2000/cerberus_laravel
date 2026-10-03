@@ -145,6 +145,9 @@
                                 <span class="material-icons text-sm align-middle mr-1">event_repeat</span>
                                 @if ($planDelGrupo)
                                     Plan: {{ $planDelGrupo->categoria->nombre ?? '—' }} — {{ $planDelGrupo->empresa->nombre ?? '—' }}
+                                    @if ($planDelGrupo->trashed())
+                                        <span class="font-normal normal-case text-red-400">(plan eliminado)</span>
+                                    @endif
                                     <span class="font-normal normal-case text-gray-400">({{ $casosDelPlan->count() }})</span>
                                     <a href="{{ route('admin.cronograma.lotes.show', $planDelGrupo) }}"
                                        @click.stop
@@ -152,7 +155,10 @@
                                         Ver lote →
                                     </a>
                                 @else
-                                    Plan #{{ $planId }} (eliminado)
+                                    {{-- No debería pasar nunca con planMantenimiento() ya trayendo
+                                         trashed, salvo que el plan haya sido borrado en serio
+                                         (forceDelete) — se deja como respaldo defensivo. --}}
+                                    Plan #{{ $planId }} (ya no existe)
                                     <span class="font-normal normal-case text-gray-400">({{ $casosDelPlan->count() }})</span>
                                 @endif
                             </td>

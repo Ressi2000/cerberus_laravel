@@ -141,9 +141,17 @@ class Mantenimiento extends Model
     }
 
     /** Plan de mantenimiento del que nació este caso, si fue generado automáticamente. */
+    /**
+     * withTrashed(): un plan eliminado sigue siendo el origen real de este
+     * caso — LoteDetalle ya permite seguir procesando el historial de un
+     * plan borrado, así que esta relación no debe perderlo solo porque el
+     * plan ya no está activo (ver mantenimientos-table.blade.php, que
+     * agrupa por plan y necesita poder mostrar/enlazar el lote aunque el
+     * plan esté eliminado).
+     */
     public function planMantenimiento()
     {
-        return $this->belongsTo(PlanMantenimiento::class, 'plan_mantenimiento_id');
+        return $this->belongsTo(PlanMantenimiento::class, 'plan_mantenimiento_id')->withTrashed();
     }
 
     public function evidencias()
@@ -487,6 +495,12 @@ class Mantenimiento extends Model
             }
 
             $this->delete();
+
+            // Si este caso era el último pendiente del lote de su plan, con
+            // él borrado el lote puede haber quedado completo — igual que
+            // hacen completar()/cancelar(), hay que revisarlo para que el
+            // plan no se quede esperando para siempre.
+            $this->planMantenimiento?->avanzarSiLoteCompleto();
         });
     }
 
