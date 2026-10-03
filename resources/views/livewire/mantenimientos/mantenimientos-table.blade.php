@@ -104,11 +104,12 @@
 
     {{-- ── TABLA ───────────────────────────────────────────────────────────── --}}
     <x-table.crud-table
-        :headers="['Equipo', 'Empresa', 'Tipo', 'Estado', 'Responsable', 'Inicio', 'Acciones']"
+        :headers="['Caso', 'Equipo', 'Empresa', 'Tipo', 'Estado', 'Responsable', 'Inicio', 'Acciones']"
         :paginated="$this->mantenimientos">
 
         @forelse ($this->mantenimientos as $m)
             <tr wire:key="mant-{{ $m->id }}" class="border-b border-gray-100 dark:border-cerberus-steel/30 hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
+                <td class="px-4 py-3 text-gray-400 dark:text-cerberus-steel text-sm font-mono">#{{ $m->id }}</td>
                 <td class="px-4 py-3">
                     <p class="text-[#1E293B] dark:text-white font-medium text-sm">{{ $m->equipo->codigo_interno ?? '—' }}</p>
                     <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $m->equipo->categoria->nombre ?? '—' }}</p>

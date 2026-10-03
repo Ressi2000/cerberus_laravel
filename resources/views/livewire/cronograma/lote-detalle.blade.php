@@ -123,9 +123,13 @@
             </div>
         @else
         {{-- ── TABLA DE CASOS DEL LOTE ─────────────────────────────────────────── --}}
-        <x-table.crud-table :headers="['', 'Equipo', 'Estado', 'Checklist', '', 'Acciones']" :paginated="null">
+        <x-table.crud-table :headers="['', 'Caso', 'Equipo', 'Estado', 'Checklist', '', 'Acciones']" :paginated="null">
             @foreach ($this->gruposCasos as $nombreGrupo => $casosGrupo)
-                @if ($nombreGrupo !== null)
+                {{-- $agruparPor, no $nombreGrupo: una clave null en el array de
+                     gruposCasos() se vuelve '' sola (PHP no permite claves
+                     null), así que comparar contra null acá nunca detectaba
+                     "sin agrupar" y siempre mostraba un encabezado vacío. --}}
+                @if ($agruparPor !== 'equipo')
                     <tr wire:key="lote-grupo-{{ Str::slug($nombreGrupo) }}" class="bg-gray-50 dark:bg-cerberus-dark/40">
                         <td colspan="6" class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-cerberus-accent">
                             <span class="material-icons text-sm align-middle mr-1">{{ $agruparPor === 'departamento' ? 'apartment' : 'person' }}</span>
@@ -145,6 +149,7 @@
                             <input type="checkbox" wire:model="seleccionados" value="{{ $caso->id }}"
                                 class="rounded border-gray-300 dark:border-cerberus-steel text-cerberus-primary focus:ring-cerberus-primary/30">
                         </td>
+                        <td class="px-4 py-3 text-gray-400 dark:text-cerberus-steel text-sm font-mono">#{{ $caso->id }}</td>
                         <td class="px-4 py-3">
                             <p class="text-[#1E293B] dark:text-white font-medium text-sm font-mono">{{ $caso->equipo->codigo_interno ?? '—' }}</p>
                             <p class="text-gray-500 dark:text-cerberus-light text-xs">{{ $caso->equipo->categoria->nombre ?? '—' }}</p>

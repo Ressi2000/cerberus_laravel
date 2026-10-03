@@ -33,6 +33,7 @@
                 <div>
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">
                         {{ $m->esCorrectivo() ? 'Reparación' : 'Mantenimiento' }} — {{ $m->equipo->codigo_interno ?? '—' }}
+                        <span class="text-gray-400 dark:text-cerberus-steel font-mono text-base font-normal">· Caso #{{ $m->id }}</span>
                     </h2>
                     <p class="text-gray-500 dark:text-cerberus-light text-sm mt-0.5">
                         {{ $m->equipo->categoria->nombre ?? '—' }} · {{ $m->empresa->nombre ?? '—' }}
