@@ -10,7 +10,7 @@
                 <div class="flex items-center justify-between px-6 py-4 flex-shrink-0 border-b border-gray-100 dark:border-cerberus-steel">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <span class="material-icons text-cerberus-accent">{{ $planId ? 'edit' : 'event_repeat' }}</span>
-                        {{ $planId ? 'Editar plan de mantenimiento' : 'Nuevo plan de mantenimiento' }}
+                        {{ $planId ? "Editar plan #{$planId}" : 'Nuevo plan de mantenimiento' }}
                     </h2>
                     <button wire:click="close" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
                         <span class="material-icons">close</span>

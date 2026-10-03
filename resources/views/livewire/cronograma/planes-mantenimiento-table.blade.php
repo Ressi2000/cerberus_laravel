@@ -39,6 +39,8 @@
                     @if (Auth::user()->hasRole('Administrador'))
                         <x-form.select label="Empresa" placeholder="Todas" :options="$this->empresasOpciones" wire:model.live="empresa_id" />
                     @endif
+
+                    <x-form.select label="Departamento" placeholder="Todos" :options="$this->departamentosOpciones" wire:model.live="departamento_id" />
                 </div>
 
                 <div class="flex items-center gap-3 pt-1">
@@ -56,9 +58,33 @@
         </x-slot>
     </x-table.crud-header>
 
+    {{-- ── PESTAÑAS POR ESTADO ─────────────────────────────────────────────── --}}
+    <div class="flex flex-wrap items-center gap-1.5">
+        @php $conteosFecha = $this->conteosPorEstadoFecha; @endphp
+        <button wire:click="$set('estadoFecha', '')"
+            class="px-3 py-1.5 text-sm font-medium rounded-lg border transition
+                   {{ $estadoFecha === ''
+                       ? 'bg-cerberus-primary text-white border-cerberus-primary'
+                       : 'bg-white dark:bg-cerberus-mid text-gray-600 dark:text-cerberus-light border-gray-200 dark:border-cerberus-steel hover:bg-gray-50 dark:hover:bg-cerberus-dark/40' }}">
+            Todos <span class="opacity-70">({{ array_sum($conteosFecha) }})</span>
+        </button>
+
+        @foreach (['vencido' => 'Vencido', 'hoy' => 'Es hoy', 'proximo' => 'Próximo', 'programado' => 'Programado'] as $clave => $etiqueta)
+            @if (($conteosFecha[$clave] ?? 0) > 0 || $estadoFecha === $clave)
+                <button wire:key="tab-estado-fecha-{{ $clave }}" wire:click="$set('estadoFecha', '{{ $clave }}')"
+                    class="px-3 py-1.5 text-sm font-medium rounded-lg border transition
+                           {{ $estadoFecha === $clave
+                               ? 'bg-cerberus-primary text-white border-cerberus-primary'
+                               : 'bg-white dark:bg-cerberus-mid text-gray-600 dark:text-cerberus-light border-gray-200 dark:border-cerberus-steel hover:bg-gray-50 dark:hover:bg-cerberus-dark/40' }}">
+                    {{ $etiqueta }} <span class="opacity-70">({{ $conteosFecha[$clave] ?? 0 }})</span>
+                </button>
+            @endif
+        @endforeach
+    </div>
+
     {{-- ── TABLA ───────────────────────────────────────────────────────────── --}}
     <x-table.crud-table
-        :headers="['Categoría', 'Empresa', 'Frecuencia', 'Próxima fecha', 'Estado', 'Lote actual', 'Acciones']"
+        :headers="['Plan', 'Categoría', 'Empresa', 'Frecuencia', 'Próxima fecha', 'Estado', 'Lote actual', 'Acciones']"
         :paginated="$this->planes">
 
         @forelse ($this->planes as $plan)
@@ -66,6 +92,7 @@
                 class="border-b border-gray-100 dark:border-cerberus-steel/30
                        {{ ! $plan->activo ? 'opacity-60 bg-gray-50 dark:bg-cerberus-dark/30' : '' }}
                        hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
+                <td class="px-4 py-3 text-gray-400 dark:text-cerberus-steel text-sm font-mono">#{{ $plan->id }}</td>
                 <td class="px-4 py-3">
                     <p class="text-[#1E293B] dark:text-white font-medium text-sm">
                         {{ $plan->categoria->nombre ?? '—' }}
@@ -164,7 +191,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-cerberus-steel">
+                <td colspan="8" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-cerberus-steel">
                     No hay planes de mantenimiento todavía.
                 </td>
             </tr>

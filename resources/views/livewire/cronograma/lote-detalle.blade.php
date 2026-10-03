@@ -29,6 +29,7 @@
                 <div>
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white">
                         {{ $plan->categoria->nombre }} — {{ $plan->empresa->nombre }}
+                        <span class="text-gray-400 dark:text-cerberus-steel font-mono text-base font-normal">· Plan #{{ $plan->id }}</span>
                     </h2>
                     <p class="text-gray-500 dark:text-cerberus-light text-sm mt-0.5">
                         Cada {{ $plan->frecuencia_meses }} {{ $plan->frecuencia_meses == 1 ? 'mes' : 'meses' }} ·

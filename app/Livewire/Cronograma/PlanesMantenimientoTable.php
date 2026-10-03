@@ -3,6 +3,7 @@
 namespace App\Livewire\Cronograma;
 
 use App\Models\CategoriaEquipo;
+use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\PlanMantenimiento;
 use Illuminate\Support\Facades\Auth;
@@ -20,8 +21,12 @@ class PlanesMantenimientoTable extends Component
     #[Url(as: 'empresa')]
     public string $empresa_id = '';
 
-    public string $categoria_id     = '';
+    public string $categoria_id      = '';
+    public string $departamento_id   = '';
     public bool   $mostrar_inactivos = false;
+
+    /** '' (todos) | 'vencido' | 'hoy' | 'proximo' | 'programado' — ver queryFiltrada(). */
+    public string $estadoFecha = '';
 
     public function mount(): void
     {
@@ -66,10 +71,16 @@ class PlanesMantenimientoTable extends Component
         if ($property !== 'page') $this->resetPage();
     }
 
+    /** Cambiar la empresa invalida cualquier departamento elegido (pertenece a otra empresa). */
+    public function updatedEmpresaId(): void
+    {
+        $this->departamento_id = '';
+    }
+
     public function resetFilters(): void
     {
         $actor = Auth::user();
-        $this->reset(['categoria_id', 'mostrar_inactivos']);
+        $this->reset(['categoria_id', 'departamento_id', 'mostrar_inactivos', 'estadoFecha']);
         $this->empresa_id = $actor->hasRole('Administrador') ? '' : (string) ($actor->empresa_activa_id ?? '');
         $this->resetPage();
     }
@@ -93,12 +104,22 @@ class PlanesMantenimientoTable extends Component
     }
 
     #[Computed]
+    public function departamentosOpciones()
+    {
+        return Departamento::activos()
+            ->where(fn ($q) => $q->whereNull('empresa_id')->when($this->empresa_id, fn ($q2) => $q2->orWhere('empresa_id', $this->empresa_id)))
+            ->orderBy('nombre')
+            ->pluck('nombre', 'id');
+    }
+
+    #[Computed]
     public function activeFiltersCount(): int
     {
         $actor = Auth::user();
 
         return collect([
             $this->categoria_id !== '',
+            $this->departamento_id !== '',
             $this->mostrar_inactivos,
             $actor->hasRole('Administrador') && $this->empresa_id !== '',
         ])->filter()->count();
@@ -131,14 +152,53 @@ class PlanesMantenimientoTable extends Component
             ->count();
     }
 
-    #[Computed]
-    public function planes()
+    /**
+     * Filtros base compartidos por el listado y por las pestañas de estado:
+     * todo MENOS estadoFecha — así cada pestaña puede mostrar su propio
+     * conteo sin heredar la pestaña actualmente seleccionada.
+     */
+    private function queryFiltrada()
     {
-        return PlanMantenimiento::with(['categoria', 'empresa', 'departamento'])
-            ->visiblePara(Auth::user())
+        return PlanMantenimiento::visiblePara(Auth::user())
             ->when(! $this->mostrar_inactivos, fn ($q) => $q->where('activo', true))
             ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))
             ->when($this->categoria_id, fn ($q) => $q->where('categoria_id', $this->categoria_id))
+            ->when($this->departamento_id, fn ($q) => $q->where('departamento_id', $this->departamento_id));
+    }
+
+    /**
+     * Los mismos 4 estados que ve cada fila (Vencido/Es hoy/Próximo/
+     * Programado — ver PlanMantenimiento::estaVencido()/esHoy()/
+     * estaProximo()), para poder filtrar el listado por pestaña igual que
+     * ya se hace en Mantenimientos.
+     */
+    #[Computed]
+    public function conteosPorEstadoFecha(): array
+    {
+        $hoy  = now()->toDateString();
+        $fin  = now()->addDays(PlanMantenimiento::DIAS_ANTELACION_GENERACION)->toDateString();
+        $base = $this->queryFiltrada();
+
+        return [
+            'vencido'    => (clone $base)->whereDate('fecha_proximo', '<', $hoy)->count(),
+            'hoy'        => (clone $base)->whereDate('fecha_proximo', $hoy)->count(),
+            'proximo'    => (clone $base)->whereDate('fecha_proximo', '>', $hoy)->whereDate('fecha_proximo', '<=', $fin)->count(),
+            'programado' => (clone $base)->whereDate('fecha_proximo', '>', $fin)->count(),
+        ];
+    }
+
+    #[Computed]
+    public function planes()
+    {
+        $hoy = now()->toDateString();
+        $fin = now()->addDays(PlanMantenimiento::DIAS_ANTELACION_GENERACION)->toDateString();
+
+        return $this->queryFiltrada()
+            ->with(['categoria', 'empresa', 'departamento'])
+            ->when($this->estadoFecha === 'vencido', fn ($q) => $q->whereDate('fecha_proximo', '<', $hoy))
+            ->when($this->estadoFecha === 'hoy', fn ($q) => $q->whereDate('fecha_proximo', $hoy))
+            ->when($this->estadoFecha === 'proximo', fn ($q) => $q->whereDate('fecha_proximo', '>', $hoy)->whereDate('fecha_proximo', '<=', $fin))
+            ->when($this->estadoFecha === 'programado', fn ($q) => $q->whereDate('fecha_proximo', '>', $fin))
             ->orderBy('fecha_proximo')
             ->paginate(15);
     }
