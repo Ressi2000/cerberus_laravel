@@ -44,7 +44,9 @@
                     />
 
                     @if ($this->atributoSeleccionado)
-                        @php($atributo = $this->atributoSeleccionado)
+                        @php
+                            $atributo = $this->atributoSeleccionado;
+                        @endphp
 
                         <div class="bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50
                                     rounded-lg p-4 space-y-3">
