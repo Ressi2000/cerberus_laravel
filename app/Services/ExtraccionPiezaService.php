@@ -212,7 +212,7 @@ class ExtraccionPiezaService
 
             $componente = null;
             if ($vaAlmacen) {
-                $componente = $this->bucketDeStock($equipoOrigen, $atributo, $valorExtraido, $actor);
+                $componente = $this->bucketDeStock($equipoOrigen->empresa_id, $atributo, $valorExtraido, $actor);
                 $componente->registrarEntrada(
                     1,
                     $actor,
@@ -262,15 +262,16 @@ class ExtraccionPiezaService
      * Encuentra o crea el bucket de stock en Almacén de Componentes donde
      * cae esta pieza, agrupado por nombre (atributo + valor legible) para
      * que, por ejemplo, "RAM (8GB)" y "RAM (16GB)" no se mezclen en el mismo
-     * stock.
+     * stock. Recibe el empresa_id directo (no un Equipo) porque también lo
+     * usa registrarNueva() para una pieza que nunca estuvo en ningún equipo.
      */
-    private function bucketDeStock(Equipo $equipoOrigen, AtributoEquipo $atributo, array $valorExtraido, User $actor): ComponenteAlmacen
+    private function bucketDeStock(int $empresaId, AtributoEquipo $atributo, array $valorExtraido, User $actor): ComponenteAlmacen
     {
         $nombre = $atributo->describirValor($valorExtraido);
 
         return ComponenteAlmacen::firstOrCreate(
             [
-                'empresa_id' => $equipoOrigen->empresa_id,
+                'empresa_id' => $empresaId,
                 'nombre'     => $nombre,
             ],
             [
@@ -280,5 +281,65 @@ class ExtraccionPiezaService
                 'creado_por'   => $actor->id,
             ]
         );
+    }
+
+    /**
+     * Da de alta $cantidad unidades de una pieza NUEVA (comprada, nunca
+     * estuvo en ningún equipo) que corresponde a un atributo de equipo
+     * conocido (ej. RAM, disco) — a diferencia de un componente manual sin
+     * atributo (ver PiezaManualService), esta SÍ queda vinculada a un
+     * atributo y cae en el MISMO bucket que usaría una pieza equivalente
+     * extraída de un equipo (mismo atributo + mismo valor = mismo nombre de
+     * bucket vía bucketDeStock()), para que "RAM (8GB) nueva" y
+     * "RAM (8GB) rescatada" nunca terminen en buckets distintos.
+     *
+     * @return Collection<int, PiezaExtraida>
+     */
+    public function registrarNueva(
+        int $empresaId,
+        AtributoEquipo $atributo,
+        array $valorExtraido,
+        User $actor,
+        int $cantidad = 1,
+        ?string $observaciones = null,
+    ): Collection {
+        if (! $atributo->reutilizable) {
+            throw new \InvalidArgumentException(
+                "El atributo «{$atributo->nombre}» no está marcado como reutilizable; no se puede registrar como pieza de almacén."
+            );
+        }
+
+        return DB::transaction(function () use ($empresaId, $atributo, $valorExtraido, $actor, $cantidad, $observaciones) {
+            $componente = $this->bucketDeStock($empresaId, $atributo, $valorExtraido, $actor);
+            $componente->registrarEntrada($cantidad, $actor, 'Alta de pieza nueva', $observaciones);
+
+            $piezas = collect();
+
+            for ($i = 0; $i < $cantidad; $i++) {
+                $pieza = PiezaExtraida::create([
+                    'empresa_id'            => $empresaId,
+                    'equipo_origen_id'      => null,
+                    'atributo_id'           => $atributo->id,
+                    'valor_extraido'        => $valorExtraido,
+                    'reutilizable'          => true,
+                    'condicion'             => PiezaExtraida::CONDICION_NUEVO,
+                    'estado'                => PiezaExtraida::ESTADO_EN_ALMACEN,
+                    'componente_almacen_id' => $componente->id,
+                    'motivo'                => PiezaExtraida::MOTIVO_REGISTRO_MANUAL,
+                    'extraido_por'          => $actor->id,
+                    'observaciones'         => $observaciones,
+                ]);
+
+                $pieza->movimientos()->create([
+                    'tipo'           => PiezaExtraidaMovimiento::TIPO_INGRESO_ALMACEN,
+                    'registrado_por' => $actor->id,
+                    'observaciones'  => $observaciones,
+                ]);
+
+                $piezas->push($pieza);
+            }
+
+            return $piezas;
+        });
     }
 }

@@ -4,6 +4,7 @@
     @livewire('almacen.componente-modal')
     @livewire('almacen.movimiento-stock-modal')
     @livewire('almacen.componente-piezas-modal')
+    @livewire('almacen.pieza-nueva-modal')
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -18,6 +19,19 @@
         subtitle="Stock de piezas y repuestos reutilizables, por empresa"
         buttonLabel="Nuevo componente"
         buttonEvent="openComponenteCrear">
+
+        <x-slot name="actions">
+            <button wire:click="$dispatch('openPiezaNueva')"
+                    title="Para piezas que ya son un atributo de equipo (RAM, disco...), con sus características completas"
+                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
+                           bg-white dark:bg-cerberus-mid border border-[#1E40AF] dark:border-cerberus-accent
+                           text-[#1E40AF] dark:text-cerberus-accent hover:bg-[#1E40AF]/5 dark:hover:bg-cerberus-primary/10
+                           transition-all duration-150 flex-shrink-0
+                           focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/30">
+                <span class="material-icons text-base">add_box</span>
+                Pieza nueva de atributo
+            </button>
+        </x-slot>
 
         <x-slot name="filters">
             <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel
