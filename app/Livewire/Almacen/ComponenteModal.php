@@ -47,22 +47,38 @@ class ComponenteModal extends Component
     }
 
     /**
-     * Nombres ya usados en esta empresa — alimenta el <datalist> del campo
-     * "nombre" para que, al escribir "RAM", el analista vea que ya existe
-     * "RAM (8GB)" y lo reuse en vez de crear un duplicado por un typo
-     * ("RAMM", "Ram", etc.). No bloquea nombres nuevos, solo los sugiere.
+     * Componentes de esta empresa cuyo nombre se parece a lo que se está
+     * escribiendo — para que, al teclear "RAM", aparezca de inmediato "ya
+     * existe RAM (8GB)" y la persona pueda usarlo en vez de crear un
+     * duplicado por un typo ("RAMM", "Ram", etc.). No bloquea nombres
+     * nuevos, solo los sugiere — ver usarExistente().
      */
     #[Computed]
-    public function nombresExistentes()
+    public function coincidencias()
     {
-        if (! $this->empresa_id) {
+        if (! $this->empresa_id || mb_strlen(trim($this->nombre)) < 2) {
             return collect();
         }
 
         return ComponenteAlmacen::where('empresa_id', $this->empresa_id)
+            ->where('nombre', 'like', '%' . trim($this->nombre) . '%')
             ->when($this->componenteId, fn ($q) => $q->where('id', '!=', $this->componenteId))
             ->orderBy('nombre')
-            ->pluck('nombre');
+            ->limit(5)
+            ->get();
+    }
+
+    /**
+     * En vez de crear un componente nuevo, usa uno que ya existe: cierra
+     * este formulario y abre directo "Registrar movimiento de stock" sobre
+     * ese componente — fusiona los dos pasos (crear el bucket / agregar
+     * unidades) en un solo flujo guiado, en vez de dejar que la persona
+     * tenga que descubrir por su cuenta que ambos pasos existen.
+     */
+    public function usarExistente(int $id): void
+    {
+        $this->close();
+        $this->dispatch('openMovimientoStock', componenteId: $id);
     }
 
     #[Computed]

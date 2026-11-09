@@ -55,7 +55,7 @@ class SustitucionPiezaService
             ->get();
     }
 
-    /** Retira un valor simple del equipo (pieza vieja/dañada que se está reemplazando). */
+    /** Retira un valor simple del equipo (pieza vieja/dañada que se está reemplazando, o que se mejora). */
     public function retirar(
         Equipo $equipo,
         AtributoEquipo $atributo,
@@ -67,7 +67,7 @@ class SustitucionPiezaService
     ): PiezaExtraida {
         return $this->extraccion->extraerDeAtributoSimple(
             $equipo, $atributo, $destino, $actor,
-            PiezaExtraida::MOTIVO_SUSTITUCION_REPARACION, $deposito, $mantenimiento, $observaciones,
+            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones,
         );
     }
 
@@ -83,8 +83,22 @@ class SustitucionPiezaService
     ): PiezaExtraida {
         return $this->extraccion->extraerDeGrupoInstancia(
             $equipo, $instancia, $destino, $actor,
-            PiezaExtraida::MOTIVO_SUSTITUCION_REPARACION, $deposito, $mantenimiento, $observaciones,
+            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones,
         );
+    }
+
+    /**
+     * Mismo retiro de pieza, pero el motivo que queda en el historial
+     * depende del tipo de caso — un Preventivo no es una reparación, así
+     * que no debe decir "Sustitución en reparación" (ver mensaje de la
+     * usuaria: subir la RAM porque el equipo está lento es un mantenimiento,
+     * no algo que se rompió).
+     */
+    private function motivoSegunMantenimiento(?Mantenimiento $mantenimiento): string
+    {
+        return $mantenimiento?->esPreventivo()
+            ? PiezaExtraida::MOTIVO_SUSTITUCION_PREVENTIVO
+            : PiezaExtraida::MOTIVO_SUSTITUCION_REPARACION;
     }
 
     /**
