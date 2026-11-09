@@ -221,7 +221,7 @@
                 </span>
 
                 <span class="sidebar-label flex-1 text-sm font-medium text-left whitespace-nowrap">
-                    Equipos
+                    Inventario
                 </span>
 
                 <span
@@ -251,7 +251,7 @@
                                  {{ $active('admin.equipos.index') ? $ion : $ioff }}">
                         inventory_2
                     </span>
-                    <span class="whitespace-nowrap">Inventario</span>
+                    <span class="whitespace-nowrap">Equipos</span>
                 </a>
 
                 <a href="{{ route('admin.prestamos.index') }}"
