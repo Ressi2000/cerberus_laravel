@@ -144,8 +144,15 @@ class SustitucionPiezaService
         }
 
         DB::transaction(function () use ($pieza, $equipoDestino, $modo, $actor, $mantenimiento, $instanciaASustituirId, $atributo) {
-            $pieza->componenteAlmacen?->registrarSalida(
-                1, $actor, "Instalación en equipo #{$equipoDestino->id}", $mantenimiento
+            if (! $pieza->componenteAlmacen) {
+                throw new \InvalidArgumentException('Esta pieza no está asociada a ningún componente del almacén.');
+            }
+
+            // Sale ESTA pieza (no una unidad cualquiera): registrarSalida()
+            // bloquea la pieza y verifica que siga en el almacén, así dos
+            // instalaciones simultáneas no pueden usar la misma unidad.
+            $pieza->componenteAlmacen->registrarSalida(
+                1, $actor, "Instalación en equipo #{$equipoDestino->id}", $mantenimiento, [$pieza]
             );
 
             if ($atributo->esGrupo()) {

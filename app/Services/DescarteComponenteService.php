@@ -17,43 +17,40 @@ use Illuminate\Support\Facades\DB;
  * almacén también podría dañarse, entonces lo tienen que pasar al depósito".
  *
  * Siempre descuenta el stock agregado (ComponenteAlmacen::registrarSalida).
- * Si además se indica una pieza trazada específica (una de las que
- * ExtraccionPiezaService rescató y sigue en 'en_almacen'), esa unidad
- * puntual queda formalmente retirada con toda su traza — pasa a
- * 'en_deposito' en el depósito indicado — en vez de perderse en el conteo
- * agregado. Solo tiene sentido vincular una pieza cuando la cantidad es 1:
- * un registro trazado no puede representar varias unidades a la vez.
+ * Las piezas con identidad que se indiquen (unidades que siguen en
+ * 'en_almacen') quedan formalmente retiradas con toda su traza — pasan a
+ * 'en_deposito' en el depósito indicado. Si el componente tiene piezas con
+ * identidad y la cantidad supera sus unidades sin identidad, es obligatorio
+ * indicar cuáles se dañaron, para que stock y piezas sigan cuadrando.
  */
 class DescarteComponenteService
 {
+    /**
+     * @param iterable<PiezaExtraida> $piezas Unidades con identidad que se
+     *        dañaron. Si el componente tiene piezas en almacén y la cantidad
+     *        supera sus unidades sin identidad, hay que indicar cuáles son —
+     *        ver ComponenteAlmacen::registrarSalida().
+     */
     public function marcarDanado(
         ComponenteAlmacen $componente,
         int $cantidad,
         Deposito $deposito,
         User $actor,
-        ?PiezaExtraida $pieza = null,
+        iterable $piezas = [],
         ?string $observaciones = null,
     ): void {
-        if ($pieza && $cantidad !== 1) {
-            throw new \InvalidArgumentException('Una pieza trazada específica solo se puede vincular cuando la cantidad es 1.');
-        }
-
-        if (! $componente->tieneStockSuficiente($cantidad)) {
-            throw new \InvalidArgumentException("No hay stock suficiente. Stock actual: {$componente->stock_actual}.");
-        }
-
-        if ($pieza && ($pieza->componente_almacen_id !== $componente->id || $pieza->estado !== PiezaExtraida::ESTADO_EN_ALMACEN)) {
-            throw new \InvalidArgumentException('Esa pieza no corresponde a este componente o ya no está en Almacén.');
-        }
-
-        if ($componente->empresa_id !== $deposito->empresa_id) {
+        if ((int) $componente->empresa_id !== (int) $deposito->empresa_id) {
             throw new \InvalidArgumentException('El depósito debe ser de la misma empresa que el componente.');
         }
 
-        DB::transaction(function () use ($componente, $cantidad, $deposito, $actor, $pieza, $observaciones) {
-            $componente->registrarSalida($cantidad, $actor, 'Dañado — dado de baja');
+        $piezas = collect($piezas);
 
-            if ($pieza) {
+        DB::transaction(function () use ($componente, $cantidad, $deposito, $actor, $piezas, $observaciones) {
+            // Valida stock, que las piezas sean de este componente y estén en
+            // el almacén, y que la cantidad cuadre con las piezas elegidas.
+            $componente->registrarSalida($cantidad, $actor, 'Dañado — dado de baja', null, $piezas, $observaciones);
+
+            foreach ($piezas as $pieza) {
                 $pieza->update([
                     'estado'       => PiezaExtraida::ESTADO_EN_DEPOSITO,
                     'reutilizable' => false,

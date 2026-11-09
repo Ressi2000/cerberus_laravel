@@ -49,11 +49,14 @@ class PiezaExtraida extends Model
     const ESTADO_EN_ALMACEN = 'en_almacen';
     const ESTADO_INSTALADA  = 'instalada';
     const ESTADO_EN_DEPOSITO = 'en_deposito';
+    /** Salió del almacén por un ajuste manual (pérdida, corrección de inventario...) — sin equipo ni depósito de destino. */
+    const ESTADO_RETIRADA    = 'retirada';
 
     const ESTADOS = [
         self::ESTADO_EN_ALMACEN  => 'En almacén',
         self::ESTADO_INSTALADA   => 'Instalada',
         self::ESTADO_EN_DEPOSITO => 'En depósito',
+        self::ESTADO_RETIRADA    => 'Retirada (ajuste)',
     ];
 
     // ── Motivos de extracción ────────────────────────────────────────────────
@@ -191,6 +194,22 @@ class PiezaExtraida extends Model
         $base = $this->atributo?->nombre ?? $this->componenteAlmacen?->nombre ?? 'Pieza';
 
         return $this->identificador ? "{$base} ({$this->identificador})" : $base;
+    }
+
+    /**
+     * Descripción para listas y selectores: el valor de la característica
+     * si la pieza está ligada a una (ej. "RAM: 8GB"), o el nombre del
+     * componente si se registró a mano — más su identificador si lo tiene.
+     */
+    public function descripcion(): string
+    {
+        if ($this->atributo) {
+            $base = $this->atributo->describirValor($this->valor_extraido ?? []);
+
+            return $this->identificador ? "{$base} ({$this->identificador})" : $base;
+        }
+
+        return $this->nombre();
     }
 
     public function esManual(): bool

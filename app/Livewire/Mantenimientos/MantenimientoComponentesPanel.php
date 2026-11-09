@@ -52,11 +52,27 @@ class MantenimientoComponentesPanel extends Component
     {
         $m = $this->mantenimiento;
 
+        // Las piezas ligadas a una característica del equipo (RAM, disco...)
+        // no se entregan por aquí — se instalan desde el panel de Piezas —,
+        // así que no cuentan como disponibles para pedir.
         return ComponenteAlmacen::activos()
             ->where('empresa_id', $m->empresa_id)
+            ->withCount(['piezasExtraidas as piezas_con_caracteristica' => fn ($q) => $q
+                ->where('estado', \App\Models\PiezaExtraida::ESTADO_EN_ALMACEN)
+                ->whereNotNull('atributo_id'),
+            ])
             ->orderBy('nombre')
             ->get()
-            ->mapWithKeys(fn ($c) => [$c->id => "{$c->nombre} (stock: {$c->stock_actual} {$c->unidad})"]);
+            ->mapWithKeys(function ($c) {
+                $disponibles = max(0, $c->stock_actual - $c->piezas_con_caracteristica);
+                $texto = "{$c->nombre} (disponible: {$disponibles} {$c->unidad})";
+
+                if ($c->piezas_con_caracteristica > 0) {
+                    $texto .= " — {$c->piezas_con_caracteristica} se instalan desde Piezas";
+                }
+
+                return [$c->id => $texto];
+            });
     }
 
     public function abrirForm(): void
@@ -139,7 +155,9 @@ class MantenimientoComponentesPanel extends Component
 
             $msg = $item->estado === 'Entregado'
                 ? "«{$componente->nombre}» entregado desde el almacén."
-                : "«{$componente->nombre}» solicitado — no hay stock, queda pendiente en el almacén.";
+                : ($componente->stock_actual >= $this->cantidad
+                    ? "«{$componente->nombre}» quedó pendiente: las unidades en almacén son piezas ligadas a una característica del equipo — instálalas desde el panel de Piezas."
+                    : "«{$componente->nombre}» solicitado — no hay stock, queda pendiente en el almacén.");
 
             $this->dispatch('toast', type: $item->estado === 'Entregado' ? 'success' : 'warning', message: $msg);
             $this->dispatch('componenteRefrescar');

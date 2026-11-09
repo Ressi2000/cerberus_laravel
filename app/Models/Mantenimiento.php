@@ -614,7 +614,10 @@ class Mantenimiento extends Model
         }
 
         return DB::transaction(function () use ($componente, $cantidad, $actor) {
-            $hayStock = $componente->stock_actual >= $cantidad;
+            // Solo cuenta lo que se puede entregar por esta vía: unidades sin
+            // identidad y piezas registradas a mano. Las piezas ligadas a una
+            // característica del equipo se instalan desde el panel de Piezas.
+            $hayStock = $componente->unidadesParaConsumo() >= $cantidad;
 
             $item = $this->componentes()->create([
                 'componente_id'      => $componente->id,
@@ -625,8 +628,7 @@ class Mantenimiento extends Model
             ]);
 
             if ($hayStock) {
-                $componente->registrarSalida($cantidad, $actor, 'Uso en mantenimiento', $this);
-                $this->consumirPiezasTrazadas($componente, $cantidad, $actor);
+                $this->consumirDelAlmacen($componente, $cantidad, $actor);
             }
 
             $this->recalcularEsperandoComponente();
@@ -652,13 +654,12 @@ class Mantenimiento extends Model
 
         $componente = $item->componente;
 
-        if (! $componente || $componente->stock_actual < $item->cantidad_requerida) {
+        if (! $componente || $componente->unidadesParaConsumo() < $item->cantidad_requerida) {
             return false;
         }
 
         DB::transaction(function () use ($item, $componente, $actor) {
-            $componente->registrarSalida($item->cantidad_requerida, $actor, 'Uso en mantenimiento', $this);
-            $this->consumirPiezasTrazadas($componente, $item->cantidad_requerida, $actor);
+            $this->consumirDelAlmacen($componente, $item->cantidad_requerida, $actor);
 
             $item->update([
                 'estado'           => 'Entregado',
@@ -673,21 +674,21 @@ class Mantenimiento extends Model
     }
 
     /**
-     * Cuando se consume stock de un componente, marca como "instalada" una
-     * unidad trazada (PiezaExtraida) de ese mismo bucket por cada unidad
-     * consumida — si no, las piezas individuales quedarían para siempre en
-     * "en_almacen" aunque el stock agregado ya haya bajado, desincronizadas.
-     * Más antigua primero (FIFO). Si el bucket no tiene piezas trazadas
-     * (stock sin identidad, como lo era todo antes de esta función), no pasa
-     * nada — sigue siendo solo un descuento de stock, como siempre fue.
+     * Descuenta $cantidad del almacén para este caso. Salen primero las
+     * unidades sin identidad y, si no alcanzan, las piezas registradas a
+     * mano más antiguas — que quedan "instaladas" en el equipo del caso,
+     * con su movimiento, en la MISMA salida de stock (así stock y piezas
+     * en almacén siguen cuadrando). Las piezas ligadas a una característica
+     * del equipo nunca salen por aquí: instalarlas sin actualizar las
+     * características del equipo dejaría su ficha desactualizada, y podrían
+     * ni siquiera ser de su categoría. Esas se instalan desde el panel de
+     * Piezas (SustitucionPiezaService::instalar()).
      */
-    private function consumirPiezasTrazadas(ComponenteAlmacen $componente, int $cantidad, User $actor): void
+    private function consumirDelAlmacen(ComponenteAlmacen $componente, int $cantidad, User $actor): void
     {
-        $piezas = PiezaExtraida::where('componente_almacen_id', $componente->id)
-            ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
-            ->oldest()
-            ->limit($cantidad)
-            ->get();
+        $piezas = $componente->piezasParaConsumo($cantidad);
+
+        $componente->registrarSalida($cantidad, $actor, 'Uso en mantenimiento', $this, $piezas);
 
         foreach ($piezas as $pieza) {
             $pieza->update([

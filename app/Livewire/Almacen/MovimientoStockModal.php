@@ -21,9 +21,12 @@ use Livewire\Component;
  * un mantenimiento NO pasa por aquí — eso lo maneja Mantenimiento::pedirComponente().
  *
  * Una salida puede además marcarse como "dañado" — ver DescarteComponenteService:
- * exige indicar un depósito destino y, si hay unidades trazadas (rescatadas
- * vía ExtraccionPiezaService) en Almacén, permite vincular una específica
- * para conservar su historial completo en vez de perderla en el conteo.
+ * exige indicar un depósito destino.
+ *
+ * En toda salida, si el componente tiene piezas con identidad en el almacén
+ * y la cantidad supera sus unidades sin identidad, hay que marcar cuáles
+ * piezas salen (ver ComponenteAlmacen::registrarSalida()) — así el stock y
+ * las piezas en almacén siguen cuadrando.
  */
 class MovimientoStockModal extends Component
 {
@@ -38,7 +41,9 @@ class MovimientoStockModal extends Component
 
     public bool   $danado      = false;
     public ?int   $depositoId  = null;
-    public ?int   $piezaId     = null;
+
+    /** @var array<int, int|string> Piezas con identidad que salen en una Salida. */
+    public array  $piezaIds    = [];
 
     // ── Identidad de la(s) unidad(es) que entran (ver PiezaManualService) ────
     public string $condicion      = PiezaExtraida::CONDICION_NUEVO;
@@ -52,7 +57,7 @@ class MovimientoStockModal extends Component
         $this->authorize('registrarMovimiento', $componente);
 
         $this->componenteId = $componenteId;
-        $this->reset(['cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaId', 'equipoOrigenId', 'identificador']);
+        $this->reset(['cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds', 'equipoOrigenId', 'identificador']);
         $this->tipo = 'Entrada';
         $this->condicion = PiezaExtraida::CONDICION_NUEVO;
         $this->resetValidation();
@@ -92,7 +97,7 @@ class MovimientoStockModal extends Component
             ->get();
     }
 
-    /** Unidades trazadas de este componente que siguen en Almacén (para vincular al dar de baja una dañada). */
+    /** Piezas con identidad de este componente que siguen en Almacén (para elegir cuáles salen). */
     #[Computed]
     public function piezasEnAlmacen()
     {
@@ -100,10 +105,18 @@ class MovimientoStockModal extends Component
             return collect();
         }
 
-        return PiezaExtraida::with('atributo')
+        return PiezaExtraida::with(['atributo', 'componenteAlmacen', 'equipoOrigen'])
             ->where('componente_almacen_id', $this->componenteId)
             ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
+            ->oldest()
             ->get();
+    }
+
+    /** Unidades del stock sin pieza individual: salen sin tener que elegir nada. */
+    #[Computed]
+    public function unidadesSinIdentidad(): int
+    {
+        return $this->componente?->unidadesSinIdentidad() ?? 0;
     }
 
     #[Computed]
@@ -125,10 +138,12 @@ class MovimientoStockModal extends Component
             'observaciones' => 'nullable|string|max:500',
         ];
 
-        if ($this->tipo === 'Salida' && $this->danado) {
-            $rules['depositoId'] = 'required|exists:depositos,id';
-            if ($this->piezaId) {
-                $rules['cantidad'] = 'required|integer|in:1';
+        if ($this->tipo === 'Salida') {
+            $rules['piezaIds']   = 'array';
+            $rules['piezaIds.*'] = 'integer';
+
+            if ($this->danado) {
+                $rules['depositoId'] = 'required|exists:depositos,id';
             }
         }
 
@@ -148,7 +163,6 @@ class MovimientoStockModal extends Component
         return [
             'cantidad.required'      => 'Indica la cantidad.',
             'cantidad.min'           => 'La cantidad debe ser al menos 1.',
-            'cantidad.in'            => 'Solo se puede vincular una pieza trazada específica cuando la cantidad es 1.',
             'depositoId.required'    => 'Selecciona en qué depósito queda la unidad dañada.',
             'equipoOrigenId.required'=> 'Indica de qué equipo salió esta pieza reutilizada.',
         ];
@@ -170,6 +184,23 @@ class MovimientoStockModal extends Component
         if ($this->tipo === 'Salida' && $componente->stock_actual < $this->cantidad) {
             $this->addError('cantidad', "No hay stock suficiente. Stock actual: {$componente->stock_actual}.");
             return;
+        }
+
+        // Solo piezas de ESTE componente (los ids llegan del navegador).
+        $piezas = collect();
+        if ($this->tipo === 'Salida' && ! empty($this->piezaIds)) {
+            $ids    = collect($this->piezaIds)->map(fn ($id) => (int) $id)->unique();
+            $piezas = PiezaExtraida::where('componente_almacen_id', $componente->id)->whereIn('id', $ids)->get();
+
+            if ($piezas->count() !== $ids->count()) {
+                $this->addError('piezaIds', 'Alguna de las piezas elegidas no pertenece a este componente.');
+                return;
+            }
+
+            if ($piezas->count() > $this->cantidad) {
+                $this->addError('piezaIds', "Marcaste {$piezas->count()} piezas pero la cantidad es {$this->cantidad}.");
+                return;
+            }
         }
 
         try {
@@ -205,22 +236,13 @@ class MovimientoStockModal extends Component
                     return;
                 }
 
-                // Solo piezas de ESTE componente.
-                $pieza = null;
-                if ($this->piezaId) {
-                    $pieza = PiezaExtraida::where('componente_almacen_id', $componente->id)->find($this->piezaId);
-
-                    if (! $pieza) {
-                        $this->addError('piezaId', 'Esa pieza no pertenece a este componente.');
-                        return;
-                    }
-                }
-
                 app(DescarteComponenteService::class)->marcarDanado(
-                    $componente, $this->cantidad, $deposito, Auth::user(), $pieza, $this->observaciones ?: null,
+                    $componente, $this->cantidad, $deposito, Auth::user(), $piezas, $this->observaciones ?: null,
                 );
             } else {
-                $componente->registrarSalida($this->cantidad, Auth::user(), $this->motivo ?: 'Ajuste manual');
+                $componente->registrarAjusteSalida(
+                    $this->cantidad, Auth::user(), $this->motivo ?: null, $this->observaciones ?: null, $piezas,
+                );
             }
 
             $msg = "Movimiento de stock registrado para «{$componente->nombre}».";
@@ -228,7 +250,13 @@ class MovimientoStockModal extends Component
             $this->dispatch('stockActualizado');
             $this->dispatch('toast', type: 'success', message: $msg);
         } catch (\InvalidArgumentException $e) {
-            $this->dispatch('toast', type: 'error', message: $e->getMessage());
+            // En una salida casi siempre es "indica cuáles piezas salen":
+            // se muestra junto a la lista de piezas.
+            if ($this->tipo === 'Salida') {
+                $this->addError('piezaIds', $e->getMessage());
+            } else {
+                $this->dispatch('toast', type: 'error', message: $e->getMessage());
+            }
         } catch (\Exception $e) {
             Log::error('MovimientoStockModal@guardar: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Error al registrar el movimiento.');
@@ -238,7 +266,7 @@ class MovimientoStockModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['componenteId', 'tipo', 'cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaId', 'condicion', 'equipoOrigenId', 'identificador']);
+        $this->reset(['componenteId', 'tipo', 'cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds', 'condicion', 'equipoOrigenId', 'identificador']);
         $this->resetValidation();
     }
 
