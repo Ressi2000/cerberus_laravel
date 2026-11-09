@@ -32,6 +32,7 @@ class UserFactory extends Factory
             'username' => fake()->unique()->userName(),
             'cedula' => 'V-' . fake()->unique()->numberBetween(1000000, 39999999),
             'email' => fake()->unique()->safeEmail(),
+            'estado' => 'Activo',
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

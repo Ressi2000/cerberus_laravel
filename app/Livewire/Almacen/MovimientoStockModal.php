@@ -246,6 +246,18 @@ class MovimientoStockModal extends Component
             }
 
             $msg = "Movimiento de stock registrado para «{$componente->nombre}».";
+
+            // Si entró stock de algo que un caso está esperando, se avisa:
+            // la entrega se hace desde la bandeja de solicitudes o desde el caso.
+            if ($this->tipo === 'Entrada') {
+                $esperando = \App\Models\MantenimientoComponente::pendientesVisiblesPara(Auth::user())
+                    ->where('componente_id', $componente->id)
+                    ->count();
+
+                if ($esperando > 0) {
+                    $msg .= " Hay {$esperando} solicitud(es) pendiente(s) de este componente: entrégalas desde «Solicitudes pendientes».";
+                }
+            }
             $this->close();
             $this->dispatch('stockActualizado');
             $this->dispatch('toast', type: 'success', message: $msg);

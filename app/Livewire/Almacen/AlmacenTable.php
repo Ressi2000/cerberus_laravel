@@ -81,6 +81,13 @@ class AlmacenTable extends Component
         return ComponenteAlmacen::visiblePara(Auth::user())->activos()->count();
     }
 
+    /** Componentes pedidos por casos abiertos que siguen sin entregarse (bandeja de solicitudes). */
+    #[Computed]
+    public function totalSolicitudesPendientes(): int
+    {
+        return \App\Models\MantenimientoComponente::pendientesVisiblesPara(Auth::user())->count();
+    }
+
     #[Computed]
     public function totalSinStock(): int
     {

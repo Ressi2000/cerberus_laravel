@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -47,6 +48,17 @@ class MantenimientoComponente extends Model
     public function entregadoPor()
     {
         return $this->belongsTo(User::class, 'entregado_por_id');
+    }
+
+    /**
+     * Solicitudes que el almacén todavía debe atender: pendientes de casos
+     * abiertos que el usuario puede ver (misma regla de empresa que
+     * Mantenimiento::visiblePara()).
+     */
+    public function scopePendientesVisiblesPara(Builder $query, User $actor): Builder
+    {
+        return $query->where('estado', self::ESTADO_PENDIENTE)
+            ->whereHas('mantenimiento', fn ($m) => $m->visiblePara($actor)->abiertos());
     }
 
     public function estaPendiente(): bool
