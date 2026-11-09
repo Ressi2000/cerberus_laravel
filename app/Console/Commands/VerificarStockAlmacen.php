@@ -20,22 +20,32 @@ use Illuminate\Support\Facades\DB;
  * componentes para corregirlos a mano. Por sí solo no cambia nada, porque
  * no hay forma de saber cuál de las piezas es la que ya no está.
  *
- * Una vez revisado físicamente, --retirar=12,15 --usuario=ID marca esas piezas como
- * "retiradas" SIN tocar el stock (el stock ya se había descontado en su
- * momento), con su movimiento en el historial. Solo acepta piezas de
+ * Una vez revisado físicamente, para cada pieza sobrante:
+ *   - si YA NO ESTÁ:  --retirar=12,15 --usuario=ID la marca como "retirada"
+ *     sin tocar el stock (el stock ya se había descontado en su momento).
+ *   - si SÍ ESTÁ:     --reponer=12,15 --usuario=ID devuelve esa unidad al
+ *     stock (+1 por pieza, con su entrada en el kardex); la pieza no cambia.
+ * Ambas dejan rastro con el usuario indicado, solo aceptan piezas de
  * componentes descuadrados y nunca más piezas de las que sobran.
  */
 class VerificarStockAlmacen extends Command
 {
     protected $signature   = 'cerberus:verificar-stock-almacen
                               {--retirar= : IDs de piezas (separados por coma) que ya no están físicamente y se marcan como retiradas}
-                              {--usuario= : ID del Administrador que hace la corrección (obligatorio con --retirar)}';
+                              {--reponer= : IDs de piezas (separados por coma) que SÍ están físicamente: se devuelven al stock}
+                              {--usuario= : ID del Administrador que hace la corrección (obligatorio con --retirar o --reponer)}';
     protected $description = 'Lista los componentes del almacén con más piezas "en almacén" que stock (descuadres a revisar a mano).';
 
     public function handle(): int
     {
-        if ($this->option('retirar')) {
-            return $this->retirar();
+        if ($this->option('retirar') && $this->option('reponer')) {
+            $this->error('Usa --retirar o --reponer, no los dos a la vez.');
+
+            return self::FAILURE;
+        }
+
+        if ($this->option('retirar') || $this->option('reponer')) {
+            return $this->corregir($this->option('retirar') ? 'retirar' : 'reponer');
         }
 
         $descuadrados = $this->descuadrados();
@@ -46,7 +56,7 @@ class VerificarStockAlmacen extends Command
             return self::SUCCESS;
         }
 
-        $this->warn("{$descuadrados->count()} componente(s) con descuadre. Revisa físicamente cuáles piezas ya no están y márcalas con --retirar=ID,ID.");
+        $this->warn("{$descuadrados->count()} componente(s) con descuadre. Revisa físicamente cada pieza: si ya no está usa --retirar=ID,ID; si sí está usa --reponer=ID,ID (ambos con --usuario=ID).");
 
         $this->table(
             ['ID', 'Empresa', 'Componente', 'Stock', 'Piezas en almacén', 'Sobran', 'IDs de piezas en almacén'],
@@ -76,7 +86,7 @@ class VerificarStockAlmacen extends Command
             ->keyBy('id');
     }
 
-    private function retirar(): int
+    private function corregir(string $accion): int
     {
         $usuario = User::find($this->option('usuario'));
 
@@ -86,7 +96,7 @@ class VerificarStockAlmacen extends Command
             return self::FAILURE;
         }
 
-        $ids = collect(explode(',', (string) $this->option('retirar')))
+        $ids = collect(explode(',', (string) $this->option($accion)))
             ->map(fn ($id) => (int) trim($id))
             ->filter()
             ->unique();
@@ -118,7 +128,20 @@ class VerificarStockAlmacen extends Command
             }
         }
 
-        DB::transaction(function () use ($piezas, $usuario) {
+        DB::transaction(function () use ($piezas, $usuario, $accion) {
+            if ($accion === 'reponer') {
+                foreach ($piezas->groupBy('componente_almacen_id') as $componenteId => $grupo) {
+                    ComponenteAlmacen::withTrashed()->findOrFail($componenteId)->registrarEntrada(
+                        $grupo->count(),
+                        $usuario,
+                        'Corrección de descuadre',
+                        'Unidades que seguían físicamente en el almacén: piezas #' . $grupo->pluck('id')->implode(', #'),
+                    );
+                }
+
+                return;
+            }
+
             foreach ($piezas as $pieza) {
                 $pieza->update(['estado' => PiezaExtraida::ESTADO_RETIRADA]);
 
@@ -130,7 +153,9 @@ class VerificarStockAlmacen extends Command
             }
         });
 
-        $this->info("{$piezas->count()} pieza(s) marcadas como retiradas.");
+        $this->info($accion === 'reponer'
+            ? "{$piezas->count()} unidad(es) devueltas al stock."
+            : "{$piezas->count()} pieza(s) marcadas como retiradas.");
 
         return self::SUCCESS;
     }

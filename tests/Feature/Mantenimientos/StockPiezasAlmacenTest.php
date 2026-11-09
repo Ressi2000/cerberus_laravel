@@ -358,6 +358,32 @@ class StockPiezasAlmacenTest extends TestCase
     }
 
     /** @test */
+    public function el_comando_repone_al_stock_una_pieza_que_si_esta(): void
+    {
+        $componente = $this->crearComponente();
+        $piezas = $this->agregarPiezasManuales($componente, 1);
+        $componente->update(['stock_actual' => 0]); // descuadre: 1 pieza, 0 stock
+
+        $admin = User::factory()->create();
+        $admin->assignRole('Administrador');
+
+        $this->artisan('cerberus:verificar-stock-almacen', [
+            '--reponer' => (string) $piezas->first()->id,
+            '--usuario' => (string) $admin->id,
+        ])->assertExitCode(0);
+
+        $this->assertSame(1, $componente->fresh()->stock_actual);
+        $this->assertSame(PiezaExtraida::ESTADO_EN_ALMACEN, $piezas->first()->fresh()->estado);
+        $this->assertDatabaseHas('movimientos_componentes', [
+            'componente_id'     => $componente->id,
+            'tipo'              => 'Entrada',
+            'motivo'            => 'Corrección de descuadre',
+            'registrado_por_id' => $admin->id,
+        ]);
+        $this->artisan('cerberus:verificar-stock-almacen')->assertExitCode(0);
+    }
+
+    /** @test */
     public function el_comando_no_retira_mas_piezas_de_las_que_sobran(): void
     {
         $componente = $this->crearComponente();
