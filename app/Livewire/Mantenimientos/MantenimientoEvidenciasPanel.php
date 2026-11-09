@@ -6,6 +6,7 @@ use App\Models\Mantenimiento;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -21,6 +22,8 @@ class MantenimientoEvidenciasPanel extends Component
 {
     use WithFileUploads;
 
+    // Locked: el id no se puede cambiar desde el navegador.
+    #[Locked]
     public int $mantenimientoId;
 
     public $foto = null;

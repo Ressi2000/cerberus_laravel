@@ -8,11 +8,14 @@ use App\Models\MantenimientoComponente;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class MantenimientoComponentesPanel extends Component
 {
+    // Locked: el id no se puede cambiar desde el navegador.
+    #[Locked]
     public int $mantenimientoId;
 
     public bool   $formAbierto   = false;
@@ -99,6 +102,13 @@ class MantenimientoComponentesPanel extends Component
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
+        // Se revisa aquí y no solo en abrirForm(): pedir() se puede invocar
+        // directamente desde el navegador sin pasar por el formulario.
+        if (! $m->permiteRegistrarTrabajo()) {
+            $this->dispatch('toast', type: 'error', message: 'No se pueden pedir componentes en el estado actual del caso.');
+            return;
+        }
+
         $this->validate();
 
         try {
@@ -114,7 +124,15 @@ class MantenimientoComponentesPanel extends Component
                     'creado_por'   => Auth::id(),
                 ]);
             } else {
-                $componente = ComponenteAlmacen::findOrFail($this->componente_id);
+                // Solo componentes activos de la empresa del caso.
+                $componente = ComponenteAlmacen::activos()
+                    ->where('empresa_id', $m->empresa_id)
+                    ->find($this->componente_id);
+
+                if (! $componente) {
+                    $this->addError('componente_id', 'Ese componente no está disponible para este caso.');
+                    return;
+                }
             }
 
             $item = $m->pedirComponente($componente, $this->cantidad, Auth::user());
@@ -127,6 +145,8 @@ class MantenimientoComponentesPanel extends Component
             $this->dispatch('componenteRefrescar');
             unset($this->mantenimiento);
             $this->cerrarForm();
+        } catch (\InvalidArgumentException $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
         } catch (\Exception $e) {
             Log::error('MantenimientoComponentesPanel@pedir: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Error al pedir el componente.');
@@ -143,7 +163,13 @@ class MantenimientoComponentesPanel extends Component
             return;
         }
 
-        $item = MantenimientoComponente::findOrFail($itemId);
+        // Solo ítems de ESTE caso: el id llega desde el navegador.
+        $item = MantenimientoComponente::where('mantenimiento_id', $m->id)->find($itemId);
+
+        if (! $item) {
+            $this->dispatch('toast', type: 'error', message: 'Ese componente no pertenece a este caso.');
+            return;
+        }
 
         if ($m->entregarComponentePendiente($item, Auth::user())) {
             $this->dispatch('toast', type: 'success', message: 'Componente entregado desde el almacén.');

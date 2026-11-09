@@ -11,6 +11,7 @@ use App\Services\PiezaManualService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -27,6 +28,8 @@ use Livewire\Component;
 class MovimientoStockModal extends Component
 {
     public bool   $open         = false;
+    // Locked: el id no se puede cambiar desde el navegador.
+    #[Locked]
     public ?int   $componenteId = null;
     public string $tipo         = 'Entrada';
     public ?int   $cantidad     = null;
@@ -171,7 +174,16 @@ class MovimientoStockModal extends Component
 
         try {
             if ($this->tipo === 'Entrada') {
-                $equipoOrigen = $this->equipoOrigenId ? Equipo::find($this->equipoOrigenId) : null;
+                // Solo equipos de la empresa del componente.
+                $equipoOrigen = null;
+                if ($this->equipoOrigenId) {
+                    $equipoOrigen = Equipo::where('empresa_id', $componente->empresa_id)->find($this->equipoOrigenId);
+
+                    if (! $equipoOrigen) {
+                        $this->addError('equipoOrigenId', 'Ese equipo no pertenece a la empresa del componente.');
+                        return;
+                    }
+                }
 
                 app(PiezaManualService::class)->registrar(
                     $componente,
@@ -183,8 +195,26 @@ class MovimientoStockModal extends Component
                     observaciones: $this->observaciones ?: null,
                 );
             } elseif ($this->danado) {
-                $deposito = Deposito::findOrFail($this->depositoId);
-                $pieza    = $this->piezaId ? PiezaExtraida::find($this->piezaId) : null;
+                // Solo depósitos activos de la empresa del componente.
+                $deposito = Deposito::activos()
+                    ->where('empresa_id', $componente->empresa_id)
+                    ->find($this->depositoId);
+
+                if (! $deposito) {
+                    $this->addError('depositoId', 'Ese depósito no está disponible para este componente.');
+                    return;
+                }
+
+                // Solo piezas de ESTE componente.
+                $pieza = null;
+                if ($this->piezaId) {
+                    $pieza = PiezaExtraida::where('componente_almacen_id', $componente->id)->find($this->piezaId);
+
+                    if (! $pieza) {
+                        $this->addError('piezaId', 'Esa pieza no pertenece a este componente.');
+                        return;
+                    }
+                }
 
                 app(DescarteComponenteService::class)->marcarDanado(
                     $componente, $this->cantidad, $deposito, Auth::user(), $pieza, $this->observaciones ?: null,

@@ -13,6 +13,7 @@ use App\Services\SustitucionPiezaService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -24,6 +25,8 @@ use Livewire\Component;
  */
 class MantenimientoPiezasPanel extends Component
 {
+    // Locked: el id no se puede cambiar desde el navegador.
+    #[Locked]
     public int $mantenimientoId;
 
     // ── Retirar pieza del equipo ─────────────────────────────────────────
@@ -98,7 +101,7 @@ class MantenimientoPiezasPanel extends Component
         if (! $this->instalarPiezaId) return [];
 
         $pieza = PiezaExtraida::with('atributo')->find($this->instalarPiezaId);
-        if (! $pieza || ! $pieza->atributo->esGrupo()) return [];
+        if (! $pieza || ! $pieza->atributo?->esGrupo()) return [];
 
         return EquipoAtributoGrupoInstancia::where('equipo_id', $this->mantenimiento->equipo->id)
             ->where('atributo_id', $pieza->atributo_id)
@@ -148,6 +151,13 @@ class MantenimientoPiezasPanel extends Component
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
+        // Se revisa aquí y no solo en abrirRetirar(): retirar() se puede
+        // invocar directamente desde el navegador.
+        if (! $m->permiteRegistrarTrabajo()) {
+            $this->dispatch('toast', type: 'error', message: 'No se pueden retirar piezas en el estado actual del caso.');
+            return;
+        }
+
         $this->validate([
             'retirarIndex'      => 'required|integer',
             'retirarDepositoId' => $this->retirarDestino === PiezaExtraida::ESTADO_EN_DEPOSITO ? 'required|exists:depositos,id' : 'nullable',
@@ -162,7 +172,19 @@ class MantenimientoPiezasPanel extends Component
             return;
         }
 
-        $deposito = $this->retirarDepositoId ? Deposito::find($this->retirarDepositoId) : null;
+        // Solo depósitos activos de la empresa del caso.
+        $deposito = null;
+        if ($this->retirarDestino === PiezaExtraida::ESTADO_EN_DEPOSITO) {
+            $deposito = Deposito::activos()
+                ->where('empresa_id', $m->empresa_id)
+                ->find($this->retirarDepositoId);
+
+            if (! $deposito) {
+                $this->addError('retirarDepositoId', 'Ese depósito no está disponible para este caso.');
+                return;
+            }
+        }
+
         $servicio = app(SustitucionPiezaService::class);
 
         try {
@@ -215,7 +237,7 @@ class MantenimientoPiezasPanel extends Component
         unset($this->instanciasParaSustituir);
 
         $pieza = $this->instalarPiezaId ? PiezaExtraida::with('atributo')->find($this->instalarPiezaId) : null;
-        $this->instalarModo = ($pieza && $pieza->atributo->esGrupo())
+        $this->instalarModo = ($pieza && $pieza->atributo?->esGrupo())
             ? SustitucionPiezaService::MODO_AGREGAR
             : SustitucionPiezaService::MODO_SUSTITUIR;
     }
@@ -224,6 +246,11 @@ class MantenimientoPiezasPanel extends Component
     {
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
+
+        if (! $m->permiteRegistrarTrabajo()) {
+            $this->dispatch('toast', type: 'error', message: 'No se pueden instalar piezas en el estado actual del caso.');
+            return;
+        }
 
         $this->validate([
             'instalarPiezaId' => 'required|exists:piezas_extraidas,id',
@@ -234,7 +261,15 @@ class MantenimientoPiezasPanel extends Component
             return;
         }
 
-        $pieza = PiezaExtraida::with('atributo')->findOrFail($this->instalarPiezaId);
+        // Solo piezas de la empresa del caso.
+        $pieza = PiezaExtraida::with('atributo')
+            ->where('empresa_id', $m->empresa_id)
+            ->find($this->instalarPiezaId);
+
+        if (! $pieza) {
+            $this->addError('instalarPiezaId', 'Esa pieza no está disponible para este caso.');
+            return;
+        }
 
         try {
             app(SustitucionPiezaService::class)->instalar(

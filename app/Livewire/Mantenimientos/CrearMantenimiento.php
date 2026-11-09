@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -171,6 +172,7 @@ class CrearMantenimiento extends Component
 
             return Equipo::with('categoria')
                 ->whereIn('id', $equipoIds)
+                ->where('empresa_id', $this->empresa_id)
                 ->where('activo', true)
                 ->whereDoesntHave('mantenimientos', fn ($q) => $q->whereNotIn('estado', Mantenimiento::ESTADOS_TERMINALES))
                 ->orderBy('codigo_interno')
@@ -202,7 +204,14 @@ class CrearMantenimiento extends Component
     {
         $reglas = [
             'empresa_id'         => 'required|exists:empresas,id',
-            'equipo_id'          => 'required|exists:equipos,id',
+            // El equipo debe ser activo y de la empresa elegida: equipo_id y
+            // empresa_id llegan del navegador y se pueden manipular.
+            'equipo_id'          => [
+                'required',
+                Rule::exists('equipos', 'id')
+                    ->where('empresa_id', (int) $this->empresa_id)
+                    ->where('activo', true),
+            ],
             'tipo'               => 'required|in:Preventivo,Correctivo',
             'fotoAntes'          => 'required|image|max:5120',
             'fecha_inicio'       => 'required|date',
@@ -227,6 +236,7 @@ class CrearMantenimiento extends Component
     {
         return [
             'equipo_id.required'        => 'Selecciona un equipo.',
+            'equipo_id.exists'          => 'Ese equipo no pertenece a la empresa seleccionada o no está activo.',
             'falla_reportada.required'  => 'Describe la falla reportada.',
             'fotoAntes.required'        => 'La foto "Antes" es obligatoria para dejar evidencia del estado inicial del equipo.',
             'fotoAntes.image'           => 'El archivo debe ser una imagen.',
@@ -237,6 +247,14 @@ class CrearMantenimiento extends Component
     public function guardar(): void
     {
         $this->authorize('create', Mantenimiento::class);
+
+        // El Analista solo puede registrar casos en su empresa activa, sin
+        // importar lo que llegue en empresa_id desde el navegador.
+        $actor = Auth::user();
+        if (! $actor->hasRole('Administrador')) {
+            $this->empresa_id = (string) ($actor->empresa_activa_id ?? '');
+        }
+
         $this->validate();
 
         try {

@@ -126,6 +126,15 @@ class PiezaNuevaModal extends Component
 
     public function guardar(): void
     {
+        $this->authorize('create', ComponenteAlmacen::class);
+
+        // El Analista solo registra piezas en su empresa activa, sin
+        // importar lo que llegue en empresa_id desde el navegador.
+        $actor = Auth::user();
+        if (! $actor->hasRole('Administrador')) {
+            $this->empresa_id = (string) ($actor->empresa_activa_id ?? '');
+        }
+
         $this->validate();
 
         $atributo = $this->atributoSeleccionado;

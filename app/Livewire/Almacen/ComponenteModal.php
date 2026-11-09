@@ -113,24 +113,41 @@ class ComponenteModal extends Component
 
     public function guardar(): void
     {
+        $componente = null;
+
+        if ($this->componenteId) {
+            $componente = ComponenteAlmacen::findOrFail($this->componenteId);
+            $this->authorize('update', $componente);
+
+            // La empresa de un componente no cambia al editarlo: moverlo
+            // de empresa se llevaría su stock y sus piezas trazadas.
+            $this->empresa_id = (string) $componente->empresa_id;
+        } else {
+            $this->authorize('create', ComponenteAlmacen::class);
+
+            // El Analista solo crea componentes en su empresa activa, sin
+            // importar lo que llegue en empresa_id desde el navegador.
+            $actor = Auth::user();
+            if (! $actor->hasRole('Administrador')) {
+                $this->empresa_id = (string) ($actor->empresa_activa_id ?? '');
+            }
+        }
+
         $this->validate();
 
         try {
             $data = [
-                'empresa_id'  => $this->empresa_id,
                 'nombre'      => trim($this->nombre),
                 'descripcion' => trim($this->descripcion) ?: null,
                 'unidad'      => trim($this->unidad) ?: 'unidad',
             ];
 
-            if ($this->componenteId) {
-                $componente = ComponenteAlmacen::findOrFail($this->componenteId);
-                $this->authorize('update', $componente);
+            if ($componente) {
                 $componente->update($data);
                 $msg = "Componente «{$this->nombre}» actualizado.";
             } else {
-                $this->authorize('create', ComponenteAlmacen::class);
                 ComponenteAlmacen::create(array_merge($data, [
+                    'empresa_id'  => $this->empresa_id,
                     'activo'      => true,
                     'creado_por'  => Auth::id(),
                 ]));

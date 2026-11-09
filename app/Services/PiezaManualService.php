@@ -46,6 +46,10 @@ class PiezaManualService
             throw new \InvalidArgumentException('Una pieza nueva (comprada) no puede tener un equipo de origen.');
         }
 
+        if ($equipoOrigen && (int) $equipoOrigen->empresa_id !== (int) $componente->empresa_id) {
+            throw new \InvalidArgumentException('El equipo de origen debe ser de la misma empresa que el componente.');
+        }
+
         return DB::transaction(function () use ($componente, $cantidad, $condicion, $actor, $equipoOrigen, $identificador, $observaciones) {
             $piezas = collect();
 

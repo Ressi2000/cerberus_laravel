@@ -5,6 +5,7 @@ namespace App\Livewire\Almacen;
 use App\Models\ComponenteAlmacen;
 use App\Models\PiezaExtraida;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -21,12 +22,20 @@ use Livewire\Component;
 class ComponentePiezasModal extends Component
 {
     public bool $open = false;
+
+    // Locked: solo se fija en abrir(), después de autorizar — no se puede
+    // cambiar desde el navegador para espiar piezas de otro componente.
+    #[Locked]
     public ?int $componenteId = null;
 
     #[On('openComponentePiezas')]
     public function abrir(int $componenteId): void
     {
+        $componente = ComponenteAlmacen::findOrFail($componenteId);
+        $this->authorize('view', $componente);
+
         $this->componenteId = $componenteId;
+        unset($this->componente, $this->piezas);
         $this->open = true;
     }
 

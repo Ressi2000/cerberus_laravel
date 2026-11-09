@@ -253,6 +253,24 @@ class Mantenimiento extends Model
         return $this->esPreventivo() || $this->estado === 'En reparación';
     }
 
+    /**
+     * Guardia de transición: corta la acción si el caso no es del tipo o no
+     * está en uno de los estados desde los que esa acción es válida. Los
+     * botones de la vista ya se ocultan según el estado, pero los métodos
+     * públicos de Livewire se pueden invocar igual desde el navegador — la
+     * regla tiene que vivir aquí, no solo en la pantalla.
+     *
+     * @param string[] $estadosPermitidos
+     */
+    private function exigirEstado(string $tipo, array $estadosPermitidos, string $accion): void
+    {
+        if ($this->tipo !== $tipo || ! in_array($this->estado, $estadosPermitidos, true)) {
+            throw new \InvalidArgumentException(
+                "No se puede {$accion} un caso {$this->tipo} en estado «{$this->estado}»."
+            );
+        }
+    }
+
     /** Estados válidos según el tipo de esta intervención (para armar el select). */
     public function estadosDisponibles(): array
     {
@@ -353,6 +371,12 @@ class Mantenimiento extends Model
             return false;
         }
 
+        // Reportado -> Diagnosticado solo con el diagnóstico escrito (ver
+        // MantenimientoDetalle::guardarDiagnostico()); no se puede saltar.
+        if ($this->esCorrectivo() && $this->estado === 'Reportado' && blank($this->diagnostico)) {
+            throw new \InvalidArgumentException('Registra el diagnóstico antes de avanzar el caso.');
+        }
+
         $bloquearAhora = $this->esPreventivo() && $this->estado === 'Programado' && $siguiente === 'En proceso';
 
         $this->update(['estado' => $siguiente]);
@@ -374,6 +398,8 @@ class Mantenimiento extends Model
      */
     public function completar(): void
     {
+        $this->exigirEstado(self::TIPO_PREVENTIVO, ['En proceso'], 'completar');
+
         DB::transaction(function () {
             $fechaCierre = now()->toDateString();
             $this->update(['estado' => 'Completado', 'fecha_fin_real' => $fechaCierre]);
@@ -386,12 +412,23 @@ class Mantenimiento extends Model
     /** Marca una reparación como técnicamente resuelta. El equipo sigue bloqueado hasta cerrar(). */
     public function marcarReparado(): void
     {
+        $this->exigirEstado(self::TIPO_CORRECTIVO, ['En reparación'], 'marcar como reparado');
+
         $this->update(['estado' => 'Reparado']);
     }
 
-    /** Cierra definitivamente una reparación ya marcada como Reparada y libera el equipo. */
+    /**
+     * Cierra definitivamente una reparación ya marcada como Reparada y libera
+     * el equipo. Exige la foto "Después" como evidencia del resultado.
+     */
     public function cerrar(): void
     {
+        $this->exigirEstado(self::TIPO_CORRECTIVO, ['Reparado'], 'cerrar');
+
+        if (! $this->evidencias()->where('tipo', 'Después')->exists()) {
+            throw new \InvalidArgumentException('Sube la foto "Después" antes de cerrar el caso.');
+        }
+
         DB::transaction(function () {
             $this->update(['estado' => 'Cerrado', 'fecha_fin_real' => now()->toDateString()]);
             $this->liberarEquipo();
@@ -507,6 +544,8 @@ class Mantenimiento extends Model
     /** Cancela un mantenimiento preventivo que no llegó a ejecutarse. */
     public function cancelar(): void
     {
+        $this->exigirEstado(self::TIPO_PREVENTIVO, ['Programado', 'En proceso'], 'cancelar');
+
         DB::transaction(function () {
             $this->update(['estado' => 'Cancelado', 'fecha_fin_real' => now()->toDateString()]);
             $this->liberarEquipo();
@@ -530,6 +569,12 @@ class Mantenimiento extends Model
      */
     public function marcarDadoDeBaja(User $aprobador, string $motivo, Deposito $deposito, array $piezas = []): void
     {
+        $this->exigirEstado(self::TIPO_CORRECTIVO, ['Diagnosticado', 'En reparación'], 'dar de baja');
+
+        if ((int) $deposito->empresa_id !== (int) $this->empresa_id) {
+            throw new \InvalidArgumentException('El depósito debe ser de la misma empresa que el caso.');
+        }
+
         DB::transaction(function () use ($aprobador, $motivo, $deposito, $piezas) {
             $this->update([
                 'estado'         => 'Dado de baja',
@@ -560,6 +605,14 @@ class Mantenimiento extends Model
      */
     public function pedirComponente(ComponenteAlmacen $componente, int $cantidad, User $actor): MantenimientoComponente
     {
+        if (! $this->permiteRegistrarTrabajo()) {
+            throw new \InvalidArgumentException('No se pueden pedir componentes en el estado actual del caso.');
+        }
+
+        if ((int) $componente->empresa_id !== (int) $this->empresa_id || ! $componente->activo) {
+            throw new \InvalidArgumentException('Ese componente no está disponible para este caso.');
+        }
+
         return DB::transaction(function () use ($componente, $cantidad, $actor) {
             $hayStock = $componente->stock_actual >= $cantidad;
 
@@ -585,6 +638,14 @@ class Mantenimiento extends Model
     /** Descuenta del almacén un componente que había quedado pendiente por falta de stock. */
     public function entregarComponentePendiente(MantenimientoComponente $item, User $actor): bool
     {
+        if ((int) $item->mantenimiento_id !== (int) $this->id) {
+            throw new \InvalidArgumentException('Ese componente no pertenece a este caso.');
+        }
+
+        if (! $this->permiteRegistrarTrabajo()) {
+            throw new \InvalidArgumentException('No se pueden entregar componentes en el estado actual del caso.');
+        }
+
         if ($item->estado !== 'Pendiente') {
             return false;
         }

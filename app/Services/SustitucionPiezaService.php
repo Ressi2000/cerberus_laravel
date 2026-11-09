@@ -119,7 +119,17 @@ class SustitucionPiezaService
             throw new \InvalidArgumentException('Esta pieza no está disponible en Almacén (ya fue instalada o descartada).');
         }
 
+        if ((int) $pieza->empresa_id !== (int) $equipoDestino->empresa_id) {
+            throw new \InvalidArgumentException('La pieza y el equipo deben ser de la misma empresa.');
+        }
+
         $atributo = $pieza->atributo;
+
+        // Las piezas registradas a mano en Almacén (sin atributo) no saben
+        // qué característica del equipo reemplazan: no se instalan por aquí.
+        if (! $atributo) {
+            throw new \InvalidArgumentException('Esta pieza no está ligada a una característica del equipo; no se puede instalar desde aquí.');
+        }
 
         if ($atributo->categoria_id !== $equipoDestino->categoria_id) {
             throw new \InvalidArgumentException("La pieza «{$atributo->nombre}» no es compatible con la categoría de este equipo.");

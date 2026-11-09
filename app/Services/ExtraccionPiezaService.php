@@ -202,6 +202,10 @@ class ExtraccionPiezaService
             throw new \InvalidArgumentException('Una pieza enviada a Depósito necesita indicar cuál depósito.');
         }
 
+        if ($destino === PiezaExtraida::ESTADO_EN_DEPOSITO && (int) $deposito->empresa_id !== (int) $equipoOrigen->empresa_id) {
+            throw new \InvalidArgumentException('El depósito debe ser de la misma empresa que el equipo.');
+        }
+
         $vaAlmacen = $destino === PiezaExtraida::ESTADO_EN_ALMACEN;
 
         return DB::transaction(function () use (
