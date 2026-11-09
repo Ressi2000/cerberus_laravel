@@ -220,9 +220,12 @@ class ExtraccionPiezaService
                 $componente->registrarEntrada(
                     1,
                     $actor,
-                    $motivo === PiezaExtraida::MOTIVO_BAJA_EQUIPO
-                        ? 'Rescate por baja de equipo'
-                        : 'Rescate por sustitución en reparación',
+                    match ($motivo) {
+                        PiezaExtraida::MOTIVO_BAJA_EQUIPO            => 'Rescate por baja de equipo',
+                        PiezaExtraida::MOTIVO_DESARME_MANUAL         => 'Rescate por desarme de equipo',
+                        PiezaExtraida::MOTIVO_SUSTITUCION_PREVENTIVO => 'Rescate por sustitución en mantenimiento',
+                        default                                      => 'Rescate por sustitución en reparación',
+                    },
                 );
             }
 
