@@ -23,7 +23,7 @@
                 <input wire:model.live.debounce.300ms="busqueda"
                        placeholder="Buscar notificaciones…"
                        class="w-full pl-9 pr-4 py-1.5 text-xs bg-cerberus-mid border border-cerberus-steel rounded-lg
-                              text-white placeholder-cerberus-steel focus:outline-none focus:border-cerberus-light/40">
+                              text-gray-900 dark:text-white placeholder-cerberus-steel focus:outline-none focus:border-cerberus-light/40">
             </div>
         </div>
 
@@ -70,7 +70,7 @@
                 <div class="flex-1 min-w-0">
                     <div class="flex items-start justify-between gap-2">
                         <div>
-                            <p class="text-sm font-semibold text-white">{{ $titulo }}</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ $titulo }}</p>
                             <p class="text-xs text-cerberus-accent mt-0.5">{{ $msg }}</p>
                         </div>
                         <div class="flex items-center gap-1 flex-shrink-0">
@@ -103,8 +103,13 @@
                             <span class="material-icons text-base">check</span>
                         </button>
                     @endif
-                    <button wire:click="deleteNotification('{{ $notif->id }}')"
-                            wire:confirm="¿Eliminar esta notificación?"
+                    <button wire:click="$dispatch('confirmar', {
+                                titulo: 'Eliminar notificación',
+                                mensaje: '¿Eliminar esta notificación?',
+                                accionEvento: 'notificacionEliminarConfirmado',
+                                accionParams: ['{{ $notif->id }}'],
+                                confirmLabel: 'Eliminar',
+                            })"
                             class="p-1.5 rounded-lg text-cerberus-accent hover:text-red-400 hover:bg-cerberus-mid transition-colors"
                             title="Eliminar">
                         <span class="material-icons text-base">delete_outline</span>

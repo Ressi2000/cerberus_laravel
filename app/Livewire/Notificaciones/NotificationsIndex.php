@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Notificaciones;
 
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -33,6 +34,7 @@ class NotificationsIndex extends Component
         auth()->user()?->unreadNotifications->markAsRead();
     }
 
+    #[On('notificacionEliminarConfirmado')]
     public function deleteNotification(string $id): void
     {
         auth()->user()?->notifications()->where('id', $id)->delete();

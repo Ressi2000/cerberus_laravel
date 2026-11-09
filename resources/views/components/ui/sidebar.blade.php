@@ -28,11 +28,11 @@
             <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 px-3 w-full min-w-0">
 
                 {{-- Logo modo OSCURO --}}
-                <img src="{{ asset('images/cerberusLight.png') }}" alt="Cerberus"
+                <img src="{{ asset('images/logos/crb2-dark.png') }}" alt="Cerberus"
                     class="hidden dark:block flex-shrink-0 h-8 w-8 object-contain">
 
                 {{-- Logo modo CLARO --}}
-                <img src="{{ asset('images/cerberus.png') }}" alt="Cerberus"
+                <img src="{{ asset('images/logos/crb2-ligth.png') }}" alt="Cerberus"
                     class="block dark:hidden flex-shrink-0 h-8 w-8 object-contain">
 
                 {{-- Texto — se oculta con CSS en modo mini --}}
@@ -272,15 +272,32 @@
                     <span class="whitespace-nowrap">Asignaciones</span>
                 </a>
 
-                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
-                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">build</span>
-                    <span class="whitespace-nowrap">Mantenimientos</span>
-                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
-                                 bg-amber-100 dark:bg-amber-900/30
-                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
-                        Pronto
+                <a href="{{ route('admin.mantenimientos.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.mantenimientos.*') ? $on : $off }}"
+                    title="Mantenimientos / Reparación">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.mantenimientos.*') ? $ion : $ioff }}">
+                        build
                     </span>
-                </span>
+                    <span class="whitespace-nowrap">Mantenimientos</span>
+                </a>
+
+                <a href="{{ route('admin.almacen.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.almacen.*') ? $on : $off }}"
+                    title="Almacén">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.almacen.*') ? $ion : $ioff }}">
+                        warehouse
+                    </span>
+                    <span class="whitespace-nowrap">Almacén</span>
+                </a>
+
+                <a href="{{ route('admin.cronograma.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.cronograma.*') ? $on : $off }}"
+                    title="Cronograma">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.cronograma.*') ? $ion : $ioff }}">
+                        event_repeat
+                    </span>
+                    <span class="whitespace-nowrap">Cronograma</span>
+                </a>
 
                 <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
                     <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">apps</span>
@@ -312,15 +329,6 @@
                     </span>
                 </span>
 
-                <span class="{{ $li }} py-1.5 text-sm opacity-50 cursor-not-allowed text-gray-500 dark:text-gray-400">
-                    <span class="material-icons text-base flex-shrink-0 {{ $ioff }}">construction</span>
-                    <span class="whitespace-nowrap">En Reparación</span>
-                    <span class="sidebar-badge ml-auto text-[9px] px-1.5 py-0.5 rounded
-                                 bg-amber-100 dark:bg-amber-900/30
-                                 text-amber-600 dark:text-amber-400 font-medium whitespace-nowrap">
-                        Pronto
-                    </span>
-                </span>
             </div>
         </div>
 
@@ -464,7 +472,39 @@
                         </span>
                         <span class="whitespace-nowrap">Empresas</span>
                     </a>
-                    
+
+                    <a href="{{ route('admin.configuracion.tareas-mantenimiento') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.tareas-mantenimiento') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.tareas-mantenimiento') ? $ion : $ioff }}">
+                            checklist
+                        </span>
+                        <span class="whitespace-nowrap">Tareas de Mantenimiento</span>
+                    </a>
+
+                    <a href="{{ route('admin.configuracion.depositos') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.depositos') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.depositos') ? $ion : $ioff }}">
+                            warehouse
+                        </span>
+                        <span class="whitespace-nowrap">Depósitos</span>
+                    </a>
+
+                    <a href="{{ route('admin.configuracion.licencias-microsoft') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.licencias-microsoft') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.licencias-microsoft') ? $ion : $ioff }}">
+                            badge
+                        </span>
+                        <span class="whitespace-nowrap">Licencias Microsoft</span>
+                    </a>
 
                 </div>
             </div>

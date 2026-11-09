@@ -9,6 +9,8 @@ use App\Models\Empresa;
 use App\Models\EstadoEquipo;
 use App\Models\Ubicacion;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -20,16 +22,33 @@ use Spatie\Permission\Models\Role;
  * Principio: la BD guarda el estado técnico exacto (IDs). Este servicio
  * resuelve la presentación solo al momento de mostrar, nunca al guardar.
  *
- * ── Cómo agregar nuevas tablas / campos ─────────────────────────────────────
- * 1. Agrega la tabla a $mapa con sus campos FK.
- * 2. Cada campo apunta a [ModelClass, 'columna_nombre'].
- * 3. El Service automáticamente agrega una clave campo_id__label con el texto.
+ * ── Cómo resuelve cada campo "_id" ──────────────────────────────────────────
+ * 1. Si está en $mapa, se usa ese modelo/columna (para casos que no siguen
+ *    la convención de abajo — ej. un accessor calculado, o un campo que no
+ *    es una FK real de la tabla).
+ * 2. Si no, se resuelve SOLO: se lee la foreign key real que la migración
+ *    declaró para ese campo (Schema::getForeignKeys) para saber a qué tabla
+ *    apunta, y se prueba una lista de columnas típicas ('nombre', 'name',
+ *    'codigo_interno'...) para mostrar el valor.
+ *
+ * Con esto, cualquier tabla o FK nueva (presente o futura) queda cubierta
+ * automáticamente sin tocar este archivo — $mapa solo hace falta para las
+ * excepciones que se salen de esa convención.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 class AuditoriaResolverService
 {
+    /** Columnas candidatas para mostrar el valor legible, en orden de preferencia. */
+    private const COLUMNAS_CANDIDATAS = ['nombre', 'name', 'codigo_interno', 'titulo', 'email', 'username'];
+
+    /** Cache en memoria (por request) de las FK ya leídas, por tabla. */
+    private array $fksCache = [];
+
+    /** Cache en memoria (por request) de la columna candidata elegida, por tabla destino. */
+    private array $columnaCache = [];
+
     /**
-     * Mapa de resolución: tabla → campo_fk → [Modelo, columna_nombre]
+     * Mapa de resolución manual: tabla → campo_fk → [Modelo, columna_nombre]
      *
      * Si el registro fue eliminado, se mostrará "(eliminado)" en lugar de null.
      */
@@ -166,31 +185,97 @@ class AuditoriaResolverService
      */
     public function resolver(string $tabla, array $valores): array
     {
-        $campos = $this->mapa[$tabla] ?? [];
+        $manual = $this->mapa[$tabla] ?? [];
 
-        foreach ($campos as $campo => [$modelo, $columna]) {
-            if (! array_key_exists($campo, $valores)) {
+        foreach ($valores as $campo => $id) {
+            if (! str_ends_with($campo, '_id') || array_key_exists($campo . '__label', $valores)) {
                 continue;
             }
-
-            $id = $valores[$campo];
 
             if ($id === null || $id === '') {
                 $valores[$campo . '__label'] = '—';
                 continue;
             }
 
-            try {
-                $registro = $modelo::find($id);
-                $valores[$campo . '__label'] = $registro
-                    ? ($registro->$columna ?? "(sin nombre)")
-                    : "(eliminado — ID: {$id})";
-            } catch (\Throwable) {
-                $valores[$campo . '__label'] = "(error al resolver ID: {$id})";
+            if (isset($manual[$campo])) {
+                [$modelo, $columna] = $manual[$campo];
+                $valores[$campo . '__label'] = $this->resolverConModelo($modelo, $columna, $id);
+                continue;
+            }
+
+            $tablaDestino = $this->tablaDestinoDeLaFk($tabla, $campo);
+
+            if ($tablaDestino) {
+                $valores[$campo . '__label'] = $this->resolverConTabla($tablaDestino, $id);
             }
         }
 
         return $valores;
+    }
+
+    private function resolverConModelo(string $modelo, string $columna, mixed $id): string
+    {
+        try {
+            $registro = $modelo::find($id);
+            return $registro
+                ? ($registro->$columna ?? '(sin nombre)')
+                : "(eliminado — ID: {$id})";
+        } catch (\Throwable) {
+            return "(error al resolver ID: {$id})";
+        }
+    }
+
+    /** Resuelve un valor leyendo directamente la tabla destino (sin depender de un modelo Eloquent). */
+    private function resolverConTabla(string $tabla, mixed $id): string
+    {
+        $columna = $this->columnaVisibleDe($tabla);
+
+        if (! $columna) {
+            return "ID: {$id}";
+        }
+
+        try {
+            $valor = DB::table($tabla)->where('id', $id)->value($columna);
+            return $valor !== null ? (string) $valor : "(eliminado — ID: {$id})";
+        } catch (\Throwable) {
+            return "(error al resolver ID: {$id})";
+        }
+    }
+
+    /** A qué tabla apunta un campo, según la foreign key real declarada en la migración. */
+    private function tablaDestinoDeLaFk(string $tabla, string $campo): ?string
+    {
+        foreach ($this->foreignKeysDe($tabla) as $fk) {
+            if (in_array($campo, $fk['columns'], true)) {
+                return $fk['foreign_table'];
+            }
+        }
+
+        return null;
+    }
+
+    private function foreignKeysDe(string $tabla): array
+    {
+        if (! array_key_exists($tabla, $this->fksCache)) {
+            try {
+                $this->fksCache[$tabla] = Schema::getForeignKeys($tabla);
+            } catch (\Throwable) {
+                $this->fksCache[$tabla] = [];
+            }
+        }
+
+        return $this->fksCache[$tabla];
+    }
+
+    /** Primera columna candidata que realmente existe en la tabla destino. */
+    private function columnaVisibleDe(string $tabla): ?string
+    {
+        if (! array_key_exists($tabla, $this->columnaCache)) {
+            $this->columnaCache[$tabla] = collect(self::COLUMNAS_CANDIDATAS)
+                ->first(fn($col) => Schema::hasColumn($tabla, $col));
+        }
+
+        return $this->columnaCache[$tabla];
     }
 
     /**
@@ -201,30 +286,40 @@ class AuditoriaResolverService
      */
     public function cambiosLegibles(string $tabla, ?array $previos, ?array $nuevos): array
     {
-        $previos = $previos ? $this->resolver($tabla, $previos) : [];
-        $nuevos  = $nuevos  ? $this->resolver($tabla, $nuevos)  : [];
+        $previosCrudos = $previos ?? [];
+        $nuevosCrudos  = $nuevos  ?? [];
 
         $excluir = [
             'updated_at', 'created_at', 'deleted_at',
             'remember_token', 'email_verified_at', 'password',
         ];
 
-        $cambios = [];
-
-        // Unimos todas las claves (sin las __label y sin excluidas)
-        $claves = collect(array_merge(array_keys($previos), array_keys($nuevos)))
+        // 1. Detectar qué campos realmente cambiaron ANTES de resolver
+        //    ninguna FK. Un registro de auditoría puede no tener cambios
+        //    reales (ej. un LOGIN, que re-guarda el mismo snapshot del
+        //    usuario) — resolver cada campo "_id" ahí sería cientos de
+        //    queries desperdiciadas por cada fila de ese tipo.
+        $claves = collect(array_merge(array_keys($previosCrudos), array_keys($nuevosCrudos)))
             ->unique()
             ->reject(fn($k) => str_ends_with($k, '__label') || in_array($k, $excluir))
+            ->filter(fn($campo) => $this->aTexto($previosCrudos[$campo] ?? null) !== $this->aTexto($nuevosCrudos[$campo] ?? null))
             ->values();
 
-        foreach ($claves as $campo) {
-            $valorAntes  = $previos[$campo] ?? null;
-            $valorDespues = $nuevos[$campo]  ?? null;
+        if ($claves->isEmpty()) {
+            return [];
+        }
 
-            // Si no cambió, omitir
-            if ((string) $valorAntes === (string) $valorDespues) {
-                continue;
-            }
+        // 2. Resolver labels SOLO para los campos que cambiaron (nunca los
+        //    ~10 campos "_id" que un usuario/equipo puede tener sin tocar).
+        $soloCambiados = $claves->all();
+        $previos = $this->resolver($tabla, collect($previosCrudos)->only($soloCambiados)->all());
+        $nuevos  = $this->resolver($tabla, collect($nuevosCrudos)->only($soloCambiados)->all());
+
+        $cambios = [];
+
+        foreach ($claves as $campo) {
+            $valorAntes   = $previosCrudos[$campo] ?? null;
+            $valorDespues = $nuevosCrudos[$campo]  ?? null;
 
             // Preferir label legible si existe
             $labelAntes   = $previos[$campo . '__label'] ?? $this->formatearValor($valorAntes);
@@ -270,9 +365,33 @@ class AuditoriaResolverService
         if ($valor === null || $valor === '') {
             return '—';
         }
+        if (is_array($valor)) {
+            return $this->aTexto($valor);
+        }
         if (is_bool($valor) || $valor === 1 || $valor === 0 || $valor === '1' || $valor === '0') {
             return filter_var($valor, FILTER_VALIDATE_BOOLEAN) ? 'Sí' : 'No';
         }
         return (string) $valor;
+    }
+
+    /**
+     * Convierte cualquier valor crudo (incluyendo arrays) a texto plano,
+     * sin arriesgar un "Array to string conversion". Usado tanto para
+     * comparar antes/después como para el formateo final cuando no hay
+     * __label ni mapeo manual.
+     */
+    private function aTexto(mixed $valor): string
+    {
+        if ($valor === null || $valor === '') {
+            return '';
+        }
+        if (is_array($valor)) {
+            return json_encode($valor) ?: '';
+        }
+        if (is_scalar($valor)) {
+            return (string) $valor;
+        }
+
+        return '';
     }
 }

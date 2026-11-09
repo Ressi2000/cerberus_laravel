@@ -4,7 +4,7 @@
     {{-- ── Header ──────────────────────────────────────────────────────────── --}}
     <div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <span class="material-icons text-emerald-400">monitor_heart</span>
                 Monitoreos Web
             </h1>

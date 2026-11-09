@@ -23,6 +23,7 @@ class AtributoEquipo extends Model
         'filtrable',
         'visible_en_tabla',
         'ver_en_reporte',
+        'reutilizable',
         'orden',
         'opciones',    // JSON — solo aplica cuando tipo = 'select'
         'sub_campos',  // JSON — solo aplica cuando tipo = 'group'
@@ -33,6 +34,7 @@ class AtributoEquipo extends Model
         'filtrable'        => 'boolean',
         'visible_en_tabla' => 'boolean',
         'ver_en_reporte'   => 'boolean',
+        'reutilizable'     => 'boolean',
         'orden'            => 'integer',
         'opciones'         => 'array',
         'sub_campos'       => 'array',
@@ -94,6 +96,12 @@ class AtributoEquipo extends Model
                     ->orderBy('orden');
     }
 
+    /** Piezas extraídas de este tipo (ej: todas las RAM extraídas de cualquier equipo). */
+    public function piezasExtraidas(): HasMany
+    {
+        return $this->hasMany(PiezaExtraida::class, 'atributo_id');
+    }
+
     // ── Scopes ────────────────────────────────────────────────────────────────
 
     /** Atributos que aparecen en los filtros de la tabla de equipos */
@@ -128,6 +136,12 @@ class AtributoEquipo extends Model
     public function scopeDeTipoSelect($query)
     {
         return $query->where('tipo', self::TIPO_SELECT);
+    }
+
+    /** Atributos que se pueden rescatar como pieza (Almacén/Depósito) al extraerlos de un equipo. */
+    public function scopeReutilizables($query)
+    {
+        return $query->where('reutilizable', true);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -190,5 +204,34 @@ class AtributoEquipo extends Model
     public function labelTipo(): string
     {
         return self::TIPOS[$this->tipo] ?? $this->tipo;
+    }
+
+    /**
+     * Describe en texto un valor "crudo" de este atributo — el mismo shape
+     * que usa PiezaExtraida::valor_extraido: ['valor' => ...] para un
+     * atributo simple, o [sub_campo_id => valor, ...] para uno tipo 'group'.
+     * Usado para armar el nombre del bucket de stock al rescatar una pieza
+     * y para mostrar su ficha de trazabilidad.
+     */
+    public function describirValor(array $valor): string
+    {
+        if ($this->esGrupo()) {
+            $subCampos = collect($this->sub_campos ?? [])->keyBy('id');
+            $texto = collect($valor)
+                ->map(function ($v, $subCampoId) use ($subCampos) {
+                    if ($v === null || $v === '') {
+                        return null;
+                    }
+                    $label = $subCampos[$subCampoId]['nombre'] ?? null;
+
+                    return $label ? "{$label}: {$v}" : (string) $v;
+                })
+                ->filter()
+                ->implode(' / ');
+        } else {
+            $texto = (string) ($valor['valor'] ?? '');
+        }
+
+        return trim($this->nombre . ($texto !== '' ? " ({$texto})" : ''));
     }
 }

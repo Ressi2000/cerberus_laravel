@@ -7,19 +7,24 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Agrega la FK de empresa_id a `departamentos`.
+     *
+     * Antes esta migración volvía a hacer Schema::create('departamentos', ...),
+     * duplicando la migración anterior (create_departamentos_table de
+     * 2025-11-02) sin ningún drop entre medio — en un migrate desde cero
+     * fallaba con "table already exists", igual que pasó con
+     * create_users_table y create_cargos_table. Se convierte en un alter
+     * idempotente, mismo criterio ya aplicado en create_cargos_table.
      */
     public function up(): void
     {
-        Schema::create('departamentos', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre');
-            $table->foreignId('empresa_id')
-                  ->nullable()
-                  ->constrained('empresas')
-                  ->nullOnDelete();
-            $table->timestamps();
-        });
+        try {
+            Schema::table('departamentos', function (Blueprint $table) {
+                $table->foreign('empresa_id')->references('id')->on('empresas')->nullOnDelete();
+            });
+        } catch (\Throwable $e) {
+            // La FK ya existe en este entorno (corrió antes de esta limpieza).
+        }
     }
 
     /**
@@ -27,6 +32,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('departamentos');
+        Schema::table('departamentos', function (Blueprint $table) {
+            $table->dropForeign(['empresa_id']);
+        });
     }
 };

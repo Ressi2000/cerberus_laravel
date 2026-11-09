@@ -156,6 +156,8 @@ class DevolverUsuario extends Component
             session()->flash('success', "Devolución registrada. {$cant} equipo(s) liberado(s).");
             $this->redirect(route('admin.asignaciones.historial', $this->usuarioId), navigate: true);
  
+        } catch (\App\Exceptions\ModuloBloqueadoException $e) {
+            $this->addError('general', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('DevolverUsuario@confirmar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar la devolución.');

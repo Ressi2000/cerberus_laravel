@@ -7,12 +7,12 @@
 
     {{-- LOGO + TÍTULO --}}
     <div class="flex flex-col items-center mb-8">
-        <picture>
-            <source srcset="{{ asset('images/cerberus.png') }}" media="(prefers-color-scheme: light)">
-            <img src="{{ asset('images/cerberusLight.png') }}"
-                 alt="Cerberus Logo"
-                 class="h-16 w-16 mb-3 transition-all duration-500">
-        </picture>
+        {{-- Sigue el toggle de isDark (cerberusDarkMode(), definido en el <html> del layout).
+             src="" de respaldo antes de que Alpine hidrate, para no mostrar un ícono roto. --}}
+        <img src="{{ asset('images/logos/crb2-dark.png') }}"
+             :src="isDark ? '{{ asset('images/logos/crb2-dark.png') }}' : '{{ asset('images/logos/crb2-ligth.png') }}'"
+             alt="Cerberus Logo"
+             class="h-16 w-16 mb-3 transition-all duration-500">
 
         <h1 class="text-3xl font-bold tracking-tight text-[#0D1B2A] dark:text-white">
             Cerberus <span class="text-[#1E40AF] dark:text-[#A9D6E5]">2.0</span>

@@ -8,6 +8,9 @@ class AuditoriaController extends Controller
 {
     public function index()
     {
-        return view('auditoria.index');
+        // Temporalmente deshabilitado mientras se mejora el módulo — la
+        // vista real (auditoria.index) queda intacta, solo hay que
+        // devolverla acá cuando se reactive.
+        return view('auditoria.en-mejora');
     }
 }

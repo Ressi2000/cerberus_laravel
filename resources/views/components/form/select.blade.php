@@ -12,17 +12,40 @@
 ])
 
 @php
-    $hasWireModel = $attributes->has('wire:model')
-                 || $attributes->has('wire:model.live')
-                 || $attributes->has('wire:model.blur')
-                 || $attributes->has('wire:model.lazy');
+    /*
+     * Buscamos por prefijo en vez de comparar contra una lista fija de
+     * claves: "wire:model.live.400ms" (debounce) es una clave distinta a
+     * "wire:model.live" dentro del attribute bag, así que una comparación
+     * exacta no la detecta.
+     */
+    $wireModelKey = collect($attributes->getAttributes())
+        ->keys()
+        ->first(fn ($key) => $key === 'wire:model' || str_starts_with($key, 'wire:model.'));
 
-    $fieldId = $name ?? 'field-' . uniqid();
+    $hasWireModel = $wireModelKey !== null;
+
+    /*
+     * ID estable entre renders: si no se pasa $name, se deriva del propio
+     * wire:model en vez de uniqid(). uniqid() cambia en cada render de
+     * Livewire, y cada tecla escrita en OTRO campo con wire:model.live en
+     * la misma página dispara un render — el select cambiaba de id
+     * constantemente y perdía el foco/estado al reabrir el dropdown.
+     */
+    $wireModelTarget = $wireModelKey ? $attributes->get($wireModelKey) : null;
+    $wireModelLive   = $wireModelKey && str_contains($wireModelKey, '.live');
+
+    $fieldId = $name
+        ?? ($wireModelTarget ? 'field-' . \Illuminate\Support\Str::slug($wireModelTarget) : 'field-' . uniqid());
     $hintId  = $fieldId . '-hint';
     $errorId = $fieldId . '-error';
 
-    // Valor inicial para el dropdown searchable (garantizar que sea escalar)
-    $rawInitial   = old($name, $selected) ?? '';
+    // Valor inicial para el dropdown searchable (garantizar que sea escalar).
+    // old($key, $default) con $key null IGNORA el default y devuelve el
+    // array completo de old-input de la sesión (Arr::get($array, null, ...)
+    // retorna $array, no $default) — pasa siempre que no se use `name`, que
+    // es el caso normal cuando el campo se controla por wire:model. Por eso
+    // solo se consulta old() cuando sí hay un $name explícito.
+    $rawInitial   = $name ? (old($name, $selected) ?? '') : ($selected ?? '');
     $initialValue = is_array($rawInitial) ? '' : (string) $rawInitial;
 
     // Convertir opciones a array indexado para Alpine (solo valores escalares)
@@ -84,9 +107,10 @@
     @if ($searchable)
 
         @php
-            // Separar wire:model del resto de atributos para pasarlo al input oculto
-            $wireModelAttr = $attributes->only(['wire:model', 'wire:model.live', 'wire:model.blur', 'wire:model.lazy']);
-            $extraAttrs    = $attributes->except(['wire:model', 'wire:model.live', 'wire:model.blur', 'wire:model.lazy', 'class']);
+            // Separar wire:model (en cualquier variante, incl. debounce) del resto
+            // de atributos para pasarlo al input oculto.
+            $wireModelAttr = $wireModelKey ? $attributes->only([$wireModelKey]) : $attributes->only([]);
+            $extraAttrs    = $attributes->except(array_filter([$wireModelKey, 'class']));
         @endphp
 
         <div

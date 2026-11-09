@@ -12,7 +12,7 @@
 
     <div class="relative z-50 w-full max-w-md p-6 bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus">
 
-        <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span class="material-icons text-red-400">warning</span>
             {{ $title }}
         </h2>
@@ -25,7 +25,7 @@
 
             <div class="flex justify-end space-x-3">
                 <button type="button" data-modal-hide="{{ $id }}"
-                    class="px-4 py-2 bg-cerberus-steel/30 hover:bg-cerberus-steel/50 text-white rounded-lg transition-colors">
+                    class="px-4 py-2 bg-cerberus-steel/30 hover:bg-cerberus-steel/50 text-gray-900 dark:text-white rounded-lg transition-colors">
                     Cancelar
                 </button>
 

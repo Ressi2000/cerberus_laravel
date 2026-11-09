@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Firma;
 use App\Notifications\FirmaCompletadaNotification;
+use App\Notifications\PlanillaFirmadaNotification;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -79,6 +80,41 @@ class FirmaService
         foreach (FirmaResolver::firmantes($tipo, $documento) as $firmante) {
             $firmante?->notify(new FirmaCompletadaNotification($titulo, $folio));
         }
+
+        $this->enviarPlanillaFirmadaPorCorreo($tipo, $documento, $folio);
+    }
+
+    /**
+     * Envía al receptor (solo a él, no al analista ni a su jefe) la planilla
+     * ya firmada por ambas partes, adjunta en PDF. Por ahora solo cubre
+     * asignación y préstamo — traslado queda fuera de este flujo.
+     */
+    private function enviarPlanillaFirmadaPorCorreo(string $tipo, Model $documento, string $folio): void
+    {
+        if (! in_array($tipo, ['asignacion', 'prestamo'], true)) {
+            return;
+        }
+
+        $receptor = FirmaResolver::firmantes($tipo, $documento)['receptor'] ?? null;
+
+        if (! $receptor?->email) {
+            return;
+        }
+
+        $pdf = match ($tipo) {
+            'asignacion' => app(PlanillaService::class)->asignacion($documento),
+            'prestamo'   => app(PlanillaPrestamoService::class)->prestamo($documento),
+        };
+
+        $receptor->notify(new PlanillaFirmadaNotification(
+            tipo: $tipo,
+            folio: $folio,
+            totalItems: $documento->items()->count(),
+            empresaNombre: $documento->empresa?->nombre,
+            // Base64: la notificación se encola y el payload se serializa a
+            // JSON, que exige UTF-8 válido — el PDF binario lo rompe.
+            pdfContenidoBase64: base64_encode($pdf->output()),
+        ));
     }
 
     private function tipoDesdeClase(string $clase): string

@@ -160,13 +160,13 @@
                         <img src="{{ $u->foto_url }}" alt="{{ $u->name }}"
                              class="w-9 h-9 rounded-full object-cover border border-cerberus-steel">
                         <div>
-                            <p class="text-white font-medium text-sm">{{ $u->name }}</p>
+                            <p class="text-gray-900 dark:text-white font-medium text-sm">{{ $u->name }}</p>
                             <p class="text-cerberus-steel text-xs">{{ $u->cedula }}</p>
                         </div>
                     </div>
                 </td>
 
-                <td class="px-4 py-3 text-white text-sm">{{ $u->username }}</td>
+                <td class="px-4 py-3 text-gray-900 dark:text-white text-sm">{{ $u->username }}</td>
                 <td class="px-4 py-3 text-cerberus-light text-sm">{{ $u->email }}</td>
 
                 <td class="px-4 py-3">
@@ -214,6 +214,17 @@
                     >
                         <x-slot name="acciones">
                             <li>
+                                <a href="{{ route('admin.usuarios.trazabilidad', $u) }}"
+                                   wire:navigate
+                                   @click="close()"
+                                   class="flex items-center gap-3 px-4 py-2.5 w-full
+                                          text-cerberus-light hover:bg-cerberus-steel/20
+                                          hover:text-cerberus-accent transition-colors duration-100">
+                                    <span class="material-icons text-base text-cerberus-accent">timeline</span>
+                                    Trazabilidad completa
+                                </a>
+                            </li>
+                            <li>
                                 <a href="{{ route('admin.usuarios.historial', $u) }}"
                                    wire:navigate
                                    @click="close()"
@@ -221,7 +232,7 @@
                                           text-cerberus-light hover:bg-cerberus-steel/20
                                           hover:text-purple-400 transition-colors duration-100">
                                     <span class="material-icons text-base text-purple-400">history</span>
-                                    Historial
+                                    Historial de datos
                                 </a>
                             </li>
                         </x-slot>

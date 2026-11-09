@@ -3,7 +3,7 @@
 
     <div class="mb-4 flex items-center justify-between">
         <div>
-            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                 <span class="material-icons text-cerberus-accent">notifications</span>
                 Notificaciones
             </h1>

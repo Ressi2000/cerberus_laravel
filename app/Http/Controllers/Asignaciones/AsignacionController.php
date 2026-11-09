@@ -57,6 +57,13 @@ class AsignacionController extends Controller
         return view('asignaciones.historial', compact('usuario'));
     }
 
+    /** Listado completo de asignaciones que superan el periodo de rotación recomendado. */
+    public function rotacionRecomendada()
+    {
+        $this->authorize('viewAny', Asignacion::class);
+        return view('asignaciones.rotacion-recomendada');
+    }
+
     /** Formulario de devolución por usuario (todos sus equipos activos) */
     public function devolverUsuario(User $usuario)
     {

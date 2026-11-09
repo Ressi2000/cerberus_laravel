@@ -1,17 +1,31 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="cerberusDarkMode()" :class="{ 'dark': isDark }">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Cerberus 2.0 – Sistema de Inventario y Asignaciones Tecnológicas</title>
+    <link rel="icon" href="{{ asset('images/CBRS2.0favicon.ico') }}">
+    <link rel="shortcut icon" href="{{ asset('images/CBRS2.0favicon.ico') }}">
     <meta name="description" content="Cerberus 2.0 centraliza el control de activos tecnológicos en un entorno multiempresa: asignaciones, préstamos, traslados y auditoría completa, con acceso diferenciado por roles.">
     <meta property="og:title" content="Cerberus 2.0 – Sistema de Inventario y Asignaciones Tecnológicas">
     <meta property="og:description" content="Gestión inteligente de tu inventario tecnológico: asignaciones, préstamos, traslados y auditoría completa.">
     <meta property="og:type" content="website">
 
+    {{-- Anti-flash: misma clave de localStorage que el resto del sistema --}}
+    <script>
+        (function () {
+            const saved = localStorage.getItem('cerberus-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (saved === 'dark' || (saved === null && prefersDark)) {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700,800&display=swap" rel="stylesheet" />
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -73,47 +87,56 @@
         <!-- NAVBAR -->
         <header class="absolute top-0 left-0 right-0 z-20 w-full px-6 sm:px-8 py-6 flex justify-between items-center max-w-7xl mx-auto">
             <div class="flex items-center gap-3">
-                <img src="{{ asset('images/cerberusLight.png') }}" alt="Cerberus Logo"
-                    class="h-12 w-auto brightness-0 invert">
+                {{-- Sigue el toggle de isDark, igual que el logo del footer/sidebar/auth-card --}}
+                <img src="{{ asset('images/logos/crb2-dark.png') }}"
+                    :src="isDark ? '{{ asset('images/logos/crb2-dark.png') }}' : '{{ asset('images/logos/crb2-ligth.png') }}'"
+                    alt="Cerberus Logo"
+                    class="h-12 w-auto">
                 <h1 class="text-2xl font-semibold tracking-tight text-white">
                     Cerberus <span class="text-[#A9D6E5]">2.0</span>
                 </h1>
             </div>
 
-            @if (Route::has('login'))
-                <!-- Nav desktop -->
-                <nav class="hidden sm:flex items-center gap-4 text-sm">
-                    @auth
-                        <a href="{{ url('/dashboard') }}"
-                            class="px-5 py-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white rounded-md shadow transition">
-                            Dashboard
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}"
-                            class="px-5 py-2 border border-white/30 hover:border-white/60
-                                  text-white hover:bg-white/10 rounded-md transition font-medium backdrop-blur-sm">
-                            Iniciar sesión
-                        </a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}"
-                                class="px-5 py-2 bg-[#A9D6E5] hover:bg-[#89C2D9]
-                                      text-[#0D1B2A] rounded-md shadow transition font-medium">
-                                Registrarse
-                            </a>
-                        @endif
-                    @endauth
-                </nav>
-
-                <!-- Botón hamburguesa mobile -->
-                <button type="button" @click="mobileNavOpen = !mobileNavOpen"
-                    class="sm:hidden p-2 rounded-md border border-white/30 text-white"
-                    aria-label="Abrir menú de navegación">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path x-show="!mobileNavOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path x-show="mobileNavOpen" x-cloak stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+            <div class="flex items-center gap-3">
+                <!-- Toggle modo oscuro/claro -->
+                <button type="button" @click="toggle()"
+                    class="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 border border-white/20 backdrop-blur-sm text-white transition-all duration-300"
+                    :title="isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+                    aria-label="Cambiar tema">
+                    <span class="material-icons text-base leading-none" x-show="isDark" style="display:none">light_mode</span>
+                    <span class="material-icons text-base leading-none" x-show="!isDark">dark_mode</span>
                 </button>
 
+                @if (Route::has('login'))
+                    <!-- Nav desktop -->
+                    <nav class="hidden sm:flex items-center gap-4 text-sm">
+                        @auth
+                            <a href="{{ url('/dashboard') }}"
+                                class="px-5 py-2 bg-[#1E40AF] hover:bg-[#1E3A8A] text-white rounded-md shadow transition">
+                                Dashboard
+                            </a>
+                        @else
+                            <a href="{{ route('login') }}"
+                                class="px-5 py-2 border border-white/30 hover:border-white/60
+                                      text-white hover:bg-white/10 rounded-md transition font-medium backdrop-blur-sm">
+                                Iniciar sesión
+                            </a>
+                        @endauth
+                    </nav>
+
+                    <!-- Botón hamburguesa mobile -->
+                    <button type="button" @click="mobileNavOpen = !mobileNavOpen"
+                        class="sm:hidden p-2 rounded-md border border-white/30 text-white"
+                        aria-label="Abrir menú de navegación">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path x-show="!mobileNavOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            <path x-show="mobileNavOpen" x-cloak stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                @endif
+            </div>
+
+            @if (Route::has('login'))
                 <!-- Nav mobile desplegable -->
                 <nav x-show="mobileNavOpen" x-cloak x-transition
                     class="sm:hidden absolute top-full left-0 right-0 mt-2 mx-6 p-4 rounded-xl bg-[#0D1B2A]/95 border border-white/10 backdrop-blur-sm flex flex-col gap-3 text-sm">
@@ -127,12 +150,6 @@
                             class="px-5 py-2 border border-white/30 hover:border-white/60 text-white hover:bg-white/10 rounded-md transition font-medium text-center">
                             Iniciar sesión
                         </a>
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}"
-                                class="px-5 py-2 bg-[#A9D6E5] hover:bg-[#89C2D9] text-[#0D1B2A] rounded-md shadow transition font-medium text-center">
-                                Registrarse
-                            </a>
-                        @endif
                     @endauth
                 </nav>
             @endif
@@ -171,7 +188,7 @@
                               hover:scale-105 transform duration-300 motion-reduce:transform-none">
                         Iniciar sesión
                     </a>
-                    <a href="#features"
+                    <a href="#anatomia"
                         class="px-8 py-4 border-2 border-white/30 hover:border-white/60
                               text-white hover:bg-white/10 rounded-lg font-semibold text-lg transition
                               backdrop-blur-sm hover:scale-105 transform duration-300 motion-reduce:transform-none">
@@ -183,87 +200,90 @@
     </section>
 
     <!-- ══════════════════════════════════════════════════════════
-         FEATURES — gradiente siempre oscuro: colores fijos
+         ANATOMÍA DEL SISTEMA — acróstico CERBERUS, en secciones fijas
+         (no carrusel): fondo adaptable al tema
          ══════════════════════════════════════════════════════════ -->
-    <section id="features" class="py-24 w-full relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-[#0A1628] via-[#1a3a5c] to-[#0D1B2A]"></div>
+    <section id="anatomia" class="py-24 w-full relative overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-br from-[#EEF2F7] via-[#E4ECF4] to-[#DCE6EF]
+                    dark:from-[#0D1B2A] dark:via-[#122744] dark:to-[#0A1628]
+                    transition-colors duration-500"></div>
         <div class="absolute inset-0 opacity-30">
-            <div class="absolute top-20 right-20 w-96 h-96 bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-20 left-20 w-72 h-72 bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
+            <div class="absolute top-10 left-1/4 w-96 h-96 bg-[#1E40AF]/10 dark:bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-10 right-1/4 w-72 h-72 bg-[#A9D6E5]/20 dark:bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
         </div>
 
-        <div class="relative z-10 max-w-7xl mx-auto text-center px-6">
-            <div class="mb-16">
-                <span class="inline-block px-4 py-2 rounded-full bg-[#A9D6E5]/10 border border-[#A9D6E5]/20 text-[#A9D6E5] text-sm font-medium mb-4 backdrop-blur-sm">
-                    🚀 Características
-                </span>
-                <h3 class="text-4xl md:text-5xl font-bold mb-4 text-white">
-                    ¿Qué puede hacer <span class="text-[#A9D6E5]">Cerberus</span>?
-                </h3>
-                <p class="text-gray-300 max-w-2xl mx-auto text-lg">Módulos disponibles en la plataforma</p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                @foreach ([
-                    ['🖥️', 'Inventario de Equipos', 'Registra y clasifica activos tecnológicos con categorías configurables, estados, ubicaciones y atributos dinámicos por tipo de equipo (RAM, disco, S/N, etc.).'],
-                    ['📋', 'Asignaciones', 'Asigna equipos a usuarios o áreas comunes de forma permanente. Soporta periféricos vinculados al equipo principal con devoluciones independientes.'],
-                    ['🔄', 'Préstamos', 'Gestiona préstamos temporales con fechas de vencimiento, alertas de expiración, renovaciones y seguimiento de devoluciones.'],
-                    ['🚚', 'Traslados', 'Registra movimientos físicos de equipos entre ubicaciones con numeración automática (TRA-YYYY-NNN) y documentación del proceso.'],
-                    ['🔍', 'Auditoría', 'Cada acción queda registrada: quién la realizó, cuándo, y qué cambió. Trazabilidad completa para cumplimiento y control.'],
-                    ['⚙️', 'Configuración', 'Administra categorías, estados, ubicaciones, departamentos, cargos y empresas desde un panel centralizado.'],
-                ] as [$icon, $title, $desc])
-                    <div class="group p-8 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10
-                                hover:border-[#A9D6E5]/40 hover:bg-white/10 transition-all duration-500 text-left
-                                hover:-translate-y-2 motion-reduce:hover:-translate-y-0
-                                hover:shadow-2xl hover:shadow-[#A9D6E5]/5">
-                        <div class="text-5xl mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-500 motion-reduce:transform-none">
-                            {{ $icon }}</div>
-                        <h4 class="text-xl font-semibold mb-3 text-[#A9D6E5] group-hover:text-white transition-colors duration-300">
-                            {{ $title }}</h4>
-                        <p class="text-gray-400 text-sm leading-relaxed group-hover:text-gray-300 transition-colors duration-300">
-                            {{ $desc }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <!-- ══════════════════════════════════════════════════════════
-         ROLES — fondo que cambia con el tema: tokens cerberus-*
-         ══════════════════════════════════════════════════════════ -->
-    <section class="py-24 w-full relative bg-[#F0F4F8] dark:bg-[#0D1B2A] transition-colors duration-500">
         <div class="relative z-10 max-w-7xl mx-auto px-6">
-            <div class="text-center mb-16">
-                <span class="inline-block px-4 py-2 rounded-full
-                             bg-cerberus-primary/10 dark:bg-[#A9D6E5]/10
+            <div class="text-center mb-12">
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full
+                             bg-[#1E40AF]/10 dark:bg-[#1E40AF]/10
                              border border-cerberus-primary/20 dark:border-[#A9D6E5]/20
                              text-cerberus-primary dark:text-[#A9D6E5]
                              text-sm font-medium mb-4 backdrop-blur-sm">
-                    🔐 Control de acceso
+                    🐺 Anatomía del sistema
                 </span>
-                <h3 class="text-4xl md:text-5xl font-bold text-[#0D1B2A] dark:text-white transition-colors duration-500">
-                    Acceso diferenciado por <span class="text-cerberus-primary dark:text-[#A9D6E5]">roles</span>
+                <h3 class="text-4xl md:text-5xl font-bold mb-4 text-[#0D1B2A] dark:text-white transition-colors duration-500">
+                    ¿Qué significa <span class="text-cerberus-primary dark:text-[#A9D6E5]">CERBERUS</span>?
                 </h3>
+                <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto text-lg transition-colors duration-500">
+                    Ocho pilares que definen la arquitectura y la identidad de la plataforma
+                </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Resumen del acróstico -->
+            <div class="grid grid-cols-4 sm:grid-cols-8 gap-3 max-w-4xl mx-auto mb-16">
                 @foreach ([
-                    ['Administrador', 'Control total del sistema: configuración, usuarios, empresas y todos los datos del inventario.',    'border-[#1E40AF]/20 dark:border-red-500/30   bg-[#1E40AF]/5 dark:bg-red-500/5',   '👑', 'text-[#1E40AF] dark:text-red-400'],
-                    ['Analista',      'Gestión operativa de equipos, asignaciones, préstamos y traslados en su contexto de empresa.',       'border-[#1E40AF]/20 dark:border-blue-500/30  bg-[#1E40AF]/5 dark:bg-blue-500/5',  '📊', 'text-[#1E40AF] dark:text-blue-400'],
-                    ['Usuario',       'Visualización del inventario asignado y préstamos activos asociados a su perfil.',                   'border-[#1E40AF]/20 dark:border-green-500/30 bg-[#1E40AF]/5 dark:bg-green-500/5', '👤', 'text-[#1E40AF] dark:text-green-400'],
-                ] as [$rol, $desc, $style, $emoji, $color])
-                    <div class="group p-8 rounded-2xl border {{ $style }} bg-white/80 dark:bg-transparent
-                                backdrop-blur-sm hover:-translate-y-3 motion-reduce:hover:-translate-y-0
-                                transition-all duration-500 hover:shadow-xl">
-                        <div class="text-5xl mb-4 group-hover:scale-110 transition-transform duration-500 motion-reduce:transform-none">
-                            {{ $emoji }}</div>
-                        <h4 class="font-bold text-2xl mb-3 {{ $color }} group-hover:text-[#0D1B2A] dark:group-hover:text-white transition-colors duration-300">
-                            {{ $rol }}</h4>
-                        <p class="text-gray-600 dark:text-gray-300 text-sm leading-relaxed group-hover:text-gray-800 dark:group-hover:text-white transition-colors duration-300">
-                            {{ $desc }}</p>
-                        <div class="mt-6 h-0.5 w-12 bg-[#1E40AF]/20 dark:bg-white/20
-                                    group-hover:w-full group-hover:bg-[#1E40AF] dark:group-hover:bg-[#A9D6E5]/50
-                                    transition-all duration-500 rounded-full">
+                    ['C', 'Control'],
+                    ['E', 'Eficiencia'],
+                    ['R', 'Roles'],
+                    ['B', 'Business'],
+                    ['E', 'Evolución'],
+                    ['R', 'Rastreo'],
+                    ['U', 'Unificación'],
+                    ['S', 'Seguridad'],
+                ] as [$letra, $palabra])
+                    <div class="bg-white/70 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-3 text-center
+                                hover:border-cerberus-primary/50 dark:hover:border-[#A9D6E5]/50
+                                hover:bg-white dark:hover:bg-white/10 hover:-translate-y-1
+                                transition-all duration-300 motion-reduce:hover:translate-y-0">
+                        <span class="block text-lg font-extrabold text-cerberus-primary dark:text-[#A9D6E5] mb-1">{{ $letra }}</span>
+                        <span class="block text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400 font-medium">{{ $palabra }}</span>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Los ocho pilares: tarjetas con foto, siempre con scrim oscuro
+                 para que el texto blanco quede legible sobre cualquier imagen -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+                @foreach ([
+                    ['C', '🎛️', 'Control', 'Gestión centralizada y absoluta de todos los activos tecnológicos en un entorno unificado y seguro.', asset('images/siglas/control.jpg')],
+                    ['E', '⚡', 'Eficiencia', 'Optimización de procesos operativos diarios como asignaciones, préstamos y traslados de equipos.', asset('images/siglas/eficiencia.jpg')],
+                    ['R', '🛡️', 'Roles', 'Seguridad avanzada y acceso diferenciado según los permisos y perfiles específicos de los usuarios.', asset('images/siglas/roles.jpg')],
+                    ['B', '🏢', 'Business (Multiempresa)', 'Capacidad corporativa de administrar múltiples organizaciones o divisiones desde una sola plataforma.', asset('images/siglas/business.jpg')],
+                    ['E', '🔧', 'Evolución', 'Adaptabilidad y flexibilidad total gracias a atributos dinámicos que se ajustan a cada necesidad.', asset('images/siglas/evolucion.jpg')],
+                    ['R', '📡', 'Rastreo (Trazabilidad Total)', 'Seguimiento detallado del ciclo de vida completo de cada activo tecnológico registrado.', asset('images/siglas/rastreo.jpg')],
+                    ['U', '📊', 'Unificación', 'Integración de reportes y auditorías con capacidad de exportación directa a Excel y PDF.', asset('images/siglas/unificacion.jpg')],
+                    ['S', '🔒', 'Seguridad', 'Transparencia, protección de datos y cumplimiento normativo riguroso en cada movimiento.', asset('images/siglas/seguridad.jpg')],
+                ] as [$letra, $icono, $titulo, $desc, $imagen])
+                    <div class="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-white/10
+                                hover:border-cerberus-primary/40 dark:hover:border-[#A9D6E5]/40 transition-all duration-500
+                                min-h-[280px] flex flex-col justify-end p-6
+                                hover:-translate-y-2 motion-reduce:hover:-translate-y-0">
+                        <div class="absolute inset-0 bg-cover bg-center scale-105 group-hover:scale-110
+                                    transition-transform duration-700 motion-reduce:transform-none"
+                             style="background-image:url('{{ $imagen }}')"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-[#060913] via-[#060913]/85 to-[#060913]/40"></div>
+
+                        <div class="relative z-10">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-xl bg-[#1E40AF]/20 border border-[#A9D6E5]/30
+                                            flex items-center justify-center text-xl">
+                                    {{ $icono }}
+                                </div>
+                                <span class="text-4xl font-black bg-gradient-to-br from-white to-[#A9D6E5]
+                                             bg-clip-text text-transparent opacity-90">{{ $letra }}</span>
+                            </div>
+                            <h4 class="text-lg font-bold text-white mb-2">{{ $titulo }}</h4>
+                            <p class="text-sm text-gray-300 leading-relaxed">{{ $desc }}</p>
                         </div>
                     </div>
                 @endforeach
@@ -272,84 +292,65 @@
     </section>
 
     <!-- ══════════════════════════════════════════════════════════
-         CTA FINAL — fondo que cambia con el tema
+         CIERRE — "Lleva el control total de tu tecnología"
+         (panel de la propuesta), fondo adaptable al tema
          ══════════════════════════════════════════════════════════ -->
-    <section class="py-24 w-full text-center relative bg-[#E8EEF2] dark:bg-[#162a3f] transition-colors duration-500">
-        <div class="relative z-10 max-w-7xl mx-auto px-6">
-            <div class="relative overflow-hidden rounded-3xl p-12
-                        bg-gradient-to-r from-[#1E40AF]/20 to-[#1E40AF]/5
-                        dark:from-[#1E40AF]/30 dark:to-[#A9D6E5]/30
-                        border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20 backdrop-blur-sm">
-                <div class="absolute -top-20 -right-20 w-64 h-64 bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
-                <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-[#1E40AF]/5 dark:bg-[#1E40AF]/10 rounded-full blur-3xl"></div>
-
-                <div class="relative z-10">
-                    <span class="inline-block px-4 py-2 rounded-full
-                                 bg-[#1E40AF]/10 dark:bg-[#A9D6E5]/10
-                                 border border-[#1E40AF]/20 dark:border-[#A9D6E5]/20
-                                 text-[#1E40AF] dark:text-[#A9D6E5]
-                                 text-sm font-medium mb-6 backdrop-blur-sm">
-                        🎯 Comienza ahora
-                    </span>
-                    <h3 class="text-4xl md:text-5xl font-bold mb-6 text-[#0D1B2A] dark:text-white transition-colors duration-500">
-                        Controla tu infraestructura con <span class="text-[#1E40AF] dark:text-[#A9D6E5]">Cerberus</span>
-                    </h3>
-                    <p class="text-gray-600 dark:text-gray-300 mb-10 max-w-2xl mx-auto text-lg transition-colors duration-500">
-                        Solución moderna, segura y multiempresa para la gestión completa del ciclo de vida de tus
-                        activos tecnológicos.
-                    </p>
-                    <div class="flex flex-wrap justify-center gap-4">
-                        <a href="{{ route('login') }}"
-                            class="group inline-flex items-center gap-2 px-10 py-5
-                                  bg-[#1E40AF] hover:bg-[#1E3A8A] dark:bg-[#A9D6E5] dark:hover:bg-[#89C2D9]
-                                  text-white dark:text-[#0D1B2A] rounded-lg font-semibold text-xl
-                                  transition-all duration-300 shadow-lg
-                                  hover:scale-105 motion-reduce:transform-none
-                                  hover:shadow-2xl hover:shadow-[#1E40AF]/20 dark:hover:shadow-[#A9D6E5]/20">
-                            Comenzar ahora
-                            <span class="group-hover:translate-x-1 transition-transform duration-300 motion-reduce:transform-none">→</span>
-                        </a>
-                        <a href="#features"
-                            class="px-10 py-5 border-2 border-[#1E40AF]/30 dark:border-white/30
-                                  hover:border-[#1E40AF]/50 dark:hover:border-[#A9D6E5]/50
-                                  text-[#1E40AF] dark:text-white hover:text-[#0D1B2A] dark:hover:text-[#A9D6E5]
-                                  rounded-lg font-semibold text-xl transition-all duration-300
-                                  backdrop-blur-sm hover:scale-105 motion-reduce:transform-none
-                                  hover:shadow-xl hover:bg-white/50 dark:hover:bg-white/5">
-                            Explorar características
-                        </a>
-                    </div>
-                </div>
+    <section class="py-24 w-full text-center relative overflow-hidden bg-[#EDF1F6] dark:bg-[#060913] transition-colors duration-500">
+        <div class="relative z-10 max-w-4xl mx-auto px-6">
+            <div class="relative overflow-hidden rounded-3xl p-12 sm:p-16 border border-gray-200 dark:border-white/5
+                        bg-[radial-gradient(circle_at_center,rgba(30,64,175,0.08)_0%,transparent_70%)]
+                        dark:bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.12)_0%,transparent_70%)]">
+                <h3 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 text-[#0D1B2A] dark:text-white transition-colors duration-500">
+                    Lleva el control total de tu tecnología
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-10 max-w-xl mx-auto text-lg transition-colors duration-500">
+                    Optimiza los recursos, automatiza la trazabilidad y asegura el rendimiento de tu
+                    infraestructura con Cerberus 2.0.
+                </p>
+                <a href="{{ route('login') }}"
+                    class="group inline-flex items-center gap-3 px-9 py-4
+                          bg-gradient-to-r from-[#3b82f6] to-[#2563eb] hover:from-[#2563eb] hover:to-[#1d4ed8]
+                          text-white rounded-full font-semibold text-lg
+                          shadow-[0_10px_25px_rgba(59,130,246,0.4)] hover:shadow-[0_15px_30px_rgba(59,130,246,0.6)]
+                          transition-all duration-300 hover:-translate-y-0.5 motion-reduce:transform-none">
+                    Comenzar Ahora
+                    <span class="group-hover:translate-x-1 transition-transform duration-300 motion-reduce:transform-none">→</span>
+                </a>
             </div>
         </div>
     </section>
 
     <!-- ══════════════════════════════════════════════════════════
-         FOOTER — gradiente siempre oscuro: colores fijos
+         FOOTER — fondo adaptable al tema
          ══════════════════════════════════════════════════════════ -->
     <footer class="relative w-full overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-[#0A1628] via-[#1a3a5c] to-[#0D1B2A]"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-[#EDF1F6] via-[#E3EAF1] to-[#DCE6EF]
+                    dark:from-[#0A1628] dark:via-[#1a3a5c] dark:to-[#0D1B2A]
+                    transition-colors duration-500"></div>
         <div class="absolute inset-0 opacity-20">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
-            <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
+            <div class="absolute top-0 right-0 w-64 h-64 bg-[#A9D6E5]/20 dark:bg-[#A9D6E5]/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 w-64 h-64 bg-[#1E40AF]/10 dark:bg-[#1E40AF]/20 rounded-full blur-3xl"></div>
         </div>
 
-        <div class="relative z-10 py-12 text-gray-300 text-sm">
+        <div class="relative z-10 py-12 text-gray-600 dark:text-gray-300 text-sm transition-colors duration-500">
             <div class="max-w-7xl mx-auto px-6">
                 <div class="flex flex-col md:flex-row justify-between items-center gap-6">
                     <div class="flex items-center gap-3">
-                        <img src="{{ asset('images/cerberusLight.png') }}" alt="Cerberus Logo" loading="lazy"
+                        {{-- Sigue el toggle de isDark, igual que el logo del auth-card --}}
+                        <img :src="isDark ? '{{ asset('images/logos/crb2-dark.png') }}' : '{{ asset('images/logos/crb2-ligth.png') }}'"
+                            src="{{ asset('images/logos/crb2-dark.png') }}"
+                            alt="Cerberus Logo" loading="lazy"
                             class="h-8 w-auto opacity-70">
-                        <span class="text-white/80 font-semibold">Cerberus 2.0</span>
+                        <span class="text-[#0D1B2A]/80 dark:text-white/80 font-semibold">Cerberus 2.0</span>
                     </div>
 
                     <div class="flex gap-8 text-sm">
-                        <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Política de privacidad</a>
-                        <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Términos de uso</a>
-                        <a href="#" class="hover:text-[#A9D6E5] transition-colors duration-300">Contacto</a>
+                        <a href="#" class="hover:text-cerberus-primary dark:hover:text-[#A9D6E5] transition-colors duration-300">Política de privacidad</a>
+                        <a href="#" class="hover:text-cerberus-primary dark:hover:text-[#A9D6E5] transition-colors duration-300">Términos de uso</a>
+                        <a href="#" class="hover:text-cerberus-primary dark:hover:text-[#A9D6E5] transition-colors duration-300">Contacto</a>
                     </div>
 
-                    <div class="text-gray-400">
+                    <div class="text-gray-500 dark:text-gray-400">
                         © {{ date('Y') }} R - A - H
                     </div>
                 </div>

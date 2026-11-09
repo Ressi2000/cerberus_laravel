@@ -2,12 +2,18 @@
 
 namespace App\Console\Commands;
 
+use App\Models\AsignacionItem;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\Prestamo;
 use App\Models\User;
+use App\Notifications\EquipoReparacionExtendidaNotification;
 use App\Notifications\GarantiaProximaVencerNotification;
+use App\Notifications\MantenimientoProximoNotification;
+use App\Notifications\MantenimientoProximoUsuarioNotification;
 use App\Notifications\PrestamoProximoAVencerNotification;
 use App\Notifications\PrestamoVencidoNotification;
+use App\Notifications\RotacionAsignacionRecomendadaNotification;
 use Illuminate\Console\Command;
 
 class NotificarAlertas extends Command
@@ -25,6 +31,10 @@ class NotificarAlertas extends Command
         $this->notificarPrestamosVencidos();
         $this->notificarPrestamosProximos();
         $this->notificarGarantiasProximas();
+        $this->notificarRotacionesRecomendadas();
+        $this->notificarReparacionesExtendidas();
+        $this->notificarMantenimientosProximos();
+        $this->notificarUsuariosEquipoProximo();
 
         $this->info('Alertas Cerberus enviadas correctamente.');
         return self::SUCCESS;
@@ -122,6 +132,134 @@ class NotificarAlertas extends Command
                 }
 
                 $this->line("  ✓ Garantía {$equipo->nombre} (en {$dias}d)");
+            });
+    }
+
+    /**
+     * NO es vida útil/obsolescencia del equipo: alerta cuando un mismo
+     * receptor lleva más tiempo con un mismo equipo que el periodo de
+     * rotación recomendado configurado en la categoría.
+     */
+    private function notificarRotacionesRecomendadas(): void
+    {
+        AsignacionItem::with(['equipo.categoria', 'asignacion.usuario', 'asignacion.empresa'])
+            ->whereHas('asignacion', fn ($q) => $q->where('estado', 'Activa'))
+            ->where('devuelto', false)
+            ->whereNull('equipo_padre_id')
+            ->whereHas('equipo.categoria', fn ($q) => $q->whereNotNull('meses_rotacion_asignacion'))
+            ->get()
+            ->filter(fn (AsignacionItem $item) => $item->superaRotacionRecomendada())
+            ->each(function (AsignacionItem $item) {
+                $meses  = $item->mesesConReceptor();
+                $umbral = $item->mesesRotacionRecomendada();
+                $notif  = new RotacionAsignacionRecomendadaNotification($item, $meses, $umbral);
+
+                $empresaId      = $item->asignacion->empresa_id;
+                $destinatarios  = $empresaId
+                    ? $this->analistasDeEmpresa($empresaId)
+                    : collect();
+
+                foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
+                    if (! $this->yaNotificadoHoy($user, RotacionAsignacionRecomendadaNotification::class, 'asignacion_item_id', $item->id)) {
+                        $user->notify($notif);
+                    }
+                }
+
+                $this->line("  ✓ Rotación recomendada: {$item->equipo->codigo_interno} ({$meses}m/{$umbral}m)");
+            });
+    }
+
+    /**
+     * Reparaciones correctivas abiertas por demasiado tiempo. NO tiene
+     * relación con "días de garantía" ni con vida útil — solo mide cuánto
+     * lleva el caso abierto desde fecha_inicio.
+     */
+    private function notificarReparacionesExtendidas(): void
+    {
+        $umbralDias = 7;
+
+        Mantenimiento::correctivos()->abiertos()
+            ->where('fecha_inicio', '<=', now()->subDays($umbralDias)->toDateString())
+            ->with('equipo.empresa')
+            ->get()
+            ->each(function (Mantenimiento $mantenimiento) {
+                $equipo = $mantenimiento->equipo;
+                if (! $equipo) return;
+
+                $dias  = (int) \Carbon\Carbon::parse($mantenimiento->fecha_inicio)->diffInDays(now());
+                $notif = new EquipoReparacionExtendidaNotification($equipo, $dias);
+
+                $destinatarios = $mantenimiento->empresa_id
+                    ? $this->analistasDeEmpresa($mantenimiento->empresa_id)
+                    : collect();
+
+                foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
+                    if (! $this->yaNotificadoHoy($user, EquipoReparacionExtendidaNotification::class, 'equipo_id', $equipo->id)) {
+                        $user->notify($notif);
+                    }
+                }
+
+                $this->line("  ✓ Reparación extendida: {$equipo->codigo_interno} ({$dias}d)");
+            });
+    }
+
+    /** Mantenimientos preventivos con fecha programada próxima a cumplirse. */
+    private function notificarMantenimientosProximos(): void
+    {
+        $umbralDias = 7;
+
+        Mantenimiento::preventivos()->abiertos()
+            ->whereNotNull('proxima_fecha_programada')
+            ->whereBetween('proxima_fecha_programada', [now()->startOfDay(), now()->addDays($umbralDias)->endOfDay()])
+            ->with('equipo')
+            ->get()
+            ->each(function (Mantenimiento $mantenimiento) {
+                $dias  = (int) now()->startOfDay()->diffInDays($mantenimiento->proxima_fecha_programada);
+                $notif = new MantenimientoProximoNotification($mantenimiento, $dias);
+
+                $destinatarios = $mantenimiento->empresa_id
+                    ? $this->analistasDeEmpresa($mantenimiento->empresa_id)
+                    : collect();
+
+                foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
+                    if (! $this->yaNotificadoHoy($user, MantenimientoProximoNotification::class, 'mantenimiento_id', $mantenimiento->id)) {
+                        $user->notify($notif);
+                    }
+                }
+
+                $this->line("  ✓ Mantenimiento próximo: {$mantenimiento->equipo?->codigo_interno} (en {$dias}d)");
+            });
+    }
+
+    /**
+     * Correo al usuario que tiene el equipo asignado, exactamente una semana
+     * antes del mantenimiento preventivo programado — para que lo tenga
+     * listo el día de la jornada. Solo equipos con asignación PERSONAL (un
+     * equipo asignado a un área común no tiene un usuario individual a quién
+     * avisarle). Dispara una sola vez (diasRestantes === 7 exacto, no un
+     * rango) porque es un correo puntual, no una alerta de gestión que deba
+     * repetirse cada día mientras se acerca la fecha.
+     */
+    private function notificarUsuariosEquipoProximo(): void
+    {
+        $diasAntelacion = 7;
+
+        Mantenimiento::preventivos()->abiertos()
+            ->whereNotNull('proxima_fecha_programada')
+            ->whereDate('proxima_fecha_programada', now()->addDays($diasAntelacion)->toDateString())
+            ->with('equipo.asignacionItemActivo.asignacion.usuario')
+            ->get()
+            ->each(function (Mantenimiento $mantenimiento) use ($diasAntelacion) {
+                $equipo = $mantenimiento->equipo;
+                $usuario = $equipo?->asignacionItemActivo?->asignacion?->usuario;
+
+                if (! $usuario || ! $usuario->email) {
+                    return;
+                }
+
+                $usuario->notify(new MantenimientoProximoUsuarioNotification($mantenimiento, $diasAntelacion));
+
+                $this->line("  ✓ Aviso a usuario: {$equipo->codigo_interno} -> {$usuario->email}");
             });
     }
 

@@ -172,6 +172,8 @@ class DevolverAsignacion extends Component
 
             $this->redirect(route('admin.asignaciones.index'), navigate: true);
 
+        } catch (\App\Exceptions\ModuloBloqueadoException $e) {
+            $this->addError('general', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('DevolverAsignacion@confirmar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar la devolución. Por favor, inténtalo de nuevo.');

@@ -146,8 +146,14 @@
                         <x-table.table-actions :model="$empresa">
                             <x-slot name="acciones">
                                 <li>
-                                    <button wire:click="$dispatch('reactivarEmpresa', { id: {{ $empresa->id }} })"
-                                            wire:confirm="¿Reactivar la empresa «{{ $empresa->nombre }}»?"
+                                    <button wire:click="$dispatch('confirmar', {
+                                                titulo: 'Reactivar empresa',
+                                                mensaje: '¿Reactivar la empresa «{{ $empresa->nombre }}»?',
+                                                accionEvento: 'reactivarEmpresa',
+                                                accionParams: [{{ $empresa->id }}],
+                                                variant: 'primary',
+                                                confirmLabel: 'Reactivar',
+                                            })"
                                             @click="close()"
                                             class="flex items-center gap-3 px-4 py-2.5 w-full
                                                    text-gray-600 dark:text-cerberus-light

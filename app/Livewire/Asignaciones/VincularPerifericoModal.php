@@ -160,6 +160,7 @@ class VincularPerifericoModal extends Component
     // Acción secundaria: quitar vínculo (desvincular sin devolver)
     // ─────────────────────────────────────────────────────────────────────────
 
+    #[On('perifericoDesvincularConfirmado')]
     public function desvincular(): void
     {
         try {

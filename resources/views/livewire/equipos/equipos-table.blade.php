@@ -3,6 +3,7 @@
     {{-- ── Modales ─────────────────────────────────────────────────────────── --}}
     @livewire('equipos.equipo-view-modal')
     @livewire('equipos.equipo-delete-modal')
+    @livewire('equipos.equipo-desarmar-modal')
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -247,10 +248,7 @@
 
                     {{-- Estado: siempre visible --}}
                     <td class="px-4 py-3">
-                        <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium
-                                     ring-1 ring-inset bg-teal-400/10 text-teal-400 ring-teal-500/20">
-                            {{ $equipo->estado->nombre }}
-                        </span>
+                        <x-ui.estado-badge :estado="$equipo->estado" />
                     </td>
 
                     {{-- Ubicación: siempre visible --}}
@@ -338,6 +336,19 @@
                                         Imprimir etiqueta
                                     </a>
                                 </li>
+                                @can('desarmar', $equipo)
+                                    <li>
+                                        <button
+                                            @click="close()"
+                                            wire:click="$dispatch('openEquipoDesarmar', { id: {{ $equipo->id }} })"
+                                            class="flex items-center gap-3 px-4 py-2.5 w-full text-left
+                                                   text-cerberus-light hover:bg-cerberus-steel/20
+                                                   hover:text-amber-400 transition-colors duration-100">
+                                            <span class="material-icons text-base text-amber-500">construction</span>
+                                            Desarmar
+                                        </button>
+                                    </li>
+                                @endcan
                             </x-slot>
                         </x-table.table-actions>
                     </td>

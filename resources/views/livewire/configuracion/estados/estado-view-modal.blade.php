@@ -21,6 +21,13 @@
                         <p class="text-base font-semibold text-gray-900 dark:text-white mt-0.5">{{ $estado->nombre }}</p>
                     </div>
                     <div>
+                        <p class="text-xs font-medium text-gray-500 dark:text-cerberus-accent uppercase tracking-wide">Badge</p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <x-ui.estado-badge :estado="$estado" />
+                            <span class="text-xs font-mono text-gray-500 dark:text-cerberus-light">{{ $estado->color }}</span>
+                        </div>
+                    </div>
+                    <div>
                         <p class="text-xs font-medium text-gray-500 dark:text-cerberus-accent uppercase tracking-wide">Equipos con este estado</p>
                         <p class="text-3xl font-bold text-gray-900 dark:text-white mt-0.5">{{ $estado->equipos_count }}</p>
                     </div>

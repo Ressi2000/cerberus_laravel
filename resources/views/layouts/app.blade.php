@@ -6,6 +6,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="icon" href="{{ asset('images/CBRS2.0favicon.ico') }}">
+    <link rel="shortcut icon" href="{{ asset('images/CBRS2.0favicon.ico') }}">
     <title>{{ isset($title) ? $title . ' · Cerberus' : config('app.name', 'Cerberus') }}</title>
 
     {{--
@@ -103,6 +105,11 @@
     {{-- ── Toast global de notificaciones ────────────────────────────────── --}}
     {{-- Recibe eventos 'toast' desde cualquier componente Livewire del sistema --}}
     <livewire:toast-notification />
+
+    {{-- ── Modal de confirmación global ──────────────────────────────────── --}}
+    {{-- Recibe el evento 'confirmar' desde cualquier componente Livewire del
+         sistema y reemplaza window.confirm() nativo (ver App\Livewire\Ui\ConfirmModal). --}}
+    <livewire:ui.confirm-modal />
 
     <script>
         // Activar transiciones sólo después de que Alpine esté listo

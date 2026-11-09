@@ -58,7 +58,14 @@ class CrearTraslado extends Component
     // Datos para Paso 1
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Ubicaciones de origen: solo las visibles para el analista (donde puede gestionar equipos) */
+    /**
+     * Ubicaciones de origen:
+     *  - Analista: solo las de su propia empresa activa (donde puede
+     *    gestionar equipos), más las foráneas.
+     *  - Administrador: solo las de la empresa que eligió en el Paso 1
+     *    (más las foráneas) — antes no se filtraba por nada, permitiendo
+     *    elegir un origen de una empresa distinta a la seleccionada.
+     */
     #[Computed]
     public function ubicacionesOrigen()
     {
@@ -69,6 +76,11 @@ class CrearTraslado extends Component
         if ($actor->hasRole('Analista') && $actor->empresa_activa_id) {
             $query->where(function ($q) use ($actor) {
                 $q->where('empresa_id', $actor->empresa_activa_id)
+                    ->orWhere('es_estado', true);
+            });
+        } elseif ($actor->hasRole('Administrador') && $this->empresa_id) {
+            $query->where(function ($q) {
+                $q->where('empresa_id', $this->empresa_id)
                     ->orWhere('es_estado', true);
             });
         }
@@ -225,6 +237,14 @@ class CrearTraslado extends Component
         $this->carrito = [];
         $this->filtro_categoria = '';
         unset($this->equiposDisponibles, $this->categorias);
+    }
+
+    public function updatedEmpresaId(): void
+    {
+        $this->ubicacion_origen_id = '';
+        $this->carrito = [];
+        $this->filtro_categoria = '';
+        unset($this->ubicacionesOrigen, $this->ubicacionesOrigenOpciones, $this->equiposDisponibles, $this->categorias);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

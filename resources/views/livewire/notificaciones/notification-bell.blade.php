@@ -24,7 +24,7 @@
         <div class="flex items-center justify-between px-4 py-3 border-b border-cerberus-steel">
             <div class="flex items-center gap-2">
                 <span class="material-icons text-base text-cerberus-accent">notifications</span>
-                <span class="text-sm font-semibold text-white">Notificaciones</span>
+                <span class="text-sm font-semibold text-gray-900 dark:text-white">Notificaciones</span>
                 @if($unreadCount > 0)
                     <span class="px-1.5 py-0.5 text-xs bg-red-500/20 text-red-400 rounded-full font-semibold">
                         {{ $unreadCount }}
@@ -68,7 +68,7 @@
                         <span class="material-icons text-sm">{{ $icono }}</span>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <p class="text-xs font-semibold text-white truncate">{{ $titulo }}</p>
+                        <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ $titulo }}</p>
                         <p class="text-xs text-cerberus-accent mt-0.5 line-clamp-2">{{ $msg }}</p>
                         <p class="text-xs text-cerberus-steel mt-1">{{ $notif->created_at->diffForHumans() }}</p>
                     </div>

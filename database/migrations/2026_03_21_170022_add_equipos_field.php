@@ -11,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // create_equipos_table (2026_02_18_141629) ya incluye creado_por —
+        // esta migración lo volvía a agregar sin comprobar, y en un migrate
+        // desde cero fallaba con "Duplicate column name: creado_por".
+        if (Schema::hasColumn('equipos', 'creado_por')) {
+            return;
+        }
+
         Schema::table('equipos', function (Blueprint $table) {
             $table->foreignId('creado_por')
                 ->nullable()

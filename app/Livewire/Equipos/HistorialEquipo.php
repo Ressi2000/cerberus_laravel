@@ -7,12 +7,16 @@ use App\Models\AsignacionItem;
 use App\Models\Auditoria;
 use App\Models\AtributoEquipo;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
+use App\Models\PiezaExtraida;
+use App\Models\PiezaExtraidaMovimiento;
 use App\Models\Prestamo;
 use App\Models\PrestamoItem;
 use App\Models\TrasladoItem;
 use App\Services\AuditoriaResolverService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -57,6 +61,13 @@ class HistorialEquipo extends Component
         if ($property !== 'page') {
             $this->resetPage();
         }
+    }
+
+    /** Refresca el encabezado (activo/estado/depósito) tras dar de baja el equipo desde esta misma ficha. */
+    #[On('equipoActualizado')]
+    public function refrescarEquipo(): void
+    {
+        $this->equipo->refresh();
     }
 
     public function resetFilters(): void
@@ -241,6 +252,101 @@ class HistorialEquipo extends Component
             ]);
     }
 
+    /**
+     * Mantenimientos y reparaciones: un evento al iniciar el caso y, si ya
+     * cerró, uno más con el desenlace (Completado/Cerrado/Cancelado/Dado de
+     * baja). Igual patrón que asignaciones/préstamos (entrega + devolución).
+     */
+    protected function eventosMantenimientos(): Collection
+    {
+        $casos = Mantenimiento::with(['reportadoPor', 'aprobadoPor', 'asignacion.usuario'])
+            ->where('equipo_id', $this->equipo->id)
+            ->get();
+
+        $eventos = collect();
+
+        foreach ($casos as $m) {
+            $esReparacion = $m->esCorrectivo();
+
+            $eventos->push([
+                'fecha'   => $m->fecha_inicio ?? $m->created_at,
+                'tipo'    => 'mantenimiento',
+                'icono'   => $esReparacion ? 'construction' : 'build',
+                'color'   => $esReparacion ? 'orange' : 'sky',
+                'titulo'  => $esReparacion
+                    ? 'Reparación reportada: ' . ($m->falla_reportada ?: 'sin descripción')
+                    : 'Mantenimiento programado: ' . ($m->descripcion ?: 'revisión preventiva'),
+                'detalle' => $m->asignacion?->usuario ? 'Equipo asignado a ' . $m->asignacion->usuario->name . ' al momento del hallazgo.' : null,
+                'estado'  => null,
+                'usuario' => $m->reportadoPor?->name ?? 'Sistema',
+            ]);
+
+            if (! $m->estaAbierto()) {
+                $eventos->push([
+                    'fecha'   => $m->fecha_fin_real ?? $m->updated_at,
+                    'tipo'    => 'mantenimiento',
+                    'icono'   => $m->estado === 'Dado de baja' ? 'report' : ($m->estado === 'Cancelado' ? 'cancel' : 'check_circle'),
+                    'color'   => $m->estado === 'Dado de baja' ? 'red' : ($m->estado === 'Cancelado' ? 'gray' : 'green'),
+                    'titulo'  => $esReparacion
+                        ? "Reparación {$m->estado}"
+                        : "Mantenimiento {$m->estado}",
+                    'detalle' => $m->estado === 'Dado de baja' ? $m->motivo_baja : null,
+                    'estado'  => null,
+                    'usuario' => $m->aprobadoPor?->name ?? $m->reportadoPor?->name ?? 'Sistema',
+                ]);
+            }
+        }
+
+        return $eventos;
+    }
+
+    /**
+     * Movimientos de piezas que involucran a este equipo: extraídas de él
+     * (baja o sustitución en reparación) o instaladas en él (rescatadas de
+     * otro equipo). Ver PiezaExtraidaMovimiento::equipo_relacionado_id.
+     */
+    protected function eventosPiezas(): Collection
+    {
+        return PiezaExtraidaMovimiento::where('equipo_relacionado_id', $this->equipo->id)
+            ->with(['pieza.atributo', 'pieza.deposito', 'registradoPor'])
+            ->get()
+            ->map(function ($mov) {
+                $pieza         = $mov->pieza;
+                $esExtraccion  = $mov->tipo === PiezaExtraidaMovimiento::TIPO_EXTRACCION;
+
+                // Para la extracción, arma un detalle específico aunque el
+                // analista no haya escrito nada: por qué salió (motivo) y a
+                // dónde fue (Almacén o un Depósito puntual) — así el
+                // historial del equipo deja rastro claro de cada pieza,
+                // incluida la del nuevo flujo "Desarmar" (equipo operativo).
+                $detalle = null;
+                if ($esExtraccion && $pieza) {
+                    $partes   = [];
+                    $partes[] = PiezaExtraida::MOTIVOS[$pieza->motivo] ?? $pieza->motivo;
+                    $partes[] = $pieza->estado === PiezaExtraida::ESTADO_EN_ALMACEN
+                        ? 'destino: Almacén de Componentes'
+                        : 'destino: Depósito ' . ($pieza->deposito?->nombre ?? '—');
+
+                    if ($mov->observaciones) {
+                        $partes[] = $mov->observaciones;
+                    }
+
+                    $detalle = implode(' · ', $partes);
+                }
+
+                return [
+                    'fecha'   => $mov->created_at,
+                    'tipo'    => 'pieza',
+                    'icono'   => $esExtraccion ? 'output' : 'input',
+                    'color'   => $esExtraccion ? 'red' : 'green',
+                    'titulo'  => $mov->labelTipo() . ': ' . ($pieza?->atributo?->describirValor($pieza->valor_extraido) ?? 'Pieza'),
+                    'detalle' => $detalle,
+                    'estado'  => null,
+                    'usuario' => $mov->registradoPor?->name ?? 'Sistema',
+                ];
+            });
+    }
+
     /** Cambios en características estáticas del equipo (vía auditoría general). */
     protected function eventosEstaticos(AuditoriaResolverService $resolver): Collection
     {
@@ -291,6 +397,28 @@ class HistorialEquipo extends Component
     // Render
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Piezas que se le extrajeron a este equipo (baja o sustitución en
+     * reparación) y dónde están ahora — la "etiqueta" de trazabilidad que
+     * permite ubicar cada pieza rescatada. Ver PiezaExtraida.
+     */
+    protected function piezasExtraidas(): Collection
+    {
+        return $this->equipo->piezasExtraidas()
+            ->with(['atributo', 'equipoDestino', 'deposito'])
+            ->latest()
+            ->get();
+    }
+
+    /** Piezas rescatadas de OTROS equipos que terminaron instaladas en este. */
+    protected function piezasInstaladas(): Collection
+    {
+        return $this->equipo->piezasInstaladas()
+            ->with(['atributo', 'equipoOrigen'])
+            ->latest()
+            ->get();
+    }
+
     public function render(AuditoriaResolverService $resolver)
     {
         $atributos = AtributoEquipo::where('categoria_id', $this->equipo->categoria_id)
@@ -298,11 +426,13 @@ class HistorialEquipo extends Component
             ->pluck('nombre', 'id');
 
         $fuentes = [
-            'tecnico'    => fn() => $this->eventosTecnicos()->merge($this->eventosGrupos()),
-            'asignacion' => fn() => $this->eventosAsignaciones(),
-            'traslado'   => fn() => $this->eventosTraslados(),
-            'prestamo'   => fn() => $this->eventosPrestamos(),
-            'estado'     => fn() => $this->eventosEstaticos($resolver),
+            'tecnico'       => fn() => $this->eventosTecnicos()->merge($this->eventosGrupos()),
+            'asignacion'    => fn() => $this->eventosAsignaciones(),
+            'traslado'      => fn() => $this->eventosTraslados(),
+            'prestamo'      => fn() => $this->eventosPrestamos(),
+            'mantenimiento' => fn() => $this->eventosMantenimientos(),
+            'pieza'         => fn() => $this->eventosPiezas(),
+            'estado'        => fn() => $this->eventosEstaticos($resolver),
         ];
 
         $eventos = collect();
@@ -332,8 +462,10 @@ class HistorialEquipo extends Component
         );
 
         return view('livewire.equipos.historial-equipo', [
-            'eventos'   => $eventos,
-            'atributos' => $atributos,
+            'eventos'          => $eventos,
+            'atributos'        => $atributos,
+            'piezasExtraidas'  => $this->piezasExtraidas(),
+            'piezasInstaladas' => $this->piezasInstaladas(),
         ]);
     }
 }

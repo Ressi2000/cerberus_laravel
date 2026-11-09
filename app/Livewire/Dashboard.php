@@ -6,6 +6,7 @@ use App\Models\AsignacionItem;
 use App\Models\Auditoria;
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\Mantenimiento;
 use App\Models\Prestamo;
 use App\Models\Traslado;
 use App\Models\User;
@@ -128,11 +129,42 @@ class Dashboard extends Component
             ->limit(6)
             ->get();
 
+        // ── Rotación de asignaciones recomendada ────────────────────────────────
+        // NO es vida útil/obsolescencia del equipo: es cuánto tiempo lleva la
+        // misma persona con el mismo equipo, comparado contra el periodo de
+        // rotación configurado por categoría (Configuración → Categorías).
+        $rotacionRecomendada = AsignacionItem::with(['equipo.categoria', 'asignacion.usuario', 'asignacion.empresa'])
+            ->whereHas('asignacion', function ($q) use ($user) {
+                $q->visiblePara($user)->where('estado', 'Activa')
+                    ->when($this->empresaFiltroId, fn($qq) => $qq->where('empresa_id', $this->empresaFiltroId));
+            })
+            ->where('devuelto', false)
+            ->whereNull('equipo_padre_id')
+            ->whereHas('equipo.categoria', fn($q) => $q->whereNotNull('meses_rotacion_asignacion'))
+            ->get()
+            ->filter(fn($item) => $item->superaRotacionRecomendada())
+            ->sortByDesc(fn($item) => $item->mesesConReceptor())
+            ->values();
+
+        $rotacionRecomendadaLista = $rotacionRecomendada->take(6);
+
         // ── Actividad reciente ─────────────────────────────────────────────────
         $actividadReciente = Auditoria::visiblePara($user)
             ->with('usuario:id,name,foto')
             ->orderByDesc('created_at')
             ->limit(12)
+            ->get();
+
+        // ── Mantenimiento preventivo: equipos que necesitan atención ahora ─────
+        // El Administrador ve el calendario completo del cronograma (componente
+        // aparte). El Analista ve algo más simple y accionable: los equipos que
+        // YA tienen un caso preventivo abierto (Programado o En proceso).
+        $equiposPendientesMantenimiento = $esAdmin ? collect() : $this->porEmpresa(
+            Mantenimiento::visiblePara($user)->preventivos()->abiertos()
+        )
+            ->with('equipo.categoria:id,nombre')
+            ->orderBy('proxima_fecha_programada')
+            ->limit(6)
             ->get();
 
         // ── Últimos traslados ──────────────────────────────────────────────────
@@ -165,8 +197,11 @@ class Dashboard extends Component
             'equiposPorCategoria'    => $equiposPorCategoria,
             'prestamosVencidosLista' => $prestamosVencidosLista,
             'garantiasPorVencer'     => $garantiasPorVencer,
+            'rotacionRecomendadaLista'  => $rotacionRecomendadaLista,
+            'rotacionRecomendadaCount'  => $rotacionRecomendada->count(),
             'actividadReciente'      => $actividadReciente,
             'ultimosTraslados'       => $ultimosTraslados,
+            'equiposPendientesMantenimiento' => $equiposPendientesMantenimiento,
             'empresas'               => $empresas,
             'empresaSeleccionada'    => $empresaSeleccionada,
             'esAdmin'                => $esAdmin,

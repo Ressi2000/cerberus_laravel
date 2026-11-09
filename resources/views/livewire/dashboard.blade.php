@@ -4,7 +4,7 @@
     ══════════════════════════════════════════════════════════════════ --}}
     <div class="mb-6 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-            <h1 class="text-2xl font-bold text-white">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
                 Bienvenido, {{ auth()->user()->name }} 👋
             </h1>
             <p class="text-cerberus-accent text-sm mt-1">
@@ -59,7 +59,7 @@
                             class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors
                                    {{ !$empresaFiltroId
                                       ? 'bg-cerberus-light/10 text-cerberus-light font-semibold'
-                                      : 'text-cerberus-accent hover:bg-cerberus-darkest/40 hover:text-white' }}">
+                                      : 'text-cerberus-accent hover:bg-cerberus-darkest/40 hover:text-gray-900 dark:hover:text-white' }}">
                         <span class="material-icons text-base">public</span>
                         Todas las empresas
                         @if(!$empresaFiltroId)
@@ -74,7 +74,7 @@
                                     class="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left transition-colors
                                            {{ $empresaFiltroId == $empresa->id
                                               ? 'bg-cerberus-light/10 text-cerberus-light font-semibold'
-                                              : 'text-cerberus-accent hover:bg-cerberus-darkest/40 hover:text-white' }}">
+                                              : 'text-cerberus-accent hover:bg-cerberus-darkest/40 hover:text-gray-900 dark:hover:text-white' }}">
                                 <span class="material-icons text-base text-cerberus-steel">business</span>
                                 <span class="truncate">{{ $empresa->nombre }}</span>
                                 @if($empresaFiltroId == $empresa->id)
@@ -125,7 +125,7 @@
                 </div>
                 <span class="material-icons text-cerberus-steel text-sm group-hover:text-cerberus-light transition-colors">arrow_forward</span>
             </div>
-            <p class="text-3xl font-bold text-white">{{ number_format($totalEquipos) }}</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($totalEquipos) }}</p>
             <p class="text-cerberus-accent text-xs mt-1">Equipos activos</p>
         </a>
 
@@ -138,7 +138,7 @@
                 </div>
                 <span class="material-icons text-cerberus-steel text-sm group-hover:text-cerberus-light transition-colors">arrow_forward</span>
             </div>
-            <p class="text-3xl font-bold text-white">{{ number_format($equiposAsignados) }}</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($equiposAsignados) }}</p>
             <p class="text-cerberus-accent text-xs mt-1">En asignación</p>
         </a>
 
@@ -151,7 +151,7 @@
                 </div>
                 <span class="material-icons text-cerberus-steel text-sm group-hover:text-cerberus-light transition-colors">arrow_forward</span>
             </div>
-            <p class="text-3xl font-bold text-white">{{ number_format($prestamosActivos) }}</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($prestamosActivos) }}</p>
             <p class="text-cerberus-accent text-xs mt-1">Préstamos activos</p>
         </a>
 
@@ -169,7 +169,7 @@
                     <span class="text-xs bg-red-500/20 text-red-400 border border-red-500/30 rounded px-1.5 py-0.5 font-semibold">!</span>
                 @endif
             </div>
-            <p class="text-3xl font-bold {{ $prestamosVencidos > 0 ? 'text-red-400' : 'text-white' }}">
+            <p class="text-3xl font-bold {{ $prestamosVencidos > 0 ? 'text-red-400' : 'text-gray-900 dark:text-white' }}">
                 {{ number_format($prestamosVencidos) }}
             </p>
             <p class="text-cerberus-accent text-xs mt-1">Préstamos vencidos</p>
@@ -184,7 +184,7 @@
                 </div>
                 <span class="material-icons text-cerberus-steel text-sm group-hover:text-cerberus-light transition-colors">arrow_forward</span>
             </div>
-            <p class="text-3xl font-bold text-white">{{ number_format($trasladosMes) }}</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($trasladosMes) }}</p>
             <p class="text-cerberus-accent text-xs mt-1">Traslados ({{ now()->isoFormat('MMM') }})</p>
         </a>
 
@@ -209,7 +209,7 @@
                 @endif
             </div>
             @if($edadPromedioAnios !== null)
-                <p class="text-3xl font-bold text-white">{{ $edadPromedioAnios }}<span class="text-base font-normal text-cerberus-accent ml-1">años</span></p>
+                <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ $edadPromedioAnios }}<span class="text-base font-normal text-cerberus-accent ml-1">años</span></p>
             @else
                 <p class="text-3xl font-bold text-cerberus-steel">—</p>
             @endif
@@ -226,7 +226,7 @@
                 </div>
                 <span class="material-icons text-cerberus-steel text-sm group-hover:text-cerberus-light transition-colors">arrow_forward</span>
             </div>
-            <p class="text-3xl font-bold text-white">{{ number_format($usuariosActivos) }}</p>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($usuariosActivos) }}</p>
             <p class="text-cerberus-accent text-xs mt-1">Usuarios activos</p>
         </a>
         @endunless
@@ -242,7 +242,7 @@
         <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl p-5 shadow-cerberus">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-base font-semibold text-white">Equipos por estado</h2>
+                    <h2 class="text-base font-semibold text-gray-900 dark:text-white">Equipos por estado</h2>
                     <p class="text-cerberus-accent text-xs mt-0.5">Distribución actual del inventario</p>
                 </div>
                 <span class="material-icons text-cerberus-accent">donut_large</span>
@@ -262,7 +262,7 @@
                             <div>
                                 <div class="flex justify-between text-xs mb-1">
                                     <span class="text-cerberus-accent truncate pr-2">{{ $nombre }}</span>
-                                    <span class="text-white font-semibold flex-shrink-0">{{ $cantidad }}</span>
+                                    <span class="text-gray-900 dark:text-white font-semibold flex-shrink-0">{{ $cantidad }}</span>
                                 </div>
                                 <div class="w-full bg-cerberus-darkest/60 rounded-full h-1.5">
                                     <div class="h-1.5 rounded-full bg-cerberus-light transition-all duration-500"
@@ -279,7 +279,7 @@
         <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl p-5 shadow-cerberus">
             <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h2 class="text-base font-semibold text-white">Equipos por categoría</h2>
+                    <h2 class="text-base font-semibold text-gray-900 dark:text-white">Equipos por categoría</h2>
                     <p class="text-cerberus-accent text-xs mt-0.5">Top categorías del inventario</p>
                 </div>
                 <span class="material-icons text-cerberus-accent">bar_chart</span>
@@ -294,7 +294,7 @@
                         <div>
                             <div class="flex justify-between text-xs mb-1">
                                 <span class="text-cerberus-accent truncate pr-2">{{ $nombre }}</span>
-                                <span class="text-white font-semibold flex-shrink-0">{{ $cantidad }}</span>
+                                <span class="text-gray-900 dark:text-white font-semibold flex-shrink-0">{{ $cantidad }}</span>
                             </div>
                             <div class="w-full bg-cerberus-darkest/60 rounded-full h-2.5">
                                 <div class="h-2.5 rounded-full transition-all duration-500"
@@ -321,7 +321,7 @@
                 <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
                     <div class="flex items-center gap-2">
                         <div class="w-2 h-2 rounded-full bg-red-400 {{ $prestamosVencidosLista->isEmpty() ? 'opacity-30' : 'animate-pulse' }}"></div>
-                        <h2 class="text-base font-semibold text-white">Préstamos vencidos</h2>
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Préstamos vencidos</h2>
                         @if($prestamosVencidosLista->isNotEmpty())
                             <span class="bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-semibold rounded-full px-2 py-0.5">
                                 {{ $prestamosVencidosLista->count() }}
@@ -362,7 +362,7 @@
                                                 <div class="w-7 h-7 rounded-full bg-red-500/20 flex items-center justify-center flex-shrink-0">
                                                     <span class="material-icons text-red-400 text-sm">person</span>
                                                 </div>
-                                                <span class="text-white text-sm font-medium truncate max-w-[150px]">
+                                                <span class="text-gray-900 dark:text-white text-sm font-medium truncate max-w-[150px]">
                                                     {{ $prestamo->receptorNombre() }}
                                                 </span>
                                             </div>
@@ -382,7 +382,7 @@
                                         </td>
                                         <td class="px-4 py-3 text-right">
                                             <a href="{{ route('admin.prestamos.devolver', $prestamo) }}"
-                                               class="text-cerberus-light hover:text-white text-xs flex items-center justify-end gap-1 transition-colors">
+                                               class="text-cerberus-light hover:text-gray-900 dark:hover:text-white text-xs flex items-center justify-end gap-1 transition-colors">
                                                 Ver <span class="material-icons text-sm">open_in_new</span>
                                             </a>
                                         </td>
@@ -399,7 +399,7 @@
                 <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
                     <div class="flex items-center gap-2">
                         <div class="w-2 h-2 rounded-full bg-yellow-400 {{ $garantiasPorVencer->isEmpty() ? 'opacity-30' : 'animate-pulse' }}"></div>
-                        <h2 class="text-base font-semibold text-white">Garantías por vencer</h2>
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Garantías por vencer</h2>
                         <span class="text-cerberus-accent text-xs">(próximos 30 días)</span>
                         @if($garantiasPorVencer->isNotEmpty())
                             <span class="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 text-xs font-semibold rounded-full px-2 py-0.5">
@@ -441,7 +441,7 @@
                                                 <div class="w-7 h-7 rounded-full {{ $urgente ? 'bg-red-500/20' : 'bg-yellow-500/15' }} flex items-center justify-center flex-shrink-0">
                                                     <span class="material-icons text-sm {{ $urgente ? 'text-red-400' : 'text-yellow-400' }}">memory</span>
                                                 </div>
-                                                <span class="text-white text-sm font-mono">{{ $equipo->codigo_interno }}</span>
+                                                <span class="text-gray-900 dark:text-white text-sm font-mono">{{ $equipo->codigo_interno }}</span>
                                             </div>
                                         </td>
                                         <td class="px-3 py-3 text-cerberus-accent text-xs hidden sm:table-cell">
@@ -466,6 +466,157 @@
                 @endif
             </div>
 
+            {{-- Tabla: Rotación de Asignaciones Recomendada --}}
+            <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus overflow-hidden">
+                <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-orange-400 {{ $rotacionRecomendadaLista->isEmpty() ? 'opacity-30' : 'animate-pulse' }}"></div>
+                        <h2 class="text-base font-semibold text-gray-900 dark:text-white">Rotación de asignaciones recomendada</h2>
+                        @if($rotacionRecomendadaCount > 0)
+                            <span class="bg-orange-500/20 text-orange-400 border border-orange-500/30 text-xs font-semibold rounded-full px-2 py-0.5">
+                                {{ $rotacionRecomendadaCount }}
+                            </span>
+                        @endif
+                    </div>
+                    <a href="{{ route('admin.asignaciones.rotacion-recomendada') }}"
+                       class="text-cerberus-accent hover:text-cerberus-light text-xs flex items-center gap-1 transition-colors">
+                        Ver todos <span class="material-icons text-sm">arrow_forward</span>
+                    </a>
+                </div>
+
+                @if($rotacionRecomendadaLista->isEmpty())
+                    <div class="flex flex-col items-center justify-center py-8 text-cerberus-accent">
+                        <span class="material-icons text-4xl mb-2 text-emerald-400/60">check_circle</span>
+                        <p class="text-sm">Ninguna asignación supera su periodo de rotación</p>
+                    </div>
+                @else
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="text-cerberus-accent text-xs bg-cerberus-darkest/30">
+                                    <th class="px-5 py-2.5 text-left font-medium">Receptor</th>
+                                    <th class="px-3 py-2.5 text-left font-medium hidden sm:table-cell">Equipo</th>
+                                    <th class="px-3 py-2.5 text-left font-medium hidden sm:table-cell">Categoría</th>
+                                    <th class="px-3 py-2.5 text-center font-medium">Permanencia</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-cerberus-steel/40">
+                                @foreach($rotacionRecomendadaLista as $item)
+                                    <tr class="hover:bg-cerberus-darkest/20 transition-colors">
+                                        <td class="px-5 py-3">
+                                            <div class="flex items-center gap-2">
+                                                <div class="w-7 h-7 rounded-full bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                                                    <span class="material-icons text-orange-400 text-sm">person</span>
+                                                </div>
+                                                <span class="text-gray-900 dark:text-white text-sm font-medium truncate max-w-[150px]">
+                                                    {{ $item->asignacion->usuario->name ?? '—' }}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="px-3 py-3 text-cerberus-accent text-xs hidden sm:table-cell font-mono">
+                                            {{ $item->equipo->codigo_interno ?? '—' }}
+                                        </td>
+                                        <td class="px-3 py-3 text-cerberus-accent text-xs hidden sm:table-cell">
+                                            {{ $item->equipo->categoria->nombre ?? '—' }}
+                                        </td>
+                                        <td class="px-3 py-3 text-center">
+                                            <span class="bg-orange-500/20 text-orange-400 text-xs font-bold rounded px-2 py-0.5">
+                                                {{ $item->mesesConReceptor() }}m / {{ $item->mesesRotacionRecomendada() }}m
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            </div>
+
+            {{-- Mantenimiento Preventivo (Cronograma) --}}
+            @if ($esAdmin)
+                <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
+                        <div class="flex items-center gap-2">
+                            <span class="material-icons text-cerberus-accent text-base">event_repeat</span>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Cronograma de Mantenimiento</h2>
+                        </div>
+                        <a href="{{ route('admin.cronograma.index') }}"
+                           class="text-cerberus-accent hover:text-cerberus-light text-xs flex items-center gap-1 transition-colors">
+                            Ver cronograma completo <span class="material-icons text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+                    <div class="p-4">
+                        @livewire('cronograma.cronograma-calendario', ['modo' => 'compact'])
+                    </div>
+                </div>
+            @else
+                <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus overflow-hidden">
+                    <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-blue-400 {{ $equiposPendientesMantenimiento->isEmpty() ? 'opacity-30' : 'animate-pulse' }}"></div>
+                            <h2 class="text-base font-semibold text-gray-900 dark:text-white">Equipos con mantenimiento pendiente</h2>
+                            @if($equiposPendientesMantenimiento->isNotEmpty())
+                                <span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 text-xs font-semibold rounded-full px-2 py-0.5">
+                                    {{ $equiposPendientesMantenimiento->count() }}
+                                </span>
+                            @endif
+                        </div>
+                        <a href="{{ route('admin.mantenimientos.index') }}"
+                           class="text-cerberus-accent hover:text-cerberus-light text-xs flex items-center gap-1 transition-colors">
+                            Ver todos <span class="material-icons text-sm">arrow_forward</span>
+                        </a>
+                    </div>
+
+                    @if($equiposPendientesMantenimiento->isEmpty())
+                        <div class="flex flex-col items-center justify-center py-8 text-cerberus-accent">
+                            <span class="material-icons text-4xl mb-2 text-emerald-400/60">check_circle</span>
+                            <p class="text-sm">Sin mantenimientos pendientes por ahora</p>
+                        </div>
+                    @else
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-cerberus-accent text-xs bg-cerberus-darkest/30">
+                                        <th class="px-5 py-2.5 text-left font-medium">Equipo</th>
+                                        <th class="px-3 py-2.5 text-left font-medium hidden sm:table-cell">Categoría</th>
+                                        <th class="px-3 py-2.5 text-left font-medium">Estado</th>
+                                        <th class="px-3 py-2.5 text-right font-medium"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-cerberus-steel/40">
+                                    @foreach($equiposPendientesMantenimiento as $caso)
+                                        <tr class="hover:bg-cerberus-darkest/20 transition-colors">
+                                            <td class="px-5 py-3">
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-7 h-7 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+                                                        <span class="material-icons text-sm text-blue-400">build</span>
+                                                    </div>
+                                                    <span class="text-gray-900 dark:text-white text-sm font-mono">{{ $caso->equipo->codigo_interno ?? '—' }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-3 py-3 text-cerberus-accent text-xs hidden sm:table-cell">
+                                                {{ $caso->equipo->categoria?->nombre ?? '—' }}
+                                            </td>
+                                            <td class="px-3 py-3">
+                                                <span class="text-xs font-bold rounded px-2 py-0.5 bg-blue-500/20 text-blue-400">
+                                                    {{ $caso->estado }}
+                                                </span>
+                                            </td>
+                                            <td class="px-3 py-3 text-right">
+                                                <a href="{{ route('admin.mantenimientos.show', $caso) }}"
+                                                   class="text-cerberus-light hover:text-gray-900 dark:hover:text-white text-xs flex items-center justify-end gap-1 transition-colors">
+                                                    Ver <span class="material-icons text-sm">open_in_new</span>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
         </div>
 
         {{-- Columna derecha (1/3): Actividad Reciente --}}
@@ -474,7 +625,7 @@
             {{-- Actividad reciente --}}
             <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus overflow-hidden">
                 <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
-                    <h2 class="text-base font-semibold text-white">Actividad reciente</h2>
+                    <h2 class="text-base font-semibold text-gray-900 dark:text-white">Actividad reciente</h2>
                     <span class="material-icons text-cerberus-accent text-sm">history</span>
                 </div>
 
@@ -513,7 +664,7 @@
                                     <span class="material-icons text-sm {{ $color }}">{{ $icono }}</span>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <p class="text-white text-xs leading-snug">
+                                    <p class="text-gray-900 dark:text-white text-xs leading-snug">
                                         <span class="font-semibold">{{ $audit->usuario?->name ?? 'Sistema' }}</span>
                                         <span class="text-cerberus-accent"> {{ $accionLabel }} </span>
                                         <span class="text-cerberus-light">{{ $tablaLabel }}</span>
@@ -532,7 +683,7 @@
             {{-- Últimos Traslados --}}
             <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus overflow-hidden">
                 <div class="flex items-center justify-between px-5 py-4 border-b border-cerberus-steel">
-                    <h2 class="text-base font-semibold text-white">Últimos traslados</h2>
+                    <h2 class="text-base font-semibold text-gray-900 dark:text-white">Últimos traslados</h2>
                     <a href="{{ route('admin.traslados.index') }}"
                        class="text-cerberus-accent hover:text-cerberus-light text-xs flex items-center gap-1 transition-colors">
                         Ver todos <span class="material-icons text-sm">arrow_forward</span>

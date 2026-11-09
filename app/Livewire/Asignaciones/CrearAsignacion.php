@@ -142,7 +142,38 @@ class CrearAsignacion extends Component
             });
         }
 
+        if ($empresaId = $this->empresaSeleccionadaId()) {
+            $query->where(function ($q) use ($empresaId) {
+                $q->where('empresa_id', $empresaId)
+                    ->orWhere('es_estado', true);
+            });
+        }
+
         return $query->pluck('nombre', 'id');
+    }
+
+    /**
+     * Empresa del receptor elegido en el Paso 1 — usada para restringir
+     * el carrito del Paso 2 a equipos con ubicación física en esa empresa
+     * (más los foráneos, visibles para todas las empresas).
+     *
+     *  - Receptor "área"     → la empresa del área (area_empresa_id).
+     *  - Receptor "usuario"  → la empresa que el Administrador eligió
+     *    explícitamente (empresa_personal_id); para un Analista no aplica,
+     *    porque su propia visibilidad ya está acotada a su empresa activa
+     *    vía Equipo::scopeVisiblePara().
+     */
+    private function empresaSeleccionadaId(): ?int
+    {
+        if ($this->tipo_receptor === 'area') {
+            return $this->area_empresa_id ? (int) $this->area_empresa_id : null;
+        }
+
+        if (Auth::user()->hasRole('Administrador') && $this->empresa_personal_id) {
+            return (int) $this->empresa_personal_id;
+        }
+
+        return null;
     }
 
     #[Computed]
@@ -151,19 +182,28 @@ class CrearAsignacion extends Component
         $actor            = Auth::user();
         $estadoDisponible = EstadoEquipo::where('nombre', 'Disponible')->value('id');
         $idsEnCarrito     = collect($this->carrito)->pluck('id')->toArray();
+        $empresaId        = $this->empresaSeleccionadaId();
 
         return CategoriaEquipo::where('activo', true)->where('asignable', true)
-            ->whereHas('equipos', function ($q) use ($actor, $estadoDisponible, $idsEnCarrito) {
+            ->whereHas('equipos', function ($q) use ($actor, $estadoDisponible, $idsEnCarrito, $empresaId) {
                 $q->where('activo', true)
                     ->where('estado_id', $estadoDisponible)
                     ->whereNotIn('id', $idsEnCarrito)
                     ->visiblePara($actor);
+
+                if ($empresaId) {
+                    $q->whereHas('ubicacion', fn($u) => $u->where('empresa_id', $empresaId)->orWhere('es_estado', true));
+                }
             })
-            ->withCount(['equipos as disponibles_count' => function ($q) use ($actor, $estadoDisponible, $idsEnCarrito) {
+            ->withCount(['equipos as disponibles_count' => function ($q) use ($actor, $estadoDisponible, $idsEnCarrito, $empresaId) {
                 $q->where('activo', true)
                     ->where('estado_id', $estadoDisponible)
                     ->whereNotIn('id', $idsEnCarrito)
                     ->visiblePara($actor);
+
+                if ($empresaId) {
+                    $q->whereHas('ubicacion', fn($u) => $u->where('empresa_id', $empresaId)->orWhere('es_estado', true));
+                }
             }])
             ->orderBy('nombre')
             ->get();
@@ -186,6 +226,11 @@ class CrearAsignacion extends Component
             ->whereNotIn('id', $idsEnCarrito)
             ->whereHas('categoria', fn($q) => $q->where('asignable', true))
             ->visiblePara($actor);
+
+        // Solo equipos con ubicación física en la empresa del receptor elegido en el Paso 1.
+        if ($empresaId = $this->empresaSeleccionadaId()) {
+            $query->whereHas('ubicacion', fn($u) => $u->where('empresa_id', $empresaId)->orWhere('es_estado', true));
+        }
 
         if ($this->filtro_categoria) {
             $query->where('categoria_id', $this->filtro_categoria);
@@ -282,7 +327,12 @@ class CrearAsignacion extends Component
     public function updatedAreaEmpresaId(): void
     {
         $this->area_departamento_id = '';
-        unset($this->departamentosArea);
+        unset($this->departamentosArea, $this->categorias, $this->equiposDisponibles, $this->ubicacionesOpciones);
+    }
+
+    public function updatedEmpresaPersonalId(): void
+    {
+        unset($this->categorias, $this->equiposDisponibles, $this->ubicacionesOpciones);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

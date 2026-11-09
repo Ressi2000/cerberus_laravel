@@ -5,7 +5,7 @@
 
             <div class="relative z-50 w-full max-w-md p-6 bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus">
 
-                <h2 class="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <span class="material-icons text-amber-400">undo</span>
                     Regresar Traslado
                 </h2>
@@ -42,7 +42,7 @@
                         placeholder="Explica por qué se revierte el traslado..."
                         class="w-full px-3 py-2 rounded-lg text-sm
                                bg-cerberus-dark border border-cerberus-steel
-                               text-white placeholder-cerberus-steel/60
+                               text-gray-900 dark:text-white placeholder-cerberus-steel/60
                                focus:border-cerberus-accent focus:ring-1 focus:ring-cerberus-accent
                                transition resize-none"
                     ></textarea>

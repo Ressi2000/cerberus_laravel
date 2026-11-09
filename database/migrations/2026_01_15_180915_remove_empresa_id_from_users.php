@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->dropForeign(['empresa_id']);
+            // SQLite (no así MySQL) exige borrar el índice simple explícitamente
+            // antes de borrar la columna que indexa, o falla el ALTER completo.
+            $table->dropIndex(['empresa_id']);
             $table->dropColumn('empresa_id');
         });
     }

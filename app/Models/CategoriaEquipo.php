@@ -31,6 +31,7 @@ class CategoriaEquipo extends Model
         'descripcion',
         'asignable',
         'activo',
+        'meses_rotacion_asignacion',
     ];
 
     protected $casts = [

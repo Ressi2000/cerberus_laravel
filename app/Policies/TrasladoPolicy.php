@@ -12,7 +12,10 @@ class TrasladoPolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->hasRole('Administrador')) {
+        // 'revertir' se excluye del atajo: debe evaluarse siempre en el método
+        // específico, que revisa si el traslado ya fue revertido. De lo
+        // contrario, un Administrador vería el botón "Revertir" indefinidamente.
+        if ($user->hasRole('Administrador') && $ability !== 'revertir') {
             return true;
         }
 
@@ -38,6 +41,10 @@ class TrasladoPolicy
     {
         if ($traslado->estado === 'revertido') {
             return false;
+        }
+
+        if ($user->hasRole('Administrador')) {
+            return true;
         }
 
         return $user->hasRole('Analista')

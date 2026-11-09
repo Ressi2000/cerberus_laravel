@@ -11,6 +11,8 @@ Artisan::command('inspire', function () {
 
 Schedule::command('cerberus:notificar-alertas')->dailyAt('07:00');
 
+Schedule::command('cerberus:generar-mantenimientos-programados')->dailyAt('06:30');
+
 Schedule::call(fn () => Prestamo::marcarVencidosAutomaticamente())
     ->hourly()
     ->name('prestamos:marcar-vencidos');

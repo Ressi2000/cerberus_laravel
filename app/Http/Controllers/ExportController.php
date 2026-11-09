@@ -10,6 +10,7 @@ use App\Exports\DepartamentosExport;
 use App\Exports\EmpresasExport;
 use App\Exports\EquiposExport;
 use App\Exports\EstadosExport;
+use App\Exports\LicenciasMicrosoftExport;
 use App\Exports\UbicacionesExport;
 use App\Exports\UsuariosExport;
 use App\Exports\AuditoriaExport;
@@ -21,6 +22,7 @@ use App\Models\Departamento;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\EstadoEquipo;
+use App\Models\TipoLicenciaMicrosoft;
 use App\Models\Ubicacion;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -387,6 +389,25 @@ class ExportController extends Controller
         return Excel::download(
             new EmpresasExport($query),
             'empresas_cerberus_' . now()->format('Ymd_His') . '.' . $format
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Tipos de Licencia Microsoft  (solo Administrador)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function licenciasMicrosoft(Request $request)
+    {
+        $format = $request->input('format', 'xlsx');
+        $query  = TipoLicenciaMicrosoft::withCount('usuarios')
+            ->orderBy('nombre');
+
+        if ($request->search) {
+            $query->where('nombre', 'like', "%{$request->search}%");
+        }
+
+        return Excel::download(
+            new LicenciasMicrosoftExport($query),
+            'licencias_microsoft_cerberus_' . now()->format('Ymd_His') . '.' . $format
         );
     }
 

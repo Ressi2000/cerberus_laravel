@@ -9,21 +9,39 @@
     'hint'        => null,       // Texto de ayuda que aparece al hacer hover en el ícono (?)
     'placeholder' => '',
     'error'       => null,
+    'suffix'      => null,       // Texto corto a la derecha dentro del input, ej. "meses"
 ])
 
 @php
     /*
-     * Detectar si el componente recibe wire:model (en cualquier variante).
+     * Detectar si el componente recibe wire:model (en cualquier variante,
+     * incluyendo modificadores de debounce/throttle como
+     * wire:model.live.400ms). Buscamos por prefijo en vez de comparar
+     * contra una lista fija de claves: "wire:model.live.400ms" es una
+     * clave distinta a "wire:model.live" dentro del attribute bag, así
+     * que una comparación exacta no la detecta.
      * Cuando hay wire:model, NO ponemos value ni name en el input directamente,
      * porque Livewire los maneja solo.
      */
-    $hasWireModel = $attributes->has('wire:model')
-                 || $attributes->has('wire:model.live')
-                 || $attributes->has('wire:model.blur')
-                 || $attributes->has('wire:model.lazy');
+    $wireModelKey = collect($attributes->getAttributes())
+        ->keys()
+        ->first(fn ($key) => $key === 'wire:model' || str_starts_with($key, 'wire:model.'));
 
-    // ID único para accesibilidad (aria-describedby)
-    $fieldId   = $name ?? 'field-' . uniqid();
+    $hasWireModel = $wireModelKey !== null;
+
+    /*
+     * ID para accesibilidad (aria-describedby) y para el `for` del label.
+     * Debe ser ESTABLE entre renders: si no se pasa $name, lo derivamos del
+     * propio wire:model (que no cambia) en vez de uniqid(). uniqid() genera
+     * un id distinto en cada render de Livewire, y como escribir con
+     * wire:model.live dispara un render por cada tecla, el input cambiaba
+     * de id constantemente — Livewire perdía la referencia al elemento
+     * enfocado y el campo perdía el foco mientras se escribía.
+     */
+    $wireModelTarget = $wireModelKey ? $attributes->get($wireModelKey) : null;
+
+    $fieldId = $name
+        ?? ($wireModelTarget ? 'field-' . \Illuminate\Support\Str::slug($wireModelTarget) : 'field-' . uniqid());
     $hintId    = $fieldId . '-hint';
     $errorId   = $fieldId . '-error';
 @endphp
@@ -110,11 +128,17 @@
                      dark:focus:ring-cerberus-primary/30 dark:focus:border-cerberus-primary
                      read-only:bg-gray-50 read-only:dark:bg-cerberus-dark/60 read-only:cursor-default
                      disabled:opacity-50 disabled:cursor-not-allowed'
+                     . ($suffix ? ' pr-14' : '')
                      . ($error || (!$hasWireModel && $errors->has($name ?? ''))
                          ? ' border-red-400 dark:border-red-500 focus:ring-red-400/30 focus:border-red-400'
                          : '')
             ]) }}
         >
+        @if ($suffix)
+            <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-sm text-gray-400 dark:text-cerberus-steel pointer-events-none">
+                {{ $suffix }}
+            </span>
+        @endif
     </div>
 
     {{-- ── ERROR ──────────────────────────────────────────────────────────── --}}

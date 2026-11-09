@@ -1,5 +1,8 @@
 <div class="space-y-6">
 
+    @livewire('equipos.equipo-delete-modal')
+    @livewire('equipos.equipo-desarmar-modal')
+
     {{-- HEADER DEL EQUIPO --}}
     <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -16,12 +19,34 @@
                 </div>
             </div>
 
-            <a href="{{ route('admin.equipos.index') }}"
-               class="flex items-center gap-2 px-4 py-2 bg-cerberus-dark border border-cerberus-steel
-                      text-cerberus-light hover:text-cerberus-accent rounded-lg text-sm transition">
-                <span class="material-icons text-sm">arrow_back</span>
-                Volver al listado
-            </a>
+            <div class="flex items-center gap-3">
+                @can('desarmar', $equipo)
+                    <button wire:click="$dispatch('openEquipoDesarmar', { id: {{ $equipo->id }} })"
+                       class="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700
+                              text-white rounded-lg text-sm transition">
+                        <span class="material-icons text-sm">construction</span>
+                        Desarmar
+                    </button>
+                @endcan
+
+                @can('delete', $equipo)
+                    @if ($equipo->activo)
+                        <button wire:click="$dispatch('openEquipoDelete', { id: {{ $equipo->id }} })"
+                           class="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700
+                                  text-white rounded-lg text-sm transition">
+                            <span class="material-icons text-sm">do_not_disturb_on</span>
+                            Dar de baja
+                        </button>
+                    @endif
+                @endcan
+
+                <a href="{{ route('admin.equipos.index') }}"
+                   class="flex items-center gap-2 px-4 py-2 bg-cerberus-dark border border-cerberus-steel
+                          text-cerberus-light hover:text-cerberus-accent rounded-lg text-sm transition">
+                    <span class="material-icons text-sm">arrow_back</span>
+                    Volver al listado
+                </a>
+            </div>
         </div>
 
         {{-- Datos clave del equipo --}}
@@ -41,6 +66,86 @@
         </div>
     </div>
 
+    {{-- TRAZABILIDAD DE PIEZAS (Obsolescencia) --}}
+    @if ($piezasExtraidas->isNotEmpty() || $piezasInstaladas->isNotEmpty())
+        <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
+            <h3 class="text-lg font-bold text-cerberus-light flex items-center gap-2 mb-4">
+                <span class="material-icons text-cerberus-accent">memory</span>
+                Trazabilidad de piezas
+            </h3>
+
+            @if ($piezasExtraidas->isNotEmpty())
+                <div class="{{ $piezasInstaladas->isNotEmpty() ? 'mb-5' : '' }}">
+                    <p class="text-xs font-medium text-cerberus-accent uppercase tracking-wide mb-2">
+                        Piezas que se le extrajeron a este equipo
+                    </p>
+                    <div class="space-y-2">
+                        @foreach ($piezasExtraidas as $p)
+                            <div class="flex items-center justify-between gap-3 bg-cerberus-dark rounded-lg px-4 py-2.5 border border-cerberus-steel/50">
+                                <div class="min-w-0">
+                                    <p class="text-sm text-cerberus-light truncate">
+                                        {{ $p->atributo?->describirValor($p->valor_extraido) ?? 'Pieza' }}
+                                    </p>
+                                    <p class="text-xs text-cerberus-steel">
+                                        @if ($p->estado === 'en_almacen')
+                                            En stock del Almacén de Componentes
+                                        @elseif ($p->estado === 'instalada' && $p->equipoDestino)
+                                            Instalada en
+                                            <a href="{{ route('admin.equipos.show', $p->equipoDestino) }}" wire:navigate
+                                               class="text-cerberus-accent hover:underline">
+                                                {{ $p->equipoDestino->codigo_interno }}
+                                            </a>
+                                        @elseif ($p->estado === 'en_deposito')
+                                            Descartada en {{ $p->deposito?->nombre ?? 'depósito' }}
+                                        @endif
+                                    </p>
+                                </div>
+                                <span @class([
+                                    'flex-shrink-0 px-2 py-0.5 text-xs rounded-full border whitespace-nowrap',
+                                    'bg-blue-500/10 text-blue-400 border-blue-500/30' => $p->estado === 'en_almacen',
+                                    'bg-green-500/10 text-green-400 border-green-500/30' => $p->estado === 'instalada',
+                                    'bg-gray-500/10 text-gray-400 border-gray-500/30' => $p->estado === 'en_deposito',
+                                ])>
+                                    {{ $p->labelEstado() }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if ($piezasInstaladas->isNotEmpty())
+                <div>
+                    <p class="text-xs font-medium text-cerberus-accent uppercase tracking-wide mb-2">
+                        Piezas rescatadas instaladas en este equipo
+                    </p>
+                    <div class="space-y-2">
+                        @foreach ($piezasInstaladas as $p)
+                            <div class="flex items-center justify-between gap-3 bg-cerberus-dark rounded-lg px-4 py-2.5 border border-cerberus-steel/50">
+                                <div class="min-w-0">
+                                    <p class="text-sm text-cerberus-light truncate">
+                                        {{ $p->atributo?->describirValor($p->valor_extraido) ?? 'Pieza' }}
+                                    </p>
+                                    <p class="text-xs text-cerberus-steel">
+                                        Proviene de
+                                        @if ($p->equipoOrigen)
+                                            <a href="{{ route('admin.equipos.show', $p->equipoOrigen) }}" wire:navigate
+                                               class="text-cerberus-accent hover:underline">
+                                                {{ $p->equipoOrigen->codigo_interno }}
+                                            </a>
+                                        @else
+                                            un equipo eliminado
+                                        @endif
+                                    </p>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+        </div>
+    @endif
+
     {{-- FILTROS --}}
     <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-4">
         <div class="flex flex-wrap gap-4 items-end">
@@ -56,6 +161,8 @@
                     <option value="asignacion">Asignación</option>
                     <option value="traslado">Traslado</option>
                     <option value="prestamo">Préstamo</option>
+                    <option value="mantenimiento">Mantenimiento/Reparación</option>
+                    <option value="pieza">Piezas</option>
                     <option value="estado">Estado</option>
                 </select>
             </div>
@@ -117,6 +224,7 @@
                             'amber'  => 'bg-amber-700/20 border-amber-700/40 text-amber-300',
                             'yellow' => 'bg-yellow-700/20 border-yellow-700/40 text-yellow-300',
                             'slate'  => 'bg-slate-700/20 border-slate-700/40 text-slate-300',
+                            'orange' => 'bg-orange-700/20 border-orange-700/40 text-orange-300',
                             'green'  => 'bg-green-700/20 border-green-700/40 text-green-300',
                             'red'    => 'bg-red-700/20 border-red-700/40 text-red-300',
                             'gray'   => 'bg-gray-700/20 border-gray-700/40 text-gray-300',

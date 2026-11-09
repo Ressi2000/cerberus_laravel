@@ -57,17 +57,14 @@
             {{-- Franja de acento superior --}}
             <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#1E40AF] via-[#60A5FA] to-[#A9D6E5] rounded-t-2xl"></div>
 
-            {{-- Logo --}}
+            {{-- Logo: el <script> de más abajo ajusta el src según el tema activo --}}
             <div class="flex justify-center mb-6">
-                <picture>
-                    <source media="(prefers-color-scheme: dark)" srcset="{{ asset('images/cerberus.png') }}">
-                    <img
-                        src="{{ asset('images/cerberusLight.png') }}"
-                        alt="Cerberus 2.0"
-                        class="h-16 w-auto dark-logo"
-                        id="cerberus-logo"
-                    >
-                </picture>
+                <img
+                    src="{{ asset('images/logos/crb2-dark.png') }}"
+                    alt="Cerberus 2.0"
+                    class="h-16 w-auto dark-logo"
+                    id="cerberus-logo"
+                >
             </div>
 
             {{-- Icono de alerta --}}
@@ -129,8 +126,8 @@
             const logo = document.getElementById('cerberus-logo');
             if (logo) {
                 logo.src = isDark
-                    ? '{{ asset("images/cerberus.png") }}'
-                    : '{{ asset("images/cerberusLight.png") }}';
+                    ? '{{ asset("images/logos/crb2-dark.png") }}'
+                    : '{{ asset("images/logos/crb2-ligth.png") }}';
             }
         })();
 
@@ -145,8 +142,8 @@
             const logo = document.getElementById('cerberus-logo');
             if (logo) {
                 logo.src = isDark
-                    ? '{{ asset("images/cerberus.png") }}'
-                    : '{{ asset("images/cerberusLight.png") }}';
+                    ? '{{ asset("images/logos/crb2-dark.png") }}'
+                    : '{{ asset("images/logos/crb2-ligth.png") }}';
             }
         }
     </script>

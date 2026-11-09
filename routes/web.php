@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\DepartamentoController;
+use App\Http\Controllers\Almacen\AlmacenController;
 use App\Http\Controllers\Asignaciones\AsignacionController;
+use App\Http\Controllers\Cronograma\CronogramaController;
+use App\Http\Controllers\Mantenimientos\MantenimientoController;
 use App\Http\Controllers\Prestamos\PrestamoController;
 use App\Http\Controllers\Traslados\TrasladoController;
 use App\Http\Controllers\Usuario\UsuarioController;
@@ -84,6 +87,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         Route::get('export/cargos',        [ExportController::class, 'cargos'])->name('export.cargos');
         Route::get('export/departamentos', [ExportController::class, 'departamentos'])->name('export.departamentos');
         Route::get('export/empresas',      [ExportController::class, 'empresas'])->name('export.empresas');
+        Route::get('export/licencias-microsoft', [ExportController::class, 'licenciasMicrosoft'])->name('export.licencias-microsoft');
     });
     
     // Perfil del usuario
@@ -97,6 +101,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
     Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
         Route::resource('/usuarios', UsuarioController::class);
         Route::get('/usuarios/{usuario}/historial', [UsuarioController::class, 'historial'])->name('usuarios.historial');
+        Route::get('/usuarios/{usuario}/trazabilidad', [UsuarioController::class, 'trazabilidad'])->name('usuarios.trazabilidad');
     });
 
     // Auditoria
@@ -130,6 +135,10 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/cargos',      [ConfiguracionController::class, 'cargos'])->name('cargos');
             Route::get('/ubicaciones', [ConfiguracionController::class, 'ubicaciones'])->name('ubicaciones');
             Route::get('/empresas',    [ConfiguracionController::class, 'empresas'])->name('empresas');
+            Route::get('/licencias-microsoft', [ConfiguracionController::class, 'licenciasMicrosoft'])->name('licencias-microsoft');
+            Route::get('/tareas-mantenimiento', [ConfiguracionController::class, 'tareasMantenimiento'])->name('tareas-mantenimiento');
+            Route::get('/depositos', [ConfiguracionController::class, 'depositos'])->name('depositos');
+            Route::get('/depositos/{deposito}', [ConfiguracionController::class, 'depositoDetalle'])->name('depositos.show');
         });
 
     Route::prefix('admin/asignaciones')
@@ -141,6 +150,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/',                              [AsignacionController::class, 'index'])->name('index');
             Route::get('/crear',                         [AsignacionController::class, 'create'])->name('create');
             Route::get('/historial/{usuario}',           [AsignacionController::class, 'historial'])->name('historial');
+            Route::get('/rotacion-recomendada',          [AsignacionController::class, 'rotacionRecomendada'])->name('rotacion-recomendada');
             Route::get('/devolver/usuario/{usuario}',    [AsignacionController::class, 'devolverUsuario'])->name('devolver.usuario');
             Route::get('/{asignacion}/devolver',         [AsignacionController::class, 'devolver'])->name('devolver');
 
@@ -161,6 +171,35 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/{prestamo}/devolver',                 [PrestamoController::class, 'devolver'])->name('devolver');
             Route::get('/{prestamo}/planilla/prestamo',        [PrestamoController::class, 'planillaPrestamo'])->name('planilla.prestamo');
             Route::get('/{prestamo}/planilla/devolucion',      [PrestamoController::class, 'planillaDevolucion'])->name('planilla.devolucion');
+        });
+
+    // Mantenimientos y Reparaciones
+    Route::prefix('admin/mantenimientos')
+        ->name('admin.mantenimientos.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/',              [MantenimientoController::class, 'index'])->name('index');
+            Route::get('/crear',         [MantenimientoController::class, 'create'])->name('create');
+            Route::get('/{mantenimiento}', [MantenimientoController::class, 'show'])->name('show');
+        });
+
+    // Cronograma de mantenimiento preventivo
+    Route::prefix('admin/cronograma')
+        ->name('admin.cronograma.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/', [CronogramaController::class, 'index'])->name('index');
+            // withTrashed(): si el plan fue eliminado, su historial de lotes
+            // ya generados debe poder seguir consultándose.
+            Route::get('/lotes/{plan}', [CronogramaController::class, 'lote'])->name('lotes.show')->withTrashed();
+        });
+
+    // Almacén de componentes
+    Route::prefix('admin/almacen')
+        ->name('admin.almacen.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/', [AlmacenController::class, 'index'])->name('index');
         });
 
     // Traslados
