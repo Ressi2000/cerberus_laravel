@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('nombre');
             $table->string('rif')->nullable();
             $table->text('direccion')->nullable();
-            $table->boolean('estado')->default(true);
+            $table->string('telefono', 50)->nullable();
             $table->timestamps();
         });
     }

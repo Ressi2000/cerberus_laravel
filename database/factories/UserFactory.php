@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Empresa;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -24,7 +25,12 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            // Empresa de nómina (obligatoria). Usa una existente o crea una.
+            'empresa_id' => fn () => Empresa::query()->value('id')
+                ?? Empresa::create(['nombre' => 'Empresa de prueba'])->id,
             'name' => fake()->name(),
+            'username' => fake()->unique()->userName(),
+            'cedula' => 'V-' . fake()->unique()->numberBetween(1000000, 39999999),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),

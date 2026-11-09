@@ -23,7 +23,6 @@ return new class extends Migration
                     DB::table('empresa_user')->insertOrIgnore([
                         'user_id'       => $user->id,
                         'empresa_id'    => $user->empresa_id,
-                        'es_principal'  => true,
                         'created_at'    => now(),
                         'updated_at'    => now(),
                     ]);

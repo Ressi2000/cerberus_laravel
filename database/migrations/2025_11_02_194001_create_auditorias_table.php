@@ -19,7 +19,9 @@ return new class extends Migration
             $table->string('accion');
             $table->json('valores_previos')->nullable();
             $table->json('valores_nuevos')->nullable();
-            $table->timestamp('fecha');
+            // created_at (no "fecha"): es la columna que escribe el trait
+            // Auditable y la que tiene producción.
+            $table->timestamp('created_at')->useCurrent()->useCurrentOnUpdate();
         });
     }
 

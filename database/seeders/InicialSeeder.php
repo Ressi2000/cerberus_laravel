@@ -28,6 +28,10 @@ class InicialSeeder extends Seeder
             ['email' => 'admin@cerberus.local'],
             [
                 'name' => 'Administrador Cerberus',
+                'username' => 'admin',
+                'cedula' => 'V-00000000',
+                'empresa_id' => $empresa->id,
+                'empresa_activa_id' => $empresa->id,
                 'password' => bcrypt('123456789')
             ]
         );

@@ -87,13 +87,10 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
     {
         $this->codigo++;
 
-        // forceCreate: marca/modelo existen en la tabla pero ya no están en $fillable.
         return Equipo::forceCreate([
             'empresa_id'        => $empresa->id,
             'categoria_id'      => $this->categoria->id,
             'estado_id'         => EstadoEquipo::where('nombre', 'Disponible')->value('id'),
-            'marca'             => 'Marca',
-            'modelo'            => 'Modelo',
             'codigo_interno'    => 'EQ-' . $this->codigo,
             'fecha_adquisicion' => now()->subYear()->toDateString(),
             'activo'            => true,
