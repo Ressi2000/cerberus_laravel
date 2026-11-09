@@ -46,6 +46,12 @@ class PiezaManualService
             throw new \InvalidArgumentException('Una pieza nueva (comprada) no puede tener un equipo de origen.');
         }
 
+        $identificador = $identificador !== null ? trim($identificador) : null;
+
+        if ($identificador && PiezaExtraida::where('componente_almacen_id', $componente->id)->where('identificador', $identificador)->exists()) {
+            throw new \InvalidArgumentException("Ya hay una pieza con el identificador «{$identificador}» en este componente.");
+        }
+
         if ($equipoOrigen && (int) $equipoOrigen->empresa_id !== (int) $componente->empresa_id) {
             throw new \InvalidArgumentException('El equipo de origen debe ser de la misma empresa que el componente.');
         }
@@ -108,11 +114,23 @@ class PiezaManualService
         });
     }
 
-    /** "AUTO-{componente}-{secuencia}" — simple, estable, siempre único por bucket. */
+    /**
+     * "AUTO-{componente}-{secuencia}": toma el número AUTO más alto que ya
+     * tenga el componente y le suma 1. Contar las piezas (como antes) repetía
+     * números si alguna se movía a otro componente o si se escribía a mano
+     * un identificador. El índice único (componente, identificador) es la
+     * última barrera ante dos altas simultáneas.
+     */
     private function generarIdentificador(ComponenteAlmacen $componente): string
     {
-        $n = PiezaExtraida::where('componente_almacen_id', $componente->id)->count() + 1;
+        $prefijo = 'AUTO-' . $componente->id . '-';
 
-        return 'AUTO-' . $componente->id . '-' . str_pad((string) $n, 3, '0', STR_PAD_LEFT);
+        $ultimo = PiezaExtraida::where('componente_almacen_id', $componente->id)
+            ->where('identificador', 'like', $prefijo . '%')
+            ->pluck('identificador')
+            ->map(fn ($id) => (int) substr($id, strlen($prefijo)))
+            ->max() ?? 0;
+
+        return $prefijo . str_pad((string) ($ultimo + 1), 3, '0', STR_PAD_LEFT);
     }
 }

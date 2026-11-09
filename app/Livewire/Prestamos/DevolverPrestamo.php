@@ -141,6 +141,8 @@ class DevolverPrestamo extends Component
 
             $this->redirect(route('admin.prestamos.index'), navigate: true);
 
+        } catch (\App\Exceptions\ModuloBloqueadoException $e) {
+            $this->addError('general', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('DevolverPrestamo@confirmar: ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar la devolución.');

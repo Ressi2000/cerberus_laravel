@@ -143,11 +143,12 @@
     {{-- ── LÍNEA DE TIEMPO DEL CASO ──────────────────────────────────────────── --}}
     {{-- Arriba del todo: muestra en qué paso está el caso y deja retroceder
          (o reabrir, desde "Cerrado") con un clic sobre un paso anterior. --}}
-    <x-mantenimientos.pasos :mantenimiento="$m" :editable="(bool) auth()->user()?->can('update', $m)" />
+    {{-- editable: retroceder (caso abierto, permiso update) o reabrir (Cerrado, permiso reabrir). --}}
+    <x-mantenimientos.pasos :mantenimiento="$m" :editable="(bool) (auth()->user()?->can('update', $m) || auth()->user()?->can('reabrir', $m))" />
 
     {{-- ── Reabrir caso (Correctivo, Cerrado) — form que abre el paso "Reparado" del stepper --}}
     @if ($m->esCorrectivo() && $m->estado === 'Cerrado' && $reabrirAbierto)
-        @can('update', $m)
+        @can('reabrir', $m)
             <div class="bg-white dark:bg-cerberus-mid border border-amber-200 dark:border-amber-700/40 rounded-xl p-5">
                 <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
                     <span class="material-icons text-amber-600 dark:text-amber-400 text-base">restore</span>
@@ -406,7 +407,8 @@
         @endif
     @endcan
 
-    {{-- ── Eliminar caso (Administrador) ───────────────────────────────────── --}}
+    {{-- ── Eliminar caso (Administrador y Analista; solo casos abiertos) ───── --}}
+    @if ($m->estaAbierto())
     @can('delete', $m)
         <div class="bg-white dark:bg-cerberus-mid border border-red-200 dark:border-red-700/40 rounded-xl p-5 flex items-center justify-between flex-wrap gap-3">
             <p class="text-sm text-gray-500 dark:text-cerberus-light">
@@ -422,5 +424,6 @@
             </button>
         </div>
     @endcan
+    @endif
 
 </div>

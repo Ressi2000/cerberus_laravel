@@ -3,6 +3,7 @@
 namespace App\Livewire\Mantenimientos;
 
 use App\Models\AsignacionItem;
+use App\Models\Equipo;
 use App\Models\Mantenimiento;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +71,10 @@ class ReportarProblemaModal extends Component
             }
 
             $correctivo = DB::transaction(function () use ($origen) {
+                // Bloquea la fila del equipo mientras se cierra el preventivo y
+                // se abre la reparación (mismo criterio que CrearMantenimiento).
+                Equipo::whereKey($origen->equipo_id)->lockForUpdate()->first();
+
                 $asignacionActiva = AsignacionItem::where('equipo_id', $origen->equipo_id)
                     ->where('devuelto', false)
                     ->value('asignacion_id');
@@ -96,6 +101,15 @@ class ReportarProblemaModal extends Component
                 ]);
 
                 $correctivo->bloquearEquipo();
+
+                // El preventivo sí se hizo (queda Completado y el plan avanza),
+                // pero se deja constancia de la falla y de la reparación que abrió.
+                $nota = 'Falla encontrada el ' . now()->format('d/m/Y') . ' por ' . Auth::user()->name
+                    . ": se abrió la reparación #{$correctivo->id}.";
+
+                $origen->update([
+                    'observaciones' => trim(($origen->observaciones ? $origen->observaciones . "\n\n" : '') . $nota),
+                ]);
 
                 return $correctivo;
             });

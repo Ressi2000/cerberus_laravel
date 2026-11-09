@@ -276,18 +276,36 @@ class ExtraccionPiezaService
     {
         $nombre = $atributo->describirValor($valorExtraido);
 
-        return ComponenteAlmacen::firstOrCreate(
-            [
-                'empresa_id' => $empresaId,
-                'nombre'     => $nombre,
-            ],
-            [
+        // withTrashed(): si ya existió un componente con este nombre y se
+        // eliminó o desactivó, se reutiliza y se reactiva — si no, la pieza
+        // quedaría sumada a un componente oculto o se crearía un duplicado.
+        $componente = ComponenteAlmacen::withTrashed()
+            ->where('empresa_id', $empresaId)
+            ->where('nombre', $nombre)
+            ->orderByRaw('deleted_at IS NOT NULL')   // primero el que no está eliminado
+            ->orderByDesc('activo')
+            ->first();
+
+        if (! $componente) {
+            return ComponenteAlmacen::create([
+                'empresa_id'   => $empresaId,
+                'nombre'       => $nombre,
                 'unidad'       => 'unidad',
                 'stock_actual' => 0,
                 'activo'       => true,
                 'creado_por'   => $actor->id,
-            ]
-        );
+            ]);
+        }
+
+        if ($componente->trashed()) {
+            $componente->restore();
+        }
+
+        if (! $componente->activo) {
+            $componente->update(['activo' => true]);
+        }
+
+        return $componente;
     }
 
     /**

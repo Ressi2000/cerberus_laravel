@@ -106,6 +106,29 @@
                         Sustituye el valor actual de este atributo en el equipo.
                     </p>
                 @endif
+
+                @if ($instalarModo === 'sustituir')
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">La pieza que sale del equipo, ¿en qué estado está?</label>
+                        <select wire:model.live="instalarDestinoSaliente"
+                            class="w-full rounded-lg px-4 py-2 text-sm bg-white dark:bg-cerberus-dark
+                                   border border-gray-300 dark:border-cerberus-steel text-gray-900 dark:text-white">
+                            <option value="en_almacen">Buena → Almacén (reutilizable)</option>
+                            <option value="en_deposito">Dañada → Depósito (descarte)</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-cerberus-light">Queda registrada con su historial, igual que al retirarla.</p>
+                    </div>
+
+                    @if ($instalarDestinoSaliente === 'en_deposito')
+                        <x-form.select
+                            label="Depósito"
+                            placeholder="Selecciona un depósito..."
+                            :options="$depositos->pluck('nombre', 'id')"
+                            wire:model="instalarDepositoSaliente"
+                            :error="$errors->first('instalarDepositoSaliente')"
+                        />
+                    @endif
+                @endif
             @endif
 
             <div class="flex justify-end gap-2">

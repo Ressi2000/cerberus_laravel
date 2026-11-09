@@ -41,6 +41,9 @@ class MantenimientoPiezasPanel extends Component
     public ?int   $instalarPiezaId     = null;
     public string $instalarModo        = SustitucionPiezaService::MODO_SUSTITUIR;
     public ?int   $instalarInstanciaId = null;
+    /** Al sustituir: a dónde va la pieza que sale del equipo. */
+    public string $instalarDestinoSaliente   = PiezaExtraida::ESTADO_EN_ALMACEN;
+    public ?int   $instalarDepositoSaliente  = null;
 
     public function mount(int $mantenimientoId): void
     {
@@ -219,7 +222,8 @@ class MantenimientoPiezasPanel extends Component
             return;
         }
 
-        $this->reset(['instalarPiezaId', 'instalarInstanciaId']);
+        $this->reset(['instalarPiezaId', 'instalarInstanciaId', 'instalarDepositoSaliente']);
+        $this->instalarDestinoSaliente = PiezaExtraida::ESTADO_EN_ALMACEN;
         $this->instalarModo = SustitucionPiezaService::MODO_SUSTITUIR;
         $this->resetValidation();
         $this->instalarAbierto = true;
@@ -271,9 +275,24 @@ class MantenimientoPiezasPanel extends Component
             return;
         }
 
+        // Pieza que sale al sustituir: a un depósito activo de la empresa del caso.
+        $depositoSaliente = null;
+        if ($this->instalarModo === SustitucionPiezaService::MODO_SUSTITUIR
+            && $this->instalarDestinoSaliente === PiezaExtraida::ESTADO_EN_DEPOSITO) {
+            $depositoSaliente = Deposito::activos()
+                ->where('empresa_id', $m->empresa_id)
+                ->find($this->instalarDepositoSaliente);
+
+            if (! $depositoSaliente) {
+                $this->addError('instalarDepositoSaliente', 'Selecciona a qué depósito va la pieza que sale.');
+                return;
+            }
+        }
+
         try {
             app(SustitucionPiezaService::class)->instalar(
                 $pieza, $m->equipo, $this->instalarModo, Auth::user(), $m, $this->instalarInstanciaId,
+                $this->instalarDestinoSaliente, $depositoSaliente,
             );
 
             $this->dispatch('toast', type: 'success', message: "«{$pieza->atributo->describirValor($pieza->valor_extraido)}» instalada en el equipo.");

@@ -216,7 +216,7 @@ class MantenimientoDetalle extends Component
 
     public function abrirReabrir(): void
     {
-        $this->authorize('update', $this->mantenimiento);
+        $this->authorize('reabrir', $this->mantenimiento);
         $this->motivoReapertura = '';
         $this->resetValidation();
         $this->reabrirAbierto = true;
@@ -231,7 +231,7 @@ class MantenimientoDetalle extends Component
     public function confirmarReabrir(): void
     {
         $m = $this->mantenimiento;
-        $this->authorize('update', $m);
+        $this->authorize('reabrir', $m);
 
         $this->validate([
             'motivoReapertura' => 'required|string|max:1000',
@@ -274,7 +274,9 @@ class MantenimientoDetalle extends Component
         $m = $this->mantenimiento;
         $this->authorize('delete', $m);
 
-        $m->eliminarCaso();
+        if (! $this->ejecutarTransicion(fn () => $m->eliminarCaso())) {
+            return;
+        }
 
         $this->dispatch('toast', type: 'success', message: 'Caso eliminado.');
         $this->redirect(route('admin.mantenimientos.index'), navigate: true);

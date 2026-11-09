@@ -264,7 +264,9 @@ class CrearMantenimiento extends Component
             $rutaFotoAntes = $this->fotoAntes->store('mantenimientos', 'public');
 
             $mantenimiento = DB::transaction(function () use ($rutaFotoAntes) {
-                $equipo = Equipo::findOrFail($this->equipo_id);
+                // lockForUpdate: si dos analistas guardan a la vez para el mismo
+                // equipo, el segundo espera aquí y luego ve el caso del primero.
+                $equipo = Equipo::lockForUpdate()->findOrFail($this->equipo_id);
 
                 // Defensa adicional: si en el instante de guardar ya hay un caso
                 // abierto para este equipo (carrera entre dos analistas), abortar.

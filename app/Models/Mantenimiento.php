@@ -240,17 +240,14 @@ class Mantenimiento extends Model
 
     /**
      * ¿Se puede registrar trabajo ahora (componentes, piezas, observaciones)?
-     * Preventivo: mientras el caso esté abierto, igual que siempre. Correctivo:
-     * solo durante "En reparación" — en Reportado/Diagnosticado todavía no hay
-     * nada que registrar, y en Reparado/Cerrado ya se congeló lo hecho.
+     * Solo mientras alguien está trabajando el equipo: Preventivo "En
+     * proceso" y Correctivo "En reparación". En un Preventivo "Programado" el
+     * equipo todavía no está bloqueado (sigue en manos de su usuario), así que
+     * no se le pueden sacar ni poner piezas todavía.
      */
     public function permiteRegistrarTrabajo(): bool
     {
-        if (! $this->estaAbierto()) {
-            return false;
-        }
-
-        return $this->esPreventivo() || $this->estado === 'En reparación';
+        return $this->estado === ($this->esPreventivo() ? 'En proceso' : 'En reparación');
     }
 
     /**
@@ -321,6 +318,23 @@ class Mantenimiento extends Model
         }
     }
 
+    /**
+     * Caso abierto que tiene bloqueado ahora mismo al equipo, si hay uno.
+     * Un Preventivo "Programado" NO cuenta: todavía no bloqueó el equipo, así
+     * que no debe impedir devolverlo de una asignación o un préstamo.
+     */
+    public static function bloqueoActivoDe(?int $equipoId): ?self
+    {
+        if (! $equipoId) {
+            return null;
+        }
+
+        return static::where('equipo_id', $equipoId)
+            ->abiertos()
+            ->whereNotNull('estado_equipo_anterior_id')
+            ->first();
+    }
+
     /** ¿Este caso llegó a bloquear el equipo? (false para un Preventivo cancelado desde "Programado"). */
     public function estaBloqueado(): bool
     {
@@ -338,11 +352,32 @@ class Mantenimiento extends Model
     {
         $equipo = $this->equipo;
 
-        if (! $equipo || ! $this->estaBloqueado()) {
-            return;
+        if (! $equipo || ! $this->estaBloqueado() || ! $equipo->activo) {
+            return; // un equipo dado de baja no se toca
         }
 
-        $equipo->update(['estado_id' => $this->estado_equipo_anterior_id]);
+        $equipo->update(['estado_id' => $this->estadoAlLiberar($equipo)]);
+    }
+
+    /**
+     * Estado al que vuelve el equipo al liberarlo: el que tenía antes del
+     * bloqueo, salvo que ese estado ya no sea cierto — por ejemplo, era
+     * "Asignado" pero la asignación ya no está activa. En ese caso vuelve a
+     * "Disponible", para no dejar un equipo "Asignado" sin nadie que lo tenga.
+     */
+    private function estadoAlLiberar(Equipo $equipo): int
+    {
+        $anterior   = EstadoEquipo::find($this->estado_equipo_anterior_id);
+        $disponible = EstadoEquipo::where('nombre', EstadoEquipo::DISPONIBLE)->value('id');
+
+        $sigueValido = match ($anterior?->nombre) {
+            EstadoEquipo::ASIGNADO    => AsignacionItem::where('equipo_id', $equipo->id)->where('devuelto', false)->exists(),
+            EstadoEquipo::EN_PRESTAMO => PrestamoItem::where('equipo_id', $equipo->id)->where('devuelto', false)->exists(),
+            null                      => false,
+            default                   => true,
+        };
+
+        return $sigueValido ? $anterior->id : ($disponible ?? $this->estado_equipo_anterior_id);
     }
 
     /**
@@ -404,6 +439,7 @@ class Mantenimiento extends Model
             $fechaCierre = now()->toDateString();
             $this->update(['estado' => 'Completado', 'fecha_fin_real' => $fechaCierre]);
             $this->liberarEquipo();
+            $this->cancelarComponentesPendientes();
 
             $this->planMantenimiento?->avanzarSiLoteCompleto();
         });
@@ -432,6 +468,7 @@ class Mantenimiento extends Model
         DB::transaction(function () {
             $this->update(['estado' => 'Cerrado', 'fecha_fin_real' => now()->toDateString()]);
             $this->liberarEquipo();
+            $this->cancelarComponentesPendientes();
         });
     }
 
@@ -449,13 +486,25 @@ class Mantenimiento extends Model
             throw new \InvalidArgumentException('Solo se puede reabrir una reparación que esté Cerrada.');
         }
 
-        DB::transaction(function () use ($actor, $motivo) {
-            $equipo = $this->equipo;
+        $equipo = $this->equipo;
 
-            if ($equipo && $this->estado_equipo_anterior_id) {
-                $estadoReparacion = EstadoEquipo::where('nombre', EstadoEquipo::EN_REPARACION)->value('id');
-                $equipo->update(['estado_id' => $estadoReparacion ?? $equipo->estado_id]);
-            }
+        if (! $equipo || ! $equipo->activo) {
+            throw new \InvalidArgumentException('No se puede reabrir: el equipo ya no está activo (fue dado de baja).');
+        }
+
+        $otroAbierto = static::where('equipo_id', $equipo->id)->whereKeyNot($this->id)->abiertos()->first();
+        if ($otroAbierto) {
+            throw new \InvalidArgumentException("No se puede reabrir: el equipo ya tiene abierto el caso #{$otroAbierto->id}.");
+        }
+
+        DB::transaction(function () use ($actor, $motivo, $equipo) {
+            // Se vuelve a tomar el estado ACTUAL del equipo: desde que se
+            // cerró el caso pudo haberse asignado, prestado o devuelto, y al
+            // volver a cerrar debe regresar a ese estado, no al de antes.
+            $estadoReparacion = EstadoEquipo::where('nombre', EstadoEquipo::EN_REPARACION)->value('id');
+
+            $this->update(['estado_equipo_anterior_id' => $equipo->estado_id]);
+            $equipo->update(['estado_id' => $estadoReparacion ?? $equipo->estado_id]);
 
             $nota = 'Reabierto el ' . now()->format('d/m/Y') . " por {$actor->name}: {$motivo}";
 
@@ -526,8 +575,14 @@ class Mantenimiento extends Model
      */
     public function eliminarCaso(): void
     {
+        // Un caso cerrado, completado, cancelado o dado de baja es historial
+        // del equipo: no se elimina.
+        if (! $this->estaAbierto()) {
+            throw new \InvalidArgumentException('Solo se pueden eliminar casos abiertos; uno cerrado forma parte del historial del equipo.');
+        }
+
         DB::transaction(function () {
-            if ($this->estaAbierto() && $this->estaBloqueado()) {
+            if ($this->estaBloqueado()) {
                 $this->liberarEquipo();
             }
 
@@ -549,6 +604,7 @@ class Mantenimiento extends Model
         DB::transaction(function () {
             $this->update(['estado' => 'Cancelado', 'fecha_fin_real' => now()->toDateString()]);
             $this->liberarEquipo();
+            $this->cancelarComponentesPendientes();
 
             $this->planMantenimiento?->avanzarSiLoteCompleto();
         });
@@ -584,12 +640,22 @@ class Mantenimiento extends Model
                 'aprobado_por_id' => $aprobador->id,
             ]);
 
+            $this->cancelarComponentesPendientes();
+
             $itemActivo = AsignacionItem::where('equipo_id', $this->equipo_id)
                 ->where('devuelto', false)
                 ->first();
 
             if ($itemActivo) {
                 $itemActivo->registrarDevolucion('Equipo dado de baja');
+            }
+
+            $prestamoActivo = PrestamoItem::where('equipo_id', $this->equipo_id)
+                ->where('devuelto', false)
+                ->first();
+
+            if ($prestamoActivo) {
+                $prestamoActivo->registrarDevolucion('Equipo dado de baja');
             }
 
             $obsolescencia = app(\App\Services\ObsolescenciaService::class);
@@ -703,6 +769,17 @@ class Mantenimiento extends Model
                 'registrado_por'        => $actor->id,
             ]);
         }
+    }
+
+    /**
+     * Al terminar el caso (cerrar, completar, cancelar, dar de baja), los
+     * componentes que seguían "Pendiente" por falta de stock ya no se van a
+     * entregar: pasan a "Cancelado" y la bandera esperando_componente se apaga.
+     */
+    public function cancelarComponentesPendientes(): void
+    {
+        $this->componentesPendientes()->update(['estado' => MantenimientoComponente::ESTADO_CANCELADO]);
+        $this->recalcularEsperandoComponente();
     }
 
     public function recalcularEsperandoComponente(): void

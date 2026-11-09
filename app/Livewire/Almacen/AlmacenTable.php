@@ -98,8 +98,13 @@ class AlmacenTable extends Component
     {
         $componente = ComponenteAlmacen::findOrFail($id);
         $this->authorize('delete', $componente);
-        $componente->update(['activo' => false]);
-        $this->dispatch('toast', type: 'success', message: "«{$componente->nombre}» desactivado.");
+
+        try {
+            $componente->desactivar();
+            $this->dispatch('toast', type: 'success', message: "«{$componente->nombre}» desactivado.");
+        } catch (\InvalidArgumentException $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
+        }
     }
 
     public function reactivar(int $id): void

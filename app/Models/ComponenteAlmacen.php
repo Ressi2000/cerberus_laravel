@@ -100,6 +100,33 @@ class ComponenteAlmacen extends Model
     // Helpers de negocio
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Desactiva el componente (deja de ofrecerse para pedir). No se puede si
+     * todavía tiene stock — habría que darle salida primero — ni si algún
+     * caso lo está esperando como "Pendiente".
+     */
+    public function desactivar(): void
+    {
+        if ($this->stock_actual > 0) {
+            throw new \InvalidArgumentException(
+                "«{$this->nombre}» todavía tiene {$this->stock_actual} {$this->unidad} en stock. Regístrales una salida antes de desactivarlo."
+            );
+        }
+
+        $casos = $this->usosEnMantenimiento()
+            ->where('estado', MantenimientoComponente::ESTADO_PENDIENTE)
+            ->pluck('mantenimiento_id')
+            ->unique();
+
+        if ($casos->isNotEmpty()) {
+            throw new \InvalidArgumentException(
+                "«{$this->nombre}» está pendiente de entrega en el/los caso(s) #" . $casos->implode(', #') . '. No se puede desactivar.'
+            );
+        }
+
+        $this->update(['activo' => false]);
+    }
+
     public function tieneStockSuficiente(int $cantidad): bool
     {
         return $this->stock_actual >= $cantidad;

@@ -105,6 +105,17 @@ class PrestamoItem extends Model
      */
     public function registrarDevolucion(?string $observaciones = null): void
     {
+        // Igual que en asignaciones: mientras un caso tenga el equipo en
+        // mantenimiento/reparación, devolverlo lo dejaría "Disponible" en
+        // pleno taller. Primero se cierra el caso.
+        $bloqueo = Mantenimiento::bloqueoActivoDe($this->equipo_id);
+
+        if ($bloqueo) {
+            throw new \App\Exceptions\ModuloBloqueadoException(
+                "No se puede devolver este equipo: tiene un {$bloqueo->tipo} en curso (estado: «{$bloqueo->estado}»). Cierra ese caso primero desde Mantenimientos."
+            );
+        }
+
         DB::transaction(function () use ($observaciones) {
 
             $estadoDisponible = EstadoEquipo::where('nombre', 'Disponible')->value('id');

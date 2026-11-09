@@ -114,6 +114,8 @@ class SustitucionPiezaService
         User $actor,
         ?Mantenimiento $mantenimiento = null,
         ?int $instanciaASustituirId = null,
+        string $destinoPiezaSaliente = PiezaExtraida::ESTADO_EN_ALMACEN,
+        ?Deposito $depositoPiezaSaliente = null,
     ): void {
         if ($pieza->estado !== PiezaExtraida::ESTADO_EN_ALMACEN) {
             throw new \InvalidArgumentException('Esta pieza no está disponible en Almacén (ya fue instalada o descartada).');
@@ -143,7 +145,7 @@ class SustitucionPiezaService
             throw new \InvalidArgumentException('Solo un atributo tipo grupo se puede "agregar" sin reemplazar nada.');
         }
 
-        DB::transaction(function () use ($pieza, $equipoDestino, $modo, $actor, $mantenimiento, $instanciaASustituirId, $atributo) {
+        DB::transaction(function () use ($pieza, $equipoDestino, $modo, $actor, $mantenimiento, $instanciaASustituirId, $atributo, $destinoPiezaSaliente, $depositoPiezaSaliente) {
             if (! $pieza->componenteAlmacen) {
                 throw new \InvalidArgumentException('Esta pieza no está asociada a ningún componente del almacén.');
             }
@@ -155,8 +157,19 @@ class SustitucionPiezaService
                 1, $actor, "Instalación en equipo #{$equipoDestino->id}", $mantenimiento, [$pieza]
             );
 
+            // Al sustituir, la pieza que SALE del equipo no se pierde: se
+            // registra igual que con "Retirar" (Almacén si está buena,
+            // Depósito si está dañada), con su propio historial.
+            if ($modo === self::MODO_SUSTITUIR) {
+                $this->retirarPiezaSaliente(
+                    $equipoDestino, $atributo, $instanciaASustituirId, $destinoPiezaSaliente,
+                    $depositoPiezaSaliente, $actor, $mantenimiento,
+                );
+            }
+
             if ($atributo->esGrupo()) {
-                $this->aplicarEnGrupo($equipoDestino, $atributo->id, $pieza->valor_extraido, $modo, $instanciaASustituirId, $actor);
+                // La instancia sustituida ya salió del equipo: la nueva se agrega.
+                $this->aplicarEnGrupo($equipoDestino, $atributo->id, $pieza->valor_extraido, self::MODO_AGREGAR, null, $actor);
             } else {
                 $this->aplicarEnSimple($equipoDestino, $atributo->id, $pieza->valor_extraido, $actor);
             }
@@ -173,6 +186,47 @@ class SustitucionPiezaService
                 'registrado_por'        => $actor->id,
             ]);
         });
+    }
+
+    /**
+     * Saca del equipo la pieza que se está reemplazando y la deja trazada.
+     * Atributo de grupo: la instancia elegida (obligatoria). Atributo simple:
+     * el valor vigente, si el equipo tiene uno (si no tenía, no sale nada).
+     */
+    private function retirarPiezaSaliente(
+        Equipo $equipo,
+        AtributoEquipo $atributo,
+        ?int $instanciaId,
+        string $destino,
+        ?Deposito $deposito,
+        User $actor,
+        ?Mantenimiento $mantenimiento,
+    ): void {
+        if ($atributo->esGrupo()) {
+            $instancia = $instanciaId
+                ? EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
+                    ->where('atributo_id', $atributo->id)
+                    ->where('es_actual', true)
+                    ->find($instanciaId)
+                : null;
+
+            if (! $instancia) {
+                throw new \InvalidArgumentException('Selecciona cuál instancia vigente reemplaza esta pieza.');
+            }
+
+            $this->retirarDeGrupo($equipo, $instancia, $destino, $actor, $deposito, $mantenimiento, 'Sustituida por otra pieza.');
+
+            return;
+        }
+
+        $tieneValor = EquipoAtributoValor::where('equipo_id', $equipo->id)
+            ->where('atributo_id', $atributo->id)
+            ->where('es_actual', true)
+            ->exists();
+
+        if ($tieneValor) {
+            $this->retirar($equipo, $atributo, $destino, $actor, $deposito, $mantenimiento, 'Sustituida por otra pieza.');
+        }
     }
 
     /** Aplica el valor de la pieza sobre un atributo simple (único modo posible: sustituir el valor vigente). */

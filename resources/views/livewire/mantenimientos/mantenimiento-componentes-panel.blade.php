@@ -84,6 +84,13 @@
                             Entregar ahora
                         </button>
                     @endif
+                @elseif ($item->estado === \App\Models\MantenimientoComponente::ESTADO_CANCELADO)
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
+                                 bg-gray-100 dark:bg-cerberus-steel/20 text-gray-600 dark:text-cerberus-light
+                                 border border-gray-200 dark:border-cerberus-steel/40"
+                          title="El caso terminó antes de que hubiera stock">
+                        <span class="material-icons text-xs">block</span> Cancelado
+                    </span>
                 @else
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
                                  bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400
