@@ -38,19 +38,30 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
     protected $description = 'Limpieza única de datos de prueba de Mantenimiento, Almacén y Cronograma (simula por defecto).';
 
     /** Casos de prueba: todos los que había en el respaldo. */
-    private const CASOS = [41, 42, 43, 44, 45, 46];
+    /** Caso => [código del equipo, tipo], tal como estaban en el respaldo. */
+    private const CASOS = [
+        41 => ['EQ-00008', 'Preventivo'],
+        42 => ['EQ-00009', 'Preventivo'],
+        43 => ['EQ-00025', 'Preventivo'],
+        44 => ['EQ-00055', 'Correctivo'],
+        45 => ['EQ-00057', 'Correctivo'],
+        46 => ['EQ-00001', 'Correctivo'],
+    ];
 
     /** Componentes creados solo para pruebas, con todo lo que se cargó en ellos. */
     private const COMPONENTES_PRUEBA = [
-        9  => ['piezas' => [4], 'movimientos' => [14, 15]],
-        10 => ['piezas' => [5, 6, 7, 8, 9], 'movimientos' => [16, 17]],
+        9  => ['nombre' => '16GB DDR4', 'piezas' => [4], 'movimientos' => [14, 15]],
+        10 => ['nombre' => 'RAM (GB) (Cantidad: 4 / Tipo: DDR3)', 'piezas' => [5, 6, 7, 8, 9], 'movimientos' => [16, 17]],
     ];
 
-    /** Componentes sin stock y sin ningún movimiento. */
-    private const COMPONENTES_VACIOS = [3, 4, 8];
+    /** Componentes sin stock y sin ningún movimiento (id => nombre). */
+    private const COMPONENTES_VACIOS = [3 => 'RAM', 4 => 'RAM DDR3 2GB para Laptop', 8 => 'bisagra'];
 
-    /** Planes eliminados o inactivos de prueba (se conserva solo el #17). */
-    private const PLANES_PRUEBA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16];
+    /** Planes de prueba (id => [empresa_id, categoria_id]); se conserva solo el #17. */
+    private const PLANES_PRUEBA = [
+        1 => [6, 2], 2 => [2, 2], 3 => [6, 1], 4 => [2, 1], 5 => [6, 4], 6 => [6, 6],
+        7 => [6, 8], 8 => [2, 12], 9 => [6, 2], 10 => [6, 1], 11 => [6, 2], 16 => [6, 1],
+    ];
 
     /** Disco 200GB HDD rescatado de EQ-00017: su stock ya se había usado el 02/10. */
     private const PIEZA_DISCO = 2;
@@ -75,6 +86,10 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
         }
 
         $this->ejecutar = (bool) $this->option('ejecutar');
+
+        $conexion = DB::connection();
+        $this->line('Base de datos: <info>' . $conexion->getDatabaseName() . '</info> en <info>'
+            . ($conexion->getConfig('host') ?? '—') . '</info>. Debe ser la misma de la que sacaste el respaldo.');
 
         $this->warn($this->ejecutar
             ? 'EJECUTANDO la limpieza. Los cambios son permanentes.'
@@ -131,10 +146,27 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
     {
         $this->line('<comment>1. Casos de mantenimiento/reparación de prueba</comment>');
 
-        $casos = Mantenimiento::withTrashed()->with('equipo')->whereIn('id', self::CASOS)->get();
+        $ids   = array_keys(self::CASOS);
+        $casos = Mantenimiento::withTrashed()->with('equipo')->whereIn('id', $ids)->get()->keyBy('id');
 
-        if ($casos->count() !== count(self::CASOS)) {
-            throw new \RuntimeException('faltan casos de prueba (¿ya se borraron?). Esperados: #' . implode(', #', self::CASOS) . '.');
+        // Cada caso que exista tiene que ser el mismo del respaldo: si el ID
+        // apunta a otro equipo o tipo, esta no es la base revisada.
+        foreach ($casos as $id => $caso) {
+            [$codigo, $tipo] = self::CASOS[$id];
+
+            if ($caso->tipo !== $tipo || $caso->equipo?->codigo_interno !== $codigo) {
+                throw new \RuntimeException("el caso #{$id} no es el del respaldo (se esperaba {$tipo} de {$codigo}, "
+                    . "y es {$caso->tipo} de " . ($caso->equipo?->codigo_interno ?? 'otro equipo') . '). ¿Es la base correcta?');
+            }
+        }
+
+        $faltan = array_diff($ids, $casos->keys()->all());
+        if ($faltan) {
+            $this->line('   - Ya no existen (se omiten): #' . implode(', #', $faltan) . '.');
+        }
+
+        if ($casos->isEmpty()) {
+            return collect();
         }
 
         foreach ($casos as $caso) {
@@ -145,12 +177,12 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
             }
         }
 
-        $fotos = MantenimientoEvidencia::whereIn('mantenimiento_id', self::CASOS)->pluck('ruta_archivo');
+        $fotos = MantenimientoEvidencia::whereIn('mantenimiento_id', $casos->keys())->pluck('ruta_archivo');
 
         // Las evidencias y los componentes pedidos se borran en cascada.
-        Mantenimiento::withTrashed()->whereIn('id', self::CASOS)->forceDelete();
+        Mantenimiento::withTrashed()->whereIn('id', $casos->keys())->forceDelete();
 
-        $this->line('   - ' . count(self::CASOS) . " caso(s) borrado(s): #" . implode(', #', self::CASOS) . ".");
+        $this->line("   - {$casos->count()} caso(s) borrado(s): #" . $casos->keys()->implode(', #') . '.');
         $this->line("   - {$fotos->count()} foto(s) de evidencia " . ($this->ejecutar ? 'se borrarán' : 'se borrarían') . ' del disco.');
 
         return $fotos;
@@ -166,7 +198,12 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
             $componente = ComponenteAlmacen::withTrashed()->find($id);
 
             if (! $componente) {
-                throw new \RuntimeException("el componente #{$id} ya no existe.");
+                $this->line("   - #{$id} ya no existe, se omite.");
+                continue;
+            }
+
+            if ($componente->nombre !== $esperado['nombre']) {
+                throw new \RuntimeException("el componente #{$id} se llama «{$componente->nombre}», no «{$esperado['nombre']}». ¿Es la base correcta?");
             }
 
             $piezas      = PiezaExtraida::where('componente_almacen_id', $id)->pluck('id')->sort()->values()->all();
@@ -192,12 +229,16 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
     {
         $this->line('<comment>3. Componentes vacíos que nunca se usaron</comment>');
 
-        foreach (self::COMPONENTES_VACIOS as $id) {
+        foreach (self::COMPONENTES_VACIOS as $id => $nombre) {
             $componente = ComponenteAlmacen::withTrashed()->find($id);
 
             if (! $componente) {
                 $this->line("   - #{$id} ya no existe, se omite.");
                 continue;
+            }
+
+            if ($componente->nombre !== $nombre) {
+                throw new \RuntimeException("el componente #{$id} se llama «{$componente->nombre}», no «{$nombre}». ¿Es la base correcta?");
             }
 
             $usado = $componente->stock_actual > 0
@@ -220,9 +261,23 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
     {
         $this->line('<comment>4. Planes de cronograma de prueba</comment>');
 
-        $planes = PlanMantenimiento::withTrashed()->whereIn('id', self::PLANES_PRUEBA)->get();
+        $ids    = array_keys(self::PLANES_PRUEBA);
+        $planes = PlanMantenimiento::withTrashed()->whereIn('id', $ids)->get();
 
-        $conCasos = Mantenimiento::withTrashed()->whereIn('plan_mantenimiento_id', self::PLANES_PRUEBA)->pluck('id');
+        foreach ($planes as $plan) {
+            [$empresa, $categoria] = self::PLANES_PRUEBA[$plan->id];
+
+            if ((int) $plan->empresa_id !== $empresa || (int) $plan->categoria_id !== $categoria) {
+                throw new \RuntimeException("el plan #{$plan->id} no es el del respaldo (otra empresa o categoría). ¿Es la base correcta?");
+            }
+        }
+
+        if ($planes->isEmpty()) {
+            $this->line('   - Ya no existen, se omite.');
+            return;
+        }
+
+        $conCasos = Mantenimiento::withTrashed()->whereIn('plan_mantenimiento_id', $ids)->pluck('id');
         if ($conCasos->isNotEmpty()) {
             throw new \RuntimeException('hay casos nuevos generados por planes de prueba (#' . $conCasos->implode(', #') . '). Revísalos antes.');
         }
@@ -245,6 +300,10 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
         $this->line('<comment>5. Disco 200GB HDD 3.5 (pieza #' . self::PIEZA_DISCO . ')</comment>');
 
         $pieza = PiezaExtraida::find(self::PIEZA_DISCO);
+
+        if ($pieza && ((int) $pieza->equipo_origen_id !== 17 || (int) $pieza->componente_almacen_id !== 6)) {
+            throw new \RuntimeException('la pieza #' . self::PIEZA_DISCO . ' no es el disco rescatado de EQ-00017. ¿Es la base correcta?');
+        }
 
         if (! $pieza || $pieza->estado !== PiezaExtraida::ESTADO_EN_ALMACEN) {
             $this->line('   - Ya no figura en almacén, se omite.');
@@ -274,6 +333,10 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
         $this->line('<comment>6. Stock sin respaldo de «Disco Duro»</comment>');
 
         $componente = ComponenteAlmacen::find(self::COMPONENTE_DISCO_DURO);
+
+        if ($componente && $componente->nombre !== 'Disco Duro') {
+            throw new \RuntimeException("el componente #" . self::COMPONENTE_DISCO_DURO . " se llama «{$componente->nombre}», no «Disco Duro». ¿Es la base correcta?");
+        }
 
         if (! $componente || $componente->stock_actual === 0) {
             $this->line('   - Ya está en 0, se omite.');
