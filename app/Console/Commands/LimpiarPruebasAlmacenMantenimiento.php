@@ -112,7 +112,10 @@ class LimpiarPruebasAlmacenMantenimiento extends Command
         DB::commit();
 
         foreach ($fotos as $ruta) {
-            Storage::disk('public')->delete($ruta);
+            // La foto puede estar en el disco privado o, si no se movió, en el público.
+            foreach ([MantenimientoEvidencia::DISCO, MantenimientoEvidencia::DISCO_ANTERIOR] as $disco) {
+                Storage::disk($disco)->delete($ruta);
+            }
         }
 
         $this->newLine();

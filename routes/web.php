@@ -181,6 +181,10 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/',              [MantenimientoController::class, 'index'])->name('index');
             Route::get('/crear',         [MantenimientoController::class, 'create'])->name('create');
             Route::get('/{mantenimiento}', [MantenimientoController::class, 'show'])->name('show');
+            // Fotos de evidencia: solo con sesión y permiso para ver el caso.
+            Route::get('/{mantenimiento}/evidencias/{evidencia}', [MantenimientoController::class, 'evidencia'])
+                ->name('evidencias.show')
+                ->scopeBindings();
         });
 
     // Cronograma de mantenimiento preventivo

@@ -93,7 +93,7 @@ class MantenimientoEvidenciasPanel extends Component
         ]);
 
         try {
-            $path = $this->foto->store('mantenimientos', 'public');
+            $path = $this->foto->store('mantenimientos', \App\Models\MantenimientoEvidencia::DISCO);
 
             $m->evidencias()->create([
                 'ruta_archivo'  => $path,

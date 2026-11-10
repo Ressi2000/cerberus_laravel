@@ -73,7 +73,10 @@ class LimpiarMantenimientosPrueba extends Command
             //    eventos de Eloquent, así que esto hay que hacerlo a mano).
             $rutas = MantenimientoEvidencia::pluck('ruta_archivo');
             foreach ($rutas as $ruta) {
-                Storage::disk('public')->delete($ruta);
+                // La foto puede estar en el disco privado o, si no se movió, en el público.
+                foreach ([MantenimientoEvidencia::DISCO, MantenimientoEvidencia::DISCO_ANTERIOR] as $disco) {
+                    Storage::disk($disco)->delete($ruta);
+                }
             }
             $this->line("  → {$rutas->count()} foto(s) de evidencia borrada(s) del disco.");
 

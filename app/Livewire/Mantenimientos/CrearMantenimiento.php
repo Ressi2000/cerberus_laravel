@@ -261,7 +261,7 @@ class CrearMantenimiento extends Component
             // El archivo se guarda antes de la transacción: Storage no es
             // transaccional y no tiene sentido bloquear la fila mientras se
             // escribe a disco.
-            $rutaFotoAntes = $this->fotoAntes->store('mantenimientos', 'public');
+            $rutaFotoAntes = $this->fotoAntes->store('mantenimientos', \App\Models\MantenimientoEvidencia::DISCO);
 
             $mantenimiento = DB::transaction(function () use ($rutaFotoAntes) {
                 // lockForUpdate: si dos analistas guardan a la vez para el mismo
