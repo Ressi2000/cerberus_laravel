@@ -274,13 +274,11 @@ class FamiliasComponentesTest extends TestCase
             ->set('campos.0.nombre', 'Tecnología')
             ->set('campos.0.tipo', 'select')
             ->set('campos.0.opciones_raw', "HDD\nSSD\nNVMe")
-            ->set('campos.0.debe_coincidir', true)
             ->call('guardar')
             ->assertHasNoErrors();
 
         $discos = FamiliaComponente::where('nombre', 'Discos')->firstOrFail();
         $this->assertSame(['HDD', 'SSD', 'NVMe'], $discos->campos[0]['opciones']);
-        $this->assertTrue($discos->campos[0]['debe_coincidir']);
     }
 
     /** @test */

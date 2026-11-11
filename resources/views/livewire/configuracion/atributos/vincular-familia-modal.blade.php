@@ -56,9 +56,6 @@
                                      style="grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);">
                                     <div class="text-sm min-w-0">
                                         <span class="font-medium text-gray-900 dark:text-white">{{ $campo['nombre'] }}</span>
-                                        @if ($campo['debe_coincidir'] ?? false)
-                                            <span class="material-icons text-xs text-teal-600 dark:text-teal-400 align-middle" title="Debe coincidir para que la pieza encaje">rule</span>
-                                        @endif
                                     </div>
                                     <div class="flex flex-col gap-1.5 min-w-0">
                                         <select wire:model.live="mapeo.{{ $campo['id'] }}.fuente"

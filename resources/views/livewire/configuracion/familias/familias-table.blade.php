@@ -60,9 +60,6 @@
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
                                          bg-gray-100 dark:bg-cerberus-steel/20 text-gray-700 dark:text-cerberus-light">
                                 {{ $campo['nombre'] }}
-                                @if ($campo['debe_coincidir'] ?? false)
-                                    <span class="material-icons text-xs text-teal-600 dark:text-teal-400" title="Debe coincidir para que la pieza encaje">rule</span>
-                                @endif
                             </span>
                         @endforeach
                     </div>

@@ -30,7 +30,6 @@ class FamiliasComponentesSeeder extends Seeder
                         'tipo'           => 'integer',
                         'opciones'       => [],
                         'requerido'      => false,
-                        'debe_coincidir' => false,
                     ],
                     [
                         'id'             => (string) Str::uuid(),
@@ -38,7 +37,6 @@ class FamiliasComponentesSeeder extends Seeder
                         'tipo'           => 'select',
                         'opciones'       => ['DDR', 'DDR2', 'DDR2L', 'DDR3', 'DDR3L', 'DDR4', 'DDR4L', 'DDR5', 'DDR5L'],
                         'requerido'      => false,
-                        'debe_coincidir' => true,
                     ],
                     [
                         'id'             => (string) Str::uuid(),
@@ -46,7 +44,6 @@ class FamiliasComponentesSeeder extends Seeder
                         'tipo'           => 'select',
                         'opciones'       => ['SO-DIMM (laptop)', 'DIMM (escritorio)'],
                         'requerido'      => false,
-                        'debe_coincidir' => true,
                     ],
                 ],
             ]

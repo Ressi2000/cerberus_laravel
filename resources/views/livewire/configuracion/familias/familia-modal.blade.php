@@ -35,7 +35,6 @@
                         </div>
                         <p class="text-xs text-gray-500 dark:text-cerberus-light">
                             Estos campos los comparten todas las categorías que usen la familia.
-                            Marca <span class="material-icons text-xs align-middle">rule</span> <b>debe coincidir</b> en lo que hace que una pieza entre físicamente (ej. Tipo DDR4, Formato SO-DIMM).
                         </p>
                         @error('campos')
                             <p class="text-red-500 text-xs">{{ $message }}</p>
@@ -88,12 +87,6 @@
                                         <input type="checkbox" wire:model="campos.{{ $i }}.requerido"
                                             class="rounded border-gray-300 dark:border-cerberus-steel dark:bg-cerberus-dark text-cerberus-primary">
                                         Obligatorio
-                                    </label>
-                                    <label class="inline-flex items-center gap-1.5 cursor-pointer">
-                                        <input type="checkbox" wire:model="campos.{{ $i }}.debe_coincidir"
-                                            class="rounded border-gray-300 dark:border-cerberus-steel dark:bg-cerberus-dark text-teal-600">
-                                        <span class="material-icons text-xs text-teal-600 dark:text-teal-400">rule</span>
-                                        Debe coincidir para que la pieza encaje
                                     </label>
                                 </div>
                             </div>

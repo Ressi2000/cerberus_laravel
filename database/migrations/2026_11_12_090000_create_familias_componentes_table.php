@@ -8,9 +8,8 @@ use Illuminate\Support\Facades\Schema;
  * Familias de piezas (RAM, Discos…): la ficha técnica de una pieza se define
  * UNA vez en su familia y la comparten todas las categorías de equipos.
  *
- * - campos: JSON con la ficha [{id, nombre, tipo, opciones, requerido, debe_coincidir}].
- *   Mismo formato que atributos_equipos.sub_campos, más "debe_coincidir"
- *   (campos que deben ser iguales para que una pieza encaje en un equipo).
+ * - campos: JSON con la ficha [{id, nombre, tipo, opciones, requerido}],
+ *   el mismo formato que atributos_equipos.sub_campos.
  * - control: "unidad" (cada pieza con su serial) o "granel" (solo cantidad).
  *
  * Una característica de una categoría que "usa" una familia

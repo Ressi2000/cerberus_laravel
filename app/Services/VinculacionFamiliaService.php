@@ -151,9 +151,7 @@ class VinculacionFamiliaService
 
         $atributo->forceFill([
             'familia_id' => null,
-            'sub_campos' => collect($familia->camposComoSubCampos())
-                ->map(fn ($c) => collect($c)->except('debe_coincidir')->all())
-                ->all(),
+            'sub_campos' => $familia->camposComoSubCampos(),
         ])->save();
     }
 

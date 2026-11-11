@@ -42,7 +42,7 @@ class SustitucionPiezaService
     }
 
     /**
-     * Piezas rescatadas disponibles en Almacén que encajan en este equipo
+     * Piezas rescatadas disponibles en Almacén que le corresponden a este equipo
      * (mismo atributo → misma categoría de equipo, misma empresa). Fuente
      * del selector "¿qué pieza vas a instalar?".
      */

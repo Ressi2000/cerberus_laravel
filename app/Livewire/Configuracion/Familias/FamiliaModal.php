@@ -31,7 +31,7 @@ class FamiliaModal extends Component
     public string $descripcion = '';
     public string $control     = FamiliaComponente::CONTROL_UNIDAD;
 
-    /** @var array<int, array{id:string, nombre:string, tipo:string, opciones_raw:string, requerido:bool, debe_coincidir:bool}> */
+    /** @var array<int, array{id:string, nombre:string, tipo:string, opciones_raw:string, requerido:bool}> */
     public array $campos = [];
 
     #[On('openFamiliaCrear')]
@@ -62,7 +62,6 @@ class FamiliaModal extends Component
             'tipo'           => $c['tipo'] ?? 'string',
             'opciones_raw'   => implode("\n", $c['opciones'] ?? []),
             'requerido'      => (bool) ($c['requerido'] ?? false),
-            'debe_coincidir' => (bool) ($c['debe_coincidir'] ?? false),
         ])->values()->all();
 
         $this->resetValidation();
@@ -77,7 +76,6 @@ class FamiliaModal extends Component
             'tipo'           => 'string',
             'opciones_raw'   => '',
             'requerido'      => false,
-            'debe_coincidir' => false,
         ];
     }
 
@@ -155,7 +153,6 @@ class FamiliaModal extends Component
                 ? array_values(array_filter(array_map('trim', explode("\n", $c['opciones_raw'] ?? ''))))
                 : [],
             'requerido'      => (bool) $c['requerido'],
-            'debe_coincidir' => (bool) $c['debe_coincidir'],
         ])->values()->all();
 
         try {

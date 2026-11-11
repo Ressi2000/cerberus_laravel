@@ -16,11 +16,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * esta familia (AtributoEquipo::familia_id). Así una RAM de una Laptop y
  * otra de un Desktop se describen con los mismos campos y se pueden comparar.
  *
- * Cada campo: {id, nombre, tipo, opciones, requerido, debe_coincidir}.
+ * Cada campo: {id, nombre, tipo, opciones, requerido}.
  *   - id: UUID estable; es la clave con la que se guardan los valores en
  *     los equipos y en las piezas, así que renombrar un campo no pierde datos.
- *   - debe_coincidir: el campo tiene que ser igual entre la pieza y el
- *     equipo para que la pieza encaje físicamente (ej. Tipo DDR4, Formato SO-DIMM).
  */
 class FamiliaComponente extends Model
 {
@@ -93,20 +91,11 @@ class FamiliaComponente extends Model
                 'tipo'           => $c['tipo'] ?? 'string',
                 'opciones'       => $c['opciones'] ?? [],
                 'requerido'      => (bool) ($c['requerido'] ?? false),
-                'debe_coincidir' => (bool) ($c['debe_coincidir'] ?? false),
             ])
             ->values()
             ->all();
     }
 
-    /** IDs de los campos que deben coincidir para que una pieza encaje. */
-    public function camposQueDebenCoincidir(): array
-    {
-        return collect($this->campos ?? [])
-            ->filter(fn ($c) => $c['debe_coincidir'] ?? false)
-            ->pluck('id')
-            ->all();
-    }
 
     /** ¿Algún equipo o pieza ya tiene valores guardados con esta ficha? */
     public function tieneDatos(): bool

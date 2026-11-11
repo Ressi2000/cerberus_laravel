@@ -291,9 +291,6 @@
                                                          bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300
                                                          border border-teal-200 dark:border-teal-500/30">
                                                 {{ $campo['nombre'] }}
-                                                @if ($campo['debe_coincidir'] ?? false)
-                                                    <span class="material-icons text-xs" title="Debe coincidir para que la pieza encaje">rule</span>
-                                                @endif
                                             </span>
                                         @endforeach
                                         <span class="text-xs text-gray-400 dark:text-cerberus-steel self-center">Los campos se editan en Configuración → Familias de piezas.</span>
