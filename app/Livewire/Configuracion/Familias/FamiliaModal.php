@@ -40,7 +40,6 @@ class FamiliaModal extends Component
         $this->autorizar();
         $this->reset(['familiaId', 'nombre', 'descripcion', 'campos']);
         $this->control = FamiliaComponente::CONTROL_UNIDAD;
-        $this->agregarCampo();
         $this->resetValidation();
         $this->open = true;
     }
@@ -113,7 +112,9 @@ class FamiliaModal extends Component
             'nombre'         => ['required', 'string', 'max:100', Rule::unique('familias_componentes', 'nombre')->ignore($this->familiaId)],
             'descripcion'    => 'nullable|string|max:500',
             'control'        => 'required|in:' . implode(',', array_keys(FamiliaComponente::CONTROLES)),
-            'campos'         => 'required|array|min:1',
+            // La ficha es opcional: solo la necesitan las familias que son una
+            // característica de los equipos (RAM, discos…). Bisagras, no.
+            'campos'         => 'array',
             'campos.*.nombre'=> 'required|string|max:100|distinct',
             'campos.*.tipo'  => 'required|in:' . implode(',', array_keys(FamiliaComponente::TIPOS_CAMPO)),
         ];
@@ -132,8 +133,6 @@ class FamiliaModal extends Component
         return [
             'nombre.required'                 => 'Ponle un nombre a la familia (ej. RAM).',
             'nombre.unique'                   => 'Ya existe una familia con ese nombre.',
-            'campos.required'                 => 'La ficha necesita al menos un campo.',
-            'campos.min'                      => 'La ficha necesita al menos un campo.',
             'campos.*.nombre.required'        => 'Cada campo necesita un nombre.',
             'campos.*.nombre.distinct'        => 'Hay dos campos con el mismo nombre.',
             'campos.*.opciones_raw.required'  => 'Una lista necesita al menos una opción (una por línea).',
@@ -169,6 +168,13 @@ class FamiliaModal extends Component
                     }
                 }
 
+                if ($familia->atributos()->exists() && empty($campos)) {
+                    $this->addError('campos', 'Hay características de equipos que usan esta ficha: necesita al menos un campo.');
+                    return;
+                }
+
+                $pasaAGranel = ! $familia->esAGranel() && $this->control === FamiliaComponente::CONTROL_GRANEL;
+
                 $familia->update([
                     'nombre'      => trim($this->nombre),
                     'descripcion' => trim($this->descripcion) ?: null,
@@ -176,6 +182,11 @@ class FamiliaModal extends Component
                     'campos'      => $campos,
                 ]);
                 $msg = "Familia «{$familia->nombre}» actualizada.";
+
+                // Las piezas que estaban en el almacén pasan a contarse por cantidad.
+                if ($pasaAGranel && ($agrupadas = $familia->aplicarControl(Auth::user())) > 0) {
+                    $msg .= " {$agrupadas} pieza(s) en almacén pasaron a contarse solo por cantidad.";
+                }
             } else {
                 FamiliaComponente::create([
                     'nombre'      => trim($this->nombre),

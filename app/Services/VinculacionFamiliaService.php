@@ -111,6 +111,12 @@ class VinculacionFamiliaService
 
             $renombrados = $this->renombrarComponentes($atributo->fresh('familia'), $piezas);
 
+            // Los componentes del almacén de esas piezas quedan en la familia.
+            ComponenteAlmacen::withTrashed()
+                ->whereIn('id', $piezas->pluck('componente_almacen_id')->filter()->unique())
+                ->whereNull('familia_id')
+                ->update(['familia_id' => $familia->id]);
+
             return [
                 'instancias'  => $instancias->count(),
                 'piezas'      => $piezas->count(),

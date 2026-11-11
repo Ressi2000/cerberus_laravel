@@ -40,6 +40,7 @@
                         <span class="material-icons text-sm">info</span>
                         Se dará de alta en el almacén con stock 0 y quedará pedido como "Pendiente".
                     </p>
+                    <x-form.select label="Familia" placeholder="¿Qué tipo de pieza es?" :options="$this->familiasOpciones" wire:model="nuevaFamiliaId" :error="$errors->first('nuevaFamiliaId')" />
                     <x-form.input label="Nombre del componente" wire:model="nuevoNombre" placeholder="Ej: Pantalla LCD 15.6&quot;" :error="$errors->first('nuevoNombre')" />
                     <x-form.input label="Unidad" wire:model="nuevaUnidad" placeholder="unidad, par, metro..." :error="$errors->first('nuevaUnidad')" />
                     <button type="button" wire:click="$set('solicitarNuevo', false)" class="text-xs text-gray-500 dark:text-cerberus-light hover:underline">

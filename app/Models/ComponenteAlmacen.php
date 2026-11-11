@@ -25,6 +25,7 @@ class ComponenteAlmacen extends Model
 
     protected $fillable = [
         'empresa_id',
+        'familia_id',
         'deposito_id',
         'nombre',
         'descripcion',
@@ -45,6 +46,12 @@ class ComponenteAlmacen extends Model
     public function empresa()
     {
         return $this->belongsTo(Empresa::class);
+    }
+
+    /** Familia a la que pertenece esta variante (RAM, Discos, Bisagras…). */
+    public function familia()
+    {
+        return $this->belongsTo(FamiliaComponente::class, 'familia_id');
     }
 
     /** Depósito físico donde vive este stock. */
@@ -99,6 +106,49 @@ class ComponenteAlmacen extends Model
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers de negocio
     // ─────────────────────────────────────────────────────────────────────────
+
+    /** ¿Se controla a granel (solo cantidad)? Sin familia se trata como por unidad. */
+    public function esAGranel(): bool
+    {
+        return (bool) $this->familia?->esAGranel();
+    }
+
+    /**
+     * Pone el componente en una familia. Si la familia es "a granel", las
+     * piezas que estaban en el almacén pasan a contarse solo por cantidad
+     * (el stock no cambia; las piezas ya usadas conservan su historial).
+     * Devuelve cuántas piezas se agruparon.
+     */
+    public function asignarFamilia(FamiliaComponente $familia, User $actor): int
+    {
+        return DB::transaction(function () use ($familia, $actor) {
+            $this->update(['familia_id' => $familia->id]);
+            $this->setRelation('familia', $familia);
+
+            return $familia->esAGranel() ? $this->agruparPiezasEnAlmacen($actor) : 0;
+        });
+    }
+
+    /**
+     * Las piezas individuales que siguen en el almacén dejan de serlo y pasan
+     * a ser parte de la cantidad en stock (estado "agrupada"). stock_actual
+     * no cambia: esas unidades pasan a contarse como "sin identidad".
+     */
+    public function agruparPiezasEnAlmacen(User $actor): int
+    {
+        $piezas = $this->piezasEnAlmacen()->get();
+
+        foreach ($piezas as $pieza) {
+            $pieza->update(['estado' => PiezaExtraida::ESTADO_AGRUPADA]);
+            $pieza->movimientos()->create([
+                'tipo'           => PiezaExtraidaMovimiento::TIPO_AGRUPADA,
+                'registrado_por' => $actor->id,
+                'observaciones'  => "«{$this->nombre}» pasó a una familia a granel: se cuenta solo por cantidad.",
+            ]);
+        }
+
+        return $piezas->count();
+    }
 
     /**
      * Desactiva el componente (deja de ofrecerse para pedir). No se puede si

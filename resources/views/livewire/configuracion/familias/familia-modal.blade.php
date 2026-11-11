@@ -26,7 +26,7 @@
 
                     <div class="space-y-2">
                         <div class="flex items-center justify-between">
-                            <label class="text-sm font-medium text-gray-700 dark:text-cerberus-accent">Ficha técnica</label>
+                            <label class="text-sm font-medium text-gray-700 dark:text-cerberus-accent">Ficha técnica <span class="font-normal text-gray-400 dark:text-cerberus-steel">(opcional)</span></label>
                             <button type="button" wire:click="agregarCampo"
                                 class="flex items-center gap-1 text-xs px-2 py-1 rounded-lg text-teal-700 dark:text-teal-300
                                        bg-teal-50 dark:bg-teal-500/15 hover:bg-teal-100 dark:hover:bg-teal-500/25 transition">
@@ -34,7 +34,8 @@
                             </button>
                         </div>
                         <p class="text-xs text-gray-500 dark:text-cerberus-light">
-                            Estos campos los comparten todas las categorías que usen la familia.
+                            Opcional. Solo si la pieza es una característica de los equipos (RAM, discos…): estos campos los comparten
+                            todas las categorías que usen la familia. Familias como Bisagras o Carcasas no necesitan ficha.
                         </p>
                         @error('campos')
                             <p class="text-red-500 text-xs">{{ $message }}</p>

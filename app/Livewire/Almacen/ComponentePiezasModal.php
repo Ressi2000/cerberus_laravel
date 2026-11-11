@@ -35,7 +35,7 @@ class ComponentePiezasModal extends Component
         $this->authorize('view', $componente);
 
         $this->componenteId = $componenteId;
-        unset($this->componente, $this->piezas);
+        unset($this->componente, $this->piezas, $this->usos);
         $this->open = true;
     }
 
@@ -57,6 +57,24 @@ class ComponentePiezasModal extends Component
             ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
             ->with(['equipoOrigen', 'extraidoPor'])
             ->latest()
+            ->get();
+    }
+
+    /**
+     * Familias a granel: no hay piezas individuales, se muestra dónde se
+     * usó (salidas hacia casos, con su equipo) y los demás movimientos.
+     */
+    #[Computed]
+    public function usos()
+    {
+        if (! $this->componenteId) {
+            return collect();
+        }
+
+        return \App\Models\MovimientoComponente::with(['mantenimiento.equipo', 'registradoPor'])
+            ->where('componente_id', $this->componenteId)
+            ->latest()
+            ->limit(50)
             ->get();
     }
 

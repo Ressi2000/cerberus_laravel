@@ -3,6 +3,7 @@
 namespace App\Livewire\Almacen;
 
 use App\Models\ComponenteAlmacen;
+use App\Models\FamiliaComponente;
 use App\Models\Empresa;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -18,11 +19,14 @@ class ComponenteModal extends Component
     public string $nombre       = '';
     public string $descripcion  = '';
     public string $unidad       = 'unidad';
+    /** Familia a la que pertenece (obligatoria): RAM, Discos, Bisagras… */
+    public string $familia_id   = '';
 
     #[On('openComponenteCrear')]
-    public function abrirCrear(): void
+    public function abrirCrear(?int $familiaId = null): void
     {
         $this->reset(['componenteId', 'nombre', 'descripcion']);
+        $this->familia_id = $familiaId ? (string) $familiaId : '';
         $this->unidad = 'unidad';
         $actor = Auth::user();
         $this->empresa_id = $actor->hasRole('Analista') ? (string) ($actor->empresa_activa_id ?? '') : '';
@@ -42,6 +46,7 @@ class ComponenteModal extends Component
         $this->nombre       = $c->nombre;
         $this->descripcion  = $c->descripcion ?? '';
         $this->unidad       = $c->unidad;
+        $this->familia_id   = (string) ($c->familia_id ?? '');
         $this->resetValidation();
         $this->open = true;
     }
@@ -93,9 +98,35 @@ class ComponenteModal extends Component
         return Empresa::where('id', $actor->empresa_activa_id)->pluck('nombre', 'id');
     }
 
+    /** Familias activas para elegir; incluye la actual aunque esté desactivada. */
+    #[Computed]
+    public function familiasOpciones()
+    {
+        return FamiliaComponente::where('activo', true)
+            ->when($this->familia_id, fn ($q) => $q->orWhere('id', $this->familia_id))
+            ->orderBy('nombre')
+            ->get(['id', 'nombre', 'control']);
+    }
+
+    /** Aviso: al pasar a una familia a granel, las piezas en almacén pasan a contarse por cantidad. */
+    #[Computed]
+    public function piezasQueSeAgrupan(): int
+    {
+        if (! $this->componenteId || ! $this->familia_id) {
+            return 0;
+        }
+
+        $familia = $this->familiasOpciones->firstWhere('id', (int) $this->familia_id);
+
+        return $familia && $familia->control === FamiliaComponente::CONTROL_GRANEL
+            ? (ComponenteAlmacen::find($this->componenteId)?->piezasEnAlmacen()->count() ?? 0)
+            : 0;
+    }
+
     protected function rules(): array
     {
         return [
+            'familia_id'  => 'required|exists:familias_componentes,id',
             'empresa_id'  => 'required|exists:empresas,id',
             'nombre'      => 'required|string|max:150',
             'descripcion' => 'nullable|string|max:500',
@@ -107,6 +138,7 @@ class ComponenteModal extends Component
     {
         return [
             'empresa_id.required' => 'Debes seleccionar una empresa.',
+            'familia_id.required' => 'Elige la familia (ej. RAM, Bisagras). Si no encaja en ninguna, usa «Otros».',
             'nombre.required'     => 'El nombre es obligatorio.',
         ];
     }
@@ -142,12 +174,24 @@ class ComponenteModal extends Component
                 'unidad'      => trim($this->unidad) ?: 'unidad',
             ];
 
+            $familia = FamiliaComponente::findOrFail($this->familia_id);
+
             if ($componente) {
                 $componente->update($data);
                 $msg = "Componente «{$this->nombre}» actualizado.";
+
+                // Cambio de familia: si es a granel, las piezas en almacén
+                // pasan a contarse solo por cantidad.
+                if ((int) $componente->familia_id !== (int) $familia->id) {
+                    $agrupadas = $componente->asignarFamilia($familia, Auth::user());
+                    if ($agrupadas > 0) {
+                        $msg .= " {$agrupadas} pieza(s) en almacén pasaron a contarse solo por cantidad.";
+                    }
+                }
             } else {
                 ComponenteAlmacen::create(array_merge($data, [
                     'empresa_id'  => $this->empresa_id,
+                    'familia_id'  => $familia->id,
                     'activo'      => true,
                     'creado_por'  => Auth::id(),
                 ]));

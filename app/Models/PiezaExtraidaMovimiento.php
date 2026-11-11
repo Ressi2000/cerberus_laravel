@@ -38,6 +38,7 @@ class PiezaExtraidaMovimiento extends Model
     const TIPO_ENVIO_DEPOSITO    = 'envio_deposito';
     const TIPO_TRASLADO_DEPOSITO = 'traslado_deposito';
     const TIPO_SALIDA_AJUSTE     = 'salida_ajuste';
+    const TIPO_AGRUPADA          = 'agrupada';
 
     const TIPOS = [
         self::TIPO_EXTRACCION        => 'Extraída del equipo',
@@ -47,6 +48,7 @@ class PiezaExtraidaMovimiento extends Model
         self::TIPO_ENVIO_DEPOSITO    => 'Enviada a depósito',
         self::TIPO_TRASLADO_DEPOSITO => 'Trasladada entre depósitos',
         self::TIPO_SALIDA_AJUSTE     => 'Retirada del almacén (ajuste)',
+        self::TIPO_AGRUPADA          => 'Pasó a contarse por cantidad (a granel)',
     ];
 
     // ── Relaciones ────────────────────────────────────────────────────────────

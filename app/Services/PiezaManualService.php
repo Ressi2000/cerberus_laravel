@@ -33,7 +33,12 @@ class PiezaManualService
         ?Equipo $equipoOrigen = null,
         ?string $identificador = null,
         ?string $observaciones = null,
+        array $seriales = [],
     ): Collection {
+        if ($componente->esAGranel()) {
+            throw new \InvalidArgumentException("«{$componente->nombre}» es de una familia a granel: se registra solo la cantidad, sin piezas individuales.");
+        }
+
         if (! in_array($condicion, [PiezaExtraida::CONDICION_NUEVO, PiezaExtraida::CONDICION_REUTILIZADO], true)) {
             throw new \InvalidArgumentException("Condición inválida: {$condicion}");
         }
@@ -46,26 +51,37 @@ class PiezaManualService
             throw new \InvalidArgumentException('Una pieza nueva (comprada) no puede tener un equipo de origen.');
         }
 
-        $identificador = $identificador !== null ? trim($identificador) : null;
+        // Seriales: uno por unidad, en orden. Las unidades sin serial reciben
+        // un código interno AUTO-…. $identificador es la forma antigua (una sola unidad).
+        $seriales = collect($seriales)
+            ->when($identificador !== null, fn ($c) => $c->prepend($identificador))
+            ->map(fn ($s) => trim((string) $s))
+            ->filter()
+            ->values();
 
-        if ($identificador && PiezaExtraida::where('componente_almacen_id', $componente->id)->where('identificador', $identificador)->exists()) {
-            throw new \InvalidArgumentException("Ya hay una pieza con el identificador «{$identificador}» en este componente.");
+        if ($seriales->count() > $cantidad) {
+            throw new \InvalidArgumentException("Escribiste {$seriales->count()} seriales para {$cantidad} unidad(es).");
+        }
+
+        if ($seriales->duplicates()->isNotEmpty()) {
+            throw new \InvalidArgumentException('Hay seriales repetidos: ' . $seriales->duplicates()->unique()->implode(', ') . '.');
+        }
+
+        $existentes = PiezaExtraida::where('componente_almacen_id', $componente->id)->whereIn('identificador', $seriales)->pluck('identificador');
+        if ($existentes->isNotEmpty()) {
+            throw new \InvalidArgumentException('Ya hay piezas con estos seriales en este componente: ' . $existentes->implode(', ') . '.');
         }
 
         if ($equipoOrigen && (int) $equipoOrigen->empresa_id !== (int) $componente->empresa_id) {
             throw new \InvalidArgumentException('El equipo de origen debe ser de la misma empresa que el componente.');
         }
 
-        return DB::transaction(function () use ($componente, $cantidad, $condicion, $actor, $equipoOrigen, $identificador, $observaciones) {
+        return DB::transaction(function () use ($componente, $cantidad, $condicion, $actor, $equipoOrigen, $seriales, $observaciones) {
             $piezas = collect();
 
             for ($i = 0; $i < $cantidad; $i++) {
-                // Un identificador escrito a mano solo tiene sentido para una
-                // unidad puntual — si se dan de alta varias a la vez, cada una
-                // necesita el suyo propio, así que se autogenera siempre.
-                $idUnidad = ($cantidad === 1 && $identificador)
-                    ? $identificador
-                    : $this->generarIdentificador($componente);
+                // El serial escrito para esta unidad, o un código interno si no tiene.
+                $idUnidad = $seriales[$i] ?? $this->generarIdentificador($componente);
 
                 $pieza = PiezaExtraida::create([
                     'empresa_id'            => $componente->empresa_id,

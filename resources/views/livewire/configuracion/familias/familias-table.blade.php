@@ -56,12 +56,14 @@
                 </td>
                 <td class="px-4 py-3">
                     <div class="flex flex-wrap gap-1.5 max-w-md">
-                        @foreach ($familia->campos ?? [] as $campo)
+                        @forelse ($familia->campos ?? [] as $campo)
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
                                          bg-gray-100 dark:bg-cerberus-steel/20 text-gray-700 dark:text-cerberus-light">
                                 {{ $campo['nombre'] }}
                             </span>
-                        @endforeach
+                        @empty
+                            <span class="text-xs text-gray-400 dark:text-cerberus-steel">Sin ficha (no es característica de equipos)</span>
+                        @endforelse
                     </div>
                 </td>
                 <td class="px-4 py-3 text-sm text-gray-700 dark:text-cerberus-light">

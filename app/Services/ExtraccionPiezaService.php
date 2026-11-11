@@ -289,6 +289,7 @@ class ExtraccionPiezaService
         if (! $componente) {
             return ComponenteAlmacen::create([
                 'empresa_id'   => $empresaId,
+                'familia_id'   => $atributo->familia_id,
                 'nombre'       => $nombre,
                 'unidad'       => 'unidad',
                 'stock_actual' => 0,
@@ -303,6 +304,12 @@ class ExtraccionPiezaService
 
         if (! $componente->activo) {
             $componente->update(['activo' => true]);
+        }
+
+        // Si la característica ya usa una familia y el componente todavía no
+        // tiene, se le asigna (queda ordenado en el almacén).
+        if (! $componente->familia_id && $atributo->familia_id) {
+            $componente->update(['familia_id' => $atributo->familia_id]);
         }
 
         return $componente;

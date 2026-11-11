@@ -7,8 +7,9 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Familias de piezas iniciales. Por ahora solo RAM (fase 1); el resto se
- * crea desde Configuración → Familias de piezas.
+ * Familias de piezas iniciales: RAM (con ficha técnica) y "Otros" (para lo
+ * que no encaje en ninguna). El resto se crea desde Configuración →
+ * Familias de piezas.
  *
  * No pisa una familia que ya exista con el mismo nombre (se puede correr
  * varias veces sin perder cambios hechos desde la pantalla).
@@ -46,6 +47,18 @@ class FamiliasComponentesSeeder extends Seeder
                         'requerido'      => false,
                     ],
                 ],
+            ]
+        );
+
+        // Red de seguridad: lo que no encaja en ninguna familia. Si con el
+        // tiempo se juntan cosas parecidas, se crea su familia y se pasan.
+        FamiliaComponente::firstOrCreate(
+            ['nombre' => 'Otros'],
+            [
+                'descripcion' => 'Piezas que todavía no tienen una familia propia.',
+                'control'     => FamiliaComponente::CONTROL_UNIDAD,
+                'activo'      => true,
+                'campos'      => [],
             ]
         );
 

@@ -121,6 +121,11 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
         ]);
     }
 
+    private function crearFamilia(): \App\Models\FamiliaComponente
+    {
+        return \App\Models\FamiliaComponente::firstOrCreate(['nombre' => 'Otros'], ['control' => 'unidad', 'campos' => []]);
+    }
+
     private function crearDeposito(Empresa $empresa, User $actor): Deposito
     {
         return Deposito::create([
@@ -373,6 +378,7 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
             ->test(ComponenteModal::class)
             ->call('abrirCrear')
             ->set('empresa_id', (string) $this->empresaB->id)
+            ->set('familia_id', (string) $this->crearFamilia()->id)
             ->set('nombre', 'Pasta térmica')
             ->call('guardar');
 
@@ -389,6 +395,7 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
         Livewire::actingAs($admin)
             ->test(ComponenteModal::class)
             ->call('abrirEditar', $componente->id)
+            ->set('familia_id', (string) $this->crearFamilia()->id)
             ->set('empresa_id', (string) $this->empresaB->id)
             ->set('nombre', 'Nuevo nombre')
             ->call('guardar');

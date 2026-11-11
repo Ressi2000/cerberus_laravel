@@ -44,7 +44,14 @@
                         required
                     />
 
-                    @if ($tipo === 'Entrada')
+                    @if ($tipo === 'Entrada' && $this->componente?->esAGranel())
+                        <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
+                                    bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300
+                                    border border-purple-200 dark:border-purple-500/30">
+                            <span class="material-icons text-sm">inventory</span>
+                            <span>{{ $this->componente->familia->nombre }} es a granel: solo se suma la cantidad, sin seriales.</span>
+                        </div>
+                    @elseif ($tipo === 'Entrada')
                         <x-form.select
                             label="Condición"
                             :options="\App\Models\PiezaExtraida::CONDICIONES"
@@ -64,12 +71,12 @@
                             />
                         @endif
 
-                        <x-form.input
-                            label="Identificador / serial (opcional)"
-                            wire:model="identificador"
-                            placeholder="Déjalo vacío para que se genere uno automático"
-                            hint="{{ $cantidad > 1 ? 'Con más de 1 unidad, cada una recibe su propio identificador automático — este campo se ignora.' : 'Sirve para distinguir esta unidad de otras idénticas (ej. un código propio o de fábrica).' }}"
-                            :error="$errors->first('identificador')"
+                        <x-form.textarea
+                            label="Seriales (recomendado)"
+                            wire:model="seriales"
+                            rows="3"
+                            placeholder="Uno por línea, en el mismo orden que las unidades"
+                            hint="Las unidades sin serial reciben un código interno (AUTO-…)."
                         />
                     @endif
 

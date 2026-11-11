@@ -73,7 +73,7 @@ class VincularFamiliaModal extends Component
     #[Computed]
     public function familias()
     {
-        return FamiliaComponente::activas()->orderBy('nombre')->get();
+        return FamiliaComponente::activas()->whereJsonLength('campos', '>', 0)->orderBy('nombre')->get();
     }
 
     #[Computed]

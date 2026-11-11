@@ -51,12 +51,19 @@ class PiezaExtraida extends Model
     const ESTADO_EN_DEPOSITO = 'en_deposito';
     /** Salió del almacén por un ajuste manual (pérdida, corrección de inventario...) — sin equipo ni depósito de destino. */
     const ESTADO_RETIRADA    = 'retirada';
+    /**
+     * Estaba en el almacén y su componente pasó a una familia "a granel":
+     * dejó de contarse como pieza individual y ahora es parte de la cantidad
+     * en stock. Su historial anterior se conserva.
+     */
+    const ESTADO_AGRUPADA    = 'agrupada';
 
     const ESTADOS = [
         self::ESTADO_EN_ALMACEN  => 'En almacén',
         self::ESTADO_INSTALADA   => 'Instalada',
         self::ESTADO_EN_DEPOSITO => 'En depósito',
         self::ESTADO_RETIRADA    => 'Retirada (ajuste)',
+        self::ESTADO_AGRUPADA    => 'Pasó a contarse por cantidad',
     ];
 
     // ── Motivos de extracción ────────────────────────────────────────────────

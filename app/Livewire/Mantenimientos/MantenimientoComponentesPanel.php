@@ -28,6 +28,7 @@ class MantenimientoComponentesPanel extends Component
     public bool   $solicitarNuevo   = false;
     public string $nuevoNombre      = '';
     public string $nuevaUnidad      = 'unidad';
+    public string $nuevaFamiliaId   = '';
 
     public function mount(int $mantenimientoId): void
     {
@@ -45,6 +46,13 @@ class MantenimientoComponentesPanel extends Component
     public function mantenimiento(): Mantenimiento
     {
         return Mantenimiento::with(['componentes.componente', 'componentes.entregadoPor'])->findOrFail($this->mantenimientoId);
+    }
+
+    /** Familias activas, para dar de alta un componente nuevo ya clasificado. */
+    #[Computed]
+    public function familiasOpciones()
+    {
+        return \App\Models\FamiliaComponente::activas()->orderBy('nombre')->pluck('nombre', 'id');
     }
 
     #[Computed]
@@ -85,7 +93,7 @@ class MantenimientoComponentesPanel extends Component
             return;
         }
 
-        $this->reset(['componente_id', 'cantidad', 'solicitarNuevo', 'nuevoNombre', 'nuevaUnidad']);
+        $this->reset(['componente_id', 'cantidad', 'solicitarNuevo', 'nuevoNombre', 'nuevaUnidad', 'nuevaFamiliaId']);
         $this->cantidad = 1;
         $this->nuevaUnidad = 'unidad';
         $this->formAbierto = true;
@@ -102,6 +110,7 @@ class MantenimientoComponentesPanel extends Component
         if ($this->solicitarNuevo) {
             return [
                 'nuevoNombre' => 'required|string|max:150',
+                'nuevaFamiliaId' => 'required|exists:familias_componentes,id',
                 'nuevaUnidad' => 'required|string|max:30',
                 'cantidad'    => 'required|integer|min:1',
             ];
@@ -133,6 +142,7 @@ class MantenimientoComponentesPanel extends Component
 
                 $componente = ComponenteAlmacen::create([
                     'empresa_id'   => $m->empresa_id,
+                    'familia_id'   => (int) $this->nuevaFamiliaId,
                     'nombre'       => trim($this->nuevoNombre),
                     'unidad'       => trim($this->nuevaUnidad) ?: 'unidad',
                     'stock_actual' => 0,

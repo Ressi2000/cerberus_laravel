@@ -8,9 +8,10 @@
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
-        ['title' => 'Componentes activos', 'value' => $this->totalComponentes,      'icon' => 'inventory_2'],
-        ['title' => 'Unidades en stock',   'value' => $this->totalUnidadesEnStock,  'icon' => 'warehouse'],
-        ['title' => 'Sin stock',           'value' => $this->totalSinStock,         'icon' => 'production_quantity_limits'],
+        ['title' => 'Familias',                   'value' => $this->totalFamilias,         'icon' => 'category'],
+        ['title' => 'Piezas con serial en almacén', 'value' => $this->totalPiezasEnAlmacen, 'icon' => 'qr_code_2'],
+        ['title' => 'Unidades a granel',           'value' => $this->totalUnidadesAGranel, 'icon' => 'inventory'],
+        ['title' => 'Variantes sin stock',         'value' => $this->totalSinStock,        'icon' => 'production_quantity_limits'],
     ]" />
 
     {{-- ── HEADER + FILTROS ────────────────────────────────────────────────── --}}
@@ -105,75 +106,105 @@
         </x-slot>
     </x-table.crud-header>
 
-    {{-- ── TABLA ───────────────────────────────────────────────────────────── --}}
-    <x-table.crud-table
-        :headers="['Componente', 'Empresa', 'Unidad', 'Stock', 'Estado', 'Acciones']"
-        :paginated="$this->componentes">
+    {{-- ── FAMILIAS ────────────────────────────────────────────────────────── --}}
+    @if ($this->hayComponentesSinFamilia)
+        <div class="flex items-start gap-2 px-4 py-3 rounded-xl text-sm
+                    bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300
+                    border border-amber-200 dark:border-amber-500/30">
+            <span class="material-icons text-base">info</span>
+            <span>Hay componentes sin familia (al final de la lista). Edítalos para asignarles una y que el almacén quede ordenado.</span>
+        </div>
+    @endif
 
-        @forelse ($this->componentes as $componente)
-            <tr wire:key="comp-{{ $componente->id }}"
-                class="border-b border-gray-100 dark:border-cerberus-steel/30
-                       {{ ! $componente->activo ? 'opacity-60 bg-gray-50 dark:bg-cerberus-dark/30' : '' }}
-                       hover:bg-gray-50 dark:hover:bg-cerberus-dark/30 transition-colors">
+    <div class="space-y-3">
+        @forelse ($this->grupos as $grupo)
+            @php
+                $familia = $grupo['familia'];
+                $granel  = $familia?->esAGranel();
+                $clave   = $familia?->id ?? 'sin';
+            @endphp
+            <div wire:key="grupo-{{ $clave }}" x-data="{ open: {{ $loop->first || $this->search ? 'true' : 'false' }} }"
+                 class="bg-white dark:bg-cerberus-mid border rounded-xl overflow-hidden
+                        {{ $familia ? 'border-gray-200 dark:border-cerberus-steel' : 'border-amber-300 dark:border-amber-500/40' }}">
 
-                <td class="px-4 py-3">
-                    <p class="text-[#1E293B] dark:text-white font-medium text-sm">{{ $componente->nombre }}</p>
-                    @if ($componente->descripcion)
-                        <p class="text-gray-500 dark:text-cerberus-light text-xs truncate max-w-xs">{{ $componente->descripcion }}</p>
-                    @endif
-                </td>
+                {{-- Encabezado de la familia --}}
+                <button type="button" @click="open = !open" :aria-expanded="open"
+                        class="w-full flex flex-wrap items-center gap-3 px-4 py-3 text-left
+                               hover:bg-gray-50 dark:hover:bg-cerberus-steel/10 transition-colors">
+                    <span class="material-icons text-gray-400 dark:text-cerberus-steel transition-transform duration-150"
+                          :class="open ? 'rotate-90' : ''">chevron_right</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $familia?->nombre ?? 'Sin familia' }}</span>
 
-                <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">
-                    {{ $componente->empresa->nombre ?? '—' }}
-                </td>
-
-                <td class="px-4 py-3 text-gray-500 dark:text-cerberus-light text-sm">
-                    {{ $componente->unidad }}
-                </td>
-
-                <td class="px-4 py-3 text-center">
-                    <span @class([
-                        'inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full border font-semibold',
-                        'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30' => $componente->stock_actual === 0,
-                        'bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30' => $componente->stock_actual > 0,
-                    ])>
-                        {{ $componente->stock_actual }}
-                    </span>
-
-                    @php
-                        $sinTrazar = max(0, $componente->stock_actual - $componente->nuevas_en_stock - $componente->reutilizadas_en_stock);
-                    @endphp
-                    @if ($componente->nuevas_en_stock > 0 || $componente->reutilizadas_en_stock > 0 || $sinTrazar > 0)
-                        <p class="text-[10px] text-gray-400 dark:text-cerberus-steel mt-1 whitespace-nowrap">
-                            {!! collect([
-                                $componente->nuevas_en_stock > 0 ? '<span class="text-blue-500 dark:text-blue-400">' . $componente->nuevas_en_stock . ' nueva(s)</span>' : null,
-                                $componente->reutilizadas_en_stock > 0 ? '<span class="text-amber-600 dark:text-amber-400">' . $componente->reutilizadas_en_stock . ' reutilizada(s)</span>' : null,
-                                $sinTrazar > 0 ? $sinTrazar . ' sin trazar' : null,
-                            ])->filter()->implode(' · ') !!}
-                        </p>
-                    @endif
-                </td>
-
-                <td class="px-4 py-3">
-                    @if ($componente->activo)
+                    @if ($familia)
                         <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
-                                     bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400
-                                     border border-green-200 dark:border-green-500/30">
-                            <span class="material-icons text-xs">check_circle</span> Activo
+                                     {{ $granel
+                                         ? 'bg-purple-50 dark:bg-purple-500/15 text-purple-700 dark:text-purple-300'
+                                         : 'bg-blue-50 dark:bg-blue-500/15 text-blue-700 dark:text-blue-300' }}">
+                            <span class="material-icons text-xs">{{ $granel ? 'inventory' : 'qr_code_2' }}</span>
+                            {{ $granel ? 'A granel' : 'Por unidad' }}
                         </span>
+                        @if ($familia->tieneFicha())
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
+                                         bg-teal-50 dark:bg-teal-500/15 text-teal-700 dark:text-teal-300"
+                                  title="Sus piezas son una característica de los equipos">
+                                <span class="material-icons text-xs">tune</span> Ficha técnica
+                            </span>
+                        @endif
                     @else
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
-                                     bg-gray-50 dark:bg-cerberus-steel/20 text-gray-500 dark:text-cerberus-light
-                                     border border-gray-200 dark:border-cerberus-steel/30">
-                            <span class="material-icons text-xs">block</span> Desactivado
-                        </span>
+                        <span class="text-xs text-amber-700 dark:text-amber-300">Asígnales una familia</span>
                     @endif
-                </td>
 
-                <td class="px-4 py-3 text-center">
-                    <x-table.table-actions :model="$componente" editEvent="openComponenteEditar">
+                    <span class="ml-auto flex items-center gap-4 text-sm text-gray-500 dark:text-cerberus-accent">
+                        <span>{{ $grupo['variantes'] }} variante{{ $grupo['variantes'] === 1 ? '' : 's' }}</span>
+                        <span class="font-semibold text-gray-900 dark:text-white tabular-nums">{{ $grupo['stock'] }} en stock</span>
+                        @if ($grupo['sin_stock'] > 0)
+                            <span class="px-2 py-0.5 text-xs rounded-full bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400">
+                                {{ $grupo['sin_stock'] }} sin stock
+                            </span>
+                        @endif
+                    </span>
+                </button>
+
+                {{-- Variantes --}}
+                <div x-show="open" x-cloak class="border-t border-gray-100 dark:border-cerberus-steel/40">
+                    @foreach ($grupo['componentes'] as $componente)
+                        <div wire:key="comp-{{ $componente->id }}"
+                             class="flex flex-wrap items-center gap-3 pl-12 pr-4 py-2.5 border-b last:border-b-0
+                                    border-gray-100 dark:border-cerberus-steel/30
+                                    hover:bg-gray-50 dark:hover:bg-cerberus-steel/10 transition-colors
+                                    {{ ! $componente->activo ? 'opacity-60' : '' }}">
+
+                            <div class="flex-1 min-w-[12rem]">
+                                <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $componente->nombre }}</p>
+                                <p class="text-xs text-gray-500 dark:text-cerberus-light">
+                                    @if (Auth::user()->hasRole('Administrador')) {{ $componente->empresa->nombre ?? '—' }} · @endif
+                                    {{ $componente->unidad }}
+                                    @if (! $componente->activo) · <span class="text-gray-400">Desactivado</span> @endif
+                                </p>
+                            </div>
+
+                            <div class="text-right min-w-[7rem]">
+                                <span @class([
+                                    'inline-flex items-center px-2 py-0.5 text-xs rounded-full border font-semibold tabular-nums',
+                                    'bg-red-50 dark:bg-red-500/15 text-red-700 dark:text-red-400 border-red-200 dark:border-red-500/30' => $componente->stock_actual === 0,
+                                    'bg-green-50 dark:bg-green-500/15 text-green-700 dark:text-green-400 border-green-200 dark:border-green-500/30' => $componente->stock_actual > 0,
+                                ])>
+                                    {{ $componente->stock_actual }} {{ $granel ? 'unid.' : ($componente->stock_actual === 1 ? 'pieza' : 'piezas') }}
+                                </span>
+                                @if (! $granel && ($componente->nuevas_en_stock > 0 || $componente->reutilizadas_en_stock > 0))
+                                    <p class="text-[10px] text-gray-400 dark:text-cerberus-steel mt-1 whitespace-nowrap">
+                                        {{ collect([
+                                            $componente->nuevas_en_stock > 0 ? $componente->nuevas_en_stock . ' nueva(s)' : null,
+                                            $componente->reutilizadas_en_stock > 0 ? $componente->reutilizadas_en_stock . ' usada(s)' : null,
+                                        ])->filter()->implode(' · ') }}
+                                    </p>
+                                @endif
+                            </div>
+
+                            <div class="flex-shrink-0">
+                                <x-table.table-actions :model="$componente" editEvent="openComponenteEditar">
                         <x-slot name="acciones">
-                            @if ($componente->stock_actual > 0)
+                            @if ($componente->stock_actual > 0 || $granel)
                                 <li>
                                     <button wire:click="$dispatch('openComponentePiezas', { componenteId: {{ $componente->id }} })"
                                             @click="close()"
@@ -183,7 +214,7 @@
                                                    hover:text-cerberus-primary dark:hover:text-cerberus-accent
                                                    transition-colors duration-100">
                                         <span class="material-icons text-base text-cerberus-accent">fact_check</span>
-                                        Ver piezas en stock
+                                        {{ $granel ? 'Ver dónde se usó' : 'Ver piezas en stock' }}
                                     </button>
                                 </li>
                             @endif
@@ -238,16 +269,26 @@
                             @endif
                         </x-slot>
                     </x-table.table-actions>
-                </td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500 dark:text-cerberus-steel">
-                    No se encontraron componentes.
-                </td>
-            </tr>
-        @endforelse
+                            </div>
+                        </div>
+                    @endforeach
 
-    </x-table.crud-table>
+                    @if ($familia)
+                        <div class="pl-12 pr-4 py-2 bg-gray-50/60 dark:bg-cerberus-dark/30">
+                            <button type="button" wire:click="$dispatch('openComponenteCrear', { familiaId: {{ $familia->id }} })"
+                                class="text-xs text-cerberus-primary dark:text-cerberus-accent hover:underline inline-flex items-center gap-1">
+                                <span class="material-icons text-sm">add</span> Nueva variante de {{ $familia->nombre }}
+                            </button>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @empty
+            <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl px-4 py-12 text-center text-gray-400 dark:text-cerberus-accent">
+                <span class="material-icons text-4xl block mb-2 opacity-40">inventory_2</span>
+                No se encontraron componentes.
+            </div>
+        @endforelse
+    </div>
 
 </div>

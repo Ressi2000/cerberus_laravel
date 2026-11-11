@@ -81,6 +81,29 @@ class AlmacenTable extends Component
         return ComponenteAlmacen::visiblePara(Auth::user())->activos()->count();
     }
 
+    /** Familias con al menos un componente activo visible. */
+    #[Computed]
+    public function totalFamilias(): int
+    {
+        return ComponenteAlmacen::visiblePara(Auth::user())->activos()->whereNotNull('familia_id')->distinct()->count('familia_id');
+    }
+
+    /** Piezas individuales (con serial o código) que hay hoy en el almacén. */
+    #[Computed]
+    public function totalPiezasEnAlmacen(): int
+    {
+        return PiezaExtraida::visiblePara(Auth::user())->enAlmacen()->count();
+    }
+
+    /** Unidades en stock de familias a granel. */
+    #[Computed]
+    public function totalUnidadesAGranel(): int
+    {
+        return (int) ComponenteAlmacen::visiblePara(Auth::user())->activos()
+            ->whereHas('familia', fn ($f) => $f->where('control', \App\Models\FamiliaComponente::CONTROL_GRANEL))
+            ->sum('stock_actual');
+    }
+
     /** Componentes pedidos por casos abiertos que siguen sin entregarse (bandeja de solicitudes). */
     #[Computed]
     public function totalSolicitudesPendientes(): int
@@ -129,16 +152,22 @@ class AlmacenTable extends Component
      * piezas en stock" cada vez. Lo que no cuadra con nuevas+reutilizadas
      * es stock viejo sin trazar (de antes de que existiera esta función).
      */
+    /**
+     * Componentes visibles con los filtros, agrupados por familia (las
+     * familias en orden alfabético; los que aún no tienen familia, al final
+     * para asignarles una). Cada grupo trae sus totales.
+     */
     #[Computed]
-    public function componentes()
+    public function grupos()
     {
-        return ComponenteAlmacen::with('empresa')
+        $componentes = ComponenteAlmacen::with(['empresa', 'familia'])
             ->visiblePara(Auth::user())
             ->when(! $this->mostrar_inactivos, fn ($q) => $q->where('activo', true))
             ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))
             ->when($this->search, fn ($q) => $q->where(function ($q) {
                 $q->where('nombre', 'like', "%{$this->search}%")
-                  ->orWhere('descripcion', 'like', "%{$this->search}%");
+                  ->orWhere('descripcion', 'like', "%{$this->search}%")
+                  ->orWhereHas('familia', fn ($f) => $f->where('nombre', 'like', "%{$this->search}%"));
             }))
             ->withCount([
                 'piezasExtraidas as nuevas_en_stock' => fn ($q) => $q
@@ -150,7 +179,26 @@ class AlmacenTable extends Component
             ])
             ->orderByDesc('activo')
             ->orderBy('nombre')
-            ->paginate(15);
+            ->get();
+
+        return $componentes
+            ->groupBy(fn ($c) => $c->familia_id ?? 0)
+            ->map(fn ($items) => [
+                'familia'     => $items->first()->familia,
+                'componentes' => $items,
+                'variantes'   => $items->count(),
+                'stock'       => $items->sum('stock_actual'),
+                'sin_stock'   => $items->where('activo', true)->where('stock_actual', 0)->count(),
+            ])
+            ->sortBy(fn ($g) => $g['familia'] ? '0' . mb_strtolower($g['familia']->nombre) : '1')
+            ->values();
+    }
+
+    /** Familias para abrir una nueva variante desde el grupo vacío. */
+    #[Computed]
+    public function hayComponentesSinFamilia(): bool
+    {
+        return ComponenteAlmacen::visiblePara(Auth::user())->whereNull('familia_id')->where('activo', true)->exists();
     }
 
     public function render()

@@ -270,6 +270,7 @@ class FamiliasComponentesTest extends TestCase
         Livewire::actingAs($this->admin)
             ->test(FamiliaModal::class)
             ->call('abrirCrear')
+            ->call('agregarCampo')
             ->set('nombre', 'Discos')
             ->set('campos.0.nombre', 'Tecnología')
             ->set('campos.0.tipo', 'select')

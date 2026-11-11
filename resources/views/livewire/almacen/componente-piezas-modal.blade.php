@@ -14,7 +14,11 @@
                             {{ $this->componente->nombre }}
                         </h2>
                         <p class="text-sm text-gray-500 dark:text-cerberus-light mt-0.5">
-                            {{ $this->piezas->count() }} unidad(es) en stock — de qué equipo salió cada una
+                            @if ($this->componente->esAGranel())
+                                {{ $this->componente->stock_actual }} {{ $this->componente->unidad }} en stock — a granel: dónde se usó
+                            @else
+                                {{ $this->piezas->count() }} pieza(s) en stock — serial y de dónde salió cada una
+                            @endif
                         </p>
                     </div>
                     <button wire:click="close" class="text-gray-400 hover:text-gray-600 dark:hover:text-white transition">
@@ -23,6 +27,32 @@
                 </div>
 
                 <div class="px-6 py-4 overflow-y-auto flex-1 space-y-3">
+                    @if ($this->componente->esAGranel())
+                        @forelse ($this->usos as $mov)
+                            <div wire:key="uso-{{ $mov->id }}"
+                                 class="bg-gray-50 dark:bg-cerberus-dark border border-gray-200 dark:border-cerberus-steel/50 rounded-lg px-4 py-2.5 flex items-center justify-between gap-3 text-sm">
+                                <div class="min-w-0">
+                                    <p class="font-medium text-gray-900 dark:text-white">
+                                        <span @class(['tabular-nums', 'text-green-600 dark:text-green-400' => $mov->tipo === 'Entrada', 'text-red-600 dark:text-red-400' => $mov->tipo === 'Salida'])>
+                                            {{ $mov->tipo === 'Entrada' ? '+' : '−' }}{{ $mov->cantidad }}
+                                        </span>
+                                        @if ($mov->mantenimiento)
+                                            · <a href="{{ route('admin.mantenimientos.show', $mov->mantenimiento) }}" wire:navigate
+                                                 class="text-cerberus-primary dark:text-cerberus-accent hover:underline">
+                                                Caso #{{ $mov->mantenimiento->id }} · {{ $mov->mantenimiento->equipo->codigo_interno ?? '' }}
+                                            </a>
+                                        @else
+                                            · <span class="text-gray-600 dark:text-cerberus-light">{{ $mov->motivo ?? '—' }}</span>
+                                        @endif
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-cerberus-light">{{ $mov->registradoPor?->name ?? 'Sistema' }}</p>
+                                </div>
+                                <span class="text-xs text-gray-400 dark:text-cerberus-steel whitespace-nowrap">{{ $mov->created_at->format('d/m/Y') }}</span>
+                            </div>
+                        @empty
+                            <div class="text-center text-sm text-gray-400 dark:text-cerberus-steel py-6">Todavía no tiene movimientos.</div>
+                        @endforelse
+                    @else
                     @forelse ($this->piezas as $pieza)
                         <div class="bg-gray-50 dark:bg-cerberus-dark border border-gray-200 dark:border-cerberus-steel/50
                                     rounded-lg px-4 py-3 flex items-start justify-between gap-3">
@@ -50,8 +80,8 @@
                                     </span>
 
                                     @if ($pieza->identificador)
-                                        <span class="font-mono text-[11px] text-gray-400 dark:text-cerberus-steel">
-                                            {{ $pieza->identificador }}
+                                        <span class="font-mono text-[11px] text-gray-500 dark:text-cerberus-light" title="Serial">
+                                            {{ str_starts_with($pieza->identificador, 'AUTO-') ? 'Código ' : 'Serial ' }}{{ $pieza->identificador }}
                                         </span>
                                     @endif
                                 </p>
@@ -72,6 +102,7 @@
                             No hay unidades en stock para este componente.
                         </div>
                     @endforelse
+                    @endif
                 </div>
 
                 <div class="flex justify-end px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel flex-shrink-0">

@@ -64,6 +64,12 @@ class FamiliaComponente extends Model
         return $this->hasMany(AtributoEquipo::class, 'familia_id');
     }
 
+    /** Variantes de esta familia en el almacén (lo que antes era un "componente" suelto). */
+    public function componentes(): HasMany
+    {
+        return $this->hasMany(ComponenteAlmacen::class, 'familia_id');
+    }
+
     public function creadoPor()
     {
         return $this->belongsTo(User::class, 'creado_por');
@@ -77,6 +83,33 @@ class FamiliaComponente extends Model
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** A granel: solo cantidad, sin piezas individuales. */
+    public function esAGranel(): bool
+    {
+        return $this->control === self::CONTROL_GRANEL;
+    }
+
+    /** ¿Tiene ficha técnica? Solo las familias con ficha se pueden usar como característica de un equipo. */
+    public function tieneFicha(): bool
+    {
+        return ! empty($this->campos);
+    }
+
+    /**
+     * Cuando la familia pasa a "a granel", las piezas que estaban en el
+     * almacén en sus componentes pasan a contarse solo por cantidad.
+     * Devuelve cuántas piezas se agruparon.
+     */
+    public function aplicarControl(User $actor): int
+    {
+        if (! $this->esAGranel()) {
+            return 0;
+        }
+
+        return $this->componentes()->withTrashed()->get()
+            ->sum(fn (ComponenteAlmacen $c) => $c->agruparPiezasEnAlmacen($actor));
+    }
 
     /**
      * Los campos con la forma de AtributoEquipo::sub_campos, que es lo que

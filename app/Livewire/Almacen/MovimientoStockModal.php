@@ -48,7 +48,8 @@ class MovimientoStockModal extends Component
     // ── Identidad de la(s) unidad(es) que entran (ver PiezaManualService) ────
     public string $condicion      = PiezaExtraida::CONDICION_NUEVO;
     public ?int   $equipoOrigenId = null;
-    public string $identificador  = '';
+    /** Seriales de las unidades que entran, uno por línea (familias por unidad). */
+    public string $seriales       = '';
 
     #[On('openMovimientoStock')]
     public function abrir(int $componenteId): void
@@ -57,7 +58,7 @@ class MovimientoStockModal extends Component
         $this->authorize('registrarMovimiento', $componente);
 
         $this->componenteId = $componenteId;
-        $this->reset(['cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds', 'equipoOrigenId', 'identificador']);
+        $this->reset(['cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds', 'equipoOrigenId', 'seriales']);
         $this->tipo = 'Entrada';
         $this->condicion = PiezaExtraida::CONDICION_NUEVO;
         $this->resetValidation();
@@ -147,12 +148,13 @@ class MovimientoStockModal extends Component
             }
         }
 
-        if ($this->tipo === 'Entrada') {
+        // A granel solo se pide la cantidad: sin condición ni seriales.
+        if ($this->tipo === 'Entrada' && ! $this->componente?->esAGranel()) {
             $rules['condicion'] = 'required|in:' . PiezaExtraida::CONDICION_NUEVO . ',' . PiezaExtraida::CONDICION_REUTILIZADO;
             if ($this->condicion === PiezaExtraida::CONDICION_REUTILIZADO) {
                 $rules['equipoOrigenId'] = 'required|exists:equipos,id';
             }
-            $rules['identificador'] = 'nullable|string|max:100';
+            $rules['seriales'] = 'nullable|string|max:5000';
         }
 
         return $rules;
@@ -204,7 +206,12 @@ class MovimientoStockModal extends Component
         }
 
         try {
-            if ($this->tipo === 'Entrada') {
+            if ($this->tipo === 'Entrada' && $componente->esAGranel()) {
+                // A granel: solo suma la cantidad, sin piezas individuales.
+                $componente->registrarEntrada(
+                    $this->cantidad, Auth::user(), $this->motivo ?: 'Entrada de stock', $this->observaciones ?: null,
+                );
+            } elseif ($this->tipo === 'Entrada') {
                 // Solo equipos de la empresa del componente.
                 $equipoOrigen = null;
                 if ($this->equipoOrigenId) {
@@ -222,8 +229,8 @@ class MovimientoStockModal extends Component
                     $this->condicion,
                     Auth::user(),
                     equipoOrigen: $equipoOrigen,
-                    identificador: $this->identificador ?: null,
                     observaciones: $this->observaciones ?: null,
+                    seriales: preg_split('/\r\n|\r|\n/', $this->seriales) ?: [],
                 );
             } elseif ($this->danado) {
                 // Solo depósitos activos de la empresa del componente.
@@ -266,6 +273,9 @@ class MovimientoStockModal extends Component
             // se muestra junto a la lista de piezas.
             if ($this->tipo === 'Salida') {
                 $this->addError('piezaIds', $e->getMessage());
+            } elseif (! $componente->esAGranel()) {
+                // Seriales repetidos o de más: se muestra junto a los seriales.
+                $this->addError('seriales', $e->getMessage());
             } else {
                 $this->dispatch('toast', type: 'error', message: $e->getMessage());
             }
@@ -278,7 +288,7 @@ class MovimientoStockModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['componenteId', 'tipo', 'cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds', 'condicion', 'equipoOrigenId', 'identificador']);
+        $this->reset(['componenteId', 'tipo', 'cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds', 'condicion', 'equipoOrigenId', 'seriales']);
         $this->resetValidation();
     }
 

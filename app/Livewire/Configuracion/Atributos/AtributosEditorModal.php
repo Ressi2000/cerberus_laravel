@@ -166,7 +166,7 @@ class AtributosEditorModal extends Component
     #[Computed]
     public function familias()
     {
-        return FamiliaComponente::activas()->orderBy('nombre')->get(['id', 'nombre', 'campos']);
+        return FamiliaComponente::activas()->whereJsonLength('campos', '>', 0)->orderBy('nombre')->get(['id', 'nombre', 'campos']);
     }
 
     /**
