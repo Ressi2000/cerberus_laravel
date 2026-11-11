@@ -131,6 +131,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/categorias',  [ConfiguracionController::class, 'categorias'])->name('categorias');
             Route::get('/estados',     [ConfiguracionController::class, 'estados'])->name('estados');
             Route::get('/atributos',   [ConfiguracionController::class, 'atributos'])->name('atributos');
+            Route::get('/familias',    [ConfiguracionController::class, 'familias'])->name('familias');
             Route::get('/departamentos', [ConfiguracionController::class, 'departamentos'])->name('departamentos');
             Route::get('/cargos',      [ConfiguracionController::class, 'cargos'])->name('cargos');
             Route::get('/ubicaciones', [ConfiguracionController::class, 'ubicaciones'])->name('ubicaciones');

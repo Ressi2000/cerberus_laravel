@@ -4,9 +4,12 @@ namespace App\Livewire\Configuracion\Atributos;
 
 use App\Models\AtributoEquipo;
 use App\Models\CategoriaEquipo;
+use App\Models\FamiliaComponente;
+use App\Services\VinculacionFamiliaService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -78,6 +81,8 @@ class AtributosEditorModal extends Component
     #[On('openAtributosEditor')]
     public function abrir(int $categoriaId): void
     {
+        abort_unless(auth()->user()?->hasRole('Administrador'), 403);
+
         $categoria = CategoriaEquipo::findOrFail($categoriaId);
 
         $this->categoriaId     = $categoria->id;
@@ -85,9 +90,11 @@ class AtributosEditorModal extends Component
 
         // Cargar atributos existentes como filas editables
         $atributos = AtributoEquipo::where('categoria_id', $categoriaId)
-            ->withCount('valores')
+            ->with('familia')
             ->orderBy('orden')
             ->get();
+
+        $servicio = app(VinculacionFamiliaService::class);
 
         $this->filas = $atributos->map(fn($a) => [
             'uid'              => Str::uuid()->toString(),
@@ -101,14 +108,21 @@ class AtributosEditorModal extends Component
             'reutilizable'     => (bool) $a->reutilizable,
             'orden'            => (int) $a->orden,
             'opciones_raw'     => implode("\n", $a->opciones ?? []),
-            'sub_campos_data'  => collect($a->sub_campos ?? [])->map(fn($sc) => [
+            // Familia cuya ficha usa (null = sub-campos propios).
+            'familia_id'       => $a->familia_id,
+            'familia_original' => $a->familia_id,
+            // Con familia, los sub-campos no se editan aquí (son los de la
+            // familia); se cargan los propios guardados por si se desvincula.
+            'sub_campos_data'  => collect($a->usaFamilia() ? $servicio->subCamposPropios($a) : ($a->sub_campos ?? []))->map(fn($sc) => [
                 'id'           => $sc['id'] ?? Str::uuid()->toString(),
                 'nombre'       => $sc['nombre'] ?? '',
                 'tipo'         => $sc['tipo'] ?? 'string',
                 'opciones_raw' => implode("\n", $sc['opciones'] ?? []),
                 'requerido'    => (bool) ($sc['requerido'] ?? false),
             ])->values()->toArray(),
-            'tiene_valores'    => $a->valores_count > 0,
+            // Incluye los valores de grupo y las piezas del almacén, no solo
+            // los valores simples (antes un grupo con datos figuraba vacío).
+            'tiene_valores'    => $a->tieneDatos(),
             'eliminar'         => false,
         ])->values()->toArray();
 
@@ -140,10 +154,47 @@ class AtributosEditorModal extends Component
             'reutilizable'     => false,
             'orden'            => $siguienteOrden,
             'opciones_raw'     => '',
+            'familia_id'       => null,
+            'familia_original' => null,
             'sub_campos_data'  => [],
             'tiene_valores'    => false,
             'eliminar'         => false,
         ];
+    }
+
+    /** Familias de piezas que se pueden usar como ficha. */
+    #[Computed]
+    public function familias()
+    {
+        return FamiliaComponente::activas()->orderBy('nombre')->get(['id', 'nombre', 'campos']);
+    }
+
+    /**
+     * Elegir familia en una fila. Solo para filas sin datos: una
+     * característica que ya tiene valores en equipos se vincula con el
+     * asistente (VincularFamiliaModal), que convierte esos valores.
+     */
+    public function updatedFilas($valor, string $clave): void
+    {
+        if (! str_ends_with($clave, '.familia_id')) {
+            return;
+        }
+
+        $i = (int) explode('.', $clave)[0];
+        $this->filas[$i]['familia_id'] = $valor !== '' && $valor !== null ? (int) $valor : null;
+
+        if ($this->filas[$i]['familia_id']) {
+            $this->filas[$i]['tipo']         = 'group';
+            $this->filas[$i]['reutilizable'] = true;
+        }
+    }
+
+    /** Abre el asistente para vincular a una familia una característica que ya tiene datos. */
+    public function abrirVinculacion(int $atributoId): void
+    {
+        $categoriaId = $this->categoriaId;
+        $this->close();
+        $this->dispatch('openVincularFamilia', atributoId: $atributoId, categoriaId: $categoriaId);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -195,6 +246,8 @@ class AtributosEditorModal extends Component
     // ─────────────────────────────────────────────────────────────────────────
     public function guardar(): void
     {
+        abort_unless(auth()->user()?->hasRole('Administrador'), 403);
+
         // Validar filas activas (no marcadas para eliminar)
         $rules    = [];
         $messages = [];
@@ -211,7 +264,7 @@ class AtributosEditorModal extends Component
                 $rules["filas.{$i}.opciones_raw"] = 'required|string';
             }
 
-            if ($fila['tipo'] === 'group') {
+            if ($fila['tipo'] === 'group' && empty($fila['familia_id'])) {
                 $tiposSub = implode(',', array_keys(self::TIPOS_SUB_CAMPO));
                 $rules["filas.{$i}.sub_campos_data"]              = 'required|array|min:1';
                 $rules["filas.{$i}.sub_campos_data.*.nombre"]     = 'required|string|max:100';
@@ -227,6 +280,21 @@ class AtributosEditorModal extends Component
 
         $this->validate($rules, $messages);
 
+        // Una familia se usa a lo sumo una vez por categoría, y una fila con
+        // datos no puede pasar a una familia desde aquí (necesita conversión).
+        $familiasUsadas = collect($this->filas)->reject(fn ($f) => $f['eliminar'] || empty($f['familia_id']))->pluck('familia_id');
+        if ($familiasUsadas->duplicates()->isNotEmpty()) {
+            $this->addError('general', 'Una misma familia no se puede usar en dos características de la misma categoría.');
+            return;
+        }
+
+        foreach ($this->filas as $i => $fila) {
+            if (! $fila['eliminar'] && $fila['id'] && $fila['tiene_valores'] && $fila['familia_id'] && ! $fila['familia_original']) {
+                $this->addError("filas.{$i}.familia_id", 'Esta característica ya tiene datos: vincúlala con «Vincular a una familia…», que convierte sus valores.');
+                return;
+            }
+        }
+
         $omitidos     = 0;
         $eliminados   = 0;
         $creados      = 0;
@@ -239,10 +307,10 @@ class AtributosEditorModal extends Component
 
                     // ── Eliminar ─────────────────────────────────────────────
                     if ($fila['eliminar'] && $fila['id']) {
-                        $atributo = AtributoEquipo::withCount('valores')->find($fila['id']);
+                        $atributo = AtributoEquipo::find($fila['id']);
                         if (! $atributo) continue;
 
-                        if ($atributo->valores_count > 0) {
+                        if ($atributo->tieneDatos()) {
                             $omitidos++;
                             continue; // no se puede eliminar, tiene historial
                         }
@@ -263,8 +331,9 @@ class AtributosEditorModal extends Component
                     }
 
                     // ── Preparar sub-campos (group) ──────────────────────────
-                    $subCampos = null;
-                    if ($fila['tipo'] === 'group') {
+                    $usaFamilia = ! empty($fila['familia_id']);
+                    $subCampos  = null;
+                    if ($fila['tipo'] === 'group' && ! $usaFamilia) {
                         $subCampos = array_values(array_map(function ($sc) {
                             $opciones = [];
                             if ($sc['tipo'] === 'select') {
@@ -284,22 +353,38 @@ class AtributosEditorModal extends Component
 
                     $data = [
                         'categoria_id'     => $this->categoriaId,
+                        'familia_id'       => $usaFamilia ? (int) $fila['familia_id'] : null,
                         'nombre'           => trim($fila['nombre']),
                         'slug'             => Str::slug(trim($fila['nombre'])),
-                        'tipo'             => $fila['tipo'],
+                        'tipo'             => $usaFamilia ? 'group' : $fila['tipo'],
                         'requerido'        => $fila['requerido'],
                         'filtrable'        => $fila['filtrable'],
                         'visible_en_tabla' => $fila['visible_en_tabla'],
                         'ver_en_reporte'   => $fila['ver_en_reporte'],
-                        'reutilizable'     => $fila['reutilizable'] ?? false,
+                        // Una pieza de familia siempre se puede rescatar.
+                        'reutilizable'     => $usaFamilia ? true : ($fila['reutilizable'] ?? false),
                         'orden'            => (int) $fila['orden'],
                         'opciones'         => $opciones,
-                        'sub_campos'       => $subCampos,
                     ];
+
+                    // Con familia, los sub-campos propios no se tocan: quedan de
+                    // respaldo en la columna y la ficha sale de la familia.
+                    if (! $usaFamilia) {
+                        $data['sub_campos'] = $subCampos;
+                    }
 
                     // ── Actualizar o crear ───────────────────────────────────
                     if ($fila['id']) {
-                        AtributoEquipo::where('id', $fila['id'])->update($data);
+                        $atributo = AtributoEquipo::findOrFail($fila['id']);
+
+                        // Deja de usar la familia: se copian sus campos a la
+                        // característica para que los datos sigan siendo válidos.
+                        if ($fila['familia_original'] && ! $usaFamilia) {
+                            app(VinculacionFamiliaService::class)->desvincular($atributo);
+                            unset($data['sub_campos']);
+                        }
+
+                        $atributo->update($data);
                         $actualizados++;
                     } else {
                         AtributoEquipo::create($data);

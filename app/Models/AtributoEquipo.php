@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\Auditable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,6 +17,7 @@ class AtributoEquipo extends Model
 
     protected $fillable = [
         'categoria_id',
+        'familia_id',
         'nombre',
         'slug',
         'tipo',
@@ -37,7 +39,8 @@ class AtributoEquipo extends Model
         'reutilizable'     => 'boolean',
         'orden'            => 'integer',
         'opciones'         => 'array',
-        'sub_campos'       => 'array',
+        // sub_campos NO va en casts: lo maneja el accessor subCampos(), que
+        // devuelve la ficha de la familia cuando la característica usa una.
     ];
 
     // ── Tipos de atributo disponibles ────────────────────────────────────────
@@ -73,6 +76,62 @@ class AtributoEquipo extends Model
     public function categoria(): BelongsTo
     {
         return $this->belongsTo(CategoriaEquipo::class, 'categoria_id');
+    }
+
+    /**
+     * Familia de piezas cuya ficha técnica usa esta característica (ej. la
+     * "RAM" de Laptop y la de Desktop usan la familia RAM). Null si la
+     * característica define sus propios sub-campos.
+     */
+    public function familia(): BelongsTo
+    {
+        return $this->belongsTo(FamiliaComponente::class, 'familia_id');
+    }
+
+    /**
+     * Sub-campos del grupo. Si la característica usa una familia, son los
+     * campos de la familia (los mismos para todas las categorías); si no,
+     * los propios guardados en la columna sub_campos.
+     *
+     * Todo el código que ya lee $atributo->sub_campos (formularios, tabla y
+     * ficha de equipos, exportaciones, almacén) recibe así la ficha correcta
+     * sin cambios. La columna conserva los sub-campos originales por si se
+     * desvincula la familia.
+     */
+    protected function subCampos(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                if ($this->familia_id && $this->familia) {
+                    return $this->familia->camposComoSubCampos();
+                }
+
+                if ($value === null || is_array($value)) {
+                    return $value;
+                }
+
+                return json_decode($value, true);
+            },
+            set: fn ($value) => $value === null ? null : (is_string($value) ? $value : json_encode($value)),
+        );
+    }
+
+    /** ¿Esta característica toma su ficha de una familia de piezas? */
+    public function usaFamilia(): bool
+    {
+        return $this->familia_id !== null;
+    }
+
+    /**
+     * ¿Algún equipo o pieza tiene datos guardados con esta característica?
+     * Incluye los valores de grupo (instancias) y las piezas del almacén,
+     * no solo los valores simples.
+     */
+    public function tieneDatos(): bool
+    {
+        return $this->valores()->exists()
+            || EquipoAtributoGrupoInstancia::where('atributo_id', $this->id)->exists()
+            || $this->piezasExtraidas()->exists();
     }
 
     /** Todos los valores registrados para este atributo (histórico completo) */
@@ -232,6 +291,11 @@ class AtributoEquipo extends Model
             $texto = (string) ($valor['valor'] ?? '');
         }
 
-        return trim($this->nombre . ($texto !== '' ? " ({$texto})" : ''));
+        // Con familia, el nombre es el de la familia: así la misma RAM se
+        // describe igual venga de una Laptop o de un Desktop (y cae en el
+        // mismo componente del almacén).
+        $nombre = $this->usaFamilia() && $this->familia ? $this->familia->nombre : $this->nombre;
+
+        return trim($nombre . ($texto !== '' ? " ({$texto})" : ''));
     }
 }

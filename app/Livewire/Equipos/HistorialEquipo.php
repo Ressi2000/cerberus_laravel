@@ -426,7 +426,10 @@ class HistorialEquipo extends Component
             ->pluck('nombre', 'id');
 
         $fuentes = [
-            'tecnico'       => fn() => $this->eventosTecnicos()->merge($this->eventosGrupos()),
+            // toBase(): si el equipo no tiene historial de valores simples,
+            // eventosTecnicos() es una colección Eloquent vacía y merge() de
+            // Eloquent falla al recibir arrays (equipos con solo grupos, ej. RAM).
+            'tecnico'       => fn() => $this->eventosTecnicos()->toBase()->merge($this->eventosGrupos()),
             'asignacion'    => fn() => $this->eventosAsignaciones(),
             'traslado'      => fn() => $this->eventosTraslados(),
             'prestamo'      => fn() => $this->eventosPrestamos(),

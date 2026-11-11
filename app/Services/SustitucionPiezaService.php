@@ -48,11 +48,44 @@ class SustitucionPiezaService
      */
     public function piezasDisponibles(Equipo $equipoDestino): Collection
     {
+        // Familias que usa la categoría del equipo: una RAM de la familia RAM
+        // le sirve venga de la categoría que venga (ver atributoDestino()).
+        $familias = AtributoEquipo::where('categoria_id', $equipoDestino->categoria_id)
+            ->whereNotNull('familia_id')
+            ->pluck('familia_id');
+
         return PiezaExtraida::with(['atributo', 'equipoOrigen'])
             ->where('empresa_id', $equipoDestino->empresa_id)
             ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
-            ->whereHas('atributo', fn ($q) => $q->where('categoria_id', $equipoDestino->categoria_id))
+            ->whereHas('atributo', fn ($q) => $q
+                ->where('categoria_id', $equipoDestino->categoria_id)
+                ->when($familias->isNotEmpty(), fn ($q) => $q->orWhereIn('familia_id', $familias)))
             ->get();
+    }
+
+    /**
+     * Característica del equipo destino donde se instala la pieza:
+     *  - Si la pieza es de una familia, la característica de la categoría
+     *    del equipo que usa esa misma familia (la RAM de un Desktop se instala
+     *    en la "RAM" de una Laptop si ambas usan la familia RAM).
+     *  - Si no, la misma característica de la pieza, solo en su categoría.
+     * Null si al equipo no le corresponde esa pieza.
+     */
+    public function atributoDestino(PiezaExtraida $pieza, Equipo $equipoDestino): ?AtributoEquipo
+    {
+        $atributo = $pieza->atributo;
+
+        if (! $atributo) {
+            return null;
+        }
+
+        if ($atributo->usaFamilia()) {
+            return AtributoEquipo::where('categoria_id', $equipoDestino->categoria_id)
+                ->where('familia_id', $atributo->familia_id)
+                ->first();
+        }
+
+        return (int) $atributo->categoria_id === (int) $equipoDestino->categoria_id ? $atributo : null;
     }
 
     /** Retira un valor simple del equipo (pieza vieja/dañada que se está reemplazando, o que se mejora). */
@@ -133,8 +166,12 @@ class SustitucionPiezaService
             throw new \InvalidArgumentException('Esta pieza no está ligada a una característica del equipo; no se puede instalar desde aquí.');
         }
 
-        if ($atributo->categoria_id !== $equipoDestino->categoria_id) {
-            throw new \InvalidArgumentException("La pieza «{$atributo->nombre}» no es compatible con la categoría de este equipo.");
+        // Desde aquí, $atributo es la característica DEL EQUIPO destino
+        // (puede ser otra categoría que la de origen si comparten familia).
+        $atributo = $this->atributoDestino($pieza, $equipoDestino);
+
+        if (! $atributo) {
+            throw new \InvalidArgumentException("La pieza «{$pieza->atributo->nombre}» no corresponde a ninguna característica de la categoría de este equipo.");
         }
 
         if (! in_array($modo, [self::MODO_AGREGAR, self::MODO_SUSTITUIR], true)) {

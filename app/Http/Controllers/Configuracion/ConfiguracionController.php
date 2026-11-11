@@ -23,6 +23,12 @@ class ConfiguracionController extends Controller
         return view('configuracion.atributos.atributos');
     }
 
+    /** Familias de piezas: ficha técnica compartida por todas las categorías. */
+    public function familias()
+    {
+        return view('configuracion.familias.familias');
+    }
+
     public function departamentos()
     {
         return view('configuracion.departamentos.departamentos');

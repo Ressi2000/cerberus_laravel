@@ -106,12 +106,17 @@ class MantenimientoPiezasPanel extends Component
         $pieza = PiezaExtraida::with('atributo')->find($this->instalarPiezaId);
         if (! $pieza || ! $pieza->atributo?->esGrupo()) return [];
 
+        // La característica del EQUIPO donde entra la pieza (si comparten
+        // familia, puede ser de otra categoría que la de origen).
+        $destino = app(SustitucionPiezaService::class)->atributoDestino($pieza, $this->mantenimiento->equipo);
+        if (! $destino) return [];
+
         return EquipoAtributoGrupoInstancia::where('equipo_id', $this->mantenimiento->equipo->id)
-            ->where('atributo_id', $pieza->atributo_id)
+            ->where('atributo_id', $destino->id)
             ->where('es_actual', true)
             ->orderBy('orden')
             ->get()
-            ->mapWithKeys(fn ($i) => [$i->id => $pieza->atributo->describirValor($i->valores)])
+            ->mapWithKeys(fn ($i) => [$i->id => $destino->describirValor($i->valores)])
             ->toArray();
     }
 

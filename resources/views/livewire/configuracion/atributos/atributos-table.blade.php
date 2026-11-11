@@ -4,6 +4,7 @@
     @livewire('configuracion.atributos.atributo-modal')
     @livewire('configuracion.atributos.atributo-delete-modal')
     @livewire('configuracion.atributos.atributos-editor-modal') {{-- ← Editor en bloque --}}
+    @livewire('configuracion.atributos.vincular-familia-modal') {{-- ← Usar la ficha de una familia (con conversión de valores) --}}
 
     <x-ui.stats-cards :items="[
         ['title' => 'Total atributos', 'value' => $this->total, 'icon' => 'tune'],
