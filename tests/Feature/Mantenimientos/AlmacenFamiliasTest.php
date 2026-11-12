@@ -234,7 +234,7 @@ class AlmacenFamiliasTest extends TestCase
         Livewire::actingAs($this->admin)
             ->test(ComponentePiezasModal::class)
             ->call('abrir', $componente->id)
-            ->assertSee('dónde se usó')
+            ->assertSee('Historial de la variante')
             ->assertSee("Caso #{$caso->id}");
     }
 }

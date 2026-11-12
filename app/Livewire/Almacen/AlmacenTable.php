@@ -167,7 +167,9 @@ class AlmacenTable extends Component
             ->when($this->search, fn ($q) => $q->where(function ($q) {
                 $q->where('nombre', 'like', "%{$this->search}%")
                   ->orWhere('descripcion', 'like', "%{$this->search}%")
-                  ->orWhereHas('familia', fn ($f) => $f->where('nombre', 'like', "%{$this->search}%"));
+                  ->orWhereHas('familia', fn ($f) => $f->where('nombre', 'like', "%{$this->search}%"))
+                  // Buscar un serial muestra también la variante a la que pertenece.
+                  ->orWhereHas('piezasExtraidas', fn ($p) => $p->where('identificador', 'like', "%{$this->search}%"));
             }))
             ->withCount([
                 'piezasExtraidas as nuevas_en_stock' => fn ($q) => $q
@@ -192,6 +194,29 @@ class AlmacenTable extends Component
             ])
             ->sortBy(fn ($g) => $g['familia'] ? '0' . mb_strtolower($g['familia']->nombre) : '1')
             ->values();
+    }
+
+    /**
+     * Piezas cuyo serial o código coincide con la búsqueda, estén donde
+     * estén (en almacén, instaladas, en depósito…): para encontrar una pieza
+     * física y abrir su ficha. Desde 3 caracteres, para no listar de todo.
+     */
+    #[Computed]
+    public function piezasEncontradas()
+    {
+        $texto = trim($this->search);
+        if (mb_strlen($texto) < 3) {
+            return collect();
+        }
+
+        return PiezaExtraida::visiblePara(Auth::user())
+            ->with(['componenteAlmacen', 'atributo', 'equipoDestino', 'deposito'])
+            ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))
+            ->where('identificador', 'like', "%{$texto}%")
+            ->orderByRaw('identificador = ? desc', [$texto])
+            ->latest('updated_at')
+            ->limit(10)
+            ->get();
     }
 
     /** Familias para abrir una nueva variante desde el grupo vacío. */

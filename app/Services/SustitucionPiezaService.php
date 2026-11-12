@@ -98,10 +98,11 @@ class SustitucionPiezaService
         ?Deposito $deposito = null,
         ?Mantenimiento $mantenimiento = null,
         ?string $observaciones = null,
+        ?int $piezaInstaladaId = null,
     ): PiezaExtraida {
         return $this->extraccion->extraerDeAtributoSimple(
             $equipo, $atributo, $destino, $actor,
-            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones,
+            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones, $piezaInstaladaId,
         );
     }
 
@@ -114,10 +115,11 @@ class SustitucionPiezaService
         ?Deposito $deposito = null,
         ?Mantenimiento $mantenimiento = null,
         ?string $observaciones = null,
+        ?int $piezaInstaladaId = null,
     ): PiezaExtraida {
         return $this->extraccion->extraerDeGrupoInstancia(
             $equipo, $instancia, $destino, $actor,
-            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones,
+            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones, $piezaInstaladaId,
         );
     }
 

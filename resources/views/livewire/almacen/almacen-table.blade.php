@@ -5,6 +5,7 @@
     @livewire('almacen.movimiento-stock-modal')
     @livewire('almacen.componente-piezas-modal')
     @livewire('almacen.registrar-entrada-modal')
+    @livewire('almacen.pieza-ficha-modal')
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -59,7 +60,7 @@
                     <x-form.input
                         label="Buscar"
                         wire:model.live.400ms="search"
-                        placeholder="Nombre o descripción..."
+                        placeholder="Nombre, descripción o serial..."
                     />
 
                     @can('viewAny', \App\Models\ComponenteAlmacen::class)
@@ -95,6 +96,33 @@
             </div>
         </x-slot>
     </x-table.crud-header>
+
+    {{-- ── PIEZAS QUE COINCIDEN CON LA BÚSQUEDA (por serial o código) ──────── --}}
+    @if ($this->piezasEncontradas->isNotEmpty())
+        <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-cerberus-light mb-2 flex items-center gap-1.5">
+                <span class="material-icons text-sm text-cerberus-accent">qr_code_2</span>
+                Piezas con ese serial o código
+            </p>
+            <div class="space-y-1.5">
+                @foreach ($this->piezasEncontradas as $pieza)
+                    <button type="button" wire:key="encontrada-{{ $pieza->id }}"
+                        wire:click="$dispatch('openPiezaFicha', { piezaId: {{ $pieza->id }} })"
+                        class="w-full text-left flex items-center justify-between gap-3 px-3 py-2 rounded-lg
+                               bg-gray-50 dark:bg-cerberus-dark border border-gray-200 dark:border-cerberus-steel/50
+                               hover:border-cerberus-primary dark:hover:border-cerberus-accent transition">
+                        <span class="min-w-0">
+                            <span class="block text-sm font-mono text-gray-900 dark:text-white truncate">{{ $pieza->codigo() }}</span>
+                            <span class="block text-xs text-gray-500 dark:text-cerberus-light truncate">
+                                {{ $pieza->componenteAlmacen?->nombre ?? $pieza->descripcion() }} · {{ $pieza->ubicacion() }}
+                            </span>
+                        </span>
+                        <span class="material-icons text-base text-gray-400 dark:text-cerberus-steel">chevron_right</span>
+                    </button>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     {{-- ── FAMILIAS ────────────────────────────────────────────────────────── --}}
     @if ($this->hayComponentesSinFamilia)
@@ -194,7 +222,6 @@
                             <div class="flex-shrink-0">
                                 <x-table.table-actions :model="$componente" editEvent="openComponenteEditar">
                         <x-slot name="acciones">
-                            @if ($componente->stock_actual > 0 || $granel)
                                 <li>
                                     <button wire:click="$dispatch('openComponentePiezas', { componenteId: {{ $componente->id }} })"
                                             @click="close()"
@@ -203,11 +230,10 @@
                                                    hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
                                                    hover:text-cerberus-primary dark:hover:text-cerberus-accent
                                                    transition-colors duration-100">
-                                        <span class="material-icons text-base text-cerberus-accent">fact_check</span>
-                                        {{ $granel ? 'Ver dónde se usó' : 'Ver piezas en stock' }}
+                                        <span class="material-icons text-base text-cerberus-accent">history</span>
+                                        Ver historial
                                     </button>
                                 </li>
-                            @endif
                             <li>
                                 <button wire:click="$dispatch('openRegistrarEntrada', { componenteId: {{ $componente->id }} })"
                                         @click="close()"

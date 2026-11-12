@@ -410,11 +410,12 @@ class HistorialEquipo extends Component
             ->get();
     }
 
-    /** Piezas rescatadas de OTROS equipos que terminaron instaladas en este. */
+    /** Piezas del almacén (nuevas o rescatadas de otros equipos) instaladas hoy en este. */
     protected function piezasInstaladas(): Collection
     {
         return $this->equipo->piezasInstaladas()
-            ->with(['atributo', 'equipoOrigen'])
+            ->where('estado', PiezaExtraida::ESTADO_INSTALADA)
+            ->with(['atributo', 'equipoOrigen', 'componenteAlmacen'])
             ->latest()
             ->get();
     }

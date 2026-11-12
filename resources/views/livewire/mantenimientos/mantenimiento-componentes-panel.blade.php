@@ -16,10 +16,11 @@
         <div wire:key="mant-comp-{{ $item->id }}" class="flex items-center justify-between py-2.5 {{ ! $loop->last ? 'border-b border-gray-100 dark:border-cerberus-steel/30' : '' }}">
             <div>
                 <p class="text-sm text-gray-900 dark:text-white">{{ $item->componente->nombre ?? '—' }}</p>
-                @if ($item->pieza?->identificador)
-                    <p class="text-xs font-mono text-gray-500 dark:text-cerberus-light">
-                        {{ str_starts_with($item->pieza->identificador, 'AUTO-') ? 'Código' : 'Serial' }} {{ $item->pieza->identificador }}
-                    </p>
+                @if ($item->pieza)
+                    <button type="button" wire:click="$dispatch('openPiezaFicha', { piezaId: {{ $item->pieza->id }} })"
+                        class="text-xs font-mono text-cerberus-primary dark:text-cerberus-accent hover:underline" title="Ver la ficha y el recorrido de la pieza">
+                        {{ $item->pieza->codigo() }}
+                    </button>
                 @endif
                 <p class="text-xs text-gray-500 dark:text-cerberus-light">Cantidad: {{ $item->cantidad_requerida }}</p>
             </div>

@@ -98,6 +98,7 @@ class ExtraccionPiezaService
         ?Deposito $deposito = null,
         ?Mantenimiento $mantenimiento = null,
         ?string $observaciones = null,
+        ?int $piezaInstaladaId = null,
     ): PiezaExtraida {
         $valorActual = EquipoAtributoValor::where('equipo_id', $equipoOrigen->id)
             ->where('atributo_id', $atributo->id)
@@ -121,6 +122,7 @@ class ExtraccionPiezaService
             mantenimiento: $mantenimiento,
             observaciones: $observaciones,
             onDesactivar: fn () => $valorActual->update(['es_actual' => false]),
+            piezaInstaladaId: $piezaInstaladaId,
         );
     }
 
@@ -137,6 +139,7 @@ class ExtraccionPiezaService
         ?Deposito $deposito = null,
         ?Mantenimiento $mantenimiento = null,
         ?string $observaciones = null,
+        ?int $piezaInstaladaId = null,
     ): PiezaExtraida {
         if ($instancia->equipo_id !== $equipoOrigen->id) {
             throw new \InvalidArgumentException('La instancia no pertenece al equipo indicado.');
@@ -158,6 +161,7 @@ class ExtraccionPiezaService
             observaciones: $observaciones,
             onDesactivar: fn () => $instancia->update(['es_actual' => false]),
             grupoInstancia: $instancia,
+            piezaInstaladaId: $piezaInstaladaId,
         );
     }
 
@@ -178,6 +182,7 @@ class ExtraccionPiezaService
         ?string $observaciones,
         \Closure $onDesactivar,
         ?EquipoAtributoGrupoInstancia $grupoInstancia = null,
+        ?int $piezaInstaladaId = null,
     ): PiezaExtraida {
         if (! $atributo->reutilizable) {
             throw new \InvalidArgumentException(
@@ -210,8 +215,12 @@ class ExtraccionPiezaService
 
         return DB::transaction(function () use (
             $equipoOrigen, $atributo, $valorExtraido, $vaAlmacen, $actor, $motivo,
-            $deposito, $mantenimiento, $observaciones, $onDesactivar, $grupoInstancia,
+            $deposito, $mantenimiento, $observaciones, $onDesactivar, $grupoInstancia, $piezaInstaladaId,
         ) {
+            // Si lo que sale es una pieza que entró desde el almacén, es la
+            // MISMA pieza física: sigue con su id, su serial y su recorrido.
+            $existente = $this->piezaInstaladaQueSale($equipoOrigen, $atributo, $valorExtraido, $piezaInstaladaId);
+
             $onDesactivar();
 
             $componente = null;
@@ -226,6 +235,13 @@ class ExtraccionPiezaService
                         PiezaExtraida::MOTIVO_SUSTITUCION_PREVENTIVO => 'Rescate por sustitución en mantenimiento',
                         default                                      => 'Rescate por sustitución en reparación',
                     },
+                );
+            }
+
+            if ($existente) {
+                return $this->volverASacar(
+                    $existente, $equipoOrigen, $atributo, $valorExtraido, $vaAlmacen, $componente,
+                    $deposito, $mantenimiento, $motivo, $actor, $observaciones, $grupoInstancia,
                 );
             }
 
@@ -263,6 +279,122 @@ class ExtraccionPiezaService
 
             return $pieza;
         });
+    }
+
+    /**
+     * Piezas instaladas en este equipo que podrían ser la que sale: de la
+     * misma característica (o de la misma familia) y con sus valores de
+     * ficha. Si hay varias idénticas (dos RAM iguales), quien retira
+     * elige cuál por su serial; si no elige, sale la que se instaló primero.
+     */
+    public function piezasInstaladasCoincidentes(Equipo $equipo, AtributoEquipo $atributo, array $valores)
+    {
+        $buscado = $this->normalizarValores($valores);
+
+        return PiezaExtraida::where('equipo_destino_id', $equipo->id)
+            ->where('estado', PiezaExtraida::ESTADO_INSTALADA)
+            ->where(function ($q) use ($atributo) {
+                $q->where('atributo_id', $atributo->id);
+                if ($atributo->familia_id) {
+                    $q->orWhereHas('atributo', fn ($a) => $a->where('familia_id', $atributo->familia_id));
+                }
+            })
+            ->oldest('updated_at')
+            ->orderBy('id')
+            ->get()
+            // Lo que dice la pieza tiene que seguir en la ficha del equipo (la
+            // ficha puede tener datos de más si alguien la completó después).
+            ->filter(function (PiezaExtraida $p) use ($buscado) {
+                $propios = $this->normalizarValores($p->valor_extraido ?? []);
+
+                return $propios !== [] && array_intersect_assoc($propios, $buscado) === $propios;
+            })
+            ->values();
+    }
+
+    private function piezaInstaladaQueSale(Equipo $equipo, AtributoEquipo $atributo, array $valores, ?int $piezaId): ?PiezaExtraida
+    {
+        $candidatas = $this->piezasInstaladasCoincidentes($equipo, $atributo, $valores);
+
+        if ($piezaId !== null) {
+            $elegida = $candidatas->firstWhere('id', $piezaId);
+            if (! $elegida) {
+                throw new \InvalidArgumentException('Esa pieza no está instalada en este equipo con esos valores.');
+            }
+
+            return PiezaExtraida::lockForUpdate()->find($elegida->id);
+        }
+
+        return $candidatas->isEmpty() ? null : PiezaExtraida::lockForUpdate()->find($candidatas->first()->id);
+    }
+
+    /** Valores comparables: sin vacíos, como texto y en orden de clave. */
+    private function normalizarValores(array $valores): array
+    {
+        $limpio = collect($valores)
+            ->reject(fn ($v) => $v === null || $v === '')
+            ->map(fn ($v) => trim((string) $v))
+            ->all();
+        ksort($limpio);
+
+        return $limpio;
+    }
+
+    /**
+     * Una pieza que estaba instalada vuelve a salir de un equipo: se
+     * actualiza su ubicación (almacén o depósito) y se agregan los pasos
+     * "Desinstalada" e "Ingresó al almacén"/"Enviada a depósito" a su
+     * recorrido. Desde ahora cuenta como usada.
+     */
+    private function volverASacar(
+        PiezaExtraida $pieza,
+        Equipo $equipo,
+        AtributoEquipo $atributo,
+        array $valores,
+        bool $vaAlmacen,
+        ?ComponenteAlmacen $componente,
+        ?Deposito $deposito,
+        ?Mantenimiento $mantenimiento,
+        string $motivo,
+        User $actor,
+        ?string $observaciones,
+        ?EquipoAtributoGrupoInstancia $grupoInstancia,
+    ): PiezaExtraida {
+        $pieza->update([
+            'equipo_origen_id'      => $equipo->id,
+            'equipo_destino_id'     => null,
+            'atributo_id'           => $atributo->id,
+            'grupo_instancia_id'    => $grupoInstancia?->id,
+            'valor_extraido'        => $valores,
+            'reutilizable'          => $vaAlmacen,
+            'condicion'             => PiezaExtraida::CONDICION_REUTILIZADO,
+            'estado'                => $vaAlmacen ? PiezaExtraida::ESTADO_EN_ALMACEN : PiezaExtraida::ESTADO_EN_DEPOSITO,
+            // En depósito sigue siendo de su variante: así aparece en su historial.
+            'componente_almacen_id' => $componente?->id ?? $pieza->componente_almacen_id,
+            'deposito_id'           => $vaAlmacen ? null : $deposito->id,
+            'mantenimiento_id'      => $mantenimiento?->id,
+            'motivo'                => $motivo,
+            'extraido_por'          => $actor->id,
+            'observaciones'         => $observaciones ?? $pieza->observaciones,
+        ]);
+
+        $pieza->movimientos()->create([
+            'tipo'                  => PiezaExtraidaMovimiento::TIPO_DESINSTALACION,
+            'equipo_relacionado_id' => $equipo->id,
+            'mantenimiento_id'      => $mantenimiento?->id,
+            'registrado_por'        => $actor->id,
+            'observaciones'         => $observaciones,
+        ]);
+
+        $pieza->movimientos()->create([
+            'tipo'                    => $vaAlmacen
+                ? PiezaExtraidaMovimiento::TIPO_INGRESO_ALMACEN
+                : PiezaExtraidaMovimiento::TIPO_ENVIO_DEPOSITO,
+            'deposito_relacionado_id' => $vaAlmacen ? null : $deposito->id,
+            'registrado_por'          => $actor->id,
+        ]);
+
+        return $pieza;
     }
 
     /**

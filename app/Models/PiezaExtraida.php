@@ -219,6 +219,33 @@ class PiezaExtraida extends Model
         return $this->nombre();
     }
 
+    /**
+     * Cómo se identifica la pieza ante una persona: su serial, o el código
+     * que le dio el sistema (AUTO-…) si no tenía; si no tiene ninguno (piezas
+     * viejas), su número interno. Sirve para buscarla en Almacén.
+     */
+    public function codigo(): string
+    {
+        if (! $this->identificador) {
+            return "Pieza #{$this->id}";
+        }
+
+        return (str_starts_with($this->identificador, 'AUTO-') ? 'Código ' : 'Serial ') . $this->identificador;
+    }
+
+    /** Dónde está hoy, en una frase (para la ficha y las listas). */
+    public function ubicacion(): string
+    {
+        return match ($this->estado) {
+            self::ESTADO_EN_ALMACEN  => 'En el almacén',
+            self::ESTADO_INSTALADA   => $this->equipoDestino ? "Instalada en {$this->equipoDestino->codigo_interno}" : 'Instalada en un equipo eliminado',
+            self::ESTADO_EN_DEPOSITO => 'En el depósito ' . ($this->deposito?->nombre ?? '—'),
+            self::ESTADO_AGRUPADA    => 'Se cuenta por cantidad (a granel)',
+            self::ESTADO_RETIRADA    => 'Retirada del almacén',
+            default                  => $this->labelEstado(),
+        };
+    }
+
     public function esManual(): bool
     {
         return $this->atributo_id === null;

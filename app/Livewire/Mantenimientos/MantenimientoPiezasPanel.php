@@ -35,6 +35,8 @@ class MantenimientoPiezasPanel extends Component
     public string $retirarDestino      = PiezaExtraida::ESTADO_EN_ALMACEN;
     public ?int   $retirarDepositoId   = null;
     public string $retirarObservaciones = '';
+    /** Si hay varias piezas idénticas instaladas, cuál sale (por su serial). */
+    public string $retirarPiezaId      = '';
 
     public function mount(int $mantenimientoId): void
     {
@@ -67,12 +69,43 @@ class MantenimientoPiezasPanel extends Component
             ->toArray();
     }
 
+    /**
+     * Piezas con serial que podrían ser la que se retira (entraron desde el
+     * almacén con esos mismos valores). Con más de una, se pregunta cuál es.
+     */
+    #[Computed]
+    public function piezasDelRetiro()
+    {
+        $candidato = $this->retirarIndex !== null ? ($this->candidatosRetiro[$this->retirarIndex] ?? null) : null;
+        if (! $candidato) {
+            return collect();
+        }
+
+        $equipo = $this->mantenimiento->equipo;
+        $atributo = AtributoEquipo::find($candidato['atributo_id']);
+        if (! $atributo) {
+            return collect();
+        }
+
+        $valores = $candidato['tipo'] === 'grupo'
+            ? (EquipoAtributoGrupoInstancia::find($candidato['grupo_instancia_id'])?->valores ?? [])
+            : ['valor' => \App\Models\EquipoAtributoValor::where('equipo_id', $equipo->id)->where('atributo_id', $atributo->id)->where('es_actual', true)->value('valor')];
+
+        return app(ExtraccionPiezaService::class)->piezasInstaladasCoincidentes($equipo, $atributo, $valores);
+    }
+
+    public function updatedRetirarIndex(): void
+    {
+        $this->retirarPiezaId = '';
+        unset($this->piezasDelRetiro);
+    }
+
     /** Historial de piezas retiradas/instaladas durante esta reparación (kardex por mantenimiento). */
     #[Computed]
     public function historial(): \Illuminate\Support\Collection
     {
         return PiezaExtraidaMovimiento::where('mantenimiento_id', $this->mantenimientoId)
-            ->with('pieza.atributo')
+            ->with(['pieza.atributo', 'pieza.componenteAlmacen'])
             ->latest()
             ->get();
     }
@@ -89,7 +122,7 @@ class MantenimientoPiezasPanel extends Component
             return;
         }
 
-        $this->reset(['retirarIndex', 'retirarDepositoId', 'retirarObservaciones']);
+        $this->reset(['retirarIndex', 'retirarDepositoId', 'retirarObservaciones', 'retirarPiezaId']);
         $this->retirarDestino = PiezaExtraida::ESTADO_EN_ALMACEN;
         $this->resetValidation();
         $this->retirarAbierto = true;
@@ -140,20 +173,27 @@ class MantenimientoPiezasPanel extends Component
             }
         }
 
+        // Varias piezas idénticas instaladas: hay que decir cuál sale.
+        if ($this->piezasDelRetiro->count() > 1 && $this->retirarPiezaId === '') {
+            $this->addError('retirarPiezaId', 'Hay varias iguales en el equipo: elige cuál sale por su serial.');
+            return;
+        }
+        $piezaId = $this->retirarPiezaId !== '' ? (int) $this->retirarPiezaId : null;
+
         $servicio = app(SustitucionPiezaService::class);
 
         try {
             if ($candidato['tipo'] === 'grupo') {
                 $instancia = EquipoAtributoGrupoInstancia::findOrFail($candidato['grupo_instancia_id']);
-                $servicio->retirarDeGrupo($m->equipo, $instancia, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null);
+                $servicio->retirarDeGrupo($m->equipo, $instancia, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null, $piezaId);
             } else {
                 $atributo = AtributoEquipo::findOrFail($candidato['atributo_id']);
-                $servicio->retirar($m->equipo, $atributo, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null);
+                $servicio->retirar($m->equipo, $atributo, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null, $piezaId);
             }
 
             $this->dispatch('toast', type: 'success', message: "«{$candidato['descripcion']}» retirada del equipo.");
             $this->cerrarRetirar();
-            unset($this->mantenimiento, $this->candidatosRetiro, $this->historial);
+            unset($this->mantenimiento, $this->candidatosRetiro, $this->historial, $this->piezasDelRetiro);
         } catch (\InvalidArgumentException $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());
         } catch (\Exception $e) {

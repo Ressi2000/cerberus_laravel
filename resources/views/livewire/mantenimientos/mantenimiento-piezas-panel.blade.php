@@ -23,9 +23,23 @@
                 label="Pieza a retirar"
                 placeholder="Selecciona..."
                 :options="collect($this->candidatosRetiro)->pluck('descripcion')"
-                wire:model="retirarIndex"
+                wire:model.live="retirarIndex"
                 :error="$errors->first('retirarIndex')"
             />
+
+            @if ($this->piezasDelRetiro->count() > 1)
+                <x-form.select
+                    label="¿Cuál de las iguales sale?"
+                    placeholder="Elige por su serial..."
+                    :options="$this->piezasDelRetiro->mapWithKeys(fn ($p) => [$p->id => $p->codigo()])"
+                    wire:model="retirarPiezaId"
+                    :error="$errors->first('retirarPiezaId')"
+                />
+            @elseif ($this->piezasDelRetiro->count() === 1)
+                <p class="text-xs text-gray-500 dark:text-cerberus-light">
+                    Es la pieza <span class="font-mono">{{ $this->piezasDelRetiro->first()->codigo() }}</span>: seguirá con su mismo historial.
+                </p>
+            @endif
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">¿Está en buen estado?</label>
@@ -66,9 +80,15 @@
         <div wire:key="pieza-mov-{{ $mov->id }}" class="flex items-center justify-between py-2.5 {{ ! $loop->last ? 'border-b border-gray-100 dark:border-cerberus-steel/30' : '' }}">
             <div>
                 <p class="text-sm text-gray-900 dark:text-white">
-                    {{ $mov->pieza?->atributo?->describirValor($mov->pieza->valor_extraido) ?? 'Pieza' }}
+                    {{ $mov->pieza?->atributo?->describirValor($mov->pieza->valor_extraido) ?? $mov->pieza?->componenteAlmacen?->nombre ?? 'Pieza' }}
                 </p>
-                <p class="text-xs text-gray-500 dark:text-cerberus-light">{{ $mov->labelTipo() }}</p>
+                <p class="text-xs text-gray-500 dark:text-cerberus-light">
+                    {{ $mov->labelTipo() }}
+                    @if ($mov->pieza)
+                        · <button type="button" wire:click="$dispatch('openPiezaFicha', { piezaId: {{ $mov->pieza->id }} })"
+                              class="font-mono text-cerberus-primary dark:text-cerberus-accent hover:underline">{{ $mov->pieza->codigo() }}</button>
+                    @endif
+                </p>
             </div>
             <span class="text-xs text-gray-400 dark:text-cerberus-steel">{{ $mov->created_at->format('d/m/Y H:i') }}</span>
         </div>

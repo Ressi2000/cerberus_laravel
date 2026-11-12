@@ -1,0 +1,268 @@
+<?php
+
+namespace Tests\Feature\Mantenimientos;
+
+use App\Livewire\Almacen\AlmacenTable;
+use App\Livewire\Almacen\ComponentePiezasModal;
+use App\Livewire\Almacen\PiezaFichaModal;
+use App\Livewire\Almacen\RegistrarEntradaModal;
+use App\Livewire\Mantenimientos\MantenimientoPiezasPanel;
+use App\Livewire\Mantenimientos\UsarDelAlmacenModal;
+use App\Models\AtributoEquipo;
+use App\Models\CategoriaEquipo;
+use App\Models\ComponenteAlmacen;
+use App\Models\Empresa;
+use App\Models\Equipo;
+use App\Models\EstadoEquipo;
+use App\Models\FamiliaComponente;
+use App\Models\Mantenimiento;
+use App\Models\PiezaExtraida;
+use App\Models\PiezaExtraidaMovimiento;
+use App\Models\User;
+use App\Services\VinculacionFamiliaService;
+use Database\Seeders\EstadosEquiposSeeder;
+use Database\Seeders\FamiliasComponentesSeeder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+use Spatie\Permission\Models\Role;
+use Tests\TestCase;
+
+/**
+ * Fase 4 — Traza: ficha de cada pieza con su recorrido, historial de la
+ * variante, búsqueda por serial, y la misma pieza física conserva su id y
+ * su serial aunque entre y salga de varios equipos.
+ */
+class TrazaPiezasTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Empresa $empresa;
+    private User $admin;
+    private FamiliaComponente $ram;
+    private AtributoEquipo $ramLaptop;
+    private CategoriaEquipo $laptop;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        foreach (['Administrador', 'Analista', 'Usuario'] as $rol) {
+            Role::firstOrCreate(['name' => $rol, 'guard_name' => 'web']);
+        }
+        $this->seed(EstadosEquiposSeeder::class);
+        $this->seed(FamiliasComponentesSeeder::class);
+
+        $this->empresa = Empresa::create(['nombre' => 'Empresa A']);
+        $this->admin   = User::factory()->create(['empresa_id' => $this->empresa->id]);
+        $this->admin->assignRole('Administrador');
+
+        $this->ram       = FamiliaComponente::where('nombre', 'RAM')->firstOrFail();
+        $this->laptop    = CategoriaEquipo::create(['nombre' => 'Laptop']);
+        $this->ramLaptop = AtributoEquipo::create(['categoria_id' => $this->laptop->id, 'nombre' => 'RAM', 'slug' => 'ram', 'tipo' => 'group', 'reutilizable' => true]);
+        app(VinculacionFamiliaService::class)->vincularSinDatos($this->ramLaptop, $this->ram);
+    }
+
+    private function campo(string $nombre): string
+    {
+        return collect($this->ram->campos)->firstWhere('nombre', $nombre)['id'];
+    }
+
+    private function crearCaso(): Mantenimiento
+    {
+        $equipo = Equipo::forceCreate([
+            'empresa_id' => $this->empresa->id, 'categoria_id' => $this->laptop->id,
+            'estado_id' => EstadoEquipo::where('nombre', 'En reparación')->value('id'),
+            'codigo_interno' => 'EQ-' . uniqid(), 'activo' => true,
+        ]);
+
+        return Mantenimiento::create([
+            'empresa_id' => $this->empresa->id, 'equipo_id' => $equipo->id, 'tipo' => 'Correctivo',
+            'estado' => 'En reparación', 'reportado_por_id' => $this->admin->id, 'fecha_inicio' => now()->toDateString(),
+        ]);
+    }
+
+    private function entrarRam(string $seriales): ComponenteAlmacen
+    {
+        Livewire::actingAs($this->admin)
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir')
+            ->set('empresa_id', (string) $this->empresa->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('valores.' . $this->campo('Capacidad (GB)'), '8')
+            ->set('valores.' . $this->campo('Tipo'), 'DDR4')
+            ->set('valores.' . $this->campo('Formato'), 'SO-DIMM (laptop)')
+            ->set('cantidad', count(explode("\n", $seriales)))
+            ->set('seriales', $seriales)
+            ->call('guardar')
+            ->assertHasNoErrors();
+
+        return ComponenteAlmacen::where('familia_id', $this->ram->id)->firstOrFail();
+    }
+
+    private function instalar(Mantenimiento $caso, ComponenteAlmacen $componente, string $serial): PiezaExtraida
+    {
+        $pieza = PiezaExtraida::where('identificador', $serial)->firstOrFail();
+
+        Livewire::actingAs($this->admin)
+            ->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('componenteId', (string) $componente->id)
+            ->set('piezaId', (string) $pieza->id)
+            ->set('modo', 'agregar')
+            ->call('usar')
+            ->assertHasNoErrors();
+
+        return $pieza->fresh();
+    }
+
+    /** Índice de la RAM en la lista "Pieza a retirar" del panel del caso. */
+    private function indiceRam(Mantenimiento $caso, int $cual = 0): int
+    {
+        $panel = Livewire::actingAs($this->admin)->test(MantenimientoPiezasPanel::class, ['mantenimientoId' => $caso->id]);
+
+        return collect($panel->instance()->candidatosRetiro)
+            ->filter(fn ($c) => $c['atributo_id'] === $this->ramLaptop->id)
+            ->keys()
+            ->get($cual);
+    }
+
+    // ─── Ficha de la pieza ─────────────────────────────────────────────────
+
+    /** @test */
+    public function la_ficha_muestra_el_serial_la_ubicacion_y_el_recorrido(): void
+    {
+        $componente = $this->entrarRam('SN-FICHA');
+        $caso = $this->crearCaso();
+        $pieza = $this->instalar($caso, $componente, 'SN-FICHA');
+
+        Livewire::actingAs($this->admin)
+            ->test(PiezaFichaModal::class)
+            ->call('abrir', $pieza->id)
+            ->assertSee('Serial SN-FICHA')
+            ->assertSee('Instalada en')
+            ->assertSee($caso->equipo->codigo_interno)
+            ->assertSee('Capacidad (GB)')
+            ->assertSeeInOrder(['move_to_inbox', 'Instalada en un equipo', "Caso #{$caso->id}"]);
+    }
+
+    /** @test */
+    public function no_se_puede_ver_la_ficha_de_una_pieza_de_otra_empresa(): void
+    {
+        $this->entrarRam('SN-AJENA');
+        $pieza = PiezaExtraida::where('identificador', 'SN-AJENA')->firstOrFail();
+
+        $otra = Empresa::create(['nombre' => 'Empresa B']);
+        $analista = User::factory()->create(['empresa_id' => $otra->id, 'empresa_activa_id' => $otra->id]);
+        $analista->assignRole('Analista');
+
+        $this->expectException(ModelNotFoundException::class);
+        Livewire::actingAs($analista)->test(PiezaFichaModal::class)->call('abrir', $pieza->id);
+    }
+
+    // ─── La misma pieza a lo largo de su vida ──────────────────────────────
+
+    /** @test */
+    public function al_retirar_una_pieza_que_vino_del_almacen_sigue_siendo_la_misma(): void
+    {
+        $componente = $this->entrarRam('SN-VIAJERA');
+        $caso = $this->crearCaso();
+        $pieza = $this->instalar($caso, $componente, 'SN-VIAJERA');
+        $totalPiezas = PiezaExtraida::count();
+
+        Livewire::actingAs($this->admin)
+            ->test(MantenimientoPiezasPanel::class, ['mantenimientoId' => $caso->id])
+            ->call('abrirRetirar')
+            ->set('retirarIndex', $this->indiceRam($caso))
+            ->assertSee('seguirá con su mismo historial')
+            ->set('retirarDestino', PiezaExtraida::ESTADO_EN_ALMACEN)
+            ->call('retirar')
+            ->assertHasNoErrors();
+
+        $this->assertSame($totalPiezas, PiezaExtraida::count(), 'No se crea otra pieza.');
+        $pieza->refresh();
+        $this->assertSame('SN-VIAJERA', $pieza->identificador);
+        $this->assertSame(PiezaExtraida::ESTADO_EN_ALMACEN, $pieza->estado);
+        $this->assertSame(PiezaExtraida::CONDICION_REUTILIZADO, $pieza->condicion);
+        $this->assertNull($pieza->equipo_destino_id);
+        $this->assertSame(1, $componente->fresh()->stock_actual);
+        $this->assertSame(
+            [PiezaExtraidaMovimiento::TIPO_INGRESO_ALMACEN, PiezaExtraidaMovimiento::TIPO_INSTALACION, PiezaExtraidaMovimiento::TIPO_DESINSTALACION, PiezaExtraidaMovimiento::TIPO_INGRESO_ALMACEN],
+            $pieza->movimientos()->reorder()->orderBy('id')->pluck('tipo')->all(),
+        );
+    }
+
+    /** @test */
+    public function con_dos_piezas_iguales_instaladas_se_elige_cual_sale_por_su_serial(): void
+    {
+        $componente = $this->entrarRam("SN-A\nSN-B");
+        $caso = $this->crearCaso();
+        $this->instalar($caso, $componente, 'SN-A');
+        $this->instalar($caso, $componente, 'SN-B');
+
+        $panel = Livewire::actingAs($this->admin)
+            ->test(MantenimientoPiezasPanel::class, ['mantenimientoId' => $caso->id])
+            ->call('abrirRetirar')
+            ->set('retirarIndex', $this->indiceRam($caso))
+            ->assertSee('¿Cuál de las iguales sale?')
+            ->call('retirar')
+            ->assertHasErrors('retirarPiezaId');
+
+        $b = PiezaExtraida::where('identificador', 'SN-B')->firstOrFail();
+        $panel->set('retirarPiezaId', (string) $b->id)->call('retirar')->assertHasNoErrors();
+
+        $this->assertSame(PiezaExtraida::ESTADO_EN_ALMACEN, $b->fresh()->estado);
+        $this->assertSame(PiezaExtraida::ESTADO_INSTALADA, PiezaExtraida::where('identificador', 'SN-A')->value('estado'));
+    }
+
+    // ─── Historial de la variante y búsqueda ───────────────────────────────
+
+    /** @test */
+    public function el_historial_de_la_variante_incluye_las_piezas_ya_usadas(): void
+    {
+        $componente = $this->entrarRam("SN-USADA\nSN-STOCK");
+        $this->instalar($this->crearCaso(), $componente, 'SN-USADA');
+
+        $modal = Livewire::actingAs($this->admin)
+            ->test(ComponentePiezasModal::class)
+            ->call('abrir', $componente->id)
+            ->assertSee('SN-STOCK')
+            ->assertDontSee('SN-USADA')
+            ->call('verPestana', 'piezas')
+            ->assertSee('SN-USADA')
+            ->assertSee('SN-STOCK');
+
+        $usada = PiezaExtraida::where('identificador', 'SN-USADA')->first();
+        $modal->call('verPieza', $usada->id)->assertDispatched('openPiezaFicha', piezaId: $usada->id);
+    }
+
+    /** @test */
+    public function buscar_un_serial_en_almacen_encuentra_la_pieza_este_donde_este(): void
+    {
+        $componente = $this->entrarRam("SN-BUSCADA\nSN-OTRA");
+        $this->instalar($this->crearCaso(), $componente, 'SN-BUSCADA');
+
+        Livewire::actingAs($this->admin)
+            ->test(AlmacenTable::class)
+            ->set('search', 'BUSCADA')
+            ->assertSee('Piezas con ese serial o código')
+            ->assertSee('Serial SN-BUSCADA')
+            ->assertDontSee('Serial SN-OTRA')
+            ->assertSee($componente->nombre);
+    }
+
+    /** @test */
+    public function el_historial_del_equipo_enlaza_a_la_ficha_de_sus_piezas(): void
+    {
+        $componente = $this->entrarRam('SN-EQUIPO');
+        $caso = $this->crearCaso();
+        $this->instalar($caso, $componente, 'SN-EQUIPO');
+
+        Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\Equipos\HistorialEquipo::class, ['equipo' => $caso->equipo])
+            ->assertSee('Piezas del almacén instaladas en este equipo')
+            ->assertSee('Serial SN-EQUIPO')
+            ->assertSee('Nueva, del almac');
+    }
+}
