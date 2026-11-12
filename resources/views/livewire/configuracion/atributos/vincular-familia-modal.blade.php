@@ -85,6 +85,29 @@
                                                     placeholder="Valor para todos">
                                             @endif
                                         @endif
+
+                                        {{-- Valores viejos que no están en la lista: ¿a qué opción equivalen? --}}
+                                        @if (isset($this->porEquivaler[$campo['id']]))
+                                            <div class="space-y-1 pt-1">
+                                                <p class="text-xs text-amber-700 dark:text-amber-300">
+                                                    Estos valores no están en la lista. Elige a cuál equivale cada uno:
+                                                </p>
+                                                @foreach ($this->porEquivaler[$campo['id']]['valores'] as $i => $valorViejo)
+                                                    <div wire:key="eq-{{ $campo['id'] }}-{{ $i }}" class="flex items-center gap-2 text-sm">
+                                                        <span class="flex-1 min-w-0 truncate text-gray-700 dark:text-cerberus-light" title="{{ $valorViejo }}">«{{ $valorViejo }}»</span>
+                                                        <span class="material-icons text-sm text-gray-400">arrow_forward</span>
+                                                        <select wire:model.live="equivalencias.{{ $campo['id'] }}.{{ $i }}"
+                                                            class="flex-1 min-w-0 rounded-lg px-2 py-1 text-sm bg-white dark:bg-cerberus-dark
+                                                                   border border-gray-300 dark:border-cerberus-steel text-gray-900 dark:text-white">
+                                                            <option value="">Dejarlo igual</option>
+                                                            @foreach ($campo['opciones'] ?? [] as $op)
+                                                                <option value="{{ $op }}">{{ $op }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach

@@ -271,15 +271,15 @@ class FamiliasComponentesTest extends TestCase
             ->test(FamiliaModal::class)
             ->call('abrirCrear')
             ->call('agregarCampo')
-            ->set('nombre', 'Discos')
-            ->set('campos.0.nombre', 'Tecnología')
+            ->set('nombre', 'Fuentes de poder')
+            ->set('campos.0.nombre', 'Formato')
             ->set('campos.0.tipo', 'select')
-            ->set('campos.0.opciones_raw', "HDD\nSSD\nNVMe")
+            ->set('campos.0.opciones_raw', "ATX\nSFX\nTFX")
             ->call('guardar')
             ->assertHasNoErrors();
 
-        $discos = FamiliaComponente::where('nombre', 'Discos')->firstOrFail();
-        $this->assertSame(['HDD', 'SSD', 'NVMe'], $discos->campos[0]['opciones']);
+        $fuentes = FamiliaComponente::where('nombre', 'Fuentes de poder')->firstOrFail();
+        $this->assertSame(['ATX', 'SFX', 'TFX'], $fuentes->campos[0]['opciones']);
     }
 
     /** @test */

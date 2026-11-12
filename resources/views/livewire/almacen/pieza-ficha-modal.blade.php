@@ -58,7 +58,7 @@
                                 Instalada en
                                 <a href="{{ route('admin.equipos.show', $pieza->equipoDestino) }}" wire:navigate
                                    class="font-medium text-cerberus-primary dark:text-cerberus-accent hover:underline">{{ $pieza->equipoDestino->codigo_interno }}</a>
-                            @else
+                            @elseif ($pieza->estado !== 'en_almacen')
                                 {{ $pieza->ubicacion() }}
                             @endif
                         </span>

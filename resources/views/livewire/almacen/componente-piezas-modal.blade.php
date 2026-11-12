@@ -35,7 +35,7 @@
                             {{ $this->componente->nombre }}
                         </h2>
                         <p class="text-sm text-gray-500 dark:text-cerberus-light mt-0.5">
-                            {{ $this->componente->stock_actual }} {{ $this->componente->unidad }} en stock
+                            {{ $this->componente->stock_actual }} en stock
                             @unless ($granel)
                                 @if (($resumen['instalada'] ?? 0) > 0) · {{ $resumen['instalada'] }} instalada(s) @endif
                                 @if (($resumen['en_deposito'] ?? 0) > 0) · {{ $resumen['en_deposito'] }} en depósito @endif

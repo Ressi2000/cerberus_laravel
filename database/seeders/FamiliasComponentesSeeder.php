@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
 /**
- * Familias de piezas iniciales: RAM (con ficha técnica) y "Otros" (para lo
+ * Familias de piezas iniciales: RAM y Discos (con ficha técnica) y "Otros" (para lo
  * que no encaje en ninguna). El resto se crea desde Configuración →
  * Familias de piezas.
  *
@@ -45,6 +45,33 @@ class FamiliasComponentesSeeder extends Seeder
                         'tipo'           => 'select',
                         'opciones'       => ['SO-DIMM (laptop)', 'DIMM (escritorio)'],
                         'requerido'      => false,
+                    ],
+                ],
+            ]
+        );
+
+        // Discos: el tipo ya dice la forma física y la conexión (lo que hay
+        // que saber para ponerlo en un equipo), en una sola lista.
+        FamiliaComponente::firstOrCreate(
+            ['nombre' => 'Discos'],
+            [
+                'descripcion' => 'Discos duros y de estado sólido de laptops, desktops y servidores.',
+                'control'     => FamiliaComponente::CONTROL_UNIDAD,
+                'activo'      => true,
+                'campos'      => [
+                    [
+                        'id'        => (string) Str::uuid(),
+                        'nombre'    => 'Capacidad (GB)',
+                        'tipo'      => 'integer',
+                        'opciones'  => [],
+                        'requerido' => false,
+                    ],
+                    [
+                        'id'        => (string) Str::uuid(),
+                        'nombre'    => 'Tipo',
+                        'tipo'      => 'select',
+                        'opciones'  => ['HDD 2.5"', 'HDD 3.5"', 'SSD 2.5" SATA', 'M.2 SATA', 'M.2 NVMe', 'mSATA'],
+                        'requerido' => false,
                     ],
                 ],
             ]

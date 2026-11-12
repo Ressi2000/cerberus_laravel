@@ -16,7 +16,9 @@ use Livewire\Component;
  * la "RAM (GB)" de Desktop) pase a usar la ficha de una familia (ej. RAM).
  *
  * Pasos: elegir la familia → decir de dónde sale cada campo de la familia
- * (un sub-campo actual, un valor fijo para todos, o vacío) → ver la vista
+ * (un sub-campo actual, un valor fijo para todos, o vacío) y, si hay valores
+ * viejos que no están en la lista de la familia, a qué opción equivalen
+ * (ej. "NVME" → "M.2 NVMe") → ver la vista
  * previa (antes → después, sin guardar) → confirmar. La conversión la hace
  * VinculacionFamiliaService en una sola transacción.
  */
@@ -40,6 +42,15 @@ class VincularFamiliaModal extends Component
      */
     public array $mapeo = [];
 
+    /**
+     * Equivalente elegido para cada valor viejo fuera de la lista, por campo
+     * y por posición en porEquivaler (las posiciones evitan problemas con
+     * valores que tienen puntos, como "HDD 3.5").
+     *
+     * @var array<string, array<int, string>>
+     */
+    public array $equivalencias = [];
+
     public ?array $vistaPrevia = null;
 
     #[On('openVincularFamilia')]
@@ -52,8 +63,9 @@ class VincularFamiliaModal extends Component
         $this->atributoId  = $atributo->id;
         $this->categoriaId = $categoriaId ?? $atributo->categoria_id;
         $this->familiaId   = null;
-        $this->mapeo       = [];
-        $this->vistaPrevia = null;
+        $this->mapeo         = [];
+        $this->equivalencias = [];
+        $this->vistaPrevia   = null;
         $this->resetValidation();
         $this->open = true;
 
@@ -105,12 +117,54 @@ class VincularFamiliaModal extends Component
                 'valor'  => '',
             ])
             ->all();
+
+        $this->equivalencias = [];
+        $this->sugerirEquivalencias();
+    }
+
+    /**
+     * Valores viejos que no están en la lista de la familia, por campo (ver
+     * VinculacionFamiliaService::porEquivaler).
+     */
+    #[Computed]
+    public function porEquivaler(): array
+    {
+        if (! $this->familia || ! $this->atributo) {
+            return [];
+        }
+
+        return app(VinculacionFamiliaService::class)->porEquivaler($this->atributo, $this->familia, $this->mapeoBase());
     }
 
     /** Cualquier cambio en el mapeo invalida la vista previa anterior. */
-    public function updatedMapeo(): void
+    public function updatedMapeo($valor = null, ?string $clave = null): void
     {
         $this->vistaPrevia = null;
+        unset($this->porEquivaler);
+
+        // Si cambió de dónde sale un campo, sus equivalencias anteriores ya no aplican.
+        if ($clave && str_ends_with($clave, '.fuente')) {
+            unset($this->equivalencias[substr($clave, 0, -strlen('.fuente'))]);
+        }
+
+        $this->sugerirEquivalencias();
+    }
+
+    public function updatedEquivalencias(): void
+    {
+        $this->vistaPrevia = null;
+    }
+
+    /** Llena con la sugerencia los equivalentes que todavía no se eligieron. */
+    private function sugerirEquivalencias(): void
+    {
+        foreach ($this->porEquivaler as $campoId => $info) {
+            foreach ($info['valores'] as $i => $valor) {
+                if (! isset($this->equivalencias[$campoId][$i])) {
+                    $this->equivalencias[$campoId][$i] = $info['sugeridos'][$valor] ?? '';
+                }
+            }
+        }
     }
 
     public function previsualizar(): void
@@ -163,12 +217,33 @@ class VincularFamiliaModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['atributoId', 'categoriaId', 'familiaId', 'mapeo', 'vistaPrevia']);
+        $this->reset(['atributoId', 'categoriaId', 'familiaId', 'mapeo', 'equivalencias', 'vistaPrevia']);
         $this->resetValidation();
     }
 
-    /** Normaliza lo que llega del formulario al formato del servicio. */
+    /** Normaliza lo que llega del formulario al formato del servicio, con las equivalencias. */
     private function mapeoLimpio(): array
+    {
+        $porEquivaler = $this->porEquivaler;
+
+        return collect($this->mapeoBase())
+            ->map(function ($regla, $campoId) use ($porEquivaler) {
+                if ($regla['origen'] !== VinculacionFamiliaService::ORIGEN_SUB_CAMPO || ! isset($porEquivaler[$campoId])) {
+                    return $regla;
+                }
+
+                $regla['equivalencias'] = collect($porEquivaler[$campoId]['valores'])
+                    ->mapWithKeys(fn ($valor, $i) => [$valor => (string) ($this->equivalencias[$campoId][$i] ?? '')])
+                    ->filter(fn ($destino) => $destino !== '')
+                    ->all();
+
+                return $regla;
+            })
+            ->all();
+    }
+
+    /** El mapeo sin equivalencias (de dónde sale cada campo). */
+    private function mapeoBase(): array
     {
         return collect($this->mapeo)
             ->map(function ($regla) {

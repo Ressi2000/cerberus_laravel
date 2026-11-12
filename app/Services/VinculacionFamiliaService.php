@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\DB;
  * El "mapeo" dice, para cada campo de la familia, de dónde sale su valor:
  *
  *   [campo_familia_id => ['origen' => 'sub_campo', 'sub_campo_id' => '…']]  copiar de un sub-campo actual
+ *       (+ 'equivalencias' => ['NVME' => 'M.2 NVMe', …] opcional: traduce
+ *        valores viejos a opciones de la lista de la familia)
  *   [campo_familia_id => ['origen' => 'fijo', 'valor' => 'SO-DIMM']]         el mismo valor para todos
  *   [campo_familia_id => ['origen' => 'vacio']]                              dejarlo vacío
  *
@@ -178,13 +180,89 @@ class VinculacionFamiliaService
 
         foreach ($mapeo as $campoId => $regla) {
             $nuevo[$campoId] = match ($regla['origen'] ?? self::ORIGEN_VACIO) {
-                self::ORIGEN_SUB_CAMPO => $valores[$regla['sub_campo_id']] ?? null,
+                self::ORIGEN_SUB_CAMPO => $this->equivaler($valores[$regla['sub_campo_id']] ?? null, $regla['equivalencias'] ?? []),
                 self::ORIGEN_FIJO      => $regla['valor'] ?? null,
                 default                => null,
             };
         }
 
         return $nuevo;
+    }
+
+    /** Valor viejo → su equivalente elegido (si se eligió uno). */
+    private function equivaler(mixed $valor, array $equivalencias): mixed
+    {
+        if ($valor === null || $valor === '') {
+            return $valor;
+        }
+
+        $destino = $equivalencias[(string) $valor] ?? null;
+
+        return $destino !== null && $destino !== '' ? $destino : $valor;
+    }
+
+    /**
+     * Valores ya cargados que NO están en la lista de un campo de la familia
+     * (ej. Laptop guarda "NVME" y la familia dice "M.2 NVMe"), por campo,
+     * para elegirles un equivalente antes de convertir. Trae una sugerencia
+     * cuando se parece claramente a una sola opción.
+     *
+     * @return array<string, array{valores: string[], sugeridos: array<string, ?string>}>
+     */
+    public function porEquivaler(AtributoEquipo $atributo, FamiliaComponente $familia, array $mapeo): array
+    {
+        $listas = collect($familia->campos ?? [])->where('tipo', 'select')->keyBy('id');
+        $guardados = EquipoAtributoGrupoInstancia::where('atributo_id', $atributo->id)->pluck('valores')
+            ->concat(PiezaExtraida::where('atributo_id', $atributo->id)->pluck('valor_extraido'))
+            ->map(fn ($v) => is_array($v) ? $v : (json_decode((string) $v, true) ?: []));
+
+        $resultado = [];
+
+        foreach ($mapeo as $campoId => $regla) {
+            if (($regla['origen'] ?? null) !== self::ORIGEN_SUB_CAMPO || ! $listas->has($campoId)) {
+                continue;
+            }
+
+            $opciones = $listas[$campoId]['opciones'] ?? [];
+            $valores  = $guardados
+                ->map(fn ($v) => $v[$regla['sub_campo_id']] ?? null)
+                ->filter(fn ($v) => $v !== null && $v !== '' && ! in_array((string) $v, $opciones, true))
+                ->map(fn ($v) => (string) $v)
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+
+            if ($valores !== []) {
+                $resultado[$campoId] = [
+                    'valores'   => $valores,
+                    'sugeridos' => collect($valores)->mapWithKeys(fn ($v) => [$v => $this->sugerirOpcion($v, $opciones)])->all(),
+                ];
+            }
+        }
+
+        return $resultado;
+    }
+
+    /**
+     * La opción que claramente corresponde a un valor: sus palabras están
+     * todas en la opción o al revés (ej. "M.2 Nvme" ↔ "M.2 NVMe", "MSATA" ↔
+     * "mSATA"). Si coinciden varias (ej. "HDD" con "HDD 2.5"" y "HDD 3.5""),
+     * no sugiere nada: lo decide la persona.
+     */
+    private function sugerirOpcion(string $valor, array $opciones): ?string
+    {
+        $palabras = fn (string $t) => array_values(array_filter(preg_split('/[^a-z0-9]+/', mb_strtolower($t)) ?: []));
+        $delValor = $palabras($valor);
+
+        $candidatas = collect($opciones)->filter(function ($op) use ($palabras, $delValor) {
+            $deLaOpcion = $palabras((string) $op);
+
+            return $delValor !== [] && $deLaOpcion !== []
+                && (array_diff($delValor, $deLaOpcion) === [] || array_diff($deLaOpcion, $delValor) === []);
+        });
+
+        return $candidatas->count() === 1 ? (string) $candidatas->first() : null;
     }
 
     private function validar(AtributoEquipo $atributo, FamiliaComponente $familia, array $mapeo): void
@@ -215,6 +293,15 @@ class VinculacionFamiliaService
 
             if (($regla['origen'] ?? null) === self::ORIGEN_SUB_CAMPO && ! $subCampos->contains($regla['sub_campo_id'] ?? null)) {
                 throw new \InvalidArgumentException('El mapeo menciona un sub-campo que no es de la característica.');
+            }
+
+            // Una equivalencia solo puede llevar a una opción de la lista.
+            $campo = collect($familia->campos)->firstWhere('id', $campoId);
+            foreach ($regla['equivalencias'] ?? [] as $destino) {
+                if ($destino !== null && $destino !== '' && ($campo['tipo'] ?? null) === 'select'
+                    && ! in_array($destino, $campo['opciones'] ?? [], true)) {
+                    throw new \InvalidArgumentException("«{$destino}» no está en la lista de «{$campo['nombre']}».");
+                }
             }
         }
 
