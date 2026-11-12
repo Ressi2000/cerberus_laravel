@@ -99,6 +99,7 @@ class ExtraccionPiezaService
         ?Mantenimiento $mantenimiento = null,
         ?string $observaciones = null,
         ?int $piezaInstaladaId = null,
+        ?string $serial = null,
     ): PiezaExtraida {
         $valorActual = EquipoAtributoValor::where('equipo_id', $equipoOrigen->id)
             ->where('atributo_id', $atributo->id)
@@ -123,6 +124,7 @@ class ExtraccionPiezaService
             observaciones: $observaciones,
             onDesactivar: fn () => $valorActual->update(['es_actual' => false]),
             piezaInstaladaId: $piezaInstaladaId,
+            serial: $serial,
         );
     }
 
@@ -140,6 +142,7 @@ class ExtraccionPiezaService
         ?Mantenimiento $mantenimiento = null,
         ?string $observaciones = null,
         ?int $piezaInstaladaId = null,
+        ?string $serial = null,
     ): PiezaExtraida {
         if ($instancia->equipo_id !== $equipoOrigen->id) {
             throw new \InvalidArgumentException('La instancia no pertenece al equipo indicado.');
@@ -162,6 +165,7 @@ class ExtraccionPiezaService
             onDesactivar: fn () => $instancia->update(['es_actual' => false]),
             grupoInstancia: $instancia,
             piezaInstaladaId: $piezaInstaladaId,
+            serial: $serial,
         );
     }
 
@@ -183,6 +187,7 @@ class ExtraccionPiezaService
         \Closure $onDesactivar,
         ?EquipoAtributoGrupoInstancia $grupoInstancia = null,
         ?int $piezaInstaladaId = null,
+        ?string $serial = null,
     ): PiezaExtraida {
         if (! $atributo->reutilizable) {
             throw new \InvalidArgumentException(
@@ -215,8 +220,10 @@ class ExtraccionPiezaService
 
         return DB::transaction(function () use (
             $equipoOrigen, $atributo, $valorExtraido, $vaAlmacen, $actor, $motivo,
-            $deposito, $mantenimiento, $observaciones, $onDesactivar, $grupoInstancia, $piezaInstaladaId,
+            $deposito, $mantenimiento, $observaciones, $onDesactivar, $grupoInstancia, $piezaInstaladaId, $serial,
         ) {
+            $serial = trim((string) $serial) ?: null;
+
             // Si lo que sale es una pieza que entró desde el almacén, es la
             // MISMA pieza física: sigue con su id, su serial y su recorrido.
             $existente = $this->piezaInstaladaQueSale($equipoOrigen, $atributo, $valorExtraido, $piezaInstaladaId);
@@ -239,6 +246,11 @@ class ExtraccionPiezaService
             }
 
             if ($existente) {
+                // Si entró sin serial y ahora se conoce, se le anota.
+                if ($serial && ! $existente->identificador) {
+                    $existente->identificador = $serial;
+                }
+
                 return $this->volverASacar(
                     $existente, $equipoOrigen, $atributo, $valorExtraido, $vaAlmacen, $componente,
                     $deposito, $mantenimiento, $motivo, $actor, $observaciones, $grupoInstancia,
@@ -252,6 +264,8 @@ class ExtraccionPiezaService
                 'grupo_instancia_id'    => $grupoInstancia?->id,
                 'valor_extraido'        => $valorExtraido,
                 'reutilizable'          => $vaAlmacen,
+                'condicion'             => PiezaExtraida::CONDICION_REUTILIZADO,
+                'identificador'         => $serial,
                 'estado'                => $vaAlmacen ? PiezaExtraida::ESTADO_EN_ALMACEN : PiezaExtraida::ESTADO_EN_DEPOSITO,
                 'componente_almacen_id' => $componente?->id,
                 'deposito_id'           => $vaAlmacen ? null : $deposito->id,

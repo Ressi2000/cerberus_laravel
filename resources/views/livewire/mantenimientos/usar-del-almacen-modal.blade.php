@@ -172,6 +172,8 @@
                                             <x-form.select label="Depósito" placeholder="Elige…" :options="$this->depositos"
                                                 wire:model="depositoSaliente" :error="$errors->first('depositoSaliente')" />
                                         @endif
+                                        <x-form.input label="Serial de la que sale (opcional)" wire:model="serialSaliente"
+                                            placeholder="Si lo tiene a la vista" />
                                     </div>
                                 @endif
                             </div>

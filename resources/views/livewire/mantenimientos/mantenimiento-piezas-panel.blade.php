@@ -41,6 +41,10 @@
                 </p>
             @endif
 
+            @if ($retirarIndex !== null && ! $this->piezasDelRetiro->contains(fn ($p) => $p->identificador))
+                <x-form.input label="Serial (opcional)" wire:model="retirarSerial" placeholder="Si lo tiene a la vista" />
+            @endif
+
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">¿Está en buen estado?</label>
                 <select wire:model.live="retirarDestino"

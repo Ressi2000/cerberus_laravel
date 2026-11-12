@@ -99,10 +99,11 @@ class SustitucionPiezaService
         ?Mantenimiento $mantenimiento = null,
         ?string $observaciones = null,
         ?int $piezaInstaladaId = null,
+        ?string $serial = null,
     ): PiezaExtraida {
         return $this->extraccion->extraerDeAtributoSimple(
             $equipo, $atributo, $destino, $actor,
-            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones, $piezaInstaladaId,
+            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones, $piezaInstaladaId, $serial,
         );
     }
 
@@ -116,10 +117,11 @@ class SustitucionPiezaService
         ?Mantenimiento $mantenimiento = null,
         ?string $observaciones = null,
         ?int $piezaInstaladaId = null,
+        ?string $serial = null,
     ): PiezaExtraida {
         return $this->extraccion->extraerDeGrupoInstancia(
             $equipo, $instancia, $destino, $actor,
-            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones, $piezaInstaladaId,
+            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones, $piezaInstaladaId, $serial,
         );
     }
 
@@ -152,6 +154,7 @@ class SustitucionPiezaService
         ?int $instanciaASustituirId = null,
         string $destinoPiezaSaliente = PiezaExtraida::ESTADO_EN_ALMACEN,
         ?Deposito $depositoPiezaSaliente = null,
+        ?string $serialSaliente = null,
     ): void {
         if ($pieza->estado !== PiezaExtraida::ESTADO_EN_ALMACEN) {
             throw new \InvalidArgumentException('Esta pieza no está disponible en Almacén (ya fue instalada o descartada).');
@@ -185,7 +188,7 @@ class SustitucionPiezaService
             throw new \InvalidArgumentException('Solo un atributo tipo grupo se puede "agregar" sin reemplazar nada.');
         }
 
-        DB::transaction(function () use ($pieza, $equipoDestino, $modo, $actor, $mantenimiento, $instanciaASustituirId, $atributo, $destinoPiezaSaliente, $depositoPiezaSaliente) {
+        DB::transaction(function () use ($pieza, $equipoDestino, $modo, $actor, $mantenimiento, $instanciaASustituirId, $atributo, $destinoPiezaSaliente, $depositoPiezaSaliente, $serialSaliente) {
             if (! $pieza->componenteAlmacen) {
                 throw new \InvalidArgumentException('Esta pieza no está asociada a ningún componente del almacén.');
             }
@@ -204,6 +207,7 @@ class SustitucionPiezaService
                 $this->retirarPiezaSaliente(
                     $equipoDestino, $atributo, $instanciaASustituirId, $destinoPiezaSaliente,
                     $depositoPiezaSaliente, $actor, $mantenimiento,
+                    $serialSaliente,
                 );
             }
 
@@ -251,6 +255,7 @@ class SustitucionPiezaService
         ?Deposito $deposito,
         User $actor,
         ?Mantenimiento $mantenimiento,
+        ?string $serial = null,
     ): void {
         if ($atributo->esGrupo()) {
             $instancia = $instanciaId
@@ -264,7 +269,7 @@ class SustitucionPiezaService
                 throw new \InvalidArgumentException('Selecciona cuál instancia vigente reemplaza esta pieza.');
             }
 
-            $this->retirarDeGrupo($equipo, $instancia, $destino, $actor, $deposito, $mantenimiento, 'Sustituida por otra pieza.');
+            $this->retirarDeGrupo($equipo, $instancia, $destino, $actor, $deposito, $mantenimiento, 'Sustituida por otra pieza.', serial: $serial);
 
             return;
         }
@@ -275,7 +280,7 @@ class SustitucionPiezaService
             ->exists();
 
         if ($tieneValor) {
-            $this->retirar($equipo, $atributo, $destino, $actor, $deposito, $mantenimiento, 'Sustituida por otra pieza.');
+            $this->retirar($equipo, $atributo, $destino, $actor, $deposito, $mantenimiento, 'Sustituida por otra pieza.', serial: $serial);
         }
     }
 

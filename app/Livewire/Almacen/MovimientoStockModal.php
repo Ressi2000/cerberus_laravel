@@ -135,8 +135,26 @@ class MovimientoStockModal extends Component
         ];
     }
 
+    /**
+     * Todas las unidades en stock tienen serial: la cantidad es la de las
+     * piezas que se marquen (no se pide aparte).
+     */
+    #[Computed]
+    public function soloPiezas(): bool
+    {
+        return $this->piezasEnAlmacen->isNotEmpty() && $this->unidadesSinIdentidad === 0;
+    }
+
     public function guardar(): void
     {
+        if ($this->soloPiezas) {
+            if (empty($this->piezaIds)) {
+                $this->addError('piezaIds', 'Marca cuáles piezas salen.');
+                return;
+            }
+            $this->cantidad = count(array_unique($this->piezaIds));
+        }
+
         $this->validate();
 
         $componente = $this->componente;

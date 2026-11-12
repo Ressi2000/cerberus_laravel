@@ -24,11 +24,12 @@
 
                     @if ($this->componente)
                         <div class="bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg px-4 py-3 text-sm">
-                            Stock actual: <span class="font-semibold text-gray-900 dark:text-white">{{ $this->componente->stock_actual }} {{ $this->componente->unidad }}</span>
+                            Stock actual: <span class="font-semibold text-gray-900 dark:text-white">{{ $this->componente->stock_actual }}</span>
                         </div>
                     @endif
 
 
+                    @unless ($this->soloPiezas)
                     <x-form.input
                         label="Cantidad"
                         type="number"
@@ -37,6 +38,7 @@
                         :error="$errors->first('cantidad')"
                         required
                     />
+                    @endunless
 
                         <div class="flex items-center gap-3">
                             <button type="button" wire:click="$toggle('danado')" role="switch"
@@ -71,7 +73,7 @@
                                         Hay {{ $this->unidadesSinIdentidad }} unidad(es) sin identidad que salen sin elegir nada.
                                         Si la cantidad supera ese número, marca cuáles de estas piezas salen.
                                     @else
-                                        Todas las unidades de este componente tienen identidad: marca exactamente cuáles salen.
+                                        Marca cuáles salen, por su serial.
                                     @endif
                                 </p>
                                 <div class="max-h-48 overflow-y-auto space-y-1.5 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-2">
@@ -101,7 +103,7 @@
                         <x-form.input
                             label="Motivo"
                             wire:model="motivo"
-                            placeholder="Ej: Compra, ajuste de inventario..."
+                            placeholder="Ej: pérdida, ajuste de inventario..."
                             :error="$errors->first('motivo')"
                         />
                     @endunless

@@ -190,8 +190,11 @@ class StockPiezasAlmacenTest extends TestCase
     /** @test */
     public function no_se_pueden_marcar_mas_piezas_que_la_cantidad(): void
     {
+        // Stock mixto: 1 unidad sin serial + 2 piezas (con todo serial, la
+        // cantidad sale de lo marcado y no se escribe aparte).
         $componente = $this->crearComponente();
-        $piezas = $this->agregarPiezasManuales($componente, 2);
+        $componente->registrarEntrada(1, $this->analista);
+        $piezas = $this->agregarPiezasManuales($componente->fresh(), 2);
 
         Livewire::actingAs($this->analista)
             ->test(MovimientoStockModal::class)
@@ -201,7 +204,7 @@ class StockPiezasAlmacenTest extends TestCase
             ->call('guardar')
             ->assertHasErrors('piezaIds');
 
-        $this->assertSame(2, $componente->fresh()->stock_actual);
+        $this->assertSame(3, $componente->fresh()->stock_actual);
     }
 
     /** @test */

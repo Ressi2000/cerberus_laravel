@@ -265,4 +265,76 @@ class TrazaPiezasTest extends TestCase
             ->assertSee('Serial SN-EQUIPO')
             ->assertSee('Nueva, del almac');
     }
+
+    // ─── Hallazgos de la prueba de uso en el navegador ─────────────────────
+
+    /** @test */
+    public function entregar_una_solicitud_pendiente_anota_cuales_piezas_salieron(): void
+    {
+        $pantallas = FamiliaComponente::create(['nombre' => 'Pantallas', 'control' => 'unidad', 'campos' => []]);
+        $variante = ComponenteAlmacen::create([
+            'empresa_id' => $this->empresa->id, 'familia_id' => $pantallas->id, 'nombre' => 'Pantalla 14" HD',
+            'unidad' => 'unidad', 'stock_actual' => 0, 'activo' => true, 'creado_por' => $this->admin->id,
+        ]);
+        $caso = $this->crearCaso();
+        $item = $caso->pedirComponente($variante, 2, $this->admin);
+        $this->assertSame('Pendiente', $item->estado);
+
+        app(\App\Services\PiezaManualService::class)->registrar($variante, 2, PiezaExtraida::CONDICION_NUEVO, $this->admin, seriales: ['PAN-1', 'PAN-2']);
+        $this->assertTrue($caso->entregarComponentePendiente($item->fresh(), $this->admin));
+
+        $renglones = $caso->componentes()->with('pieza')->orderBy('id')->get();
+        $this->assertSame(['PAN-1', 'PAN-2'], $renglones->pluck('pieza.identificador')->all(), 'Un renglón por pieza, con su serial.');
+        $this->assertSame([1, 1], $renglones->pluck('cantidad_requerida')->map(fn ($n) => (int) $n)->all());
+        $this->assertTrue($renglones->every(fn ($r) => $r->estado === 'Entregado'));
+    }
+
+    /** @test */
+    public function al_reemplazar_se_puede_anotar_el_serial_de_la_pieza_que_sale(): void
+    {
+        $componente = $this->entrarRam('SN-ENTRA');
+        $pieza = PiezaExtraida::where('identificador', 'SN-ENTRA')->firstOrFail();
+        $caso = $this->crearCaso();
+        $vieja = \App\Models\EquipoAtributoGrupoInstancia::create([
+            'equipo_id' => $caso->equipo_id, 'atributo_id' => $this->ramLaptop->id,
+            'valores' => [$this->campo('Capacidad (GB)') => '4', $this->campo('Tipo') => 'DDR3'],
+            'orden' => 0, 'es_actual' => true, 'creado_por' => $this->admin->id,
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('componenteId', (string) $componente->id)
+            ->set('piezaId', (string) $pieza->id)
+            ->set('modo', 'sustituir')
+            ->set('instanciaId', (string) $vieja->id)
+            ->set('serialSaliente', '  SN-SALE-77 ')
+            ->call('usar')
+            ->assertHasNoErrors();
+
+        $saliente = PiezaExtraida::where('equipo_origen_id', $caso->equipo_id)->firstOrFail();
+        $this->assertSame('SN-SALE-77', $saliente->identificador);
+        $this->assertSame(PiezaExtraida::CONDICION_REUTILIZADO, $saliente->condicion);
+    }
+
+    /** @test */
+    public function en_una_salida_por_unidad_la_cantidad_es_la_de_las_piezas_marcadas(): void
+    {
+        $componente = $this->entrarRam("SN-S1\nSN-S2\nSN-S3");
+        $ids = PiezaExtraida::whereIn('identificador', ['SN-S1', 'SN-S3'])->pluck('id')->all();
+
+        Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\Almacen\MovimientoStockModal::class)
+            ->call('abrir', $componente->id)
+            ->assertDontSee('Ej: 10')
+            ->call('guardar')
+            ->assertHasErrors('piezaIds')
+            ->set('piezaIds', $ids)
+            ->call('guardar')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, $componente->fresh()->stock_actual);
+        $this->assertSame(PiezaExtraida::ESTADO_EN_ALMACEN, PiezaExtraida::where('identificador', 'SN-S2')->value('estado'));
+    }
 }

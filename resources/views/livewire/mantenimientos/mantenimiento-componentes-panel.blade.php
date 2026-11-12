@@ -54,6 +54,6 @@
             </div>
         </div>
     @empty
-        <p class="text-sm text-gray-400 dark:text-cerberus-steel text-center py-4">No se han pedido componentes.</p>
+        <p class="text-sm text-gray-400 dark:text-cerberus-steel text-center py-4">Todavía no se ha usado nada del almacén en este caso.</p>
     @endforelse
 </div>

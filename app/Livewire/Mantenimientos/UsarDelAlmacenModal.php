@@ -55,6 +55,8 @@ class UsarDelAlmacenModal extends Component
     public string $instanciaId       = '';
     public string $destinoSaliente   = PiezaExtraida::ESTADO_EN_ALMACEN;
     public string $depositoSaliente  = '';
+    /** Serial de la pieza que sale al reemplazar (opcional: si se conoce). */
+    public string $serialSaliente    = '';
 
     #[On('openUsarDelAlmacen')]
     public function abrir(int $mantenimientoId): void
@@ -63,7 +65,7 @@ class UsarDelAlmacenModal extends Component
         $this->authorize('update', $m);
 
         $this->mantenimientoId = $m->id;
-        $this->reset(['familiaId', 'componenteId', 'nuevoNombre', 'valores', 'piezaId', 'instanciaId', 'depositoSaliente']);
+        $this->reset(['familiaId', 'componenteId', 'nuevoNombre', 'valores', 'piezaId', 'instanciaId', 'depositoSaliente', 'serialSaliente']);
         $this->cantidad = 1;
         $this->modo = SustitucionPiezaService::MODO_AGREGAR;
         $this->destinoSaliente = PiezaExtraida::ESTADO_EN_ALMACEN;
@@ -233,6 +235,7 @@ class UsarDelAlmacenModal extends Component
                         $pieza, $m->equipo, $this->modo, Auth::user(), $m,
                         $this->instanciaId !== '' ? (int) $this->instanciaId : null,
                         $this->destinoSaliente, $deposito,
+                        mb_substr(trim($this->serialSaliente), 0, 100) ?: null,
                     );
                     $msg = "«{$pieza->descripcion()}» instalada y la ficha del equipo actualizada.";
                 } else {

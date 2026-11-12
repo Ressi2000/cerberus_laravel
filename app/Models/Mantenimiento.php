@@ -694,7 +694,7 @@ class Mantenimiento extends Model
             ]);
 
             if ($hayStock) {
-                $this->consumirDelAlmacen($componente, $cantidad, $actor);
+                $this->anotarPiezas($item, $this->consumirDelAlmacen($componente, $cantidad, $actor));
             }
 
             $this->recalcularEsperandoComponente();
@@ -770,13 +770,15 @@ class Mantenimiento extends Model
         }
 
         DB::transaction(function () use ($item, $componente, $actor) {
-            $this->consumirDelAlmacen($componente, $item->cantidad_requerida, $actor);
+            $piezas = $this->consumirDelAlmacen($componente, $item->cantidad_requerida, $actor);
 
             $item->update([
                 'estado'           => 'Entregado',
                 'fecha_entrega'    => now()->toDateString(),
                 'entregado_por_id' => $actor->id,
             ]);
+
+            $this->anotarPiezas($item, $piezas);
 
             $this->recalcularEsperandoComponente();
         });
@@ -795,7 +797,7 @@ class Mantenimiento extends Model
      * ni siquiera ser de su categoría. Esas se instalan desde el panel de
      * Piezas (SustitucionPiezaService::instalar()).
      */
-    private function consumirDelAlmacen(ComponenteAlmacen $componente, int $cantidad, User $actor): void
+    private function consumirDelAlmacen(ComponenteAlmacen $componente, int $cantidad, User $actor): \Illuminate\Support\Collection
     {
         $piezas = $componente->piezasParaConsumo($cantidad);
 
@@ -812,6 +814,39 @@ class Mantenimiento extends Model
                 'equipo_relacionado_id' => $this->equipo_id,
                 'mantenimiento_id'      => $this->id,
                 'registrado_por'        => $actor->id,
+            ]);
+        }
+
+        return collect($piezas);
+    }
+
+    /**
+     * Deja en lo usado del caso CUÁLES piezas salieron (con su serial): un
+     * renglón por pieza. Si además salieron unidades sin serial, quedan en
+     * el renglón original con esa cantidad.
+     */
+    private function anotarPiezas(MantenimientoComponente $item, \Illuminate\Support\Collection $piezas): void
+    {
+        if ($piezas->isEmpty()) {
+            return;
+        }
+
+        $sinSerial = (int) $item->cantidad_requerida - $piezas->count();
+
+        if ($sinSerial > 0) {
+            $item->update(['cantidad_requerida' => $sinSerial]);
+        } else {
+            $item->update(['pieza_id' => $piezas->shift()->id, 'cantidad_requerida' => 1]);
+        }
+
+        foreach ($piezas as $pieza) {
+            $this->componentes()->create([
+                'componente_id'      => $item->componente_id,
+                'pieza_id'           => $pieza->id,
+                'cantidad_requerida' => 1,
+                'estado'             => $item->estado,
+                'fecha_entrega'      => $item->fecha_entrega,
+                'entregado_por_id'   => $item->entregado_por_id,
             ]);
         }
     }

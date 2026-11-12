@@ -46,7 +46,7 @@ class PiezaFichaModal extends Component
         }
 
         return PiezaExtraida::visiblePara(Auth::user())
-            ->with(['componenteAlmacen.familia', 'atributo', 'equipoOrigen', 'equipoDestino', 'deposito', 'extraidoPor', 'empresa'])
+            ->with(['componenteAlmacen.familia', 'atributo.familia', 'equipoOrigen', 'equipoDestino', 'deposito', 'extraidoPor', 'empresa'])
             ->find($this->piezaId);
     }
 

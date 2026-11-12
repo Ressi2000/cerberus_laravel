@@ -37,6 +37,8 @@ class MantenimientoPiezasPanel extends Component
     public string $retirarObservaciones = '';
     /** Si hay varias piezas idénticas instaladas, cuál sale (por su serial). */
     public string $retirarPiezaId      = '';
+    /** Serial de la pieza que sale, si no tenía uno registrado (opcional). */
+    public string $retirarSerial       = '';
 
     public function mount(int $mantenimientoId): void
     {
@@ -122,7 +124,7 @@ class MantenimientoPiezasPanel extends Component
             return;
         }
 
-        $this->reset(['retirarIndex', 'retirarDepositoId', 'retirarObservaciones', 'retirarPiezaId']);
+        $this->reset(['retirarIndex', 'retirarDepositoId', 'retirarObservaciones', 'retirarPiezaId', 'retirarSerial']);
         $this->retirarDestino = PiezaExtraida::ESTADO_EN_ALMACEN;
         $this->resetValidation();
         $this->retirarAbierto = true;
@@ -179,16 +181,17 @@ class MantenimientoPiezasPanel extends Component
             return;
         }
         $piezaId = $this->retirarPiezaId !== '' ? (int) $this->retirarPiezaId : null;
+        $serial  = mb_substr(trim($this->retirarSerial), 0, 100) ?: null;
 
         $servicio = app(SustitucionPiezaService::class);
 
         try {
             if ($candidato['tipo'] === 'grupo') {
                 $instancia = EquipoAtributoGrupoInstancia::findOrFail($candidato['grupo_instancia_id']);
-                $servicio->retirarDeGrupo($m->equipo, $instancia, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null, $piezaId);
+                $servicio->retirarDeGrupo($m->equipo, $instancia, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null, $piezaId, $serial);
             } else {
                 $atributo = AtributoEquipo::findOrFail($candidato['atributo_id']);
-                $servicio->retirar($m->equipo, $atributo, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null, $piezaId);
+                $servicio->retirar($m->equipo, $atributo, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null, $piezaId, $serial);
             }
 
             $this->dispatch('toast', type: 'success', message: "«{$candidato['descripcion']}» retirada del equipo.");

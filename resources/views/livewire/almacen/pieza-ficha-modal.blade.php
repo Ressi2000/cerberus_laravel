@@ -68,7 +68,7 @@
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                         <div>
                             <dt class="text-xs text-gray-500 dark:text-cerberus-light">Familia</dt>
-                            <dd class="text-gray-900 dark:text-white">{{ $pieza->componenteAlmacen?->familia?->nombre ?? 'Sin familia' }}</dd>
+                            <dd class="text-gray-900 dark:text-white">{{ $pieza->componenteAlmacen?->familia?->nombre ?? $pieza->atributo?->familia?->nombre ?? 'Sin familia' }}</dd>
                         </div>
                         <div>
                             <dt class="text-xs text-gray-500 dark:text-cerberus-light">Origen</dt>
