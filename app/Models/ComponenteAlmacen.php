@@ -108,6 +108,30 @@ class ComponenteAlmacen extends Model
     // ─────────────────────────────────────────────────────────────────────────
 
     /** ¿Se controla a granel (solo cantidad)? Sin familia se trata como por unidad. */
+    /**
+     * Ficha de esta variante ({id de campo de la familia => valor}): de una
+     * de sus piezas o, si todavía no tiene, de su nombre (ver
+     * FamiliaComponente::valoresDesdeNombre). Vacío si la familia no tiene
+     * ficha o la variante se creó con un nombre libre.
+     */
+    public function valoresFicha(): array
+    {
+        $familia = $this->familia;
+        if (! $familia?->tieneFicha()) {
+            return [];
+        }
+
+        $campos  = collect($familia->campos)->pluck('id');
+        $pieza   = $this->piezasExtraidas()->whereNotNull('valor_extraido')->latest('id')->first();
+        $valores = collect($pieza?->valor_extraido ?? [])->only($campos)->filter(fn ($v) => $v !== null && $v !== '');
+
+        if ($valores->isEmpty()) {
+            $valores = collect($familia->valoresDesdeNombre($this->nombre));
+        }
+
+        return $valores->map(fn ($v) => (string) $v)->all();
+    }
+
     public function esAGranel(): bool
     {
         return (bool) $this->familia?->esAGranel();

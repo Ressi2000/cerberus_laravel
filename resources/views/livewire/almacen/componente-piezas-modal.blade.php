@@ -124,6 +124,14 @@
 
                     {{-- EN STOCK --}}
                     @else
+                    @if ($this->piezas->isNotEmpty())
+                        <div class="flex justify-end">
+                            <a href="{{ route('admin.almacen.etiquetas', ['componente' => $this->componente->id]) }}" target="_blank"
+                                class="inline-flex items-center gap-1 text-sm text-cerberus-primary dark:text-cerberus-accent hover:underline">
+                                <span class="material-icons text-base">print</span> Imprimir etiquetas ({{ $this->piezas->count() }})
+                            </a>
+                        </div>
+                    @endif
                     @forelse ($this->piezas as $pieza)
                         <button type="button" wire:key="stock-{{ $pieza->id }}" wire:click="verPieza({{ $pieza->id }})"
                             class="w-full text-left bg-gray-50 dark:bg-cerberus-dark border border-gray-200 dark:border-cerberus-steel/50

@@ -152,14 +152,18 @@
                 </div>
 
                 <div class="flex justify-between gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel flex-shrink-0">
+                    <div class="flex items-center gap-4">
+                    <a href="{{ route('admin.almacen.etiquetas', ['piezas' => $pieza->id]) }}" target="_blank"
+                        class="text-sm text-cerberus-primary dark:text-cerberus-accent hover:underline flex items-center gap-1">
+                        <span class="material-icons text-base">print</span> Etiqueta
+                    </a>
                     @if ($pieza->componente_almacen_id)
                         <button wire:click="verVariante"
                             class="text-sm text-cerberus-primary dark:text-cerberus-accent hover:underline flex items-center gap-1">
                             <span class="material-icons text-base">history</span> Historial de la variante
                         </button>
-                    @else
-                        <span></span>
                     @endif
+                    </div>
                     <button wire:click="close"
                         class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30
                                text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-cerberus-steel/50 transition">

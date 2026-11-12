@@ -212,7 +212,10 @@ class AlmacenTable extends Component
         return PiezaExtraida::visiblePara(Auth::user())
             ->with(['componenteAlmacen', 'atributo', 'equipoDestino', 'deposito'])
             ->when($this->empresa_id, fn ($q) => $q->where('empresa_id', $this->empresa_id))
-            ->where('identificador', 'like', "%{$texto}%")
+            // El QR de una pieza sin serial dice "PIEZA-{n.º interno}".
+            ->where(fn ($q) => preg_match('/^PIEZA-(\d+)$/i', $texto, $m)
+                ? $q->whereKey((int) $m[1])
+                : $q->where('identificador', 'like', "%{$texto}%"))
             ->orderByRaw('identificador = ? desc', [$texto])
             ->latest('updated_at')
             ->limit(10)

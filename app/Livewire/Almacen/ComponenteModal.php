@@ -21,11 +21,13 @@ class ComponenteModal extends Component
     public string $unidad       = 'unidad';
     /** Familia a la que pertenece (obligatoria): RAM, Discos, Bisagras… */
     public string $familia_id   = '';
+    /** Ficha técnica (familias con ficha): el nombre de la variante sale de aquí. */
+    public array  $valores      = [];
 
     #[On('openComponenteCrear')]
     public function abrirCrear(?int $familiaId = null): void
     {
-        $this->reset(['componenteId', 'nombre', 'descripcion']);
+        $this->reset(['componenteId', 'nombre', 'descripcion', 'valores']);
         $this->familia_id = $familiaId ? (string) $familiaId : '';
         $this->unidad = 'unidad';
         $actor = Auth::user();
@@ -47,8 +49,51 @@ class ComponenteModal extends Component
         $this->descripcion  = $c->descripcion ?? '';
         $this->unidad       = $c->unidad;
         $this->familia_id   = (string) ($c->familia_id ?? '');
+        $this->valores      = $c->valoresFicha();
         $this->resetValidation();
         $this->open = true;
+    }
+
+    #[Computed]
+    public function familia(): ?FamiliaComponente
+    {
+        return $this->familia_id ? FamiliaComponente::find($this->familia_id) : null;
+    }
+
+    /**
+     * La familia tiene ficha y alguna categoría la usa: la variante se
+     * define llenando la ficha (el nombre sale solo), igual que al
+     * registrar una entrada. Así no quedan variantes con nombre libre
+     * ("RAM PRUEBA") que después no coinciden con la ficha.
+     */
+    #[Computed]
+    public function usaFicha(): bool
+    {
+        return (bool) ($this->familia?->tieneFicha() && $this->familia->atributoRepresentativo());
+    }
+
+    /** Nombre que tendrá la variante según su ficha. */
+    #[Computed]
+    public function nombreFicha(): ?string
+    {
+        if (! $this->usaFicha || collect($this->valores)->filter(fn ($v) => trim((string) $v) !== '')->isEmpty()) {
+            return null;
+        }
+
+        return $this->familia->atributoRepresentativo()->describirValor($this->valoresLimpios());
+    }
+
+    private function valoresLimpios(): array
+    {
+        return collect($this->familia?->campos ?? [])
+            ->mapWithKeys(fn ($c) => [$c['id'] => trim((string) ($this->valores[$c['id']] ?? '')) ?: null])
+            ->all();
+    }
+
+    public function updatedFamiliaId(): void
+    {
+        unset($this->familia, $this->usaFicha, $this->nombreFicha);
+        $this->valores = [];
     }
 
     /**
@@ -61,7 +106,7 @@ class ComponenteModal extends Component
     #[Computed]
     public function coincidencias()
     {
-        if (! $this->empresa_id || mb_strlen(trim($this->nombre)) < 2) {
+        if ($this->usaFicha || ! $this->empresa_id || mb_strlen(trim($this->nombre)) < 2) {
             return collect();
         }
 
@@ -125,13 +170,21 @@ class ComponenteModal extends Component
 
     protected function rules(): array
     {
-        return [
+        $rules = [
             'familia_id'  => 'required|exists:familias_componentes,id',
             'empresa_id'  => 'required|exists:empresas,id',
-            'nombre'      => 'required|string|max:150',
+            'nombre'      => $this->usaFicha ? 'nullable' : 'required|string|max:150',
             'descripcion' => 'nullable|string|max:500',
             'unidad'      => 'required|string|max:30',
         ];
+
+        if ($this->usaFicha) {
+            foreach ($this->familia->campos as $campo) {
+                $rules['valores.' . $campo['id']] = 'required|string|max:100';
+            }
+        }
+
+        return $rules;
     }
 
     protected function messages(): array
@@ -140,6 +193,7 @@ class ComponenteModal extends Component
             'empresa_id.required' => 'Debes seleccionar una empresa.',
             'familia_id.required' => 'Elige la familia (ej. RAM, Bisagras). Si no encaja en ninguna, usa «Otros».',
             'nombre.required'     => 'El nombre es obligatorio.',
+            'valores.*.required'  => 'Completa este campo de la ficha.',
         ];
     }
 
@@ -167,6 +221,21 @@ class ComponenteModal extends Component
 
         $this->validate();
 
+        if ($this->usaFicha) {
+            $this->nombre = $this->nombreFicha;
+
+            // La ficha define la variante: no puede haber dos con la misma.
+            $otra = ComponenteAlmacen::withTrashed()
+                ->where('empresa_id', $this->empresa_id)
+                ->where('nombre', $this->nombre)
+                ->when($this->componenteId, fn ($q) => $q->whereKeyNot($this->componenteId))
+                ->first();
+            if ($otra) {
+                $this->addError('valores', "Ya existe la variante «{$this->nombre}» en esta empresa: usa esa.");
+                return;
+            }
+        }
+
         try {
             $data = [
                 'nombre'      => trim($this->nombre),
@@ -178,6 +247,15 @@ class ComponenteModal extends Component
 
             if ($componente) {
                 $componente->update($data);
+
+                // Con ficha: las piezas que están en el almacén pasan a tener
+                // esa ficha (y quedan ligadas a la familia para poder instalarse).
+                if ($this->usaFicha) {
+                    $componente->piezasEnAlmacen()->update([
+                        'atributo_id'    => $familia->atributoRepresentativo()->id,
+                        'valor_extraido' => json_encode($this->valoresLimpios()),
+                    ]);
+                }
                 $msg = "Componente «{$this->nombre}» actualizado.";
 
                 // Cambio de familia: si es a granel, las piezas en almacén
@@ -210,7 +288,7 @@ class ComponenteModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['componenteId', 'empresa_id', 'nombre', 'descripcion', 'unidad']);
+        $this->reset(['componenteId', 'empresa_id', 'nombre', 'descripcion', 'unidad', 'valores']);
         $this->resetValidation();
     }
 

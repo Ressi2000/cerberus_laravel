@@ -206,6 +206,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         ->group(function () {
             Route::get('/', [AlmacenController::class, 'index'])->name('index');
             Route::get('/solicitudes', [AlmacenController::class, 'solicitudes'])->name('solicitudes');
+            Route::get('/etiquetas', [AlmacenController::class, 'etiquetas'])->name('etiquetas');
         });
 
     // Traslados

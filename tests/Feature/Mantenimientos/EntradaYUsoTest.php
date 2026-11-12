@@ -325,4 +325,141 @@ class EntradaYUsoTest extends TestCase
             ->assertSee('Hay en otras empresas')
             ->assertSee('Otra Empresa (4)');
     }
+
+    // ─── Variantes con ficha, usadas desde la ficha del equipo, etiquetas ──
+
+    /** @test */
+    public function una_variante_de_una_familia_con_ficha_se_crea_con_la_ficha_y_no_se_duplica(): void
+    {
+        $crear = fn () => Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\Almacen\ComponenteModal::class)
+            ->call('abrirCrear', $this->ram->id)
+            ->set('empresa_id', (string) $this->empresa->id)
+            ->set('valores.' . $this->campo('Capacidad (GB)'), '8')
+            ->set('valores.' . $this->campo('Tipo'), 'DDR4')
+            ->set('valores.' . $this->campo('Formato'), 'DIMM (escritorio)')
+            ->assertSee('Se llamará')
+            ->call('guardar');
+
+        $crear()->assertHasNoErrors();
+        $this->assertTrue(ComponenteAlmacen::where('nombre', 'RAM (Capacidad (GB): 8 / Tipo: DDR4 / Formato: DIMM (escritorio))')->exists());
+
+        $crear()->assertHasErrors('valores');
+        $this->assertSame(1, ComponenteAlmacen::where('familia_id', $this->ram->id)->count());
+    }
+
+    /** @test */
+    public function una_variante_creada_con_nombre_libre_se_arregla_poniendole_su_ficha(): void
+    {
+        $prueba = ComponenteAlmacen::create([
+            'empresa_id' => $this->empresa->id, 'familia_id' => $this->ram->id, 'nombre' => 'RAM PRUEBA',
+            'unidad' => 'unidad', 'stock_actual' => 0, 'activo' => true, 'creado_por' => $this->admin->id,
+        ]);
+        app(\App\Services\PiezaManualService::class)->registrar($prueba, 2, PiezaExtraida::CONDICION_NUEVO, $this->admin, seriales: ['P-1', 'P-2']);
+
+        Livewire::actingAs($this->admin)
+            ->test(\App\Livewire\Almacen\ComponenteModal::class)
+            ->call('abrirEditar', $prueba->id)
+            ->assertSee('se creó sin ficha')
+            ->set('valores.' . $this->campo('Capacidad (GB)'), '16')
+            ->set('valores.' . $this->campo('Tipo'), 'DDR5')
+            ->set('valores.' . $this->campo('Formato'), 'SO-DIMM (laptop)')
+            ->call('guardar')
+            ->assertHasNoErrors();
+
+        $prueba->refresh();
+        $this->assertSame('RAM (Capacidad (GB): 16 / Tipo: DDR5 / Formato: SO-DIMM (laptop))', $prueba->nombre);
+        $pieza = PiezaExtraida::where('identificador', 'P-1')->first();
+        $this->assertSame('DDR5', $pieza->valor_extraido[$this->campo('Tipo')]);
+        $this->assertNotNull($pieza->atributo_id, 'Ya se puede instalar actualizando la ficha.');
+    }
+
+    /** @test */
+    public function una_entrada_con_ficha_exige_la_ficha_completa(): void
+    {
+        Livewire::actingAs($this->admin)
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir')
+            ->set('empresa_id', (string) $this->empresa->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('valores.' . $this->campo('Capacidad (GB)'), '8')
+            ->call('guardar')
+            ->assertHasErrors(['valores.' . $this->campo('Tipo'), 'valores.' . $this->campo('Formato')]);
+
+        $this->assertSame(0, ComponenteAlmacen::count());
+    }
+
+    /** @test */
+    public function una_pieza_usada_se_toma_de_la_ficha_del_equipo_de_origen(): void
+    {
+        $caso = $this->crearCaso();
+        $equipo = $caso->equipo;
+        $ram = \App\Models\EquipoAtributoGrupoInstancia::create([
+            'equipo_id' => $equipo->id, 'atributo_id' => $this->ramLaptop->id,
+            'valores' => [$this->campo('Capacidad (GB)') => '4', $this->campo('Tipo') => 'DDR3', $this->campo('Formato') => 'SO-DIMM (laptop)'],
+            'orden' => 0, 'es_actual' => true, 'creado_por' => $this->admin->id,
+        ]);
+
+        $modal = Livewire::actingAs($this->admin)
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir')
+            ->set('empresa_id', (string) $this->empresa->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('condicion', PiezaExtraida::CONDICION_REUTILIZADO)
+            ->set('equipoOrigenId', (string) $equipo->id)
+            ->assertSee('¿Cuál salió de')
+            ->assertDontSee('Ficha técnica')
+            ->call('guardar')
+            ->assertHasErrors('instanciasOrigen')
+            ->set('instanciasOrigen', [$ram->id])
+            ->set('seriales', 'SN-DEL-EQUIPO')
+            ->call('guardar')
+            ->assertHasNoErrors()
+            ->assertSee('Imprimir etiquetas (1)');
+
+        $this->assertFalse($ram->fresh()->es_actual, 'Sale de la ficha del equipo.');
+        $pieza = PiezaExtraida::where('identificador', 'SN-DEL-EQUIPO')->firstOrFail();
+        $this->assertSame(PiezaExtraida::ESTADO_EN_ALMACEN, $pieza->estado);
+        $this->assertSame(PiezaExtraida::CONDICION_REUTILIZADO, $pieza->condicion);
+        $this->assertSame($equipo->id, (int) $pieza->equipo_origen_id);
+        $this->assertSame('RAM (Capacidad (GB): 4 / Tipo: DDR3 / Formato: SO-DIMM (laptop))', $pieza->componenteAlmacen->nombre);
+    }
+
+    /** @test */
+    public function no_se_puede_declarar_usada_una_pieza_que_el_equipo_no_tiene_en_su_ficha(): void
+    {
+        $equipo = $this->crearCaso()->equipo;
+
+        Livewire::actingAs($this->admin)
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir')
+            ->set('empresa_id', (string) $this->empresa->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('condicion', PiezaExtraida::CONDICION_REUTILIZADO)
+            ->set('equipoOrigenId', (string) $equipo->id)
+            ->assertSee('no tiene RAM')
+            ->call('guardar')
+            ->assertHasErrors('instanciasOrigen');
+
+        $this->assertSame(0, PiezaExtraida::count());
+    }
+
+    /** @test */
+    public function las_etiquetas_muestran_el_codigo_y_solo_de_la_propia_empresa(): void
+    {
+        $componente = $this->entrarRam('8', 'DDR4', "ETQ-1\nETQ-2");
+        $ids = PiezaExtraida::pluck('id')->implode(',');
+
+        $this->actingAs($this->admin)->get(route('admin.almacen.etiquetas', ['piezas' => $ids]))
+            ->assertOk()->assertSee('ETQ-1')->assertSee('ETQ-2')->assertSee('data:image/png;base64', false);
+        $this->actingAs($this->admin)->get(route('admin.almacen.etiquetas', ['componente' => $componente->id]))
+            ->assertOk()->assertSee('ETQ-2');
+
+        $otra = Empresa::create(['nombre' => 'Otra']);
+        $analista = User::factory()->create(['empresa_id' => $otra->id, 'empresa_activa_id' => $otra->id]);
+        $analista->assignRole('Analista');
+        $respuesta = $this->actingAs($analista)->get(route('admin.almacen.etiquetas', ['piezas' => $ids]));
+        $this->assertNotSame(200, $respuesta->status());
+        $respuesta->assertDontSee('ETQ-1');
+    }
 }
