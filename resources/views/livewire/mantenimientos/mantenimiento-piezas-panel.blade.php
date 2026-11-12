@@ -18,14 +18,25 @@
 
     {{-- ── Retirar pieza ────────────────────────────────────────────────── --}}
     @if ($retirarAbierto)
-        <div class="bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-4 mb-4 space-y-3">
-            <x-form.select
-                label="Pieza a retirar"
-                placeholder="Selecciona..."
-                :options="collect($this->candidatosRetiro)->pluck('descripcion')"
-                wire:model.live="retirarIndex"
-                :error="$errors->first('retirarIndex')"
-            />
+        <div class="bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-4 mb-4">
+          <div class="max-w-2xl space-y-3">
+            <div>
+                <p class="text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">Pieza a retirar</p>
+                <div class="space-y-1 rounded-lg border border-gray-200 dark:border-cerberus-steel/50 bg-white dark:bg-cerberus-dark p-1.5">
+                    @foreach ($this->candidatosRetiro as $i => $candidato)
+                        <label wire:key="retiro-{{ $i }}"
+                            @class([
+                                'flex items-center gap-2 text-sm rounded-md px-2 py-1.5 cursor-pointer transition',
+                                'bg-blue-50 dark:bg-cerberus-primary/20' => $retirarIndex === $i,
+                                'hover:bg-gray-50 dark:hover:bg-cerberus-steel/10' => $retirarIndex !== $i,
+                            ])>
+                            <input type="radio" value="{{ $i }}" wire:model.live="retirarIndex" class="text-cerberus-primary">
+                            <span class="text-gray-900 dark:text-white">{{ $candidato['descripcion'] }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('retirarIndex') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
 
             @if ($this->piezasDelRetiro->count() > 1)
                 <x-form.select
@@ -67,7 +78,8 @@
 
             <x-form.textarea label="Observaciones (opcional)" wire:model="retirarObservaciones" rows="2" />
 
-            <div class="flex justify-end gap-2">
+          </div>
+            <div class="flex justify-end gap-2 mt-3">
                 <button wire:click="cerrarRetirar" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
                     Cancelar
                 </button>

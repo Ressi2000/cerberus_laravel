@@ -107,6 +107,36 @@ class UsarDelAlmacenModal extends Component
             ->get();
     }
 
+    /**
+     * Si en la empresa del caso no hay nada de la familia, cuánto hay en las
+     * otras (cada empresa tiene su propio almacén). Solo para el
+     * Administrador: el Analista solo ve su empresa.
+     *
+     * @return array<string, int> nombre de empresa => unidades
+     */
+    #[Computed]
+    public function enOtrasEmpresas(): array
+    {
+        if (! $this->familia || ! $this->mantenimiento || ! Auth::user()->hasRole('Administrador')) {
+            return [];
+        }
+
+        if ($this->variantes->sum('stock_actual') > 0) {
+            return [];
+        }
+
+        return ComponenteAlmacen::with('empresa')
+            ->where('familia_id', $this->familia->id)
+            ->where('empresa_id', '!=', $this->mantenimiento->empresa_id)
+            ->where('activo', true)
+            ->where('stock_actual', '>', 0)
+            ->get()
+            ->groupBy(fn ($c) => $c->empresa->nombre ?? '—')
+            ->map(fn ($grupo) => (int) $grupo->sum('stock_actual'))
+            ->sortKeys()
+            ->all();
+    }
+
     #[Computed]
     public function componente(): ?ComponenteAlmacen
     {

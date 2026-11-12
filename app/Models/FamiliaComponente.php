@@ -110,6 +110,36 @@ class FamiliaComponente extends Model
     }
 
     /**
+     * Lo contrario de describirValor(): de "RAM (Capacidad (GB): 8 / Tipo:
+     * DDR3)" saca {id de Capacidad: 8, id de Tipo: DDR3}. Solo devuelve algo
+     * si al volver a describirlo da exactamente el mismo nombre (si un campo
+     * se renombró, no adivina).
+     */
+    public function valoresDesdeNombre(string $nombre): array
+    {
+        $prefijo = $this->nombre . ' (';
+        if (! str_starts_with($nombre, $prefijo) || ! str_ends_with($nombre, ')')) {
+            return [];
+        }
+
+        $porNombre = collect($this->campos ?? [])->keyBy('nombre');
+        $valores   = [];
+
+        foreach (explode(' / ', substr($nombre, strlen($prefijo), -1)) as $parte) {
+            [$campo, $valor] = array_pad(explode(': ', $parte, 2), 2, null);
+            if ($valor === null || ! $porNombre->has($campo)) {
+                return [];
+            }
+            $valores[$porNombre[$campo]['id']] = $valor;
+        }
+
+        // Mismo orden que la ficha, para que la descripción coincida.
+        $ordenados = collect($this->campos)->mapWithKeys(fn ($c) => [$c['id'] => $valores[$c['id']] ?? null])->filter()->all();
+
+        return $this->describirValor($ordenados) === $nombre ? $ordenados : [];
+    }
+
+    /**
      * Una característica de equipo que usa esta familia: las piezas que se
      * registran desde el almacén se ligan a ella para poder instalarse
      * después en cualquier categoría que use la familia.

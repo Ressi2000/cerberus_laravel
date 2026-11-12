@@ -49,6 +49,21 @@
                         @endif
                     </div>
 
+                    {{-- La familia no tiene nada en la empresa del caso, pero sí en otras --}}
+                    @if (! empty($this->enOtrasEmpresas))
+                        <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
+                                    bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300
+                                    border border-amber-200 dark:border-amber-500/30">
+                            <span class="material-icons text-sm">info</span>
+                            <span>
+                                En <b>{{ $this->mantenimiento->empresa->nombre ?? 'esta empresa' }}</b> no hay {{ $this->familia->nombre }} en el almacén.
+                                Hay en otras empresas:
+                                {{ collect($this->enOtrasEmpresas)->map(fn ($n, $empresa) => "{$empresa} ({$n})")->implode(', ') }}.
+                                Cada empresa tiene su propio almacén: para usarlas aquí, primero hay que darles entrada en el almacén de esta empresa.
+                            </span>
+                        </div>
+                    @endif
+
                     {{-- Solicitar una variante que no existe --}}
                     @if ($this->familia && $componenteId === 'nueva')
                         <div class="space-y-2 p-3 rounded-lg border border-purple-200 dark:border-purple-500/30 bg-purple-50/60 dark:bg-purple-500/10">

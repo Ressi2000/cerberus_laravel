@@ -274,4 +274,55 @@ class EntradaYUsoTest extends TestCase
         $this->assertSame($this->pantallas->id, $variante->familia_id);
         $this->assertSame('Pendiente', $caso->componentes()->first()->estado);
     }
+
+    /** @test */
+    public function al_dar_entrada_a_lo_solicitado_la_ficha_viene_llena(): void
+    {
+        $caso = $this->crearCaso();
+
+        Livewire::actingAs($this->admin)
+            ->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('componenteId', 'nueva')
+            ->set('valores.' . $this->campo('Capacidad (GB)'), '8')
+            ->set('valores.' . $this->campo('Tipo'), 'DDR3')
+            ->set('valores.' . $this->campo('Formato'), 'SO-DIMM (laptop)')
+            ->set('cantidad', 1)
+            ->call('solicitar')
+            ->assertHasNoErrors();
+
+        $variante = ComponenteAlmacen::where('familia_id', $this->ram->id)->firstOrFail();
+
+        Livewire::actingAs($this->admin)
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir', $variante->id)
+            ->assertSet('valores.' . $this->campo('Capacidad (GB)'), '8')
+            ->assertSet('valores.' . $this->campo('Tipo'), 'DDR3')
+            ->assertSet('valores.' . $this->campo('Formato'), 'SO-DIMM (laptop)')
+            ->set('seriales', 'SN-DDR3')
+            ->call('guardar')
+            ->assertHasNoErrors();
+
+        $this->assertSame(1, $variante->fresh()->stock_actual, 'Cae en la misma variante solicitada.');
+        $this->assertSame(1, ComponenteAlmacen::where('familia_id', $this->ram->id)->count());
+    }
+
+    /** @test */
+    public function avisa_si_lo_que_se_busca_esta_en_el_almacen_de_otra_empresa(): void
+    {
+        $otra = Empresa::create(['nombre' => 'Otra Empresa']);
+        $bisagra = ComponenteAlmacen::create([
+            'empresa_id' => $otra->id, 'familia_id' => $this->bisagras->id, 'nombre' => 'Bisagra HP 14"',
+            'unidad' => 'unidad', 'stock_actual' => 0, 'activo' => true, 'creado_por' => $this->admin->id,
+        ]);
+        $bisagra->registrarEntrada(4, $this->admin);
+
+        Livewire::actingAs($this->admin)
+            ->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $this->crearCaso()->id)
+            ->set('familiaId', (string) $this->bisagras->id)
+            ->assertSee('Hay en otras empresas')
+            ->assertSee('Otra Empresa (4)');
+    }
 }

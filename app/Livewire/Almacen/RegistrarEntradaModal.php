@@ -314,11 +314,27 @@ class RegistrarEntradaModal extends Component
     }
 
     /** Valores de ficha de una variante existente (de cualquiera de sus piezas). */
+    /**
+     * Ficha de una variante, para no tener que volver a escribirla (ej. al
+     * dar entrada a lo que se solicitó desde un caso): de una de sus piezas
+     * o, si todavía no tiene, de su nombre (ver FamiliaComponente::valoresDesdeNombre).
+     */
     private function valoresDeVariante(ComponenteAlmacen $componente): array
     {
-        $valor = PiezaExtraida::where('componente_almacen_id', $componente->id)->whereNotNull('valor_extraido')->value('valor_extraido');
+        $familia = $componente->familia;
+        if (! $familia?->tieneFicha()) {
+            return [];
+        }
 
-        return is_array($valor) ? array_map(fn ($v) => (string) $v, $valor) : [];
+        $campos = collect($familia->campos)->pluck('id');
+        $pieza  = PiezaExtraida::where('componente_almacen_id', $componente->id)->whereNotNull('valor_extraido')->latest('id')->first();
+        $valores = collect($pieza?->valor_extraido ?? [])->only($campos)->filter(fn ($v) => $v !== null && $v !== '');
+
+        if ($valores->isEmpty()) {
+            $valores = collect($familia->valoresDesdeNombre($componente->nombre));
+        }
+
+        return $valores->map(fn ($v) => (string) $v)->all();
     }
 
     public function render()
