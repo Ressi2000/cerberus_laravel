@@ -192,6 +192,19 @@
                                     </div>
                                 @endif
                             </div>
+                        @elseif ($this->pieza && $this->familia?->tieneFicha())
+                            {{-- La familia tiene ficha pero la categoría del equipo no la usa todavía --}}
+                            <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
+                                        bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300
+                                        border border-amber-200 dark:border-amber-500/30">
+                                <span class="material-icons text-sm">warning</span>
+                                <span>
+                                    La categoría <b>{{ $m->equipo->categoria->nombre ?? 'del equipo' }}</b> no tiene ninguna característica vinculada a la familia
+                                    <b>{{ $this->familia->nombre }}</b>, así que la ficha del equipo <b>no se va a actualizar</b>.
+                                    Si el equipo tiene {{ $this->familia->nombre }} en su ficha, vincúlala primero en
+                                    Configuración → Atributos → «Vincular a una familia». Si la usas igual, queda instalada y luego se puede retirar desde «Piezas del equipo».
+                                </span>
+                            </div>
                         @elseif ($this->pieza)
                             <p class="text-xs text-gray-500 dark:text-cerberus-light flex items-center gap-1.5">
                                 <span class="material-icons text-sm">info</span>

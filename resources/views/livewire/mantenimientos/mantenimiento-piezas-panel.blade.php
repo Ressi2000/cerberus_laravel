@@ -52,7 +52,9 @@
                 </p>
             @endif
 
-            @if ($retirarIndex !== null && ! $this->piezasDelRetiro->contains(fn ($p) => $p->identificador))
+            @if ($retirarIndex !== null
+                && ($this->candidatosRetiro[$retirarIndex]['tipo'] ?? null) !== 'pieza'
+                && ! $this->piezasDelRetiro->contains(fn ($p) => $p->identificador))
                 <x-form.input label="Serial (opcional)" wire:model="retirarSerial" placeholder="Si lo tiene a la vista" />
             @endif
 

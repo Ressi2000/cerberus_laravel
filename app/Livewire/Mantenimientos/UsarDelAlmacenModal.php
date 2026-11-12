@@ -78,7 +78,7 @@ class UsarDelAlmacenModal extends Component
     #[Computed]
     public function mantenimiento(): ?Mantenimiento
     {
-        return $this->mantenimientoId ? Mantenimiento::with('equipo')->find($this->mantenimientoId) : null;
+        return $this->mantenimientoId ? Mantenimiento::with(['equipo.categoria', 'empresa'])->find($this->mantenimientoId) : null;
     }
 
     #[Computed]

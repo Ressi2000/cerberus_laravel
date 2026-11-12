@@ -337,4 +337,65 @@ class TrazaPiezasTest extends TestCase
         $this->assertSame(1, $componente->fresh()->stock_actual);
         $this->assertSame(PiezaExtraida::ESTADO_EN_ALMACEN, PiezaExtraida::where('identificador', 'SN-S2')->value('estado'));
     }
+
+    /** @test */
+    public function una_pieza_que_no_esta_en_la_ficha_tambien_se_puede_retirar(): void
+    {
+        $pantallas = FamiliaComponente::create(['nombre' => 'Pantallas', 'control' => 'unidad', 'campos' => []]);
+        $variante = ComponenteAlmacen::create([
+            'empresa_id' => $this->empresa->id, 'familia_id' => $pantallas->id, 'nombre' => 'Pantalla 14" HD',
+            'unidad' => 'unidad', 'stock_actual' => 0, 'activo' => true, 'creado_por' => $this->admin->id,
+        ]);
+        $pieza = app(\App\Services\PiezaManualService::class)
+            ->registrar($variante, 1, PiezaExtraida::CONDICION_NUEVO, $this->admin, seriales: ['PAN-77'])->first();
+        $caso = $this->crearCaso();
+        $caso->usarPieza($pieza, $this->admin);
+        $this->assertSame(0, $variante->fresh()->stock_actual);
+
+        $panel = Livewire::actingAs($this->admin)->test(MantenimientoPiezasPanel::class, ['mantenimientoId' => $caso->id]);
+        $indice = collect($panel->instance()->candidatosRetiro)->search(fn ($c) => $c['pieza_id'] === $pieza->id);
+        $this->assertNotFalse($indice, 'La pantalla aparece para retirar.');
+
+        $panel->call('abrirRetirar')
+            ->assertSee('Serial PAN-77')
+            ->set('retirarIndex', $indice)
+            ->set('retirarDestino', PiezaExtraida::ESTADO_EN_ALMACEN)
+            ->call('retirar')
+            ->assertHasNoErrors();
+
+        $pieza->refresh();
+        $this->assertSame(PiezaExtraida::ESTADO_EN_ALMACEN, $pieza->estado);
+        $this->assertSame(PiezaExtraida::CONDICION_REUTILIZADO, $pieza->condicion);
+        $this->assertSame(1, $variante->fresh()->stock_actual);
+        $this->assertSame(PiezaExtraidaMovimiento::TIPO_DESINSTALACION, $pieza->movimientos()->reorder()->orderByDesc('id')->skip(1)->value('tipo'));
+    }
+
+    /** @test */
+    public function avisa_si_la_categoria_del_equipo_no_tiene_la_familia_vinculada(): void
+    {
+        $componente = $this->entrarRam('SN-SIN-VINCULO');
+        $pieza = PiezaExtraida::where('identificador', 'SN-SIN-VINCULO')->firstOrFail();
+
+        // Un Desktop cuya RAM todavía no usa la familia.
+        $desktop = CategoriaEquipo::create(['nombre' => 'Desktop']);
+        AtributoEquipo::create(['categoria_id' => $desktop->id, 'nombre' => 'RAM (GB)', 'slug' => 'ram-gb', 'tipo' => 'group', 'reutilizable' => true]);
+        $equipo = Equipo::forceCreate([
+            'empresa_id' => $this->empresa->id, 'categoria_id' => $desktop->id,
+            'estado_id' => EstadoEquipo::where('nombre', 'En reparación')->value('id'),
+            'codigo_interno' => 'EQ-DSK', 'activo' => true,
+        ]);
+        $caso = Mantenimiento::create([
+            'empresa_id' => $this->empresa->id, 'equipo_id' => $equipo->id, 'tipo' => 'Correctivo',
+            'estado' => 'En reparación', 'reportado_por_id' => $this->admin->id, 'fecha_inicio' => now()->toDateString(),
+        ]);
+
+        Livewire::actingAs($this->admin)
+            ->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('componenteId', (string) $componente->id)
+            ->set('piezaId', (string) $pieza->id)
+            ->assertSee('no se va a actualizar')
+            ->assertDontSee('Ficha del equipo');
+    }
 }

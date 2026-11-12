@@ -125,6 +125,38 @@ class SustitucionPiezaService
         );
     }
 
+    /** Retira del equipo una pieza del almacén que no está en su ficha (ver ExtraccionPiezaService::retirarPiezaInstalada). */
+    public function retirarPieza(
+        PiezaExtraida $pieza,
+        Equipo $equipo,
+        string $destino,
+        User $actor,
+        ?Deposito $deposito = null,
+        ?Mantenimiento $mantenimiento = null,
+        ?string $observaciones = null,
+    ): PiezaExtraida {
+        return $this->extraccion->retirarPiezaInstalada(
+            $pieza, $equipo, $destino, $actor,
+            $this->motivoSegunMantenimiento($mantenimiento), $deposito, $mantenimiento, $observaciones,
+        );
+    }
+
+    /**
+     * Las piezas del almacén instaladas en el equipo que NO están en su
+     * ficha (por eso no salen al retirar una característica): sin
+     * característica, o cuya familia no está vinculada en esta categoría.
+     */
+    public function piezasFueraDeFicha(Equipo $equipo)
+    {
+        return PiezaExtraida::where('equipo_destino_id', $equipo->id)
+            ->where('estado', PiezaExtraida::ESTADO_INSTALADA)
+            ->with(['atributo', 'componenteAlmacen'])
+            ->orderBy('id')
+            ->get()
+            ->filter(fn (PiezaExtraida $p) => $this->atributoDestino($p, $equipo) === null)
+            ->values();
+    }
+
     /**
      * Mismo retiro de pieza, pero el motivo que queda en el historial
      * depende del tipo de caso — un Preventivo no es una reparación, así

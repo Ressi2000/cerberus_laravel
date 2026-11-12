@@ -109,33 +109,41 @@
                         @if ($this->recorrido->isEmpty())
                             <p class="text-sm text-gray-400 dark:text-cerberus-steel">Esta pieza no tiene movimientos registrados.</p>
                         @else
-                            <ol class="relative border-s border-gray-200 dark:border-cerberus-steel/60 ms-3 space-y-4">
+                            <ol>
                                 @foreach ($this->recorrido as $mov)
-                                    <li wire:key="rec-{{ $mov->id }}" class="ms-6">
-                                        <span class="absolute -start-3 flex items-center justify-center w-6 h-6 rounded-full
-                                                     bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel">
-                                            <span class="material-icons text-sm text-cerberus-accent">{{ $iconoMovimiento[$mov->tipo] ?? 'circle' }}</span>
-                                        </span>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                                            {{ $mov->labelTipo() }}
-                                            @if ($mov->equipoRelacionado)
-                                                · <a href="{{ route('admin.equipos.show', $mov->equipoRelacionado) }}" wire:navigate
-                                                     class="text-cerberus-primary dark:text-cerberus-accent hover:underline">{{ $mov->equipoRelacionado->codigo_interno }}</a>
+                                    <li wire:key="rec-{{ $mov->id }}" class="flex gap-3">
+                                        {{-- Ícono y la línea que lo une con el siguiente paso --}}
+                                        <div class="flex flex-col items-center flex-shrink-0">
+                                            <span class="flex items-center justify-center w-7 h-7 rounded-full
+                                                         bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel">
+                                                <span class="material-icons text-sm text-cerberus-accent">{{ $iconoMovimiento[$mov->tipo] ?? 'circle' }}</span>
+                                            </span>
+                                            @unless ($loop->last)
+                                                <span class="w-px flex-1 bg-gray-200 dark:bg-cerberus-steel/60"></span>
+                                            @endunless
+                                        </div>
+                                        <div class="min-w-0 pb-4 pt-0.5">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                                {{ $mov->labelTipo() }}
+                                                @if ($mov->equipoRelacionado)
+                                                    · <a href="{{ route('admin.equipos.show', $mov->equipoRelacionado) }}" wire:navigate
+                                                         class="text-cerberus-primary dark:text-cerberus-accent hover:underline">{{ $mov->equipoRelacionado->codigo_interno }}</a>
+                                                @endif
+                                                @if ($mov->depositoRelacionado)
+                                                    · {{ $mov->depositoRelacionado->nombre }}
+                                                @endif
+                                                @if ($mov->mantenimiento)
+                                                    · <a href="{{ route('admin.mantenimientos.show', $mov->mantenimiento) }}" wire:navigate
+                                                         class="text-cerberus-primary dark:text-cerberus-accent hover:underline">Caso #{{ $mov->mantenimiento->id }}</a>
+                                                @endif
+                                            </p>
+                                            <p class="text-xs text-gray-500 dark:text-cerberus-light">
+                                                {{ $mov->created_at->format('d/m/Y H:i') }} · {{ $mov->registradoPor?->name ?? 'Sistema' }}
+                                            </p>
+                                            @if ($mov->observaciones)
+                                                <p class="text-xs text-gray-400 dark:text-cerberus-steel italic mt-0.5">{{ $mov->observaciones }}</p>
                                             @endif
-                                            @if ($mov->depositoRelacionado)
-                                                · {{ $mov->depositoRelacionado->nombre }}
-                                            @endif
-                                            @if ($mov->mantenimiento)
-                                                · <a href="{{ route('admin.mantenimientos.show', $mov->mantenimiento) }}" wire:navigate
-                                                     class="text-cerberus-primary dark:text-cerberus-accent hover:underline">Caso #{{ $mov->mantenimiento->id }}</a>
-                                            @endif
-                                        </p>
-                                        <p class="text-xs text-gray-500 dark:text-cerberus-light">
-                                            {{ $mov->created_at->format('d/m/Y H:i') }} · {{ $mov->registradoPor?->name ?? 'Sistema' }}
-                                        </p>
-                                        @if ($mov->observaciones)
-                                            <p class="text-xs text-gray-400 dark:text-cerberus-steel italic mt-0.5">{{ $mov->observaciones }}</p>
-                                        @endif
+                                        </div>
                                     </li>
                                 @endforeach
                             </ol>

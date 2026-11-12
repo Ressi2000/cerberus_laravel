@@ -296,6 +296,86 @@ class ExtraccionPiezaService
     }
 
     /**
+     * Saca de un equipo una pieza que entró desde el almacén y que NO está
+     * en su ficha (ej. una pantalla, o una RAM instalada cuando la
+     * característica de la categoría todavía no estaba vinculada a la
+     * familia). Sigue siendo la misma pieza: vuelve al almacén (a su
+     * variante) o va a un depósito, y se agrega a su recorrido.
+     */
+    public function retirarPiezaInstalada(
+        PiezaExtraida $pieza,
+        Equipo $equipo,
+        string $destino,
+        User $actor,
+        string $motivo,
+        ?Deposito $deposito = null,
+        ?Mantenimiento $mantenimiento = null,
+        ?string $observaciones = null,
+    ): PiezaExtraida {
+        if (! in_array($destino, [PiezaExtraida::ESTADO_EN_ALMACEN, PiezaExtraida::ESTADO_EN_DEPOSITO], true)) {
+            throw new \InvalidArgumentException("Destino inválido: {$destino}");
+        }
+
+        if ($destino === PiezaExtraida::ESTADO_EN_DEPOSITO
+            && (! $deposito || (int) $deposito->empresa_id !== (int) $equipo->empresa_id)) {
+            throw new \InvalidArgumentException('Indica un depósito de la misma empresa que el equipo.');
+        }
+
+        return DB::transaction(function () use ($pieza, $equipo, $destino, $actor, $motivo, $deposito, $mantenimiento, $observaciones) {
+            $pieza = PiezaExtraida::lockForUpdate()->findOrFail($pieza->id);
+
+            if ($pieza->estado !== PiezaExtraida::ESTADO_INSTALADA || (int) $pieza->equipo_destino_id !== (int) $equipo->id) {
+                throw new \InvalidArgumentException('Esa pieza ya no está instalada en este equipo.');
+            }
+
+            $vaAlmacen  = $destino === PiezaExtraida::ESTADO_EN_ALMACEN;
+            $componente = $pieza->componenteAlmacen()->withTrashed()->first();
+
+            if ($vaAlmacen) {
+                if (! $componente) {
+                    throw new \InvalidArgumentException('Esta pieza ya no tiene variante en el almacén: envíala a un depósito.');
+                }
+                if ($componente->trashed()) {
+                    $componente->restore();
+                }
+                if (! $componente->activo) {
+                    $componente->update(['activo' => true]);
+                }
+                $componente->registrarEntrada(1, $actor, 'Retirada de un equipo', $observaciones);
+            }
+
+            $pieza->update([
+                'equipo_origen_id'  => $equipo->id,
+                'equipo_destino_id' => null,
+                'reutilizable'      => $vaAlmacen,
+                'condicion'         => PiezaExtraida::CONDICION_REUTILIZADO,
+                'estado'            => $destino,
+                'deposito_id'       => $vaAlmacen ? null : $deposito->id,
+                'mantenimiento_id'  => $mantenimiento?->id,
+                'motivo'            => $motivo,
+                'extraido_por'      => $actor->id,
+                'observaciones'     => $observaciones ?? $pieza->observaciones,
+            ]);
+
+            $pieza->movimientos()->create([
+                'tipo'                  => PiezaExtraidaMovimiento::TIPO_DESINSTALACION,
+                'equipo_relacionado_id' => $equipo->id,
+                'mantenimiento_id'      => $mantenimiento?->id,
+                'registrado_por'        => $actor->id,
+                'observaciones'         => $observaciones,
+            ]);
+
+            $pieza->movimientos()->create([
+                'tipo'                    => $vaAlmacen ? PiezaExtraidaMovimiento::TIPO_INGRESO_ALMACEN : PiezaExtraidaMovimiento::TIPO_ENVIO_DEPOSITO,
+                'deposito_relacionado_id' => $vaAlmacen ? null : $deposito->id,
+                'registrado_por'          => $actor->id,
+            ]);
+
+            return $pieza;
+        });
+    }
+
+    /**
      * Piezas instaladas en este equipo que podrían ser la que sale: de la
      * misma característica (o de la misma familia) y con sus valores de
      * ficha. Si hay varias idénticas (dos RAM iguales), quien retira

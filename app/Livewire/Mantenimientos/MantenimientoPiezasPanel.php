@@ -60,15 +60,29 @@ class MantenimientoPiezasPanel extends Component
     #[Computed]
     public function candidatosRetiro(): array
     {
-        return app(ExtraccionPiezaService::class)->candidatos($this->mantenimiento->equipo)
+        $equipo = $this->mantenimiento->equipo;
+
+        $deLaFicha = app(ExtraccionPiezaService::class)->candidatos($equipo)
             ->map(fn ($c) => [
                 'tipo'               => $c['tipo'],
                 'atributo_id'        => $c['atributo']->id,
                 'grupo_instancia_id' => $c['grupoInstancia']?->id,
+                'pieza_id'           => null,
                 'descripcion'        => $c['descripcion'],
-            ])
-            ->values()
-            ->toArray();
+            ]);
+
+        // Piezas del almacén instaladas que no están en la ficha (pantallas,
+        // teclados… o lo instalado antes de vincular la familia).
+        $fueraDeFicha = app(SustitucionPiezaService::class)->piezasFueraDeFicha($equipo)
+            ->map(fn (PiezaExtraida $p) => [
+                'tipo'               => 'pieza',
+                'atributo_id'        => null,
+                'grupo_instancia_id' => null,
+                'pieza_id'           => $p->id,
+                'descripcion'        => ($p->componenteAlmacen?->nombre ?? $p->descripcion()) . ' · ' . $p->codigo(),
+            ]);
+
+        return $deLaFicha->concat($fueraDeFicha)->values()->toArray();
     }
 
     /**
@@ -79,7 +93,7 @@ class MantenimientoPiezasPanel extends Component
     public function piezasDelRetiro()
     {
         $candidato = $this->retirarIndex !== null ? ($this->candidatosRetiro[$this->retirarIndex] ?? null) : null;
-        if (! $candidato) {
+        if (! $candidato || $candidato['tipo'] === 'pieza') {
             return collect();
         }
 
@@ -186,7 +200,11 @@ class MantenimientoPiezasPanel extends Component
         $servicio = app(SustitucionPiezaService::class);
 
         try {
-            if ($candidato['tipo'] === 'grupo') {
+            if ($candidato['tipo'] === 'pieza') {
+                // Solo una pieza instalada en ESTE equipo (el índice llega del navegador).
+                $pieza = PiezaExtraida::where('equipo_destino_id', $m->equipo_id)->findOrFail($candidato['pieza_id']);
+                $servicio->retirarPieza($pieza, $m->equipo, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null);
+            } elseif ($candidato['tipo'] === 'grupo') {
                 $instancia = EquipoAtributoGrupoInstancia::findOrFail($candidato['grupo_instancia_id']);
                 $servicio->retirarDeGrupo($m->equipo, $instancia, $this->retirarDestino, Auth::user(), $deposito, $m, $this->retirarObservaciones ?: null, $piezaId, $serial);
             } else {
