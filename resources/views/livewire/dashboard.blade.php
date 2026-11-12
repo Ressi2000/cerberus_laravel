@@ -309,6 +309,133 @@
     </div>
 
     {{-- ══════════════════════════════════════════════════════════════
+         TALLER Y ALMACÉN (Administrador y Analista)
+    ══════════════════════════════════════════════════════════════════ --}}
+    @if ($taller)
+        <div class="mb-6">
+            <div class="flex items-center gap-2 mb-3">
+                <span class="material-icons text-cerberus-accent text-lg">build</span>
+                <h2 class="text-base font-semibold text-gray-900 dark:text-white">Taller y almacén</h2>
+            </div>
+
+            {{-- Indicadores --}}
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                <a href="{{ route('admin.mantenimientos.index') }}"
+                   class="bg-cerberus-mid border border-cerberus-steel rounded-xl p-4 shadow-cerberus hover:border-cerberus-light/40 transition-colors">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-icons text-orange-400 text-xl">handyman</span>
+                        <p class="text-cerberus-accent text-xs">Reparaciones abiertas</p>
+                    </div>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ $taller['reparacionesAbiertas'] }}</p>
+                    <p class="text-xs text-cerberus-steel mt-1">+ {{ $taller['preventivosAbiertos'] }} preventivo(s) en curso</p>
+                </a>
+
+                <a href="{{ route('admin.almacen.solicitudes') }}"
+                   class="bg-cerberus-mid border rounded-xl p-4 shadow-cerberus hover:border-cerberus-light/40 transition-colors
+                          {{ $taller['casosEsperando']->isNotEmpty() ? 'border-purple-500/50' : 'border-cerberus-steel' }}">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-icons text-purple-400 text-xl">hourglass_empty</span>
+                        <p class="text-cerberus-accent text-xs">Casos esperando pieza</p>
+                    </div>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ $taller['casosEsperando']->count() }}</p>
+                    <p class="text-xs text-cerberus-steel mt-1">{{ $taller['solicitudesPendientes'] }} solicitud(es) pendiente(s)</p>
+                </a>
+
+                <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl p-4 shadow-cerberus">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-icons text-emerald-400 text-xl">timer</span>
+                        <p class="text-cerberus-accent text-xs">Tiempo promedio de reparación</p>
+                    </div>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">
+                        @if ($taller['diasPromedio'] === null)
+                            —
+                        @elseif ($taller['diasPromedio'] < 1)
+                            &lt; 1 <span class="text-base font-medium text-cerberus-accent">día</span>
+                        @else
+                            {{ $taller['diasPromedio'] }} <span class="text-base font-medium text-cerberus-accent">días</span>
+                        @endif
+                    </p>
+                    <p class="text-xs text-cerberus-steel mt-1">{{ $taller['cerrados90'] }} caso(s) cerrado(s) en 90 días</p>
+                </div>
+
+                <a href="{{ route('admin.almacen.index') }}"
+                   class="bg-cerberus-mid border border-cerberus-steel rounded-xl p-4 shadow-cerberus hover:border-cerberus-light/40 transition-colors">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="material-icons text-blue-400 text-xl">inventory_2</span>
+                        <p class="text-cerberus-accent text-xs">Piezas en el almacén</p>
+                    </div>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white">{{ number_format($taller['piezasEnAlmacen']) }}</p>
+                    <p class="text-xs text-cerberus-steel mt-1">con serial o código, listas para usar</p>
+                </a>
+            </div>
+
+            {{-- Listas --}}
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+                {{-- Esperando pieza --}}
+                <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus p-4">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Frenados por falta de pieza</h3>
+                    <p class="text-xs text-cerberus-steel mb-3">El que más lleva esperando, primero.</p>
+                    @forelse ($taller['casosEsperando']->take(5) as $caso)
+                        <a href="{{ route('admin.mantenimientos.show', $caso) }}" wire:navigate
+                           class="flex items-start justify-between gap-3 py-2 border-b border-cerberus-steel/40 last:border-0 hover:bg-cerberus-dark/40 rounded px-1">
+                            <div class="min-w-0">
+                                <p class="text-sm text-gray-900 dark:text-white">Caso #{{ $caso->id }} · {{ $caso->equipo?->codigo_interno }}</p>
+                                <p class="text-xs text-cerberus-accent truncate">{{ $caso->componentesPendientes->map(fn ($p) => $p->componente?->nombre)->filter()->implode(', ') }}</p>
+                            </div>
+                            <span class="text-xs whitespace-nowrap {{ $caso->dias_esperando >= 7 ? 'text-red-400' : 'text-purple-300' }}">
+                                {{ $caso->dias_esperando === 0 ? 'hoy' : $caso->dias_esperando . ' día(s)' }}
+                            </span>
+                        </a>
+                    @empty
+                        <p class="text-sm text-cerberus-steel py-4 text-center">Ningún caso está esperando piezas.</p>
+                    @endforelse
+                </div>
+
+                {{-- Reincidentes --}}
+                <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus p-4">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Equipos que vuelven al taller</h3>
+                    <p class="text-xs text-cerberus-steel mb-3">2 o más reparaciones en los últimos 12 meses: candidatos a revisar o reemplazar.</p>
+                    @forelse ($taller['reincidentes'] as $r)
+                        <a href="{{ route('admin.equipos.show', $r->equipo) }}" wire:navigate
+                           class="flex items-center justify-between gap-3 py-2 border-b border-cerberus-steel/40 last:border-0 hover:bg-cerberus-dark/40 rounded px-1">
+                            <div class="min-w-0">
+                                <p class="text-sm text-gray-900 dark:text-white">{{ $r->equipo->codigo_interno }}</p>
+                                <p class="text-xs text-cerberus-accent">{{ $r->equipo->categoria?->nombre }} · última {{ $r->ultima->format('d/m/Y') }}</p>
+                            </div>
+                            <span class="px-2 py-0.5 text-xs rounded-full bg-orange-500/15 text-orange-300 border border-orange-500/30 whitespace-nowrap">
+                                {{ $r->veces }} reparaciones
+                            </span>
+                        </a>
+                    @empty
+                        <p class="text-sm text-cerberus-steel py-4 text-center">Ningún equipo se ha reparado más de una vez este año.</p>
+                    @endforelse
+                </div>
+
+                {{-- Más usado del almacén --}}
+                <div class="bg-cerberus-mid border border-cerberus-steel rounded-xl shadow-cerberus p-4">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Lo más usado del almacén</h3>
+                    <p class="text-xs text-cerberus-steel mb-3">Por familia, en los últimos 90 días: lo que conviene tener siempre en stock.</p>
+                    @php $maximo = max(1, (int) $taller['usadoAlmacen']->max()); @endphp
+                    @forelse ($taller['usadoAlmacen'] as $familia => $cantidad)
+                        <div class="py-1.5">
+                            <div class="flex items-center justify-between text-sm mb-1">
+                                <span class="text-gray-900 dark:text-white">{{ $familia }}</span>
+                                <span class="text-cerberus-accent tabular-nums">{{ $cantidad }}</span>
+                            </div>
+                            <div class="h-1.5 rounded-full bg-cerberus-dark overflow-hidden">
+                                <div class="h-full rounded-full bg-blue-500" style="width: {{ round($cantidad / $maximo * 100) }}%"></div>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-sm text-cerberus-steel py-4 text-center">Todavía no se ha usado nada del almacén.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ══════════════════════════════════════════════════════════════
          ALERTAS + ACTIVIDAD
     ══════════════════════════════════════════════════════════════════ --}}
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">

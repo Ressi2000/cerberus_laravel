@@ -695,12 +695,24 @@ class Mantenimiento extends Model
 
             if ($hayStock) {
                 $this->anotarPiezas($item, $this->consumirDelAlmacen($componente, $cantidad, $actor));
+            } else {
+                // Avisar a los Administradores, solo si todo se guardó.
+                DB::afterCommit(fn () => $this->notificarSolicitud($item, $actor));
             }
 
             $this->recalcularEsperandoComponente();
 
             return $item;
         });
+    }
+
+    /** Campanita de los Administradores (menos quien la pidió): llegó una solicitud de pieza. */
+    private function notificarSolicitud(MantenimientoComponente $item, User $actor): void
+    {
+        rescue(function () use ($item, $actor) {
+            $notif = new \App\Notifications\SolicitudPiezaNotification($item);
+            User::role('Administrador')->whereKeyNot($actor->id)->each(fn (User $admin) => $admin->notify($notif));
+        }, report: true);
     }
 
     /**

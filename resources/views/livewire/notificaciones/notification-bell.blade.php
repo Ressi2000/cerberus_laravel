@@ -55,6 +55,7 @@
                         'amber'   => 'text-amber-400 bg-amber-400/10',
                         'red'     => 'text-red-400 bg-red-400/10',
                         'orange'  => 'text-orange-400 bg-orange-400/10',
+                        'purple'  => 'text-purple-400 bg-purple-400/10',
                     ];
                     $cls = $colorMap[$color] ?? 'text-cerberus-accent bg-cerberus-mid';
                 @endphp

@@ -462,4 +462,60 @@ class EntradaYUsoTest extends TestCase
         $this->assertNotSame(200, $respuesta->status());
         $respuesta->assertDontSee('ETQ-1');
     }
+
+    // ─── Notificación de solicitudes y dashboard ───────────────────────────
+
+    /** @test */
+    public function una_solicitud_de_pieza_avisa_a_los_administradores_menos_a_quien_la_pidio(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $otroAdmin = User::factory()->create(['empresa_id' => $this->empresa->id]);
+        $otroAdmin->assignRole('Administrador');
+        $caso = $this->crearCaso();
+
+        Livewire::actingAs($this->admin)->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id)
+            ->set('familiaId', (string) $this->pantallas->id)
+            ->set('componenteId', 'nueva')
+            ->set('nuevoNombre', 'Pantalla 14" HD')
+            ->set('cantidad', 1)
+            ->call('solicitar')->assertHasNoErrors();
+
+        \Illuminate\Support\Facades\Notification::assertSentTo($otroAdmin, \App\Notifications\SolicitudPiezaNotification::class,
+            fn ($n) => str_contains($n->toDatabase($otroAdmin)['mensaje'], 'Pantalla 14" HD'));
+        \Illuminate\Support\Facades\Notification::assertNotSentTo($this->admin, \App\Notifications\SolicitudPiezaNotification::class);
+    }
+
+    /** @test */
+    public function usar_algo_que_si_hay_no_avisa_a_nadie(): void
+    {
+        \Illuminate\Support\Facades\Notification::fake();
+        $otroAdmin = User::factory()->create(['empresa_id' => $this->empresa->id]);
+        $otroAdmin->assignRole('Administrador');
+        $bisagra = ComponenteAlmacen::create([
+            'empresa_id' => $this->empresa->id, 'familia_id' => $this->bisagras->id, 'nombre' => 'Bisagra',
+            'unidad' => 'unidad', 'stock_actual' => 0, 'activo' => true, 'creado_por' => $this->admin->id,
+        ]);
+        $bisagra->registrarEntrada(5, $this->admin);
+
+        $this->crearCaso()->pedirComponente($bisagra->fresh(), 2, $this->admin);
+
+        \Illuminate\Support\Facades\Notification::assertNothingSent();
+    }
+
+    /** @test */
+    public function el_dashboard_muestra_taller_y_almacen(): void
+    {
+        $caso = $this->crearCaso();
+        $caso->pedirComponente(ComponenteAlmacen::create([
+            'empresa_id' => $this->empresa->id, 'familia_id' => $this->bisagras->id, 'nombre' => 'Bisagra rara',
+            'unidad' => 'unidad', 'stock_actual' => 0, 'activo' => true, 'creado_por' => $this->admin->id,
+        ]), 1, $this->admin);
+
+        Livewire::actingAs($this->admin)->test(\App\Livewire\Dashboard::class)
+            ->assertSee('Taller y almacén')
+            ->assertSee('Frenados por falta de pieza')
+            ->assertSee("Caso #{$caso->id}")
+            ->assertSee('Bisagra rara');
+    }
 }
