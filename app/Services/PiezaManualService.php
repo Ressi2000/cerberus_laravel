@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AtributoEquipo;
 use App\Models\ComponenteAlmacen;
 use App\Models\Equipo;
 use App\Models\PiezaExtraida;
@@ -34,6 +35,8 @@ class PiezaManualService
         ?string $identificador = null,
         ?string $observaciones = null,
         array $seriales = [],
+        ?AtributoEquipo $atributo = null,
+        ?array $valorFicha = null,
     ): Collection {
         if ($componente->esAGranel()) {
             throw new \InvalidArgumentException("«{$componente->nombre}» es de una familia a granel: se registra solo la cantidad, sin piezas individuales.");
@@ -76,7 +79,7 @@ class PiezaManualService
             throw new \InvalidArgumentException('El equipo de origen debe ser de la misma empresa que el componente.');
         }
 
-        return DB::transaction(function () use ($componente, $cantidad, $condicion, $actor, $equipoOrigen, $seriales, $observaciones) {
+        return DB::transaction(function () use ($componente, $cantidad, $condicion, $actor, $equipoOrigen, $seriales, $observaciones, $atributo, $valorFicha) {
             $piezas = collect();
 
             for ($i = 0; $i < $cantidad; $i++) {
@@ -86,8 +89,10 @@ class PiezaManualService
                 $pieza = PiezaExtraida::create([
                     'empresa_id'            => $componente->empresa_id,
                     'equipo_origen_id'      => $equipoOrigen?->id,
-                    'atributo_id'           => null,
-                    'valor_extraido'        => null,
+                    // Ligada a la ficha de su familia (ej. RAM) si se registró con ella:
+                    // así se puede instalar después actualizando la ficha del equipo.
+                    'atributo_id'           => $atributo?->id,
+                    'valor_extraido'        => $valorFicha,
                     'reutilizable'          => true,
                     'condicion'             => $condicion,
                     'identificador'         => $idUnidad,

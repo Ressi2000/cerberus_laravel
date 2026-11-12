@@ -4,7 +4,7 @@
     @livewire('almacen.componente-modal')
     @livewire('almacen.movimiento-stock-modal')
     @livewire('almacen.componente-piezas-modal')
-    @livewire('almacen.pieza-nueva-modal')
+    @livewire('almacen.registrar-entrada-modal')
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -18,8 +18,8 @@
     <x-table.crud-header
         title="Almacén de Componentes"
         subtitle="Stock de piezas y repuestos reutilizables, por empresa"
-        buttonLabel="Nuevo componente"
-        buttonEvent="openComponenteCrear">
+        buttonLabel="Registrar entrada"
+        buttonEvent="openRegistrarEntrada">
 
         <x-slot name="actions">
             <a href="{{ route('admin.almacen.solicitudes') }}" wire:navigate
@@ -36,16 +36,6 @@
                     </span>
                 @endif
             </a>
-            <button wire:click="$dispatch('openPiezaNueva')"
-                    title="Para piezas que ya son un atributo de equipo (RAM, disco...), con sus características completas"
-                    class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
-                           bg-white dark:bg-cerberus-mid border border-[#1E40AF] dark:border-cerberus-accent
-                           text-[#1E40AF] dark:text-cerberus-accent hover:bg-[#1E40AF]/5 dark:hover:bg-cerberus-primary/10
-                           transition-all duration-150 flex-shrink-0
-                           focus:outline-none focus:ring-2 focus:ring-[#1E40AF]/30">
-                <span class="material-icons text-base">add_box</span>
-                Pieza nueva de atributo
-            </button>
         </x-slot>
 
         <x-slot name="filters">
@@ -219,17 +209,31 @@
                                 </li>
                             @endif
                             <li>
-                                <button wire:click="$dispatch('openMovimientoStock', { componenteId: {{ $componente->id }} })"
+                                <button wire:click="$dispatch('openRegistrarEntrada', { componenteId: {{ $componente->id }} })"
                                         @click="close()"
                                         class="flex items-center gap-3 px-4 py-2.5 w-full
                                                text-gray-600 dark:text-cerberus-light
                                                hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
                                                hover:text-blue-600 dark:hover:text-cerberus-accent
                                                transition-colors duration-100">
-                                    <span class="material-icons text-base text-cerberus-accent">swap_vert</span>
-                                    Registrar movimiento de stock
+                                    <span class="material-icons text-base text-cerberus-accent">add_box</span>
+                                    Registrar entrada
                                 </button>
                             </li>
+                            @if ($componente->stock_actual > 0)
+                                <li>
+                                    <button wire:click="$dispatch('openMovimientoStock', { componenteId: {{ $componente->id }} })"
+                                            @click="close()"
+                                            class="flex items-center gap-3 px-4 py-2.5 w-full
+                                                   text-gray-600 dark:text-cerberus-light
+                                                   hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                                   hover:text-blue-600 dark:hover:text-cerberus-accent
+                                                   transition-colors duration-100">
+                                        <span class="material-icons text-base text-cerberus-accent">remove_circle_outline</span>
+                                        Registrar salida (ajuste o dañada)
+                                    </button>
+                                </li>
+                            @endif
                             @if ($componente->activo)
                                 <li>
                                     <div class="my-1 mx-3 border-t border-gray-100 dark:border-cerberus-steel/30"></div>

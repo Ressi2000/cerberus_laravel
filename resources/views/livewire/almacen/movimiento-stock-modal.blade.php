@@ -9,8 +9,8 @@
 
                 <div class="flex items-center justify-between px-6 py-4 flex-shrink-0 border-b border-gray-100 dark:border-cerberus-steel">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <span class="material-icons text-cerberus-accent">swap_vert</span>
-                        Movimiento de stock
+                        <span class="material-icons text-cerberus-accent">remove_circle_outline</span>
+                        Registrar salida
                         @if ($this->componente)
                             <span class="text-gray-400 dark:text-cerberus-steel font-normal text-sm">— {{ $this->componente->nombre }}</span>
                         @endif
@@ -28,12 +28,6 @@
                         </div>
                     @endif
 
-                    <x-form.select
-                        label="Tipo de movimiento"
-                        :options="['Entrada' => 'Entrada (suma al stock)', 'Salida' => 'Salida (resta del stock)']"
-                        wire:model.live="tipo"
-                        :error="$errors->first('tipo')"
-                    />
 
                     <x-form.input
                         label="Cantidad"
@@ -44,43 +38,6 @@
                         required
                     />
 
-                    @if ($tipo === 'Entrada' && $this->componente?->esAGranel())
-                        <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
-                                    bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300
-                                    border border-purple-200 dark:border-purple-500/30">
-                            <span class="material-icons text-sm">inventory</span>
-                            <span>{{ $this->componente->familia->nombre }} es a granel: solo se suma la cantidad, sin seriales.</span>
-                        </div>
-                    @elseif ($tipo === 'Entrada')
-                        <x-form.select
-                            label="Condición"
-                            :options="\App\Models\PiezaExtraida::CONDICIONES"
-                            wire:model.live="condicion"
-                            :error="$errors->first('condicion')"
-                        />
-
-                        @if ($condicion === \App\Models\PiezaExtraida::CONDICION_REUTILIZADO)
-                            <x-form.select
-                                label="Equipo de origen"
-                                placeholder="¿De cuál equipo salió?"
-                                searchable
-                                :options="$this->equiposOpciones"
-                                wire:model="equipoOrigenId"
-                                :error="$errors->first('equipoOrigenId')"
-                                required
-                            />
-                        @endif
-
-                        <x-form.textarea
-                            label="Seriales (recomendado)"
-                            wire:model="seriales"
-                            rows="3"
-                            placeholder="Uno por línea, en el mismo orden que las unidades"
-                            hint="Las unidades sin serial reciben un código interno (AUTO-…)."
-                        />
-                    @endif
-
-                    @if ($tipo === 'Salida')
                         <div class="flex items-center gap-3">
                             <button type="button" wire:click="$toggle('danado')" role="switch"
                                 class="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full
@@ -94,9 +51,8 @@
                                 Se dañó estando guardado — pasa a un depósito
                             </span>
                         </div>
-                    @endif
 
-                    @if ($tipo === 'Salida' && $danado)
+                    @if ($danado)
                         <x-form.select
                             label="Depósito"
                             placeholder="Selecciona un depósito..."
@@ -107,7 +63,6 @@
                         />
                     @endif
 
-                    @if ($tipo === 'Salida')
                         @if ($this->piezasEnAlmacen->isNotEmpty())
                             <div>
                                 <p class="text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">¿Cuáles piezas salen?</p>
@@ -141,9 +96,8 @@
                                 @enderror
                             </div>
                         @endif
-                    @endif
 
-                    @unless ($tipo === 'Salida' && $danado)
+                    @unless ($danado)
                         <x-form.input
                             label="Motivo"
                             wire:model="motivo"

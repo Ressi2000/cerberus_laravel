@@ -83,7 +83,7 @@ class ComponenteModal extends Component
     public function usarExistente(int $id): void
     {
         $this->close();
-        $this->dispatch('openMovimientoStock', componenteId: $id);
+        $this->dispatch('openRegistrarEntrada', componenteId: $id);
     }
 
     #[Computed]

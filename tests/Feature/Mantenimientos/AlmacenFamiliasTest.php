@@ -135,9 +135,8 @@ class AlmacenFamiliasTest extends TestCase
         $componente = $this->crearComponente('Bisagra Dell 15"', $this->bisagras);
 
         Livewire::actingAs($this->admin)
-            ->test(MovimientoStockModal::class)
+            ->test(\App\Livewire\Almacen\RegistrarEntradaModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Entrada')
             ->set('cantidad', 10)
             ->call('guardar')
             ->assertHasNoErrors();
@@ -149,7 +148,6 @@ class AlmacenFamiliasTest extends TestCase
         Livewire::actingAs($this->admin)
             ->test(MovimientoStockModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Salida')
             ->set('cantidad', 3)
             ->call('guardar')
             ->assertHasNoErrors();
@@ -163,9 +161,8 @@ class AlmacenFamiliasTest extends TestCase
         $componente = $this->crearComponente('Pantalla 15.6" FHD', $this->pantallas);
 
         Livewire::actingAs($this->admin)
-            ->test(MovimientoStockModal::class)
+            ->test(\App\Livewire\Almacen\RegistrarEntradaModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Entrada')
             ->set('cantidad', 3)
             ->set('seriales', "SN-AAA\nSN-BBB")
             ->call('guardar')
@@ -181,9 +178,8 @@ class AlmacenFamiliasTest extends TestCase
         $componente = $this->crearComponente('Pantalla 13" HD', $this->pantallas);
 
         Livewire::actingAs($this->admin)
-            ->test(MovimientoStockModal::class)
+            ->test(\App\Livewire\Almacen\RegistrarEntradaModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Entrada')
             ->set('cantidad', 2)
             ->set('seriales', "SN-1\nSN-1")
             ->call('guardar')

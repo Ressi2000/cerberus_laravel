@@ -25,6 +25,7 @@ class MantenimientoComponente extends Model
     protected $fillable = [
         'mantenimiento_id',
         'componente_id',
+        'pieza_id',
         'cantidad_requerida',
         'estado',
         'fecha_entrega',
@@ -43,6 +44,12 @@ class MantenimientoComponente extends Model
     public function componente()
     {
         return $this->belongsTo(ComponenteAlmacen::class, 'componente_id');
+    }
+
+    /** Pieza exacta entregada (familias por unidad), si aplica. */
+    public function pieza()
+    {
+        return $this->belongsTo(PiezaExtraida::class, 'pieza_id');
     }
 
     public function entregadoPor()

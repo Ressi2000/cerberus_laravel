@@ -5,11 +5,12 @@ namespace Tests\Feature\Mantenimientos;
 use App\Livewire\Almacen\ComponenteModal;
 use App\Livewire\Almacen\ComponentePiezasModal;
 use App\Livewire\Almacen\MovimientoStockModal;
-use App\Livewire\Almacen\PiezaNuevaModal;
+use App\Livewire\Almacen\RegistrarEntradaModal;
 use App\Livewire\Mantenimientos\CrearMantenimiento;
 use App\Livewire\Mantenimientos\MantenimientoBajaModal;
 use App\Livewire\Mantenimientos\MantenimientoComponentesPanel;
 use App\Livewire\Mantenimientos\MantenimientoDetalle;
+use App\Livewire\Mantenimientos\UsarDelAlmacenModal;
 use App\Models\CategoriaEquipo;
 use App\Models\ComponenteAlmacen;
 use App\Models\Deposito;
@@ -121,9 +122,9 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
         ]);
     }
 
-    private function crearFamilia(): \App\Models\FamiliaComponente
+    private function crearFamilia(string $control = 'unidad'): \App\Models\FamiliaComponente
     {
-        return \App\Models\FamiliaComponente::firstOrCreate(['nombre' => 'Otros'], ['control' => 'unidad', 'campos' => []]);
+        return \App\Models\FamiliaComponente::firstOrCreate(['nombre' => "Otros {$control}"], ['control' => $control, 'campos' => []]);
     }
 
     private function crearDeposito(Empresa $empresa, User $actor): Deposito
@@ -287,13 +288,17 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
         $analistaA = $this->crearAnalista($this->empresaA);
         $casoA = $this->crearCaso($this->empresaA, 'Correctivo', 'En reparación', $analistaA);
         $componenteB = $this->crearComponente($this->empresaB, $this->crearAdmin(), 10);
+        $componenteB->update(['familia_id' => $this->crearFamilia('granel')->id]);
 
+        // Las variantes que ofrece "Usar del almacén" son solo de la empresa del caso.
         Livewire::actingAs($analistaA)
-            ->test(MantenimientoComponentesPanel::class, ['mantenimientoId' => $casoA->id])
-            ->set('componente_id', (string) $componenteB->id)
+            ->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $casoA->id)
+            ->set('familiaId', (string) $componenteB->familia_id)
+            ->set('componenteId', (string) $componenteB->id)
             ->set('cantidad', 2)
-            ->call('pedir')
-            ->assertHasErrors('componente_id');
+            ->call('usar')
+            ->assertHasErrors('componenteId');
 
         $this->assertSame(10, $componenteB->fresh()->stock_actual);
         $this->assertSame(0, $casoA->componentes()->count());
@@ -305,12 +310,16 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
         $analista = $this->crearAnalista($this->empresaA);
         $caso = $this->crearCaso($this->empresaA, 'Correctivo', 'Reportado', $analista);
         $componente = $this->crearComponente($this->empresaA, $analista, 10);
+        $componente->update(['familia_id' => $this->crearFamilia('granel')->id]);
 
         Livewire::actingAs($analista)
-            ->test(MantenimientoComponentesPanel::class, ['mantenimientoId' => $caso->id])
-            ->set('componente_id', (string) $componente->id)
+            ->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id)
+            ->set('familiaId', (string) $componente->familia_id)
+            ->set('componenteId', (string) $componente->id)
             ->set('cantidad', 1)
-            ->call('pedir');
+            ->call('usar')
+            ->assertHasErrors('general');
 
         $this->assertSame(10, $componente->fresh()->stock_actual);
         $this->assertSame(0, $caso->componentes()->count());
@@ -406,18 +415,16 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
     }
 
     /** @test */
-    public function pieza_nueva_requiere_autorizacion(): void
+    public function registrar_entrada_requiere_autorizacion(): void
     {
         $usuario = User::factory()->create();
         $usuario->assignRole('Usuario');
 
         Livewire::actingAs($usuario)
-            ->test(PiezaNuevaModal::class)
-            ->call('guardar')
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir')
             ->assertForbidden();
     }
-
-    // ─── A4: ver piezas de otra empresa ────────────────────────────────────
 
     /** @test */
     public function analista_no_puede_ver_piezas_de_un_componente_de_otra_empresa(): void
@@ -458,13 +465,14 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
         $componenteA = $this->crearComponente($this->empresaA, $analistaA, 0);
         $equipoB = $this->crearEquipo($this->empresaB);
 
+        $componenteA->update(['familia_id' => $this->crearFamilia()->id]);
+
         Livewire::actingAs($analistaA)
-            ->test(MovimientoStockModal::class)
+            ->test(RegistrarEntradaModal::class)
             ->call('abrir', $componenteA->id)
-            ->set('tipo', 'Entrada')
             ->set('cantidad', 1)
             ->set('condicion', 'reutilizado')
-            ->set('equipoOrigenId', $equipoB->id)
+            ->set('equipoOrigenId', (string) $equipoB->id)
             ->call('guardar')
             ->assertHasErrors('equipoOrigenId');
 
@@ -481,7 +489,6 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
         Livewire::actingAs($analistaA)
             ->test(MovimientoStockModal::class)
             ->call('abrir', $componenteA->id)
-            ->set('tipo', 'Salida')
             ->set('cantidad', 1)
             ->set('danado', true)
             ->set('depositoId', $depositoB->id)

@@ -272,6 +272,15 @@ class ExtraccionPiezaService
      * stock. Recibe el empresa_id directo (no un Equipo) porque también lo
      * usa registrarNueva() para una pieza que nunca estuvo en ningún equipo.
      */
+    /**
+     * Variante (componente del almacén) que corresponde a estos valores de
+     * ficha: la busca o la crea. La usa también "Registrar entrada".
+     */
+    public function varianteDeFicha(int $empresaId, AtributoEquipo $atributo, array $valores, User $actor): ComponenteAlmacen
+    {
+        return $this->bucketDeStock($empresaId, $atributo, $valores, $actor);
+    }
+
     private function bucketDeStock(int $empresaId, AtributoEquipo $atributo, array $valorExtraido, User $actor): ComponenteAlmacen
     {
         $nombre = $atributo->describirValor($valorExtraido);

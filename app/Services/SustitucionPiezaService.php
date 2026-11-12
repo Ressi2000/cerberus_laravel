@@ -8,6 +8,7 @@ use App\Models\Equipo;
 use App\Models\EquipoAtributoGrupoInstancia;
 use App\Models\EquipoAtributoValor;
 use App\Models\Mantenimiento;
+use App\Models\MantenimientoComponente;
 use App\Models\PiezaExtraida;
 use App\Models\PiezaExtraidaMovimiento;
 use App\Models\User;
@@ -214,6 +215,16 @@ class SustitucionPiezaService
             $pieza->update([
                 'estado'            => PiezaExtraida::ESTADO_INSTALADA,
                 'equipo_destino_id' => $equipoDestino->id,
+            ]);
+
+            // Queda también en "lo usado del almacén" del caso, con la pieza exacta.
+            $mantenimiento?->componentes()->create([
+                'componente_id'      => $pieza->componente_almacen_id,
+                'pieza_id'           => $pieza->id,
+                'cantidad_requerida' => 1,
+                'estado'             => MantenimientoComponente::ESTADO_ENTREGADO,
+                'fecha_entrega'      => now()->toDateString(),
+                'entregado_por_id'   => $actor->id,
             ]);
 
             $pieza->movimientos()->create([

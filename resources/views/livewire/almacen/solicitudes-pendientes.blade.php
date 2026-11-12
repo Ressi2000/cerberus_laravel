@@ -1,7 +1,7 @@
 <div class="space-y-6">
 
     {{-- ── Modales ─────────────────────────────────────────────────────────── --}}
-    @livewire('almacen.movimiento-stock-modal')
+    @livewire('almacen.registrar-entrada-modal')
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -150,7 +150,7 @@
                             @endcan
                         @elseif ($item->componente)
                             @can('registrarMovimiento', $item->componente)
-                                <button wire:click="$dispatch('openMovimientoStock', { componenteId: {{ $item->componente->id }} })"
+                                <button wire:click="$dispatch('openRegistrarEntrada', { componenteId: {{ $item->componente->id }} })"
                                     class="inline-flex items-center gap-1 text-xs text-cerberus-primary dark:text-cerberus-accent hover:underline"
                                     title="Registrar la entrada del stock que falta">
                                     <span class="material-icons text-sm">add_box</span> Registrar entrada

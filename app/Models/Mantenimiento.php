@@ -703,6 +703,51 @@ class Mantenimiento extends Model
         });
     }
 
+    /**
+     * Usa en este caso UNA pieza concreta del almacén (familias por unidad,
+     * elegida por su serial) que no actualiza la ficha del equipo — ej. una
+     * pantalla o un teclado. Queda "instalada" en el equipo del caso y en la
+     * lista de lo usado del almacén, con la pieza exacta.
+     */
+    public function usarPieza(PiezaExtraida $pieza, User $actor): MantenimientoComponente
+    {
+        if (! $this->permiteRegistrarTrabajo()) {
+            throw new \InvalidArgumentException('No se pueden usar piezas en el estado actual del caso.');
+        }
+
+        $componente = $pieza->componenteAlmacen;
+
+        if (! $componente || (int) $componente->empresa_id !== (int) $this->empresa_id) {
+            throw new \InvalidArgumentException('Esa pieza no está disponible para este caso.');
+        }
+
+        return DB::transaction(function () use ($pieza, $componente, $actor) {
+            // Bloquea la pieza y verifica que siga en el almacén.
+            $componente->registrarSalida(1, $actor, 'Uso en mantenimiento', $this, [$pieza]);
+
+            $pieza->update([
+                'estado'            => PiezaExtraida::ESTADO_INSTALADA,
+                'equipo_destino_id' => $this->equipo_id,
+            ]);
+
+            $pieza->movimientos()->create([
+                'tipo'                  => PiezaExtraidaMovimiento::TIPO_INSTALACION,
+                'equipo_relacionado_id' => $this->equipo_id,
+                'mantenimiento_id'      => $this->id,
+                'registrado_por'        => $actor->id,
+            ]);
+
+            return $this->componentes()->create([
+                'componente_id'      => $componente->id,
+                'pieza_id'           => $pieza->id,
+                'cantidad_requerida' => 1,
+                'estado'             => MantenimientoComponente::ESTADO_ENTREGADO,
+                'fecha_entrega'      => now()->toDateString(),
+                'entregado_por_id'   => $actor->id,
+            ]);
+        });
+    }
+
     /** Descuenta del almacén un componente que había quedado pendiente por falta de stock. */
     public function entregarComponentePendiente(MantenimientoComponente $item, User $actor): bool
     {

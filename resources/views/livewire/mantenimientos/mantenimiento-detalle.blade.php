@@ -24,6 +24,7 @@
 
     @livewire('mantenimientos.mantenimiento-baja-modal')
     @livewire('mantenimientos.reportar-problema-modal')
+    @livewire('mantenimientos.usar-del-almacen-modal')
 
     {{-- ── HEADER ──────────────────────────────────────────────────────────── --}}
     <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-6">

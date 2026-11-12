@@ -137,7 +137,6 @@ class StockPiezasAlmacenTest extends TestCase
         Livewire::actingAs($this->analista)
             ->test(MovimientoStockModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Salida')
             ->set('cantidad', 1)
             ->call('guardar')
             ->assertHasErrors('piezaIds');
@@ -156,7 +155,6 @@ class StockPiezasAlmacenTest extends TestCase
         Livewire::actingAs($this->analista)
             ->test(MovimientoStockModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Salida')
             ->set('cantidad', 1)
             ->set('motivo', 'Se perdió')
             ->set('piezaIds', [$elegida->id])
@@ -181,7 +179,6 @@ class StockPiezasAlmacenTest extends TestCase
         Livewire::actingAs($this->analista)
             ->test(MovimientoStockModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Salida')
             ->set('cantidad', 2)
             ->call('guardar')
             ->assertHasNoErrors();
@@ -199,7 +196,6 @@ class StockPiezasAlmacenTest extends TestCase
         Livewire::actingAs($this->analista)
             ->test(MovimientoStockModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Salida')
             ->set('cantidad', 1)
             ->set('piezaIds', $piezas->pluck('id')->all())
             ->call('guardar')
@@ -223,7 +219,6 @@ class StockPiezasAlmacenTest extends TestCase
         Livewire::actingAs($this->analista)
             ->test(MovimientoStockModal::class)
             ->call('abrir', $componente->id)
-            ->set('tipo', 'Salida')
             ->set('danado', true)
             ->set('cantidad', 2)
             ->set('depositoId', $deposito->id)
@@ -256,13 +251,11 @@ class StockPiezasAlmacenTest extends TestCase
         $componente = $this->crearComponenteConPiezasDeCaracteristica(2);
         $caso = $this->crearCasoEnReparacion();
 
-        Livewire::actingAs($this->analista)
-            ->test(MantenimientoComponentesPanel::class, ['mantenimientoId' => $caso->id])
-            ->set('componente_id', (string) $componente->id)
-            ->set('cantidad', 1)
-            ->call('pedir');
+        // Pedir "por cantidad" nunca toma piezas ligadas a una característica:
+        // esas se usan eligiendo la pieza (y actualizan la ficha del equipo).
+        $item = $caso->pedirComponente($componente, 1, $this->analista);
 
-        $this->assertSame('Pendiente', $caso->componentes()->first()->estado);
+        $this->assertSame('Pendiente', $item->estado);
         $this->assertSame(2, $componente->fresh()->stock_actual);
         $this->assertSame(2, $componente->piezasEnAlmacen()->count());
         $this->assertSame(0, PiezaExtraida::where('estado', PiezaExtraida::ESTADO_INSTALADA)->count());

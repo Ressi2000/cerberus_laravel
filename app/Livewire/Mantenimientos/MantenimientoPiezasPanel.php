@@ -18,10 +18,10 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * Panel de piezas de una reparación (Correctivo): retirar una pieza vieja o
- * dañada del equipo (queda trazada, va a Almacén si es reutilizable o a
- * Depósito si no) e instalar una pieza previamente rescatada, actualizando
- * los atributos del equipo receptor. Ver SustitucionPiezaService.
+ * Panel de piezas de un caso: retirar una pieza del equipo (queda trazada,
+ * va a Almacén si está buena o a Depósito si está dañada) y ver el
+ * historial de piezas del caso. Para INSTALAR una pieza del almacén se usa
+ * "Usar del almacén" (UsarDelAlmacenModal).
  */
 class MantenimientoPiezasPanel extends Component
 {
@@ -36,15 +36,6 @@ class MantenimientoPiezasPanel extends Component
     public ?int   $retirarDepositoId   = null;
     public string $retirarObservaciones = '';
 
-    // ── Instalar pieza rescatada ─────────────────────────────────────────
-    public bool   $instalarAbierto     = false;
-    public ?int   $instalarPiezaId     = null;
-    public string $instalarModo        = SustitucionPiezaService::MODO_SUSTITUIR;
-    public ?int   $instalarInstanciaId = null;
-    /** Al sustituir: a dónde va la pieza que sale del equipo. */
-    public string $instalarDestinoSaliente   = PiezaExtraida::ESTADO_EN_ALMACEN;
-    public ?int   $instalarDepositoSaliente  = null;
-
     public function mount(int $mantenimientoId): void
     {
         $this->mantenimientoId = $mantenimientoId;
@@ -53,7 +44,7 @@ class MantenimientoPiezasPanel extends Component
     #[On('mantenimientoActualizado')]
     public function refrescar(): void
     {
-        unset($this->mantenimiento, $this->candidatosRetiro, $this->piezasDisponibles, $this->historial);
+        unset($this->mantenimiento, $this->candidatosRetiro, $this->historial);
     }
 
     #[Computed]
@@ -73,50 +64,6 @@ class MantenimientoPiezasPanel extends Component
                 'descripcion'        => $c['descripcion'],
             ])
             ->values()
-            ->toArray();
-    }
-
-    /**
-     * Varias piezas en Almacén pueden tener exactamente la misma descripción
-     * (ej. dos "RAM (8GB)" de equipos distintos) — sin más contexto, el
-     * selector sería indistinguible. Se agrega de qué equipo vino y cuándo
-     * se extrajo para que cada opción sea identificable por sí sola.
-     */
-    #[Computed]
-    public function piezasDisponibles(): array
-    {
-        return app(SustitucionPiezaService::class)->piezasDisponibles($this->mantenimiento->equipo)
-            ->map(fn (PiezaExtraida $p) => [
-                'id'          => $p->id,
-                'descripcion' => $p->atributo->describirValor($p->valor_extraido)
-                    . ' — de ' . ($p->equipoOrigen->codigo_interno ?? 'equipo #' . $p->equipo_origen_id)
-                    . ' (' . $p->created_at->format('d/m/Y') . ')',
-                'es_grupo'    => $p->atributo->esGrupo(),
-            ])
-            ->values()
-            ->toArray();
-    }
-
-    /** Instancias vigentes del atributo de la pieza seleccionada (para "sustituir" en un grupo). */
-    #[Computed]
-    public function instanciasParaSustituir(): array
-    {
-        if (! $this->instalarPiezaId) return [];
-
-        $pieza = PiezaExtraida::with('atributo')->find($this->instalarPiezaId);
-        if (! $pieza || ! $pieza->atributo?->esGrupo()) return [];
-
-        // La característica del EQUIPO donde entra la pieza (si comparten
-        // familia, puede ser de otra categoría que la de origen).
-        $destino = app(SustitucionPiezaService::class)->atributoDestino($pieza, $this->mantenimiento->equipo);
-        if (! $destino) return [];
-
-        return EquipoAtributoGrupoInstancia::where('equipo_id', $this->mantenimiento->equipo->id)
-            ->where('atributo_id', $destino->id)
-            ->where('es_actual', true)
-            ->orderBy('orden')
-            ->get()
-            ->mapWithKeys(fn ($i) => [$i->id => $destino->describirValor($i->valores)])
             ->toArray();
     }
 
@@ -206,108 +153,12 @@ class MantenimientoPiezasPanel extends Component
 
             $this->dispatch('toast', type: 'success', message: "«{$candidato['descripcion']}» retirada del equipo.");
             $this->cerrarRetirar();
-            unset($this->mantenimiento, $this->candidatosRetiro, $this->piezasDisponibles, $this->historial);
+            unset($this->mantenimiento, $this->candidatosRetiro, $this->historial);
         } catch (\InvalidArgumentException $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());
         } catch (\Exception $e) {
             Log::error('MantenimientoPiezasPanel@retirar: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Error al retirar la pieza.');
-        }
-    }
-
-    // ── Instalar ──────────────────────────────────────────────────────────
-
-    public function abrirInstalar(): void
-    {
-        $m = $this->mantenimiento;
-        $this->authorize('update', $m);
-
-        if (! $m->permiteRegistrarTrabajo()) {
-            $this->dispatch('toast', type: 'error', message: 'Solo se pueden instalar piezas mientras el caso está «En reparación».');
-            return;
-        }
-
-        $this->reset(['instalarPiezaId', 'instalarInstanciaId', 'instalarDepositoSaliente']);
-        $this->instalarDestinoSaliente = PiezaExtraida::ESTADO_EN_ALMACEN;
-        $this->instalarModo = SustitucionPiezaService::MODO_SUSTITUIR;
-        $this->resetValidation();
-        $this->instalarAbierto = true;
-    }
-
-    public function cerrarInstalar(): void
-    {
-        $this->instalarAbierto = false;
-        $this->resetValidation();
-    }
-
-    public function updatedInstalarPiezaId(): void
-    {
-        $this->instalarInstanciaId = null;
-        unset($this->instanciasParaSustituir);
-
-        $pieza = $this->instalarPiezaId ? PiezaExtraida::with('atributo')->find($this->instalarPiezaId) : null;
-        $this->instalarModo = ($pieza && $pieza->atributo?->esGrupo())
-            ? SustitucionPiezaService::MODO_AGREGAR
-            : SustitucionPiezaService::MODO_SUSTITUIR;
-    }
-
-    public function instalar(): void
-    {
-        $m = $this->mantenimiento;
-        $this->authorize('update', $m);
-
-        if (! $m->permiteRegistrarTrabajo()) {
-            $this->dispatch('toast', type: 'error', message: 'No se pueden instalar piezas en el estado actual del caso.');
-            return;
-        }
-
-        $this->validate([
-            'instalarPiezaId' => 'required|exists:piezas_extraidas,id',
-        ]);
-
-        if ($this->instalarModo === SustitucionPiezaService::MODO_SUSTITUIR && ! empty($this->instanciasParaSustituir) && ! $this->instalarInstanciaId) {
-            $this->addError('instalarInstanciaId', 'Selecciona cuál pieza actual reemplaza.');
-            return;
-        }
-
-        // Solo piezas de la empresa del caso.
-        $pieza = PiezaExtraida::with('atributo')
-            ->where('empresa_id', $m->empresa_id)
-            ->find($this->instalarPiezaId);
-
-        if (! $pieza) {
-            $this->addError('instalarPiezaId', 'Esa pieza no está disponible para este caso.');
-            return;
-        }
-
-        // Pieza que sale al sustituir: a un depósito activo de la empresa del caso.
-        $depositoSaliente = null;
-        if ($this->instalarModo === SustitucionPiezaService::MODO_SUSTITUIR
-            && $this->instalarDestinoSaliente === PiezaExtraida::ESTADO_EN_DEPOSITO) {
-            $depositoSaliente = Deposito::activos()
-                ->where('empresa_id', $m->empresa_id)
-                ->find($this->instalarDepositoSaliente);
-
-            if (! $depositoSaliente) {
-                $this->addError('instalarDepositoSaliente', 'Selecciona a qué depósito va la pieza que sale.');
-                return;
-            }
-        }
-
-        try {
-            app(SustitucionPiezaService::class)->instalar(
-                $pieza, $m->equipo, $this->instalarModo, Auth::user(), $m, $this->instalarInstanciaId,
-                $this->instalarDestinoSaliente, $depositoSaliente,
-            );
-
-            $this->dispatch('toast', type: 'success', message: "«{$pieza->atributo->describirValor($pieza->valor_extraido)}» instalada en el equipo.");
-            $this->cerrarInstalar();
-            unset($this->mantenimiento, $this->candidatosRetiro, $this->piezasDisponibles, $this->historial);
-        } catch (\InvalidArgumentException $e) {
-            $this->dispatch('toast', type: 'error', message: $e->getMessage());
-        } catch (\Exception $e) {
-            Log::error('MantenimientoPiezasPanel@instalar: ' . $e->getMessage());
-            $this->dispatch('toast', type: 'error', message: 'Error al instalar la pieza.');
         }
     }
 

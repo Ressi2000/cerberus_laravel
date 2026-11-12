@@ -84,6 +84,41 @@ class FamiliaComponente extends Model
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Nombre de la variante a partir de los valores de la ficha, ej.
+     * "RAM (Capacidad (GB): 8 / Tipo: DDR4)". Es el mismo texto que da
+     * AtributoEquipo::describirValor() para una característica de esta
+     * familia, así ambas caen en el mismo componente del almacén.
+     */
+    public function describirValor(array $valor): string
+    {
+        $campos = collect($this->campos ?? [])->keyBy('id');
+
+        $texto = collect($valor)
+            ->map(function ($v, $id) use ($campos) {
+                if ($v === null || $v === '') {
+                    return null;
+                }
+                $label = $campos[$id]['nombre'] ?? null;
+
+                return $label ? "{$label}: {$v}" : (string) $v;
+            })
+            ->filter()
+            ->implode(' / ');
+
+        return trim($this->nombre . ($texto !== '' ? " ({$texto})" : ''));
+    }
+
+    /**
+     * Una característica de equipo que usa esta familia: las piezas que se
+     * registran desde el almacén se ligan a ella para poder instalarse
+     * después en cualquier categoría que use la familia.
+     */
+    public function atributoRepresentativo(): ?AtributoEquipo
+    {
+        return $this->atributos()->orderBy('id')->first();
+    }
+
     /** A granel: solo cantidad, sin piezas individuales. */
     public function esAGranel(): bool
     {
