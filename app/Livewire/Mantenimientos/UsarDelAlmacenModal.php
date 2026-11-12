@@ -7,6 +7,7 @@ use App\Models\Deposito;
 use App\Models\EquipoAtributoGrupoInstancia;
 use App\Models\FamiliaComponente;
 use App\Models\Mantenimiento;
+use App\Models\MantenimientoComponente;
 use App\Models\PiezaExtraida;
 use App\Services\ExtraccionPiezaService;
 use App\Services\SustitucionPiezaService;
@@ -58,8 +59,12 @@ class UsarDelAlmacenModal extends Component
     /** Serial de la pieza que sale al reemplazar (opcional: si se conoce). */
     public string $serialSaliente    = '';
 
+    /** Solicitud pendiente de este caso que se está entregando (piezas por unidad). */
+    #[Locked]
+    public ?int $pendienteId = null;
+
     #[On('openUsarDelAlmacen')]
-    public function abrir(int $mantenimientoId): void
+    public function abrir(int $mantenimientoId, ?int $pendienteId = null): void
     {
         $m = Mantenimiento::findOrFail($mantenimientoId);
         $this->authorize('update', $m);
@@ -69,8 +74,34 @@ class UsarDelAlmacenModal extends Component
         $this->cantidad = 1;
         $this->modo = SustitucionPiezaService::MODO_AGREGAR;
         $this->destinoSaliente = PiezaExtraida::ESTADO_EN_ALMACEN;
+        $this->pendienteId = null;
+
+        // Entregar una solicitud pendiente: ya viene elegida la variante.
+        if ($pendienteId) {
+            $pendiente = MantenimientoComponente::where('mantenimiento_id', $m->id)
+                ->where('estado', MantenimientoComponente::ESTADO_PENDIENTE)
+                ->with('componente')
+                ->find($pendienteId);
+
+            if ($pendiente?->componente) {
+                $this->pendienteId  = $pendiente->id;
+                $this->familiaId    = (string) ($pendiente->componente->familia_id ?? '');
+                $this->componenteId = (string) $pendiente->componente_id;
+            }
+        }
+
         $this->resetValidation();
         $this->open = true;
+    }
+
+    #[Computed]
+    public function pendiente(): ?MantenimientoComponente
+    {
+        return $this->pendienteId
+            ? MantenimientoComponente::where('mantenimiento_id', $this->mantenimientoId)
+                ->where('estado', MantenimientoComponente::ESTADO_PENDIENTE)
+                ->find($this->pendienteId)
+            : null;
     }
 
     // ── Datos ────────────────────────────────────────────────────────────────
@@ -201,12 +232,14 @@ class UsarDelAlmacenModal extends Component
 
     public function updatedFamiliaId(): void
     {
+        $this->pendienteId = null;
         $this->reset(['componenteId', 'nuevoNombre', 'valores', 'piezaId', 'instanciaId']);
         $this->resetValidation();
     }
 
     public function updatedComponenteId(): void
     {
+        $this->pendienteId = null;
         $this->reset(['piezaId', 'instanciaId']);
         $this->cantidad = 1;
         $this->resetValidation();
@@ -266,10 +299,11 @@ class UsarDelAlmacenModal extends Component
                         $this->instanciaId !== '' ? (int) $this->instanciaId : null,
                         $this->destinoSaliente, $deposito,
                         mb_substr(trim($this->serialSaliente), 0, 100) ?: null,
+                        $this->pendiente,
                     );
                     $msg = "«{$pieza->descripcion()}» instalada y la ficha del equipo actualizada.";
                 } else {
-                    $m->usarPieza($pieza, Auth::user());
+                    $m->usarPieza($pieza, Auth::user(), $this->pendiente);
                     $msg = "«{$pieza->descripcion()}» quedó en el equipo.";
                 }
             }

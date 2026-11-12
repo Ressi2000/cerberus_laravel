@@ -448,4 +448,67 @@ class TrazaPiezasTest extends TestCase
         $this->assertSame([], array_values(array_filter(array_column($candidatos, 'pieza_id'))), 'Sale por la ficha, no como pieza suelta.');
         $this->assertCount(1, array_filter($candidatos, fn ($c) => $c['atributo_id'] === $this->ramLaptop->id));
     }
+
+    /** @test */
+    public function una_solicitud_pendiente_de_ram_se_entrega_eligiendo_la_pieza_y_actualiza_la_ficha(): void
+    {
+        $caso = $this->crearCaso();
+
+        // Se solicita una RAM que no hay.
+        Livewire::actingAs($this->admin)->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('componenteId', 'nueva')
+            ->set('valores.' . $this->campo('Capacidad (GB)'), '8')
+            ->set('valores.' . $this->campo('Tipo'), 'DDR3')
+            ->set('valores.' . $this->campo('Formato'), 'SO-DIMM (laptop)')
+            ->call('solicitar')->assertHasNoErrors();
+        $pendiente = $caso->componentes()->firstOrFail();
+        $variante = $pendiente->componente;
+
+        // Llega al almacén.
+        Livewire::actingAs($this->admin)->test(RegistrarEntradaModal::class)
+            ->call('abrir', $variante->id)->set('seriales', 'SN-LLEGO')->call('guardar')->assertHasNoErrors();
+
+        // La bandeja la manda al caso; en el caso, "Entregar ahora" abre Usar del almacén.
+        $this->assertTrue(Livewire::actingAs($this->admin)->test(\App\Livewire\Almacen\SolicitudesPendientes::class)
+            ->instance()->solicitudes->first()->en_el_caso);
+        Livewire::actingAs($this->admin)->test(\App\Livewire\Mantenimientos\MantenimientoComponentesPanel::class, ['mantenimientoId' => $caso->id])
+            ->call('entregarPendiente', $pendiente->id)
+            ->assertDispatched('openUsarDelAlmacen', mantenimientoId: $caso->id, pendienteId: $pendiente->id);
+
+        $pieza = PiezaExtraida::where('identificador', 'SN-LLEGO')->firstOrFail();
+        Livewire::actingAs($this->admin)->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id, $pendiente->id)
+            ->assertSet('componenteId', (string) $variante->id)
+            ->assertSee('Entregando la solicitud pendiente')
+            ->assertSee('1 en stock')
+            ->set('piezaId', (string) $pieza->id)
+            ->set('modo', 'agregar')
+            ->call('usar')->assertHasNoErrors();
+
+        $this->assertSame(1, $caso->componentes()->count(), 'La solicitud se completa; no se agrega otro renglón.');
+        $this->assertSame('Entregado', $pendiente->fresh()->estado);
+        $this->assertSame($pieza->id, $pendiente->fresh()->pieza_id);
+        $this->assertDatabaseHas('equipo_atributo_grupo_instancias', ['equipo_id' => $caso->equipo_id, 'atributo_id' => $this->ramLaptop->id, 'es_actual' => true]);
+        $this->assertFalse((bool) $caso->fresh()->esperando_componente);
+    }
+
+    /** @test */
+    public function lo_usado_que_se_retiro_despues_queda_marcado(): void
+    {
+        $componente = $this->entrarRam('SN-IDA-Y-VUELTA');
+        $caso = $this->crearCaso();
+        $this->instalar($caso, $componente, 'SN-IDA-Y-VUELTA');
+
+        Livewire::actingAs($this->admin)->test(MantenimientoPiezasPanel::class, ['mantenimientoId' => $caso->id])
+            ->call('abrirRetirar')
+            ->set('retirarIndex', $this->indiceRam($caso))
+            ->call('retirar')->assertHasNoErrors()
+            ->assertDispatched('componenteRefrescar');
+
+        Livewire::actingAs($this->admin)->test(\App\Livewire\Mantenimientos\MantenimientoComponentesPanel::class, ['mantenimientoId' => $caso->id])
+            ->assertSee('Retirada')
+            ->assertSee('Se retiró del equipo después');
+    }
 }

@@ -39,7 +39,7 @@ class MantenimientoComponentesPanel extends Component
     #[Computed]
     public function mantenimiento(): Mantenimiento
     {
-        return Mantenimiento::with(['componentes.componente.familia', 'componentes.pieza', 'componentes.entregadoPor'])
+        return Mantenimiento::with(['componentes.componente.familia', 'componentes.pieza.deposito', 'componentes.pieza.equipoDestino', 'componentes.entregadoPor'])
             ->findOrFail($this->mantenimientoId);
     }
 
@@ -71,6 +71,13 @@ class MantenimientoComponentesPanel extends Component
 
         if (! $item) {
             $this->dispatch('toast', type: 'error', message: 'Ese componente no pertenece a este caso.');
+            return;
+        }
+
+        // Por unidad: se elige la pieza por su serial (y se actualiza la
+        // ficha del equipo si corresponde) en "Usar del almacén".
+        if ($item->componente && ! $item->componente->esAGranel()) {
+            $this->dispatch('openUsarDelAlmacen', mantenimientoId: $m->id, pendienteId: $item->id);
             return;
         }
 

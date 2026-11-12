@@ -140,7 +140,16 @@
 
                 <td class="px-4 py-3">
                     <div class="flex items-center justify-center gap-3">
-                        @if ($item->entregable)
+                        @if ($item->entregable && $item->en_el_caso)
+                            @can('update', $caso)
+                                <a href="{{ route('admin.mantenimientos.show', $caso) }}" wire:navigate
+                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg font-medium
+                                           bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition"
+                                    title="Se elige la pieza por su serial en el caso">
+                                    <span class="material-icons text-sm">open_in_new</span> Entregar en el caso
+                                </a>
+                            @endcan
+                        @elseif ($item->entregable)
                             @can('update', $caso)
                                 <button wire:click="entregar({{ $item->id }})" wire:loading.attr="disabled"
                                     class="inline-flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg font-medium

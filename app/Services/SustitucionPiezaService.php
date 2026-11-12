@@ -245,6 +245,7 @@ class SustitucionPiezaService
         string $destinoPiezaSaliente = PiezaExtraida::ESTADO_EN_ALMACEN,
         ?Deposito $depositoPiezaSaliente = null,
         ?string $serialSaliente = null,
+        ?MantenimientoComponente $pendiente = null,
     ): void {
         if ($pieza->estado !== PiezaExtraida::ESTADO_EN_ALMACEN) {
             throw new \InvalidArgumentException('Esta pieza no está disponible en Almacén (ya fue instalada o descartada).');
@@ -278,7 +279,7 @@ class SustitucionPiezaService
             throw new \InvalidArgumentException('Solo un atributo tipo grupo se puede "agregar" sin reemplazar nada.');
         }
 
-        DB::transaction(function () use ($pieza, $equipoDestino, $modo, $actor, $mantenimiento, $instanciaASustituirId, $atributo, $destinoPiezaSaliente, $depositoPiezaSaliente, $serialSaliente) {
+        DB::transaction(function () use ($pieza, $equipoDestino, $modo, $actor, $mantenimiento, $instanciaASustituirId, $atributo, $destinoPiezaSaliente, $depositoPiezaSaliente, $serialSaliente, $pendiente) {
             if (! $pieza->componenteAlmacen) {
                 throw new \InvalidArgumentException('Esta pieza no está asociada a ningún componente del almacén.');
             }
@@ -313,15 +314,9 @@ class SustitucionPiezaService
                 'equipo_destino_id' => $equipoDestino->id,
             ]);
 
-            // Queda también en "lo usado del almacén" del caso, con la pieza exacta.
-            $mantenimiento?->componentes()->create([
-                'componente_id'      => $pieza->componente_almacen_id,
-                'pieza_id'           => $pieza->id,
-                'cantidad_requerida' => 1,
-                'estado'             => MantenimientoComponente::ESTADO_ENTREGADO,
-                'fecha_entrega'      => now()->toDateString(),
-                'entregado_por_id'   => $actor->id,
-            ]);
+            // Queda también en "lo usado del almacén" del caso, con la pieza
+            // exacta (y si venía de una solicitud pendiente, la cierra).
+            $mantenimiento?->anotarUsoDePieza($pieza, $actor, $pendiente);
 
             $pieza->movimientos()->create([
                 'tipo'                  => PiezaExtraidaMovimiento::TIPO_INSTALACION,

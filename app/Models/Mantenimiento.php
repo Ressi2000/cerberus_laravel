@@ -709,7 +709,7 @@ class Mantenimiento extends Model
      * pantalla o un teclado. Queda "instalada" en el equipo del caso y en la
      * lista de lo usado del almacén, con la pieza exacta.
      */
-    public function usarPieza(PiezaExtraida $pieza, User $actor): MantenimientoComponente
+    public function usarPieza(PiezaExtraida $pieza, User $actor, ?MantenimientoComponente $pendiente = null): MantenimientoComponente
     {
         if (! $this->permiteRegistrarTrabajo()) {
             throw new \InvalidArgumentException('No se pueden usar piezas en el estado actual del caso.');
@@ -721,7 +721,7 @@ class Mantenimiento extends Model
             throw new \InvalidArgumentException('Esa pieza no está disponible para este caso.');
         }
 
-        return DB::transaction(function () use ($pieza, $componente, $actor) {
+        return DB::transaction(function () use ($pieza, $componente, $actor, $pendiente) {
             // Bloquea la pieza y verifica que siga en el almacén.
             $componente->registrarSalida(1, $actor, 'Uso en mantenimiento', $this, [$pieza]);
 
@@ -737,15 +737,44 @@ class Mantenimiento extends Model
                 'registrado_por'        => $actor->id,
             ]);
 
-            return $this->componentes()->create([
-                'componente_id'      => $componente->id,
-                'pieza_id'           => $pieza->id,
-                'cantidad_requerida' => 1,
-                'estado'             => MantenimientoComponente::ESTADO_ENTREGADO,
-                'fecha_entrega'      => now()->toDateString(),
-                'entregado_por_id'   => $actor->id,
-            ]);
+            return $this->anotarUsoDePieza($pieza, $actor, $pendiente);
         });
+    }
+
+    /**
+     * Deja en lo usado del caso la pieza exacta que se entregó. Si venía de
+     * una solicitud pendiente de esa variante, la solicitud queda entregada
+     * (si pedía varias, se descuenta una y sigue pendiente el resto).
+     */
+    public function anotarUsoDePieza(PiezaExtraida $pieza, User $actor, ?MantenimientoComponente $pendiente = null): MantenimientoComponente
+    {
+        $entregado = [
+            'estado'           => MantenimientoComponente::ESTADO_ENTREGADO,
+            'fecha_entrega'    => now()->toDateString(),
+            'entregado_por_id' => $actor->id,
+        ];
+
+        $pendiente = $pendiente
+            && (int) $pendiente->mantenimiento_id === (int) $this->id
+            && (int) $pendiente->componente_id === (int) $pieza->componente_almacen_id
+            ? MantenimientoComponente::lockForUpdate()->find($pendiente->id)
+            : null;
+
+        if ($pendiente && $pendiente->estado === MantenimientoComponente::ESTADO_PENDIENTE) {
+            if ((int) $pendiente->cantidad_requerida > 1) {
+                $pendiente->decrement('cantidad_requerida');
+                $item = $this->componentes()->create(['componente_id' => $pieza->componente_almacen_id, 'pieza_id' => $pieza->id, 'cantidad_requerida' => 1] + $entregado);
+            } else {
+                $pendiente->update(['pieza_id' => $pieza->id] + $entregado);
+                $item = $pendiente;
+            }
+
+            $this->recalcularEsperandoComponente();
+
+            return $item;
+        }
+
+        return $this->componentes()->create(['componente_id' => $pieza->componente_almacen_id, 'pieza_id' => $pieza->id, 'cantidad_requerida' => 1] + $entregado);
     }
 
     /** Descuenta del almacén un componente que había quedado pendiente por falta de stock. */

@@ -214,6 +214,8 @@ class MantenimientoPiezasPanel extends Component
 
             $this->dispatch('toast', type: 'success', message: "«{$candidato['descripcion']}» retirada del equipo.");
             $this->cerrarRetirar();
+            // "Usado del almacén" marca lo que se retiró después.
+            $this->dispatch('componenteRefrescar');
             unset($this->mantenimiento, $this->candidatosRetiro, $this->historial, $this->piezasDelRetiro);
         } catch (\InvalidArgumentException $e) {
             $this->dispatch('toast', type: 'error', message: $e->getMessage());

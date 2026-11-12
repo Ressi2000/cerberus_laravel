@@ -44,10 +44,19 @@
 
                         @if ($this->familia)
                             <x-form.select label="Variante" placeholder="Elige…"
-                                :options="$this->variantes->mapWithKeys(fn ($v) => [$v->id => $v->nombre . ' · ' . $v->unidadesParaConsumo() . ' disponible(s)'])->put('nueva', '+ No está en el almacén: solicitarla')"
+                                :options="$this->variantes->mapWithKeys(fn ($v) => [$v->id => $v->nombre . ' · ' . $v->stock_actual . ' en stock'])->put('nueva', '+ No está en el almacén: solicitarla')"
                                 wire:model.live="componenteId" :error="$errors->first('componenteId')" />
                         @endif
                     </div>
+
+                    @if ($this->pendiente)
+                        <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
+                                    bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300
+                                    border border-purple-200 dark:border-purple-500/30">
+                            <span class="material-icons text-sm">hourglass_empty</span>
+                            <span>Entregando la solicitud pendiente de este caso: elige cuál pieza (por su serial) y al usarla queda entregada.</span>
+                        </div>
+                    @endif
 
                     {{-- La familia no tiene nada en la empresa del caso, pero sí en otras --}}
                     @if (! empty($this->enOtrasEmpresas))

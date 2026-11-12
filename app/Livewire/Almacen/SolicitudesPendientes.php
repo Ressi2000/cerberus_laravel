@@ -102,8 +102,12 @@ class SolicitudesPendientes extends Component
             $componente = $item->componente;
             $caso       = $item->mantenimiento;
 
+            // Por unidad cuenta todo el stock (se elige la pieza por su serial
+            // al entregar, desde el caso); a granel, lo que se entrega por cantidad.
             if ($componente && ! array_key_exists($componente->id, $disponible)) {
-                $disponible[$componente->id] = $componente->unidadesParaConsumo();
+                $disponible[$componente->id] = $componente->esAGranel()
+                    ? $componente->unidadesParaConsumo()
+                    : (int) $componente->stock_actual;
             }
 
             $hay = $componente ? $disponible[$componente->id] : 0;
@@ -120,6 +124,8 @@ class SolicitudesPendientes extends Component
             }
 
             $item->setAttribute('entregable', $motivo === null);
+            // Por unidad se entrega desde el caso, eligiendo la pieza (y su ficha).
+            $item->setAttribute('en_el_caso', $componente && ! $componente->esAGranel());
             $item->setAttribute('motivo_no_entregable', $motivo);
 
             return $item;

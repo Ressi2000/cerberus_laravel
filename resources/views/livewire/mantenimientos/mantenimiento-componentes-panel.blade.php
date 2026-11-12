@@ -13,9 +13,15 @@
     </div>
 
     @forelse ($this->mantenimiento->componentes as $item)
-        <div wire:key="mant-comp-{{ $item->id }}" class="flex items-center justify-between py-2.5 {{ ! $loop->last ? 'border-b border-gray-100 dark:border-cerberus-steel/30' : '' }}">
-            <div>
-                <p class="text-sm text-gray-900 dark:text-white">{{ $item->componente->nombre ?? '—' }}</p>
+        @php
+            // Se entregó en este caso, pero después se sacó del equipo.
+            $yaNoEsta = $item->pieza
+                && ! ($item->pieza->estado === \App\Models\PiezaExtraida::ESTADO_INSTALADA
+                      && (int) $item->pieza->equipo_destino_id === (int) $this->mantenimiento->equipo_id);
+        @endphp
+        <div wire:key="mant-comp-{{ $item->id }}" class="flex items-center justify-between gap-3 py-2.5 {{ ! $loop->last ? 'border-b border-gray-100 dark:border-cerberus-steel/30' : '' }}">
+            <div class="min-w-0">
+                <p @class(['text-sm', 'text-gray-900 dark:text-white' => ! $yaNoEsta, 'text-gray-500 dark:text-cerberus-light line-through' => $yaNoEsta])>{{ $item->componente->nombre ?? '—' }}</p>
                 @if ($item->pieza)
                     <button type="button" wire:click="$dispatch('openPiezaFicha', { piezaId: {{ $item->pieza->id }} })"
                         class="text-xs font-mono text-cerberus-primary dark:text-cerberus-accent hover:underline" title="Ver la ficha y el recorrido de la pieza">
@@ -23,6 +29,9 @@
                     </button>
                 @endif
                 <p class="text-xs text-gray-500 dark:text-cerberus-light">Cantidad: {{ $item->cantidad_requerida }}</p>
+                @if ($yaNoEsta)
+                    <p class="text-xs text-amber-700 dark:text-amber-300">Se retiró del equipo después · hoy: {{ $item->pieza->ubicacion() }}</p>
+                @endif
             </div>
             <div class="flex items-center gap-2">
                 @if ($item->estado === 'Pendiente')
@@ -43,6 +52,12 @@
                                  border border-gray-200 dark:border-cerberus-steel/40"
                           title="El caso terminó antes de que hubiera stock">
                         <span class="material-icons text-xs">block</span> Cancelado
+                    </span>
+                @elseif ($yaNoEsta)
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full whitespace-nowrap
+                                 bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400
+                                 border border-amber-200 dark:border-amber-500/30">
+                        <span class="material-icons text-xs">undo</span> Retirada
                     </span>
                 @else
                     <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
