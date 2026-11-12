@@ -398,4 +398,54 @@ class TrazaPiezasTest extends TestCase
             ->assertSee('no se va a actualizar')
             ->assertDontSee('Ficha del equipo');
     }
+
+    /** @test */
+    public function lo_instalado_antes_de_vincular_la_familia_se_puede_retirar_despues(): void
+    {
+        $componente = $this->entrarRam('SN-ANTES');
+        $pieza = PiezaExtraida::where('identificador', 'SN-ANTES')->firstOrFail();
+
+        // Desktop con RAM todavía sin vincular: la pieza se instala sin tocar la ficha.
+        $desktop = CategoriaEquipo::create(['nombre' => 'Desktop']);
+        $ramDesktop = AtributoEquipo::create(['categoria_id' => $desktop->id, 'nombre' => 'RAM (GB)', 'slug' => 'ram-gb', 'tipo' => 'group', 'reutilizable' => true]);
+        $equipo = Equipo::forceCreate([
+            'empresa_id' => $this->empresa->id, 'categoria_id' => $desktop->id,
+            'estado_id' => EstadoEquipo::where('nombre', 'En reparación')->value('id'),
+            'codigo_interno' => 'EQ-DSK2', 'activo' => true,
+        ]);
+        $caso = Mantenimiento::create([
+            'empresa_id' => $this->empresa->id, 'equipo_id' => $equipo->id, 'tipo' => 'Correctivo',
+            'estado' => 'En reparación', 'reportado_por_id' => $this->admin->id, 'fecha_inicio' => now()->toDateString(),
+        ]);
+        Livewire::actingAs($this->admin)->test(UsarDelAlmacenModal::class)
+            ->call('abrir', $caso->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('componenteId', (string) $componente->id)
+            ->set('piezaId', (string) $pieza->id)
+            ->call('usar')->assertHasNoErrors();
+
+        // Después se vincula la RAM de Desktop a la familia.
+        app(VinculacionFamiliaService::class)->vincularSinDatos($ramDesktop, $this->ram);
+
+        $candidatos = Livewire::actingAs($this->admin)
+            ->test(MantenimientoPiezasPanel::class, ['mantenimientoId' => $caso->id])
+            ->instance()->candidatosRetiro;
+
+        $this->assertContains($pieza->id, array_column($candidatos, 'pieza_id'), 'Sigue apareciendo para retirar.');
+    }
+
+    /** @test */
+    public function una_pieza_que_esta_en_la_ficha_no_aparece_repetida_para_retirar(): void
+    {
+        $componente = $this->entrarRam('SN-EN-FICHA');
+        $caso = $this->crearCaso();
+        $this->instalar($caso, $componente, 'SN-EN-FICHA');
+
+        $candidatos = Livewire::actingAs($this->admin)
+            ->test(MantenimientoPiezasPanel::class, ['mantenimientoId' => $caso->id])
+            ->instance()->candidatosRetiro;
+
+        $this->assertSame([], array_values(array_filter(array_column($candidatos, 'pieza_id'))), 'Sale por la ficha, no como pieza suelta.');
+        $this->assertCount(1, array_filter($candidatos, fn ($c) => $c['atributo_id'] === $this->ramLaptop->id));
+    }
 }

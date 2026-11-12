@@ -143,18 +143,76 @@ class SustitucionPiezaService
 
     /**
      * Las piezas del almacén instaladas en el equipo que NO están en su
-     * ficha (por eso no salen al retirar una característica): sin
-     * característica, o cuya familia no está vinculada en esta categoría.
+     * ficha, y por eso no salen al retirar una característica:
+     * - sin característica, o cuya familia no está vinculada en esta categoría;
+     * - o que la categoría sí usa, pero ninguna entrada actual de la ficha la
+     *   refleja (ej. se instaló antes de vincular la familia).
+     * Con varias iguales, cada entrada de la ficha "cubre" una sola pieza.
      */
     public function piezasFueraDeFicha(Equipo $equipo)
     {
-        return PiezaExtraida::where('equipo_destino_id', $equipo->id)
+        $piezas = PiezaExtraida::where('equipo_destino_id', $equipo->id)
             ->where('estado', PiezaExtraida::ESTADO_INSTALADA)
             ->with(['atributo', 'componenteAlmacen'])
             ->orderBy('id')
-            ->get()
-            ->filter(fn (PiezaExtraida $p) => $this->atributoDestino($p, $equipo) === null)
-            ->values();
+            ->get();
+
+        $fichaPorAtributo = [];   // atributo_id => [valores normalizados de cada entrada vigente]
+        $fuera = collect();
+
+        foreach ($piezas as $pieza) {
+            $destino = $this->atributoDestino($pieza, $equipo);
+
+            if (! $destino) {
+                $fuera->push($pieza);
+                continue;
+            }
+
+            $fichaPorAtributo[$destino->id] ??= $this->entradasVigentes($equipo, $destino);
+            $propios = $this->normalizar($pieza->valor_extraido ?? []);
+
+            $i = collect($fichaPorAtributo[$destino->id])
+                ->search(fn ($entrada) => $propios !== [] && array_intersect_assoc($propios, $entrada) === $propios);
+
+            if ($i === false) {
+                $fuera->push($pieza);
+            } else {
+                unset($fichaPorAtributo[$destino->id][$i]); // esa entrada ya cubre a esta pieza
+            }
+        }
+
+        return $fuera->values();
+    }
+
+    /** Valores vigentes de una característica en el equipo (una entrada por instancia). */
+    private function entradasVigentes(Equipo $equipo, AtributoEquipo $atributo): array
+    {
+        if ($atributo->esGrupo()) {
+            return EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
+                ->where('atributo_id', $atributo->id)
+                ->where('es_actual', true)
+                ->pluck('valores')
+                ->map(fn ($v) => $this->normalizar(is_array($v) ? $v : (json_decode((string) $v, true) ?: [])))
+                ->all();
+        }
+
+        $valor = EquipoAtributoValor::where('equipo_id', $equipo->id)
+            ->where('atributo_id', $atributo->id)
+            ->where('es_actual', true)
+            ->value('valor');
+
+        return $valor === null ? [] : [$this->normalizar(['valor' => $valor])];
+    }
+
+    private function normalizar(array $valores): array
+    {
+        $limpio = collect($valores)
+            ->reject(fn ($v) => $v === null || $v === '')
+            ->map(fn ($v) => trim((string) $v))
+            ->all();
+        ksort($limpio);
+
+        return $limpio;
     }
 
     /**
