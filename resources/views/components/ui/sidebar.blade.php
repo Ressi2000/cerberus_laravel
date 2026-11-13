@@ -116,21 +116,41 @@
             @include('components.ui._sidebar-tooltip', ['label' => 'Dashboard'])
         </a>
 
-        {{-- ── MONITOREOS WEB ─────────────────────────────────────────────── --}}
+        {{-- ── MONITOREO (Grafana + Monitor de red) ───────────────────────── --}}
         @role('Administrador|Analista')
-        <a href="{{ route('monitoreos') }}" class="{{ $li }} {{ $active('monitoreos') ? $on : $off }}"
-            title="Monitoreos Web">
-            <span class="material-icons text-xl flex-shrink-0 {{ $active('monitoreos') ? $ion : $ioff }}">
-                monitor_heart
-            </span>
-            <span class="sidebar-label text-sm font-medium whitespace-nowrap">
-                Monitoreos
-            </span>
-            <span class="sidebar-badge ml-auto">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
-            </span>
-            @include('components.ui._sidebar-tooltip', ['label' => 'Monitoreos Web'])
-        </a>
+        @php
+            $monOpen = $active('monitoreos', 'admin.monitor-red.*');
+        @endphp
+        <div x-data="{ open: {{ $monOpen ? 'true' : 'false' }} }">
+            <button @click="open = !open" class="{{ $li }} {{ $monOpen ? $on : $off }}" title="Monitoreo">
+                <span class="material-icons text-xl flex-shrink-0 {{ $monOpen ? $ion : $ioff }}">monitor_heart</span>
+                <span class="sidebar-label flex-1 text-sm font-medium text-left whitespace-nowrap">Monitoreo</span>
+                <span class="sidebar-badge">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+                </span>
+                <span class="sidebar-arrow material-icons text-sm text-gray-400 dark:text-cerberus-steel flex-shrink-0 transition-transform duration-200"
+                      :class="{ 'rotate-180': open }">expand_more</span>
+                @include('components.ui._sidebar-tooltip', ['label' => 'Monitoreo'])
+            </button>
+            <div class="sidebar-submenu mt-0.5 ml-4 pl-3 border-l-2 border-gray-200 dark:border-cerberus-steel/40 space-y-0.5 overflow-hidden"
+                 x-show="open" x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 -translate-y-1" x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-1">
+                @foreach ([
+                    ['monitoreos',                  'Monitoreos Web',       'public'],
+                    ['admin.monitor-red.index',     'Monitor de red',       'insights'],
+                    ['admin.monitor-red.hosts',     'Hosts',                'lan'],
+                    ['admin.monitor-red.caidas',    'Historial de caídas',  'history'],
+                    ['admin.monitor-red.velocidad', 'Test de velocidad',    'speed'],
+                ] as [$ruta, $texto, $icono])
+                    <a href="{{ route($ruta) }}" class="{{ $li }} py-1.5 text-sm {{ $active($ruta) ? $on : $off }}">
+                        <span class="material-icons text-base flex-shrink-0 {{ $active($ruta) ? $ion : $ioff }}">{{ $icono }}</span>
+                        <span class="whitespace-nowrap">{{ $texto }}</span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
         @endrole
 
         {{-- ── NOTIFICACIONES ─────────────────────────────────────────────── --}}
