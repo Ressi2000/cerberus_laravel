@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Asignacion;
 use App\Models\Traslado;
+use App\Models\TrasladoAlmacen;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -189,6 +190,20 @@ class PlanillaService
             'recibidos'  => $recibidos,
             'pendientes' => $pendientes,
             'fecha'      => now()->format('d/m/Y'),
+        ]);
+
+        return $pdf->setPaper('letter', 'portrait');
+    }
+
+    /** Autorización de Traslado entre los almacenes de dos empresas. */
+    public function trasladoAlmacen(TrasladoAlmacen $traslado): \Barryvdh\DomPDF\PDF
+    {
+        $traslado->load(['empresaOrigen', 'empresaDestino', 'registradoPor.cargo']);
+
+        $pdf = Pdf::loadView('planillas.traslado-almacen', [
+            'traslado' => $traslado,
+            'fecha'    => now()->format('d/m/Y'),
+            ...PlanillaVerificacion::datos('traslado_almacen', $traslado->id),
         ]);
 
         return $pdf->setPaper('letter', 'portrait');

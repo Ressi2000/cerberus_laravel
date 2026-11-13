@@ -27,6 +27,25 @@
                     </button>
                 </div>
 
+                @if ($this->traslado)
+                    <div class="px-6 py-8 space-y-4 flex-1 text-center">
+                        <span class="material-icons text-4xl text-green-500">check_circle</span>
+                        <p class="text-sm text-gray-700 dark:text-white">
+                            Se trasladaron <b>{{ $this->traslado->cantidad }}</b> al almacén de <b>{{ $this->traslado->empresaDestino->nombre }}</b>.
+                        </p>
+                        <a href="{{ route('admin.almacen.traslados.autorizacion', $this->traslado) }}" target="_blank"
+                            class="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-medium bg-[#1E40AF] hover:bg-[#1E3A8A] text-white transition">
+                            <span class="material-icons text-sm">picture_as_pdf</span> Autorización de Traslado ({{ $this->traslado->folio() }})
+                        </a>
+                    </div>
+                    <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel flex-shrink-0">
+                        <button wire:click="close"
+                            class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white
+                                   hover:bg-gray-200 dark:hover:bg-cerberus-steel/50 transition">
+                            Cerrar
+                        </button>
+                    </div>
+                @else
                 <div class="px-6 py-5 space-y-4 overflow-y-auto flex-1">
                     <x-form.select label="Va al almacén de" placeholder="Elige la empresa…" :options="$this->empresas"
                         wire:model="empresaDestinoId" :error="$errors->first('empresaDestinoId')" required />
@@ -68,7 +87,10 @@
                         En la otra empresa entra a la variante con el mismo nombre (se crea si no existe). Las piezas siguen siendo las mismas, con su serial y su recorrido.
                     </p>
 
-                    <x-form.textarea label="Observaciones (opcional)" wire:model="observaciones" rows="2" placeholder="Ej: préstamo de stock para el caso #48" />
+                    <x-form.textarea label="Motivo del traslado" wire:model="motivo" rows="3" required
+                        placeholder="Para qué se necesita. Ej: Fenix tiene la laptop EQ-00057 esperando RAM (caso #48) y no hay en su almacén."
+                        :error="$errors->first('motivo')" />
+                    <p class="text-xs text-gray-500 dark:text-cerberus-light -mt-2">Va escrito en la «Autorización de Traslado» (PDF).</p>
                 </div>
 
                 <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel flex-shrink-0">
@@ -83,6 +105,7 @@
                         <span class="material-icons text-sm">swap_horiz</span> Trasladar
                     </button>
                 </div>
+                @endif
             </div>
         </div>
     @endif

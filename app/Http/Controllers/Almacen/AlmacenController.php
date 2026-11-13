@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Almacen;
 use App\Http\Controllers\Controller;
 use App\Models\ComponenteAlmacen;
 use App\Models\PiezaExtraida;
+use App\Models\TrasladoAlmacen;
+use App\Services\PlanillaService;
 use App\Services\QrCodeGenerator;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -61,5 +63,14 @@ class AlmacenController extends Controller
         abort_if($piezas->isEmpty(), 404);
 
         return view('almacen.etiquetas', compact('piezas'));
+    }
+
+    /** PDF "Autorización de Traslado" de un traslado entre almacenes. */
+    public function autorizacionTraslado(Request $request, TrasladoAlmacen $traslado, PlanillaService $planillas)
+    {
+        abort_unless($traslado->visiblePara($request->user()), 404);
+
+        return $planillas->trasladoAlmacen($traslado)
+            ->stream("autorizacion-traslado-{$traslado->folio()}.pdf");
     }
 }

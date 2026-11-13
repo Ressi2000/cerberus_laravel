@@ -30,7 +30,12 @@ class TrasladoAlmacenModal extends Component
     public array  $piezaIds         = [];
     /** Unidades sin serial, o la cantidad si es a granel. */
     public ?int   $sinSerial        = 0;
-    public string $observaciones    = '';
+    /** Para qué se traslada: obligatorio, va en la Autorización de Traslado. */
+    public string $motivo           = '';
+
+    /** Traslado recién hecho: se ofrece su autorización en PDF. */
+    #[Locked]
+    public ?int $trasladoId = null;
 
     #[On('openTrasladoAlmacen')]
     public function abrir(int $componenteId): void
@@ -39,7 +44,7 @@ class TrasladoAlmacenModal extends Component
         $componente = ComponenteAlmacen::findOrFail($componenteId);
 
         $this->componenteId = $componente->id;
-        $this->reset(['empresaDestinoId', 'piezaIds', 'observaciones']);
+        $this->reset(['empresaDestinoId', 'piezaIds', 'motivo', 'trasladoId']);
         $this->sinSerial = 0;
         unset($this->componente, $this->piezas);
         $this->resetValidation();
@@ -82,9 +87,11 @@ class TrasladoAlmacenModal extends Component
         $this->validate([
             'empresaDestinoId' => 'required|exists:empresas,id',
             'sinSerial'        => 'nullable|integer|min:0|max:100000',
-            'observaciones'    => 'nullable|string|max:500',
+            'motivo'           => 'required|string|min:' . TrasladoAlmacenService::MOTIVO_MINIMO . '|max:1000',
         ], [
             'empresaDestinoId.required' => 'Elige a qué empresa va.',
+            'motivo.required'           => 'Escribe el motivo del traslado: para qué se necesita.',
+            'motivo.min'                => 'Explica un poco más el motivo (para qué se necesita).',
         ]);
 
         // Solo piezas de ESTA variante (los ids llegan del navegador).
@@ -96,19 +103,20 @@ class TrasladoAlmacenModal extends Component
         }
 
         try {
-            $destino = app(TrasladoAlmacenService::class)->trasladar(
+            $traslado = app(TrasladoAlmacenService::class)->trasladar(
                 $componente,
                 Empresa::findOrFail($this->empresaDestinoId),
                 Auth::user(),
+                $this->motivo,
                 $piezas,
                 (int) $this->sinSerial,
-                trim($this->observaciones) ?: null,
             );
 
-            $n = $piezas->count() + (int) $this->sinSerial;
-            $this->close();
+            // Queda abierto con el enlace a la autorización en PDF.
+            $this->trasladoId = $traslado->id;
+            unset($this->componente, $this->piezas);
             $this->dispatch('stockActualizado');
-            $this->dispatch('toast', type: 'success', message: "Se trasladaron {$n} a «{$destino->nombre}» de {$destino->empresa->nombre}.");
+            $this->dispatch('toast', type: 'success', message: "Se trasladaron {$traslado->cantidad} a {$traslado->empresaDestino->nombre} ({$traslado->folio()}).");
         } catch (\InvalidArgumentException $e) {
             $this->addError('piezaIds', $e->getMessage());
         } catch (\Throwable $e) {
@@ -121,6 +129,12 @@ class TrasladoAlmacenModal extends Component
     {
         $this->open = false;
         $this->resetValidation();
+    }
+
+    #[Computed]
+    public function traslado(): ?\App\Models\TrasladoAlmacen
+    {
+        return $this->trasladoId ? \App\Models\TrasladoAlmacen::with('empresaDestino')->find($this->trasladoId) : null;
     }
 
     private function autorizar(): void

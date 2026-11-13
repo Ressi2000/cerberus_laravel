@@ -81,6 +81,12 @@
                                             </a>
                                         @else
                                             · <span class="text-gray-600 dark:text-cerberus-light">{{ $mov->motivo ?? '—' }}</span>
+                                            @if ($mov->traslado_almacen_id)
+                                                · <a href="{{ route('admin.almacen.traslados.autorizacion', $mov->traslado_almacen_id) }}" target="_blank"
+                                                     class="inline-flex items-center gap-0.5 text-cerberus-primary dark:text-cerberus-accent hover:underline">
+                                                    <span class="material-icons text-sm">picture_as_pdf</span>Autorización
+                                                  </a>
+                                            @endif
                                         @endif
                                     </p>
                                     <p class="text-xs text-gray-500 dark:text-cerberus-light">

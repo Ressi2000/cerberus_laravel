@@ -6,8 +6,8 @@ use App\Models\ComponenteAlmacen;
 use App\Models\Empresa;
 use App\Models\PiezaExtraida;
 use App\Models\PiezaExtraidaMovimiento;
+use App\Models\TrasladoAlmacen;
 use App\Models\User;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -19,13 +19,18 @@ use Illuminate\Support\Facades\DB;
  *
  * - Por unidad: se mueven las piezas elegidas por su serial. Siguen siendo
  *   las mismas piezas (mismo id, serial y recorrido), ahora de la otra
- *   empresa, y su recorrido dice "Trasladada a otro almacén".
+ *   empresa, y su recorrido dice "Trasladada al almacén de otra empresa".
  * - Unidades sin serial y familias a granel: solo cantidad.
  *
- * Ambos lados quedan en el historial de entradas y salidas de su variante.
+ * Queda un TrasladoAlmacen con el motivo (obligatorio) y lo que se movió,
+ * que es la base de la "Autorización de Traslado" en PDF; las dos salidas
+ * y entradas de stock quedan ligadas a él.
  */
 class TrasladoAlmacenService
 {
+    /** Largo mínimo del motivo: que diga para qué se traslada, no solo "traslado". */
+    const MOTIVO_MINIMO = 10;
+
     /**
      * @param iterable<PiezaExtraida> $piezas      piezas (con serial) que se trasladan
      * @param int                     $sinSerial   unidades sin serial (o cantidad, a granel)
@@ -34,12 +39,17 @@ class TrasladoAlmacenService
         ComponenteAlmacen $origen,
         Empresa $empresaDestino,
         User $actor,
+        string $motivo,
         iterable $piezas = [],
         int $sinSerial = 0,
-        ?string $observaciones = null,
-    ): ComponenteAlmacen {
+    ): TrasladoAlmacen {
         $piezas   = collect($piezas);
         $cantidad = $piezas->count() + $sinSerial;
+        $motivo   = trim($motivo);
+
+        if (mb_strlen($motivo) < self::MOTIVO_MINIMO) {
+            throw new \InvalidArgumentException('Escribe el motivo del traslado (para qué se necesita).');
+        }
 
         if ((int) $empresaDestino->id === (int) $origen->empresa_id) {
             throw new \InvalidArgumentException('Elige una empresa distinta a la de origen.');
@@ -55,14 +65,39 @@ class TrasladoAlmacenService
             throw new \InvalidArgumentException('A granel solo se traslada por cantidad.');
         }
 
+        $origen->loadMissing(['empresa', 'familia']);
         $empresaOrigen = $origen->empresa?->nombre ?? 'otra empresa';
 
-        return DB::transaction(function () use ($origen, $empresaDestino, $actor, $piezas, $cantidad, $observaciones, $empresaOrigen) {
+        return DB::transaction(function () use ($origen, $empresaDestino, $actor, $motivo, $piezas, $sinSerial, $cantidad, $empresaOrigen) {
             // Valida stock y que las piezas sean de esta variante y estén en el almacén.
-            $origen->registrarSalida($cantidad, $actor, "Traslado a {$empresaDestino->nombre}", null, $piezas, $observaciones);
+            $salida = $origen->registrarSalida($cantidad, $actor, "Traslado a {$empresaDestino->nombre}", null, $piezas, $motivo);
 
             $destino = $this->varianteEnDestino($origen, $empresaDestino, $actor);
-            $destino->registrarEntrada($cantidad, $actor, "Traslado desde {$empresaOrigen}", $observaciones);
+            $entrada = $destino->registrarEntrada($cantidad, $actor, "Traslado desde {$empresaOrigen}", $motivo);
+
+            $traslado = TrasladoAlmacen::create([
+                'empresa_origen_id'     => $origen->empresa_id,
+                'empresa_destino_id'    => $empresaDestino->id,
+                'componente_origen_id'  => $origen->id,
+                'componente_destino_id' => $destino->id,
+                'variante'              => $origen->nombre,
+                'familia'               => $origen->familia?->nombre,
+                'cantidad'              => $cantidad,
+                'detalle'               => [
+                    'piezas'     => $piezas->map(fn (PiezaExtraida $p) => [
+                        'id'        => $p->id,
+                        'codigo'    => $p->identificador ?: "PIEZA-{$p->id}",
+                        'condicion' => $p->labelCondicion(),
+                    ])->values()->all(),
+                    'sin_serial' => $sinSerial,
+                    'unidad'     => $origen->unidad,
+                ],
+                'motivo'                => $motivo,
+                'registrado_por'        => $actor->id,
+            ]);
+
+            $salida->update(['traslado_almacen_id' => $traslado->id]);
+            $entrada->update(['traslado_almacen_id' => $traslado->id]);
 
             foreach ($piezas as $pieza) {
                 $pieza->update([
@@ -73,11 +108,11 @@ class TrasladoAlmacenService
                 $pieza->movimientos()->create([
                     'tipo'           => PiezaExtraidaMovimiento::TIPO_TRASLADO_ALMACEN,
                     'registrado_por' => $actor->id,
-                    'observaciones'  => trim("De {$empresaOrigen} a {$empresaDestino->nombre}. " . ($observaciones ?? '')),
+                    'observaciones'  => "De {$empresaOrigen} a {$empresaDestino->nombre} (autorización {$traslado->folio()}): {$motivo}",
                 ]);
             }
 
-            return $destino;
+            return $traslado;
         });
     }
 

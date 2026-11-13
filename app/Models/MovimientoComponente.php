@@ -18,6 +18,7 @@ class MovimientoComponente extends Model
     protected $fillable = [
         'componente_id',
         'mantenimiento_id',
+        'traslado_almacen_id',
         'tipo',
         'cantidad',
         'motivo',
@@ -33,6 +34,11 @@ class MovimientoComponente extends Model
     public function mantenimiento()
     {
         return $this->belongsTo(Mantenimiento::class);
+    }
+
+    public function trasladoAlmacen()
+    {
+        return $this->belongsTo(TrasladoAlmacen::class);
     }
 
     public function registradoPor()

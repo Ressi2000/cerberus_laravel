@@ -207,6 +207,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/', [AlmacenController::class, 'index'])->name('index');
             Route::get('/solicitudes', [AlmacenController::class, 'solicitudes'])->name('solicitudes');
             Route::get('/etiquetas', [AlmacenController::class, 'etiquetas'])->name('etiquetas');
+            Route::get('/traslados/{traslado}/autorizacion', [AlmacenController::class, 'autorizacionTraslado'])->name('traslados.autorizacion');
         });
 
     // Traslados

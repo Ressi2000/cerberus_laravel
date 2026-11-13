@@ -526,7 +526,7 @@ class TrazaPiezasTest extends TestCase
             ->assertSee('SN-T2')
             ->set('empresaDestinoId', (string) $otra->id)
             ->set('piezaIds', [$pieza->id])
-            ->set('observaciones', 'Para el caso de Fenix')
+            ->set('motivo', 'Para el caso de Fenix que espera RAM')
             ->call('guardar')
             ->assertHasNoErrors();
 
@@ -560,6 +560,8 @@ class TrazaPiezasTest extends TestCase
             ->call('abrir', $origen->id)
             ->set('empresaDestinoId', (string) $otra->id)
             ->set('sinSerial', 4)
+            ->call('guardar')->assertHasErrors('motivo')
+            ->set('motivo', 'Fenix se quedó sin bisagras para el caso #12')
             ->call('guardar')->assertHasNoErrors();
 
         $this->assertSame(6, $origen->fresh()->stock_actual);
@@ -589,5 +591,43 @@ class TrazaPiezasTest extends TestCase
             ->call('abrir', $pieza->id)
             ->assertSee('Piso 25')
             ->assertSeeInOrder(['move_to_inbox', 'Piso 25']);
+    }
+
+    /** @test */
+    public function el_traslado_genera_su_autorizacion_en_pdf(): void
+    {
+        $origen = $this->entrarRam("SN-PDF-1\nSN-PDF-2");
+        $otra = Empresa::create(['nombre' => 'Fenix']);
+        $ids = PiezaExtraida::whereIn('identificador', ['SN-PDF-1', 'SN-PDF-2'])->pluck('id')->all();
+
+        Livewire::actingAs($this->admin)->test(\App\Livewire\Almacen\TrasladoAlmacenModal::class)
+            ->call('abrir', $origen->id)
+            ->set('empresaDestinoId', (string) $otra->id)
+            ->set('piezaIds', $ids)
+            ->set('motivo', 'Reponer RAM en Fenix para dos laptops en reparación')
+            ->call('guardar')
+            ->assertHasNoErrors()
+            ->assertSee('Autorización de Traslado (TA-');
+
+        $traslado = \App\Models\TrasladoAlmacen::firstOrFail();
+        $this->assertSame(2, $traslado->cantidad);
+        $this->assertSame(['SN-PDF-1', 'SN-PDF-2'], array_column($traslado->detalle['piezas'], 'codigo'));
+        $this->assertSame(2, \App\Models\MovimientoComponente::where('traslado_almacen_id', $traslado->id)->count(), 'Salida y entrada ligadas.');
+
+        $this->actingAs($this->admin)->get(route('admin.almacen.traslados.autorizacion', $traslado))
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        // El HTML del documento dice de dónde a dónde, el motivo y los seriales.
+        $html = view('planillas.traslado-almacen', ['traslado' => $traslado->fresh(['empresaOrigen', 'empresaDestino', 'registradoPor']), 'fecha' => now()->format('d/m/Y')])->render();
+        foreach (['Autorización de Traslado', 'Empresa A', 'Fenix', 'Reponer RAM en Fenix', 'SN-PDF-2', 'Autoriza el traslado'] as $texto) {
+            $this->assertStringContainsString($texto, $html);
+        }
+
+        // Un Analista de otra empresa no la ve.
+        $ajena = Empresa::create(['nombre' => 'Ajena']);
+        $analista = User::factory()->create(['empresa_id' => $ajena->id, 'empresa_activa_id' => $ajena->id]);
+        $analista->assignRole('Analista');
+        $this->assertNotSame(200, $this->actingAs($analista)->get(route('admin.almacen.traslados.autorizacion', $traslado))->status());
     }
 }
