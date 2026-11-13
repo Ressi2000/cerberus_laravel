@@ -17,6 +17,7 @@
                 'traslado_deposito' => 'local_shipping',
                 'salida_ajuste'     => 'remove_circle_outline',
                 'agrupada'          => 'stacks',
+                'traslado_almacen'  => 'swap_horiz',
             ];
         @endphp
 
@@ -58,6 +59,10 @@
                                 Instalada en
                                 <a href="{{ route('admin.equipos.show', $pieza->equipoDestino) }}" wire:navigate
                                    class="font-medium text-cerberus-primary dark:text-cerberus-accent hover:underline">{{ $pieza->equipoDestino->codigo_interno }}</a>
+                            @elseif ($pieza->estado === 'en_deposito' && $pieza->deposito && auth()->user()->hasRole('Administrador'))
+                                En el depósito
+                                <a href="{{ route('admin.configuracion.depositos.show', $pieza->deposito) }}" wire:navigate
+                                   class="font-medium text-cerberus-primary dark:text-cerberus-accent hover:underline">{{ $pieza->deposito->nombre }}</a>
                             @elseif ($pieza->estado !== 'en_almacen')
                                 {{ $pieza->ubicacion() }}
                             @endif

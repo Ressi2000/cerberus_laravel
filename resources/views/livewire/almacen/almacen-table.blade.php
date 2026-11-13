@@ -6,6 +6,7 @@
     @livewire('almacen.componente-piezas-modal')
     @livewire('almacen.registrar-entrada-modal')
     @livewire('almacen.pieza-ficha-modal')
+    @livewire('almacen.traslado-almacen-modal')
 
     {{-- ── STATS CARDS ─────────────────────────────────────────────────────── --}}
     <x-ui.stats-cards :items="[
@@ -259,6 +260,20 @@
                                         Registrar salida (ajuste o dañada)
                                     </button>
                                 </li>
+                                @if (auth()->user()->hasRole('Administrador'))
+                                    <li>
+                                        <button wire:click="$dispatch('openTrasladoAlmacen', { componenteId: {{ $componente->id }} })"
+                                                @click="close()"
+                                                class="flex items-center gap-3 px-4 py-2.5 w-full
+                                                       text-gray-600 dark:text-cerberus-light
+                                                       hover:bg-gray-50 dark:hover:bg-cerberus-steel/20
+                                                       hover:text-blue-600 dark:hover:text-cerberus-accent
+                                                       transition-colors duration-100">
+                                            <span class="material-icons text-base text-cerberus-accent">swap_horiz</span>
+                                            Trasladar a otra empresa
+                                        </button>
+                                    </li>
+                                @endif
                             @endif
                             @if ($componente->activo)
                                 <li>

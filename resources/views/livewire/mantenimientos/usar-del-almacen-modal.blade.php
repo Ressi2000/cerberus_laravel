@@ -68,7 +68,7 @@
                                 En <b>{{ $this->mantenimiento->empresa->nombre ?? 'esta empresa' }}</b> no hay {{ $this->familia->nombre }} en el almacén.
                                 Hay en otras empresas:
                                 {{ collect($this->enOtrasEmpresas)->map(fn ($n, $empresa) => "{$empresa} ({$n})")->implode(', ') }}.
-                                Cada empresa tiene su propio almacén: para usarlas aquí, primero hay que darles entrada en el almacén de esta empresa.
+                                Cada empresa tiene su propio almacén: para usarlas aquí, trasládalas desde el Almacén («Trasladar a otra empresa» en el menú de la variante).
                             </span>
                         </div>
                     @endif

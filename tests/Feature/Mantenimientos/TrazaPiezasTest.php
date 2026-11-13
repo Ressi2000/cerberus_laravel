@@ -511,4 +511,83 @@ class TrazaPiezasTest extends TestCase
             ->assertSee('Retirada')
             ->assertSee('Se retiró del equipo después');
     }
+
+    // ─── Traslado entre almacenes de empresas y piezas en depósito ─────────
+
+    /** @test */
+    public function se_trasladan_piezas_al_almacen_de_otra_empresa_y_siguen_siendo_las_mismas(): void
+    {
+        $origen = $this->entrarRam("SN-T1\nSN-T2");
+        $otra = Empresa::create(['nombre' => 'Fenix']);
+        $pieza = PiezaExtraida::where('identificador', 'SN-T1')->firstOrFail();
+
+        Livewire::actingAs($this->admin)->test(\App\Livewire\Almacen\TrasladoAlmacenModal::class)
+            ->call('abrir', $origen->id)
+            ->assertSee('SN-T2')
+            ->set('empresaDestinoId', (string) $otra->id)
+            ->set('piezaIds', [$pieza->id])
+            ->set('observaciones', 'Para el caso de Fenix')
+            ->call('guardar')
+            ->assertHasNoErrors();
+
+        $destino = ComponenteAlmacen::where('empresa_id', $otra->id)->firstOrFail();
+        $this->assertSame($origen->nombre, $destino->nombre);
+        $this->assertSame($origen->familia_id, $destino->familia_id);
+        $this->assertSame(1, $origen->fresh()->stock_actual);
+        $this->assertSame(1, $destino->stock_actual);
+
+        $pieza->refresh();
+        $this->assertSame($otra->id, (int) $pieza->empresa_id);
+        $this->assertSame($destino->id, (int) $pieza->componente_almacen_id);
+        $this->assertSame(PiezaExtraida::ESTADO_EN_ALMACEN, $pieza->estado);
+        $this->assertSame(PiezaExtraidaMovimiento::TIPO_TRASLADO_ALMACEN, $pieza->movimientos()->reorder()->orderByDesc('id')->value('tipo'));
+        $this->assertDatabaseHas('movimientos_componentes', ['componente_id' => $origen->id, 'tipo' => 'Salida', 'motivo' => 'Traslado a Fenix']);
+        $this->assertDatabaseHas('movimientos_componentes', ['componente_id' => $destino->id, 'tipo' => 'Entrada', 'motivo' => 'Traslado desde Empresa A']);
+    }
+
+    /** @test */
+    public function a_granel_se_traslada_por_cantidad_y_solo_el_administrador_puede(): void
+    {
+        $bisagras = FamiliaComponente::create(['nombre' => 'Bisagras', 'control' => 'granel', 'campos' => []]);
+        $origen = ComponenteAlmacen::create([
+            'empresa_id' => $this->empresa->id, 'familia_id' => $bisagras->id, 'nombre' => 'Bisagra HP',
+            'unidad' => 'par', 'stock_actual' => 0, 'activo' => true, 'creado_por' => $this->admin->id,
+        ]);
+        $origen->registrarEntrada(10, $this->admin);
+        $otra = Empresa::create(['nombre' => 'Fenix']);
+
+        Livewire::actingAs($this->admin)->test(\App\Livewire\Almacen\TrasladoAlmacenModal::class)
+            ->call('abrir', $origen->id)
+            ->set('empresaDestinoId', (string) $otra->id)
+            ->set('sinSerial', 4)
+            ->call('guardar')->assertHasNoErrors();
+
+        $this->assertSame(6, $origen->fresh()->stock_actual);
+        $this->assertSame(4, ComponenteAlmacen::where('empresa_id', $otra->id)->value('stock_actual'));
+
+        $analista = User::factory()->create(['empresa_id' => $this->empresa->id, 'empresa_activa_id' => $this->empresa->id]);
+        $analista->assignRole('Analista');
+        Livewire::actingAs($analista)->test(\App\Livewire\Almacen\TrasladoAlmacenModal::class)
+            ->call('abrir', $origen->id)
+            ->assertForbidden();
+    }
+
+    /** @test */
+    public function una_pieza_en_un_deposito_muestra_su_codigo_y_su_recorrido(): void
+    {
+        $componente = $this->entrarRam('SN-DANADA');
+        $pieza = PiezaExtraida::where('identificador', 'SN-DANADA')->firstOrFail();
+        $deposito = \App\Models\Deposito::create(['empresa_id' => $this->empresa->id, 'nombre' => 'Piso 25', 'activo' => true, 'creado_por' => $this->admin->id]);
+        app(\App\Services\DescarteComponenteService::class)->marcarDanado($componente, 1, $deposito, $this->admin, [$pieza], 'No enciende');
+
+        Livewire::actingAs($this->admin)->test(\App\Livewire\Configuracion\Depositos\DepositoContenido::class, ['deposito' => $deposito])
+            ->assertSee('Serial SN-DANADA')
+            ->assertSee('Recorrido')
+            ->assertSee($componente->nombre);
+
+        Livewire::actingAs($this->admin)->test(PiezaFichaModal::class)
+            ->call('abrir', $pieza->id)
+            ->assertSee('Piso 25')
+            ->assertSeeInOrder(['move_to_inbox', 'Piso 25']);
+    }
 }
