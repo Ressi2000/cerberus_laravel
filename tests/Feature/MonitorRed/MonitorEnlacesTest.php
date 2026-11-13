@@ -150,6 +150,23 @@ class MonitorEnlacesTest extends TestCase
     }
 
     /** @test */
+    public function la_misma_ip_publica_puede_compartirse_entre_localidades_pero_no_repetirse_en_una(): void
+    {
+        $torre  = $this->empresa('Torre');
+        $sede   = $this->empresa('Sede B');
+        $this->enlace($torre, ['ip_publica' => '200.44.32.12']);
+        $admin = $this->crearAdmin();
+
+        $crear = fn (Empresa $e) => Livewire::actingAs($admin)->test(EnlaceModal::class)
+            ->call('abrirCrear')->set('empresa_id', (string) $e->id)
+            ->set('nombre', 'Movistar vía Torre')->set('proveedor', 'Movistar')
+            ->set('ip_publica', '200.44.32.12')->call('guardar');
+
+        $crear($sede)->assertHasNoErrors();
+        $crear($torre)->assertHasErrors('ip_publica');
+    }
+
+    /** @test */
     public function solo_hay_un_enlace_principal_por_empresa(): void
     {
         $a = $this->empresa();

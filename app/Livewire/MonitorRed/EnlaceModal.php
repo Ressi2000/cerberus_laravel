@@ -123,9 +123,13 @@ class EnlaceModal extends Component
             return;
         }
 
-        if ($this->ip_publica !== '' && MonitorEnlace::where('ip_publica', $this->ip_publica)
+        // Única por empresa, no global: un enlace centralizado (p. ej. una sola IP
+        // pública en la sede principal que da internet a varias localidades)
+        // se registra en cada localidad con la misma IP.
+        if ($this->ip_publica !== '' && MonitorEnlace::where('empresa_id', $this->empresa_id)
+                ->where('ip_publica', $this->ip_publica)
                 ->when($this->enlaceId, fn ($q) => $q->where('id', '!=', $this->enlaceId))->exists()) {
-            $this->addError('ip_publica', 'Esa IP pública ya está registrada en otro enlace.');
+            $this->addError('ip_publica', 'Esa IP pública ya está registrada en otro enlace de esta localidad.');
             return;
         }
 
