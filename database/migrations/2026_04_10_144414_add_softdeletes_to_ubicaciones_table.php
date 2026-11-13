@@ -11,12 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('ubicaciones', function (Blueprint $table) {
-            // Añadir columnas que puedan faltar
-            if (! Schema::hasColumn('ubicaciones', 'deleted_at')) {
-                $table->softDeletes();
-            }
-        });
+        // Sin efecto a propósito: el modelo Ubicacion no usa SoftDeletes y
+        // producción no tiene ubicaciones.deleted_at. Se deja el archivo
+        // porque las bases existentes lo tienen registrado como ejecutado.
     }
 
     /**

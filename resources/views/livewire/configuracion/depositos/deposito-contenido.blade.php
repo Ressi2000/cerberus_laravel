@@ -1,5 +1,8 @@
 <div class="space-y-6">
 
+    {{-- Ficha y recorrido de cada pieza --}}
+    @livewire('almacen.pieza-ficha-modal')
+
     {{-- HEADER --}}
     <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
         <div class="flex items-center justify-between flex-wrap gap-4">
@@ -94,22 +97,33 @@
         @forelse ($this->piezas as $pieza)
             <div wire:key="dep-pieza-{{ $pieza->id }}" class="flex items-center justify-between gap-3 py-2.5 {{ ! $loop->last ? 'border-b border-cerberus-steel/30' : '' }}">
                 <div class="min-w-0">
-                    <p class="text-sm text-cerberus-light">{{ $pieza->atributo?->describirValor($pieza->valor_extraido) ?? 'Pieza' }}</p>
+                    <p class="text-sm text-cerberus-light">
+                        {{ $pieza->componenteAlmacen?->nombre ?? $pieza->atributo?->describirValor($pieza->valor_extraido ?? []) ?? 'Pieza' }}
+                    </p>
                     <p class="text-xs text-cerberus-steel">
-                        De
+                        <button type="button" wire:click="$dispatch('openPiezaFicha', { piezaId: {{ $pieza->id }} })"
+                            class="font-mono text-cerberus-accent hover:underline">{{ $pieza->codigo() }}</button>
+                        ·
                         @if ($pieza->equipoOrigen)
-                            <a href="{{ route('admin.equipos.show', $pieza->equipoOrigen) }}" wire:navigate class="text-cerberus-accent hover:underline">
-                                {{ $pieza->equipoOrigen->codigo_interno }}
-                            </a>
+                            de <a href="{{ route('admin.equipos.show', $pieza->equipoOrigen) }}" wire:navigate class="text-cerberus-accent hover:underline">{{ $pieza->equipoOrigen->codigo_interno }}</a>
+                        @elseif ($pieza->condicion === \App\Models\PiezaExtraida::CONDICION_NUEVO)
+                            se dañó en el almacén
                         @else
-                            un equipo eliminado
+                            de un equipo eliminado
                         @endif
+                        · llegó {{ $pieza->updated_at->format('d/m/Y') }}
                     </p>
                 </div>
-                <button wire:click="abrirTrasladarPieza({{ $pieza->id }})"
-                    class="flex-shrink-0 text-xs text-cerberus-accent hover:underline flex items-center gap-1">
-                    <span class="material-icons text-sm">local_shipping</span> Trasladar
-                </button>
+                <div class="flex items-center gap-3 flex-shrink-0">
+                    <button type="button" wire:click="$dispatch('openPiezaFicha', { piezaId: {{ $pieza->id }} })"
+                        class="text-xs text-cerberus-accent hover:underline flex items-center gap-1">
+                        <span class="material-icons text-sm">timeline</span> Recorrido
+                    </button>
+                    <button wire:click="abrirTrasladarPieza({{ $pieza->id }})"
+                        class="text-xs text-cerberus-accent hover:underline flex items-center gap-1">
+                        <span class="material-icons text-sm">local_shipping</span> Trasladar
+                    </button>
+                </div>
             </div>
         @empty
             <p class="text-sm text-cerberus-steel text-center py-4">No hay piezas descartadas en este depósito.</p>

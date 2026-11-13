@@ -49,11 +49,21 @@ class PiezaExtraida extends Model
     const ESTADO_EN_ALMACEN = 'en_almacen';
     const ESTADO_INSTALADA  = 'instalada';
     const ESTADO_EN_DEPOSITO = 'en_deposito';
+    /** Salió del almacén por un ajuste manual (pérdida, corrección de inventario...) — sin equipo ni depósito de destino. */
+    const ESTADO_RETIRADA    = 'retirada';
+    /**
+     * Estaba en el almacén y su componente pasó a una familia "a granel":
+     * dejó de contarse como pieza individual y ahora es parte de la cantidad
+     * en stock. Su historial anterior se conserva.
+     */
+    const ESTADO_AGRUPADA    = 'agrupada';
 
     const ESTADOS = [
         self::ESTADO_EN_ALMACEN  => 'En almacén',
         self::ESTADO_INSTALADA   => 'Instalada',
         self::ESTADO_EN_DEPOSITO => 'En depósito',
+        self::ESTADO_RETIRADA    => 'Retirada (ajuste)',
+        self::ESTADO_AGRUPADA    => 'Pasó a contarse por cantidad',
     ];
 
     // ── Motivos de extracción ────────────────────────────────────────────────
@@ -191,6 +201,49 @@ class PiezaExtraida extends Model
         $base = $this->atributo?->nombre ?? $this->componenteAlmacen?->nombre ?? 'Pieza';
 
         return $this->identificador ? "{$base} ({$this->identificador})" : $base;
+    }
+
+    /**
+     * Descripción para listas y selectores: el valor de la característica
+     * si la pieza está ligada a una (ej. "RAM: 8GB"), o el nombre del
+     * componente si se registró a mano — más su identificador si lo tiene.
+     */
+    public function descripcion(): string
+    {
+        if ($this->atributo) {
+            $base = $this->atributo->describirValor($this->valor_extraido ?? []);
+
+            return $this->identificador ? "{$base} ({$this->identificador})" : $base;
+        }
+
+        return $this->nombre();
+    }
+
+    /**
+     * Cómo se identifica la pieza ante una persona: su serial, o el código
+     * que le dio el sistema (AUTO-…) si no tenía; si no tiene ninguno (piezas
+     * viejas), su número interno. Sirve para buscarla en Almacén.
+     */
+    public function codigo(): string
+    {
+        if (! $this->identificador) {
+            return "Pieza #{$this->id}";
+        }
+
+        return (str_starts_with($this->identificador, 'AUTO-') ? 'Código ' : 'Serial ') . $this->identificador;
+    }
+
+    /** Dónde está hoy, en una frase (para la ficha y las listas). */
+    public function ubicacion(): string
+    {
+        return match ($this->estado) {
+            self::ESTADO_EN_ALMACEN  => 'En el almacén',
+            self::ESTADO_INSTALADA   => $this->equipoDestino ? "Instalada en {$this->equipoDestino->codigo_interno}" : 'Instalada en un equipo eliminado',
+            self::ESTADO_EN_DEPOSITO => 'En el depósito ' . ($this->deposito?->nombre ?? '—'),
+            self::ESTADO_AGRUPADA    => 'Se cuenta por cantidad (a granel)',
+            self::ESTADO_RETIRADA    => 'Retirada del almacén',
+            default                  => $this->labelEstado(),
+        };
     }
 
     public function esManual(): bool

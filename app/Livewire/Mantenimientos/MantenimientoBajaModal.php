@@ -8,6 +8,7 @@ use App\Models\PiezaExtraida;
 use App\Services\ExtraccionPiezaService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -22,6 +23,8 @@ use Livewire\Component;
 class MantenimientoBajaModal extends Component
 {
     public bool $open = false;
+    // Locked: el id no se puede cambiar desde el navegador.
+    #[Locked]
     public ?int $mantenimientoId = null;
     public string $motivo = '';
 
@@ -71,13 +74,23 @@ class MantenimientoBajaModal extends Component
             'depositoId.required' => 'Selecciona en qué depósito quedará guardado el equipo.',
         ]);
 
-        $deposito = Deposito::findOrFail($this->depositoId);
+        // Solo depósitos activos de la empresa del caso.
+        $deposito = Deposito::activos()
+            ->where('empresa_id', $m->empresa_id)
+            ->find($this->depositoId);
+
+        if (! $deposito) {
+            $this->addError('depositoId', 'Ese depósito no está disponible para este caso.');
+            return;
+        }
 
         try {
             $m->marcarDadoDeBaja(Auth::user(), $this->motivo, $deposito, $this->piezasAExtraer());
             $this->dispatch('toast', type: 'success', message: 'Equipo dado de baja.');
             $this->dispatch('mantenimientoActualizado');
             $this->close();
+        } catch (\InvalidArgumentException $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
         } catch (\Exception $e) {
             Log::error('MantenimientoBajaModal@confirmar: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Error al dar de baja el equipo.');

@@ -31,8 +31,43 @@ class MantenimientoEvidencia extends Model
         return $this->belongsTo(User::class, 'subido_por_id');
     }
 
+    /**
+     * Disco PRIVADO (storage/app/private): las fotos no se pueden abrir con
+     * una URL directa; solo por la ruta admin.mantenimientos.evidencias.show,
+     * que exige sesión y permiso para ver el caso.
+     */
+    const DISCO = 'local';
+
+    /**
+     * Disco donde se guardaban antes (público, accesible por /storage/...).
+     * Solo se lee de aquí mientras no se haya corrido
+     * `php artisan cerberus:mover-evidencias-privadas`.
+     */
+    const DISCO_ANTERIOR = 'public';
+
+    /** Dirección protegida de la foto (sirve para el <img> y para abrirla). */
     public function url(): string
     {
-        return Storage::disk('public')->url($this->ruta_archivo);
+        return route('admin.mantenimientos.evidencias.show', [$this->mantenimiento_id, $this->id]);
+    }
+
+    /** Disco donde está el archivo hoy: el privado, o el público si todavía no se movió. */
+    public function discoDelArchivo(): ?string
+    {
+        foreach ([self::DISCO, self::DISCO_ANTERIOR] as $disco) {
+            if (Storage::disk($disco)->exists($this->ruta_archivo)) {
+                return $disco;
+            }
+        }
+
+        return null;
+    }
+
+    /** Borra el archivo del disco, esté donde esté. */
+    public function borrarArchivo(): void
+    {
+        foreach ([self::DISCO, self::DISCO_ANTERIOR] as $disco) {
+            Storage::disk($disco)->delete($this->ruta_archivo);
+        }
     }
 }

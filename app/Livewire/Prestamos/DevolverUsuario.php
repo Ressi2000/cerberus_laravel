@@ -138,6 +138,8 @@ class DevolverUsuario extends Component
 
             $this->redirect(route('admin.prestamos.historial', $this->usuarioId), navigate: true);
 
+        } catch (\App\Exceptions\ModuloBloqueadoException $e) {
+            $this->addError('general', $e->getMessage());
         } catch (\Exception $e) {
             Log::error('DevolverUsuario@confirmar (Préstamos): ' . $e->getMessage());
             $this->addError('general', 'Ocurrió un error al registrar la devolución.');

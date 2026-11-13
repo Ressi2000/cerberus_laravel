@@ -184,7 +184,9 @@ class AsignacionItem extends Model
      */
     public function registrarDevolucion(?string $observaciones = null): void
     {
-        $bloqueo = \App\Models\Mantenimiento::where('equipo_id', $this->equipo_id)->abiertos()->first();
+        // Solo bloquea un caso que YA tiene el equipo en mantenimiento/reparación.
+        // Un preventivo "Programado" todavía no lo toca, así que no impide devolverlo.
+        $bloqueo = Mantenimiento::bloqueoActivoDe($this->equipo_id);
 
         if ($bloqueo) {
             throw new \App\Exceptions\ModuloBloqueadoException(

@@ -49,6 +49,14 @@
                 {{-- ── FILAS DE ATRIBUTOS (scroll) ──────────────────────────────── --}}
                 <div class="overflow-y-auto flex-1 px-6 py-3 space-y-2">
 
+                    @error('general')
+                        <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
+                                    bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300
+                                    border border-red-200 dark:border-red-500/30">
+                            <span class="material-icons text-base">error_outline</span>{{ $message }}
+                        </div>
+                    @enderror
+
                     @forelse ($filas as $i => $fila)
                         <div wire:key="fila-{{ $fila['uid'] }}"
                              class="rounded-xl border transition-all duration-150
@@ -85,7 +93,8 @@
                                 {{-- Tipo --}}
                                 <div>
                                     <select wire:model.live="filas.{{ $i }}.tipo" wire:change="ajustarPorTipo({{ $i }})"
-                                        {{ $fila['eliminar'] ? 'disabled' : '' }}
+                                        {{ $fila['eliminar'] || $fila['familia_id'] ? 'disabled' : '' }}
+                                        title="{{ $fila['familia_id'] ? 'Usa la ficha de una familia: siempre es un grupo de campos' : '' }}"
                                         class="w-full rounded-lg px-3 py-1.5 text-sm
                                                bg-white dark:bg-cerberus-dark
                                                border border-gray-300 dark:border-cerberus-steel
@@ -235,8 +244,62 @@
 
                             </div>
 
-                            {{-- Panel de sub-campos para tipo 'group' --}}
+                            {{-- Ficha de familia (solo grupos) --}}
                             @if ($fila['tipo'] === 'group' && !$fila['eliminar'])
+                                @php
+                                    $familiaFila = $fila['familia_id'] ? $this->familias->firstWhere('id', $fila['familia_id']) : null;
+                                    $requiereAsistente = $fila['id'] && $fila['tiene_valores'] && ! $fila['familia_original'];
+                                @endphp
+                                <div class="px-3 pb-2 pt-2 border-t border-teal-100 dark:border-teal-500/20 flex flex-wrap items-center gap-2 text-xs">
+                                    <span class="material-icons text-sm text-teal-600 dark:text-teal-400">category</span>
+                                    <span class="font-medium text-gray-700 dark:text-cerberus-light">Ficha de la familia:</span>
+
+                                    @if ($requiereAsistente)
+                                        <span class="text-gray-500 dark:text-cerberus-accent">sub-campos propios</span>
+                                        @if ($this->familias->isNotEmpty())
+                                            <button type="button" wire:click="abrirVinculacion({{ $fila['id'] }})"
+                                                class="flex items-center gap-1 px-2 py-1 rounded-lg
+                                                       text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-500/15
+                                                       hover:bg-teal-100 dark:hover:bg-teal-500/25 transition"
+                                                title="Ya tiene datos en equipos: el asistente convierte sus valores a la ficha de la familia">
+                                                <span class="material-icons text-sm">link</span> Vincular a una familia…
+                                            </button>
+                                        @endif
+                                    @else
+                                        <select wire:model.live="filas.{{ $i }}.familia_id"
+                                            class="rounded-lg px-2 py-1 text-xs bg-white dark:bg-cerberus-dark
+                                                   border border-gray-300 dark:border-cerberus-steel text-gray-900 dark:text-white">
+                                            <option value="">Ninguna (sub-campos propios)</option>
+                                            @foreach ($this->familias as $fam)
+                                                <option value="{{ $fam->id }}">{{ $fam->nombre }}</option>
+                                            @endforeach
+                                        </select>
+                                        @if ($fila['familia_original'] && ! $fila['familia_id'])
+                                            <span class="text-amber-600 dark:text-amber-400">Al guardar, deja de usar la familia y conserva sus campos como propios.</span>
+                                        @endif
+                                    @endif
+
+                                    @error('filas.'.$i.'.familia_id')
+                                        <p class="w-full text-red-500 text-xs">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                @if ($familiaFila)
+                                    <div class="px-3 pb-3 flex flex-wrap gap-1.5">
+                                        @foreach ($familiaFila->campos ?? [] as $campo)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
+                                                         bg-teal-50 dark:bg-teal-500/10 text-teal-700 dark:text-teal-300
+                                                         border border-teal-200 dark:border-teal-500/30">
+                                                {{ $campo['nombre'] }}
+                                            </span>
+                                        @endforeach
+                                        <span class="text-xs text-gray-400 dark:text-cerberus-steel self-center">Los campos se editan en Configuración → Familias de piezas.</span>
+                                    </div>
+                                @endif
+                            @endif
+
+                            {{-- Panel de sub-campos para tipo 'group' (solo sin familia) --}}
+                            @if ($fila['tipo'] === 'group' && !$fila['eliminar'] && ! $fila['familia_id'])
                                 <div class="px-3 pb-3 pt-0 border-t border-indigo-100 dark:border-indigo-500/20">
                                     <div class="flex items-center justify-between mt-2 mb-2">
                                         <label class="text-xs font-medium text-indigo-700 dark:text-indigo-300 flex items-center gap-1">

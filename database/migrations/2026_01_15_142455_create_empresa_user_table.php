@@ -25,8 +25,6 @@ return new class extends Migration
             // Rol funcional dentro de la empresa (opcional a futuro)
             $table->string('rol_empresa')->nullable();
 
-            // Marca si es su empresa principal
-            $table->boolean('es_principal')->default(false);
 
             $table->timestamps();
 

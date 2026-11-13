@@ -2,37 +2,35 @@
 
 namespace App\Livewire\Mantenimientos;
 
-use App\Models\ComponenteAlmacen;
 use App\Models\Mantenimiento;
 use App\Models\MantenimientoComponente;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+/**
+ * Panel "Usado del almacén" de un caso: lo que se le entregó (con la pieza
+ * exacta, si es por unidad) y lo que quedó pendiente por falta de stock.
+ *
+ * Para usar algo nuevo del almacén se abre UsarDelAlmacenModal, la única
+ * forma de hacerlo (reemplaza a "Pedir componente" e "Instalar pieza").
+ */
 class MantenimientoComponentesPanel extends Component
 {
+    // Locked: el id no se puede cambiar desde el navegador.
+    #[Locked]
     public int $mantenimientoId;
-
-    public bool   $formAbierto   = false;
-    public string $componente_id = '';
-    public ?int   $cantidad      = 1;
-
-    // "El componente que necesito no está en el almacén" — da de alta un
-    // componente nuevo (stock 0) y lo pide en el mismo paso, quedando
-    // automáticamente "Pendiente" — así queda registrada la solicitud.
-    public bool   $solicitarNuevo   = false;
-    public string $nuevoNombre      = '';
-    public string $nuevaUnidad      = 'unidad';
 
     public function mount(int $mantenimientoId): void
     {
         $this->mantenimientoId = $mantenimientoId;
     }
 
-    /** El caso pudo cerrarse/avanzar desde el panel de Acciones (otro componente). */
+    /** El caso pudo cambiar desde otro panel o desde "Usar del almacén". */
     #[On('mantenimientoActualizado')]
+    #[On('componenteRefrescar')]
     public function refrescar(): void
     {
         unset($this->mantenimiento);
@@ -41,96 +39,21 @@ class MantenimientoComponentesPanel extends Component
     #[Computed]
     public function mantenimiento(): Mantenimiento
     {
-        return Mantenimiento::with(['componentes.componente', 'componentes.entregadoPor'])->findOrFail($this->mantenimientoId);
+        return Mantenimiento::with(['componentes.componente.familia', 'componentes.pieza.deposito', 'componentes.pieza.equipoDestino', 'componentes.entregadoPor'])
+            ->findOrFail($this->mantenimientoId);
     }
 
-    #[Computed]
-    public function componentesDisponibles()
-    {
-        $m = $this->mantenimiento;
-
-        return ComponenteAlmacen::activos()
-            ->where('empresa_id', $m->empresa_id)
-            ->orderBy('nombre')
-            ->get()
-            ->mapWithKeys(fn ($c) => [$c->id => "{$c->nombre} (stock: {$c->stock_actual} {$c->unidad})"]);
-    }
-
-    public function abrirForm(): void
+    public function abrirUsar(): void
     {
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
         if (! $m->permiteRegistrarTrabajo()) {
-            $this->dispatch('toast', type: 'error', message: 'Este caso ya está cerrado.');
+            $this->dispatch('toast', type: 'error', message: 'Solo se puede usar algo del almacén mientras el caso está en trabajo.');
             return;
         }
 
-        $this->reset(['componente_id', 'cantidad', 'solicitarNuevo', 'nuevoNombre', 'nuevaUnidad']);
-        $this->cantidad = 1;
-        $this->nuevaUnidad = 'unidad';
-        $this->formAbierto = true;
-    }
-
-    public function cerrarForm(): void
-    {
-        $this->formAbierto = false;
-        $this->resetValidation();
-    }
-
-    protected function rules(): array
-    {
-        if ($this->solicitarNuevo) {
-            return [
-                'nuevoNombre' => 'required|string|max:150',
-                'nuevaUnidad' => 'required|string|max:30',
-                'cantidad'    => 'required|integer|min:1',
-            ];
-        }
-
-        return [
-            'componente_id' => 'required|exists:componentes_almacen,id',
-            'cantidad'      => 'required|integer|min:1',
-        ];
-    }
-
-    public function pedir(): void
-    {
-        $m = $this->mantenimiento;
-        $this->authorize('update', $m);
-
-        $this->validate();
-
-        try {
-            if ($this->solicitarNuevo) {
-                $this->authorize('create', ComponenteAlmacen::class);
-
-                $componente = ComponenteAlmacen::create([
-                    'empresa_id'   => $m->empresa_id,
-                    'nombre'       => trim($this->nuevoNombre),
-                    'unidad'       => trim($this->nuevaUnidad) ?: 'unidad',
-                    'stock_actual' => 0,
-                    'activo'       => true,
-                    'creado_por'   => Auth::id(),
-                ]);
-            } else {
-                $componente = ComponenteAlmacen::findOrFail($this->componente_id);
-            }
-
-            $item = $m->pedirComponente($componente, $this->cantidad, Auth::user());
-
-            $msg = $item->estado === 'Entregado'
-                ? "«{$componente->nombre}» entregado desde el almacén."
-                : "«{$componente->nombre}» solicitado — no hay stock, queda pendiente en el almacén.";
-
-            $this->dispatch('toast', type: $item->estado === 'Entregado' ? 'success' : 'warning', message: $msg);
-            $this->dispatch('componenteRefrescar');
-            unset($this->mantenimiento);
-            $this->cerrarForm();
-        } catch (\Exception $e) {
-            Log::error('MantenimientoComponentesPanel@pedir: ' . $e->getMessage());
-            $this->dispatch('toast', type: 'error', message: 'Error al pedir el componente.');
-        }
+        $this->dispatch('openUsarDelAlmacen', mantenimientoId: $m->id);
     }
 
     public function entregarPendiente(int $itemId): void
@@ -143,7 +66,20 @@ class MantenimientoComponentesPanel extends Component
             return;
         }
 
-        $item = MantenimientoComponente::findOrFail($itemId);
+        // Solo ítems de ESTE caso: el id llega desde el navegador.
+        $item = MantenimientoComponente::where('mantenimiento_id', $m->id)->find($itemId);
+
+        if (! $item) {
+            $this->dispatch('toast', type: 'error', message: 'Ese componente no pertenece a este caso.');
+            return;
+        }
+
+        // Por unidad: se elige la pieza por su serial (y se actualiza la
+        // ficha del equipo si corresponde) en "Usar del almacén".
+        if ($item->componente && ! $item->componente->esAGranel()) {
+            $this->dispatch('openUsarDelAlmacen', mantenimientoId: $m->id, pendienteId: $item->id);
+            return;
+        }
 
         if ($m->entregarComponentePendiente($item, Auth::user())) {
             $this->dispatch('toast', type: 'success', message: 'Componente entregado desde el almacén.');

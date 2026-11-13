@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Mantenimientos;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mantenimiento;
+use App\Models\MantenimientoEvidencia;
 use App\Models\PlanMantenimiento;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Controller delgado — solo coordina, cero lógica de negocio.
@@ -42,5 +44,22 @@ class MantenimientoController extends Controller
         }
 
         return view('mantenimientos.show', compact('mantenimiento', 'lote'));
+    }
+
+    /**
+     * Entrega una foto de evidencia. Las fotos están en el disco privado:
+     * solo las ve quien puede ver el caso. scopeBindings() en la ruta
+     * garantiza que la foto pertenezca a ESE caso.
+     */
+    public function evidencia(Mantenimiento $mantenimiento, MantenimientoEvidencia $evidencia)
+    {
+        $this->authorize('view', $mantenimiento);
+
+        $disco = $evidencia->discoDelArchivo();
+        abort_if($disco === null, 404);
+
+        return Storage::disk($disco)->response($evidencia->ruta_archivo, null, [
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
     }
 }

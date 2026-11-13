@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AtributoEquipo;
 use App\Models\ComponenteAlmacen;
 use App\Models\Equipo;
 use App\Models\PiezaExtraida;
@@ -33,7 +34,14 @@ class PiezaManualService
         ?Equipo $equipoOrigen = null,
         ?string $identificador = null,
         ?string $observaciones = null,
+        array $seriales = [],
+        ?AtributoEquipo $atributo = null,
+        ?array $valorFicha = null,
     ): Collection {
+        if ($componente->esAGranel()) {
+            throw new \InvalidArgumentException("«{$componente->nombre}» es de una familia a granel: se registra solo la cantidad, sin piezas individuales.");
+        }
+
         if (! in_array($condicion, [PiezaExtraida::CONDICION_NUEVO, PiezaExtraida::CONDICION_REUTILIZADO], true)) {
             throw new \InvalidArgumentException("Condición inválida: {$condicion}");
         }
@@ -46,22 +54,45 @@ class PiezaManualService
             throw new \InvalidArgumentException('Una pieza nueva (comprada) no puede tener un equipo de origen.');
         }
 
-        return DB::transaction(function () use ($componente, $cantidad, $condicion, $actor, $equipoOrigen, $identificador, $observaciones) {
+        // Seriales: uno por unidad, en orden. Las unidades sin serial reciben
+        // un código interno AUTO-…. $identificador es la forma antigua (una sola unidad).
+        $seriales = collect($seriales)
+            ->when($identificador !== null, fn ($c) => $c->prepend($identificador))
+            ->map(fn ($s) => trim((string) $s))
+            ->filter()
+            ->values();
+
+        if ($seriales->count() > $cantidad) {
+            throw new \InvalidArgumentException("Escribiste {$seriales->count()} seriales para {$cantidad} unidad(es).");
+        }
+
+        if ($seriales->duplicates()->isNotEmpty()) {
+            throw new \InvalidArgumentException('Hay seriales repetidos: ' . $seriales->duplicates()->unique()->implode(', ') . '.');
+        }
+
+        $existentes = PiezaExtraida::where('componente_almacen_id', $componente->id)->whereIn('identificador', $seriales)->pluck('identificador');
+        if ($existentes->isNotEmpty()) {
+            throw new \InvalidArgumentException('Ya hay piezas con estos seriales en este componente: ' . $existentes->implode(', ') . '.');
+        }
+
+        if ($equipoOrigen && (int) $equipoOrigen->empresa_id !== (int) $componente->empresa_id) {
+            throw new \InvalidArgumentException('El equipo de origen debe ser de la misma empresa que el componente.');
+        }
+
+        return DB::transaction(function () use ($componente, $cantidad, $condicion, $actor, $equipoOrigen, $seriales, $observaciones, $atributo, $valorFicha) {
             $piezas = collect();
 
             for ($i = 0; $i < $cantidad; $i++) {
-                // Un identificador escrito a mano solo tiene sentido para una
-                // unidad puntual — si se dan de alta varias a la vez, cada una
-                // necesita el suyo propio, así que se autogenera siempre.
-                $idUnidad = ($cantidad === 1 && $identificador)
-                    ? $identificador
-                    : $this->generarIdentificador($componente);
+                // El serial escrito para esta unidad, o un código interno si no tiene.
+                $idUnidad = $seriales[$i] ?? $this->generarIdentificador($componente);
 
                 $pieza = PiezaExtraida::create([
                     'empresa_id'            => $componente->empresa_id,
                     'equipo_origen_id'      => $equipoOrigen?->id,
-                    'atributo_id'           => null,
-                    'valor_extraido'        => null,
+                    // Ligada a la ficha de su familia (ej. RAM) si se registró con ella:
+                    // así se puede instalar después actualizando la ficha del equipo.
+                    'atributo_id'           => $atributo?->id,
+                    'valor_extraido'        => $valorFicha,
                     'reutilizable'          => true,
                     'condicion'             => $condicion,
                     'identificador'         => $idUnidad,
@@ -104,11 +135,23 @@ class PiezaManualService
         });
     }
 
-    /** "AUTO-{componente}-{secuencia}" — simple, estable, siempre único por bucket. */
+    /**
+     * "AUTO-{componente}-{secuencia}": toma el número AUTO más alto que ya
+     * tenga el componente y le suma 1. Contar las piezas (como antes) repetía
+     * números si alguna se movía a otro componente o si se escribía a mano
+     * un identificador. El índice único (componente, identificador) es la
+     * última barrera ante dos altas simultáneas.
+     */
     private function generarIdentificador(ComponenteAlmacen $componente): string
     {
-        $n = PiezaExtraida::where('componente_almacen_id', $componente->id)->count() + 1;
+        $prefijo = 'AUTO-' . $componente->id . '-';
 
-        return 'AUTO-' . $componente->id . '-' . str_pad((string) $n, 3, '0', STR_PAD_LEFT);
+        $ultimo = PiezaExtraida::where('componente_almacen_id', $componente->id)
+            ->where('identificador', 'like', $prefijo . '%')
+            ->pluck('identificador')
+            ->map(fn ($id) => (int) substr($id, strlen($prefijo)))
+            ->max() ?? 0;
+
+        return $prefijo . str_pad((string) ($ultimo + 1), 3, '0', STR_PAD_LEFT);
     }
 }

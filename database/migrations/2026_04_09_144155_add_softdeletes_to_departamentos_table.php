@@ -21,7 +21,6 @@ return new class extends Migration
                       ->nullable()
                       ->constrained('empresas')
                       ->nullOnDelete();
-                $table->softDeletes();
                 $table->timestamps();
  
                 $table->index('empresa_id');
@@ -33,9 +32,8 @@ return new class extends Migration
                 if (! Schema::hasColumn('departamentos', 'descripcion')) {
                     $table->text('descripcion')->nullable()->after('nombre');
                 }
-                if (! Schema::hasColumn('departamentos', 'deleted_at')) {
-                    $table->softDeletes();
-                }
+                // deleted_at: no se agrega. El modelo Departamento no usa
+                // SoftDeletes y producción no tiene la columna.
             });
         }
 

@@ -22,20 +22,15 @@ return new class extends Migration
             $table->foreignId('estado_id')->constrained('estados_equipos');
             $table->foreignId('ubicacion_id')->nullable()->constrained('ubicaciones');
 
-            // Identificación técnica
-            $table->string('marca');
-            $table->string('modelo');
+            // Identificación técnica. Marca y modelo viven como atributos
+            // (EAV) de cada categoría, no como columnas — igual que producción.
             $table->string('serial')->nullable()->unique();
             $table->string('nombre_maquina')->nullable(); // hostname
             $table->string('codigo_interno')->unique();   // QR o código único interno
 
             // Ciclo de vida
-            $table->date('fecha_adquisicion');
-            $table->integer('vida_util')->nullable(); // años
+            $table->date('fecha_adquisicion')->nullable();
             $table->date('fecha_garantia_fin')->nullable();
-
-            // Control financiero (opcional futuro)
-            $table->decimal('costo_adquisicion', 12, 2)->nullable();
 
             // Estado lógico adicional
             $table->boolean('activo')->default(true);
@@ -43,16 +38,14 @@ return new class extends Migration
             // Notas técnicas
             $table->text('observaciones')->nullable();
 
-            // Auditoría técnica adicional
-            $table->foreignId('creado_por')->nullable()->constrained('users');
+            // creado_por lo agrega 2026_03_21_170022_add_equipos_field (con
+            // nullOnDelete), igual que en producción.
 
             $table->timestamps();
             $table->softDeletes();
 
             // Índices críticos
             $table->index(['empresa_id', 'estado_id']);
-            $table->index(['empresa_id', 'categoria_id']);
-            $table->index('codigo_interno');
             $table->index('serial');
         });
     }

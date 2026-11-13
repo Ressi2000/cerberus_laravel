@@ -67,6 +67,10 @@
     </div>
 
     {{-- TRAZABILIDAD DE PIEZAS (Obsolescencia) --}}
+    @php $puedeVerFicha = auth()->user()->hasAnyRole(['Administrador', 'Analista']); @endphp
+    @if ($puedeVerFicha)
+        @livewire('almacen.pieza-ficha-modal')
+    @endif
     @if ($piezasExtraidas->isNotEmpty() || $piezasInstaladas->isNotEmpty())
         <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
             <h3 class="text-lg font-bold text-cerberus-light flex items-center gap-2 mb-4">
@@ -85,6 +89,10 @@
                                 <div class="min-w-0">
                                     <p class="text-sm text-cerberus-light truncate">
                                         {{ $p->atributo?->describirValor($p->valor_extraido) ?? 'Pieza' }}
+                                        @if ($puedeVerFicha)
+                                            · <button type="button" wire:click="$dispatch('openPiezaFicha', { piezaId: {{ $p->id }} })"
+                                                  class="font-mono text-xs text-cerberus-accent hover:underline">{{ $p->codigo() }}</button>
+                                        @endif
                                     </p>
                                     <p class="text-xs text-cerberus-steel">
                                         @if ($p->estado === 'en_almacen')
@@ -117,24 +125,30 @@
             @if ($piezasInstaladas->isNotEmpty())
                 <div>
                     <p class="text-xs font-medium text-cerberus-accent uppercase tracking-wide mb-2">
-                        Piezas rescatadas instaladas en este equipo
+                        Piezas del almacén instaladas en este equipo
                     </p>
                     <div class="space-y-2">
                         @foreach ($piezasInstaladas as $p)
                             <div class="flex items-center justify-between gap-3 bg-cerberus-dark rounded-lg px-4 py-2.5 border border-cerberus-steel/50">
                                 <div class="min-w-0">
                                     <p class="text-sm text-cerberus-light truncate">
-                                        {{ $p->atributo?->describirValor($p->valor_extraido) ?? 'Pieza' }}
+                                        {{ $p->atributo?->describirValor($p->valor_extraido) ?? $p->componenteAlmacen?->nombre ?? 'Pieza' }}
+                                        @if ($puedeVerFicha)
+                                            · <button type="button" wire:click="$dispatch('openPiezaFicha', { piezaId: {{ $p->id }} })"
+                                                  class="font-mono text-xs text-cerberus-accent hover:underline">{{ $p->codigo() }}</button>
+                                        @endif
                                     </p>
                                     <p class="text-xs text-cerberus-steel">
-                                        Proviene de
                                         @if ($p->equipoOrigen)
+                                            Proviene de
                                             <a href="{{ route('admin.equipos.show', $p->equipoOrigen) }}" wire:navigate
                                                class="text-cerberus-accent hover:underline">
                                                 {{ $p->equipoOrigen->codigo_interno }}
                                             </a>
+                                        @elseif ($p->condicion === \App\Models\PiezaExtraida::CONDICION_NUEVO)
+                                            Nueva, del almacén
                                         @else
-                                            un equipo eliminado
+                                            Proviene de un equipo eliminado
                                         @endif
                                     </p>
                                 </div>

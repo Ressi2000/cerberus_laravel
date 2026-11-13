@@ -450,6 +450,17 @@
                         <span class="whitespace-nowrap">Atributos EAV</span>
                     </a>
 
+                    <a href="{{ route('admin.configuracion.familias') }}"
+                        class="{{ $li }} py-1.5 text-sm
+                          {{ $active('admin.configuracion.familias') ? $on : $off }}">
+                        <span
+                            class="material-icons text-base flex-shrink-0
+                                 {{ $active('admin.configuracion.familias') ? $ion : $ioff }}">
+                            category
+                        </span>
+                        <span class="whitespace-nowrap">Familias de piezas</span>
+                    </a>
+
                     <a href="{{ route('admin.configuracion.departamentos') }}"
                         class="{{ $li }} py-1.5 text-sm
                           {{ $active('admin.configuracion.departamentos') ? $on : $off }}">

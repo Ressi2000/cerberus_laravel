@@ -7,6 +7,8 @@ use App\Models\Auditoria;
 use App\Models\Empresa;
 use App\Models\Equipo;
 use App\Models\Mantenimiento;
+use App\Models\MantenimientoComponente;
+use App\Models\PiezaExtraida;
 use App\Models\Prestamo;
 use App\Models\Traslado;
 use App\Models\User;
@@ -26,6 +28,81 @@ class Dashboard extends Component
             $this->empresaFiltroId,
             fn($q) => $q->where('empresa_id', $this->empresaFiltroId)
         );
+    }
+
+    /**
+     * Taller y almacén: lo que conviene mirar cada día (reparaciones
+     * abiertas, casos frenados por falta de piezas) y lo que ayuda a decidir
+     * (cuánto tarda una reparación, qué equipos vuelven una y otra vez, qué
+     * se gasta más del almacén). Respeta el filtro de empresa.
+     */
+    private function tallerYAlmacen(User $user): array
+    {
+        $casos = fn () => $this->porEmpresa(Mantenimiento::visiblePara($user));
+
+        // Tiempo de reparación: correctivos cerrados en los últimos 90 días.
+        $cerrados = $casos()->correctivos()->where('estado', 'Cerrado')
+            ->whereNotNull('fecha_fin_real')
+            ->where('fecha_fin_real', '>=', now()->subDays(90)->toDateString())
+            ->get(['fecha_inicio', 'fecha_fin_real']);
+        $diasPromedio = $cerrados->isEmpty() ? null
+            : round($cerrados->avg(fn ($m) => $m->fecha_inicio->diffInDays($m->fecha_fin_real)), 1);
+
+        // Casos frenados porque falta algo del almacén, el que más espera primero.
+        $esperando = $casos()->abiertos()->where('esperando_componente', true)
+            ->with(['equipo:id,codigo_interno', 'componentesPendientes.componente:id,nombre'])
+            ->get()
+            ->map(function (Mantenimiento $m) {
+                $desde = $m->componentesPendientes->min('created_at');
+                $m->setAttribute('dias_esperando', $desde ? (int) $desde->diffInDays(now()) : 0);
+
+                return $m;
+            })
+            ->sortByDesc('dias_esperando')
+            ->values();
+
+        // Equipos que vuelven al taller: 2 o más reparaciones en 12 meses.
+        $reincidentes = $casos()->correctivos()
+            ->where('fecha_inicio', '>=', now()->subYear()->toDateString())
+            ->selectRaw('equipo_id, count(*) as veces, max(fecha_inicio) as ultima')
+            ->groupBy('equipo_id')
+            ->having('veces', '>=', 2)
+            ->orderByDesc('veces')
+            ->limit(5)
+            ->get();
+        $equiposReincidentes = Equipo::with('categoria:id,nombre')
+            ->whereIn('id', $reincidentes->pluck('equipo_id'))
+            ->get(['id', 'codigo_interno', 'categoria_id'])
+            ->keyBy('id');
+
+        // Lo más usado del almacén en 90 días, por familia.
+        $usado = MantenimientoComponente::where('estado', MantenimientoComponente::ESTADO_ENTREGADO)
+            ->where('fecha_entrega', '>=', now()->subDays(90)->toDateString())
+            ->whereHas('mantenimiento', fn ($q) => $this->porEmpresa($q->visiblePara($user)))
+            ->with('componente.familia:id,nombre')
+            ->get(['componente_id', 'cantidad_requerida'])
+            ->groupBy(fn ($i) => $i->componente?->familia?->nombre ?? 'Sin familia')
+            ->map(fn ($g) => (int) $g->sum('cantidad_requerida'))
+            ->sortDesc()
+            ->take(5);
+
+        return [
+            'reparacionesAbiertas' => $casos()->correctivos()->abiertos()->count(),
+            'preventivosAbiertos'  => $casos()->preventivos()->abiertos()->count(),
+            'casosEsperando'       => $esperando,
+            'diasPromedio'         => $diasPromedio,
+            'cerrados90'           => $cerrados->count(),
+            'reincidentes'         => $reincidentes->map(fn ($r) => (object) [
+                'equipo' => $equiposReincidentes[$r->equipo_id] ?? null,
+                'veces'  => (int) $r->veces,
+                'ultima' => Carbon::parse($r->ultima),
+            ])->filter(fn ($r) => $r->equipo)->values(),
+            'usadoAlmacen'         => $usado,
+            'piezasEnAlmacen'      => $this->porEmpresa(PiezaExtraida::visiblePara($user)->enAlmacen())->count(),
+            'solicitudesPendientes'=> MantenimientoComponente::pendientesVisiblesPara($user)
+                ->when($this->empresaFiltroId, fn ($q) => $q->whereHas('mantenimiento', fn ($m) => $m->where('empresa_id', $this->empresaFiltroId)))
+                ->count(),
+        ];
     }
 
     public function render()
@@ -184,7 +261,10 @@ class Dashboard extends Component
             values: $equiposPorEstado->values()->all(),
         );
 
+        $taller = $user->hasAnyRole(['Administrador', 'Analista']) ? $this->tallerYAlmacen($user) : null;
+
         return view('livewire.dashboard', [
+            'taller'                 => $taller,
             'totalEquipos'           => $totalEquipos,
             'equiposAsignados'       => $equiposAsignados,
             'prestamosActivos'       => $prestamosActivos,

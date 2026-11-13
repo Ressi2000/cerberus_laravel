@@ -6,6 +6,7 @@ use App\Models\Asignacion;
 use App\Models\Firma;
 use App\Models\Prestamo;
 use App\Models\Traslado;
+use App\Models\TrasladoAlmacen;
 use App\Services\FirmaResolver;
 use App\Services\Folio;
 use Illuminate\Http\Request;
@@ -27,6 +28,7 @@ class VerificacionController extends Controller
             'asignacion' => $this->datosAsignacion($id),
             'prestamo'   => $this->datosPrestamo($id),
             'traslado'   => $this->datosTraslado($id),
+            'traslado_almacen' => $this->datosTrasladoAlmacen($id),
             default      => null,
         };
 
@@ -148,6 +150,25 @@ class VerificacionController extends Controller
             'fechaDocumento'  => $traslado->fecha_traslado,
             'estado'          => $traslado->estado,
             'esVigente'       => $traslado->estado === 'activo',
+        ];
+    }
+
+    private function datosTrasladoAlmacen(int $id): ?array
+    {
+        $traslado = TrasladoAlmacen::with(['empresaOrigen', 'empresaDestino'])->find($id);
+
+        if (! $traslado) {
+            return null;
+        }
+
+        return [
+            'tituloDocumento' => 'Autorización de Traslado',
+            'codigoDoc'       => $traslado->folio(),
+            'receptor'        => $traslado->empresaDestino?->nombre,
+            'empresa'         => $traslado->empresaOrigen?->nombre,
+            'fechaDocumento'  => $traslado->created_at,
+            'estado'          => 'Registrado',
+            'esVigente'       => true,
         ];
     }
 }

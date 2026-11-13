@@ -4,13 +4,17 @@ namespace App\Livewire\Mantenimientos;
 
 use App\Models\Mantenimiento;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class MantenimientoDetalle extends Component
 {
+    // Locked: el id no se puede cambiar desde el navegador.
+    #[Locked]
     public int $mantenimientoId;
 
     public string $diagnostico = '';
@@ -87,13 +91,15 @@ class MantenimientoDetalle extends Component
             'diagnostico.required' => 'Describe el diagnóstico antes de continuar.',
         ]);
 
-        $m->update([
-            'diagnostico' => $this->diagnostico,
-            'causa_raiz'  => $this->causa_raiz ?: null,
-            'costo'       => $this->costo,
-        ]);
+        DB::transaction(function () use ($m) {
+            $m->update([
+                'diagnostico' => $this->diagnostico,
+                'causa_raiz'  => $this->causa_raiz ?: null,
+                'costo'       => $this->costo,
+            ]);
 
-        $m->avanzarEstado(); // Reportado -> Diagnosticado
+            $m->avanzarEstado(); // Reportado -> Diagnosticado
+        });
 
         $this->dispatch('toast', type: 'success', message: 'Diagnóstico guardado. Caso pasó a «Diagnosticado».');
         $this->notificarActualizacion();
@@ -127,9 +133,11 @@ class MantenimientoDetalle extends Component
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
-        if ($m->avanzarEstado()) {
-            $this->dispatch('toast', type: 'success', message: "Caso avanzado a «{$m->fresh()->estado}».");
+        if (! $this->ejecutarTransicion(fn () => $m->avanzarEstado())) {
+            return;
         }
+
+        $this->dispatch('toast', type: 'success', message: "Caso avanzado a «{$m->fresh()->estado}».");
 
         $this->notificarActualizacion();
     }
@@ -138,7 +146,9 @@ class MantenimientoDetalle extends Component
     {
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
-        $m->marcarReparado();
+        if (! $this->ejecutarTransicion(fn () => $m->marcarReparado())) {
+            return;
+        }
         $this->dispatch('toast', type: 'success', message: 'Marcado como reparado.');
         $this->notificarActualizacion();
     }
@@ -148,12 +158,10 @@ class MantenimientoDetalle extends Component
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
 
-        if ($m->esCorrectivo() && $m->evidencias->where('tipo', 'Después')->isEmpty()) {
-            $this->dispatch('toast', type: 'error', message: 'Sube la foto "Después" antes de cerrar el caso.');
+        // La exigencia de la foto "Después" vive en Mantenimiento::cerrar().
+        if (! $this->ejecutarTransicion(fn () => $m->cerrar())) {
             return;
         }
-
-        $m->cerrar();
         $this->dispatch('toast', type: 'success', message: 'Caso cerrado. El equipo fue liberado.');
         $this->notificarActualizacion();
     }
@@ -162,7 +170,9 @@ class MantenimientoDetalle extends Component
     {
         $m = $this->mantenimiento;
         $this->authorize('update', $m);
-        $m->completar();
+        if (! $this->ejecutarTransicion(fn () => $m->completar())) {
+            return;
+        }
         $this->dispatch('toast', type: 'success', message: 'Mantenimiento completado. El equipo fue liberado.');
         $this->notificarActualizacion();
     }
@@ -192,6 +202,8 @@ class MantenimientoDetalle extends Component
         try {
             $m->cancelar();
             $this->dispatch('toast', type: 'success', message: 'Mantenimiento cancelado.');
+        } catch (\InvalidArgumentException $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
         } catch (\Exception $e) {
             Log::error('MantenimientoDetalle@cancelar: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Error al cancelar.');
@@ -204,7 +216,7 @@ class MantenimientoDetalle extends Component
 
     public function abrirReabrir(): void
     {
-        $this->authorize('update', $this->mantenimiento);
+        $this->authorize('reabrir', $this->mantenimiento);
         $this->motivoReapertura = '';
         $this->resetValidation();
         $this->reabrirAbierto = true;
@@ -219,7 +231,7 @@ class MantenimientoDetalle extends Component
     public function confirmarReabrir(): void
     {
         $m = $this->mantenimiento;
-        $this->authorize('update', $m);
+        $this->authorize('reabrir', $m);
 
         $this->validate([
             'motivoReapertura' => 'required|string|max:1000',
@@ -262,10 +274,29 @@ class MantenimientoDetalle extends Component
         $m = $this->mantenimiento;
         $this->authorize('delete', $m);
 
-        $m->eliminarCaso();
+        if (! $this->ejecutarTransicion(fn () => $m->eliminarCaso())) {
+            return;
+        }
 
         $this->dispatch('toast', type: 'success', message: 'Caso eliminado.');
         $this->redirect(route('admin.mantenimientos.index'), navigate: true);
+    }
+
+    /**
+     * Ejecuta una transición de estado del modelo. Si el modelo la rechaza
+     * (tipo o estado no válido para esa acción), muestra el motivo y
+     * devuelve false para que la acción no siga.
+     */
+    private function ejecutarTransicion(callable $transicion): bool
+    {
+        try {
+            $transicion();
+            return true;
+        } catch (\InvalidArgumentException $e) {
+            $this->dispatch('toast', type: 'error', message: $e->getMessage());
+            unset($this->mantenimiento);
+            return false;
+        }
     }
 
     public function render()

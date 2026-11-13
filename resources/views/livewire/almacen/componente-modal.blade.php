@@ -27,10 +27,46 @@
                         required
                     />
 
+                    <x-form.select
+                        label="Familia"
+                        placeholder="¿Qué tipo de pieza es?"
+                        :options="$this->familiasOpciones->mapWithKeys(fn ($f) => [$f->id => $f->nombre . ($f->control === 'granel' ? ' · a granel' : ' · por unidad')])"
+                        wire:model.live="familia_id"
+                        :error="$errors->first('familia_id')"
+                        required
+                    />
+
+                    @if ($this->piezasQueSeAgrupan > 0)
+                        <div class="-mt-2 flex items-start gap-2 px-3 py-2 rounded-lg text-xs
+                                    bg-purple-50 dark:bg-purple-500/10 text-purple-700 dark:text-purple-300
+                                    border border-purple-200 dark:border-purple-500/30">
+                            <span class="material-icons text-sm">info</span>
+                            <span>Esa familia es a granel: las {{ $this->piezasQueSeAgrupan }} pieza(s) en almacén pasarán a contarse solo por cantidad. El stock no cambia y lo ya usado conserva su historial.</span>
+                        </div>
+                    @endif
+
+                    @if ($this->usaFicha)
+                        <div class="space-y-2">
+                            <p class="text-sm font-medium text-gray-700 dark:text-cerberus-accent">Ficha técnica</p>
+                            <p class="text-xs text-gray-500 dark:text-cerberus-light -mt-1">
+                                {{ $this->familia->nombre }} tiene ficha: la variante se define con ella y su nombre sale solo.
+                            </p>
+                            @include('livewire.almacen.partials.ficha-campos', ['familia' => $this->familia])
+                            @if ($componenteId && empty(array_filter($valores)))
+                                <p class="text-xs text-amber-700 dark:text-amber-300">
+                                    Esta variante se creó sin ficha («{{ $nombre }}»). Complétala: sus piezas en el almacén quedarán con estos valores.
+                                </p>
+                            @endif
+                            @if ($this->nombreFicha)
+                                <p class="text-xs text-gray-600 dark:text-cerberus-light">Se llamará: <b>{{ $this->nombreFicha }}</b></p>
+                            @endif
+                            @error('valores') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                        </div>
+                    @else
                     <x-form.input
-                        label="Nombre"
+                        label="Nombre (variante)"
                         wire:model.live.400ms="nombre"
-                        placeholder="Ej: Memoria RAM 8GB DDR4"
+                        placeholder="Ej: Bisagra HP 14"
                         autocomplete="off"
                         :error="$errors->first('nombre')"
                         required
@@ -61,6 +97,8 @@
                                 Si de verdad es otra cosa, sigue escribiendo y créalo normal.
                             </p>
                         </div>
+                    @endif
+
                     @endif
 
                     <x-form.textarea

@@ -51,7 +51,7 @@ class DepositoContenido extends Component
     #[Computed]
     public function piezas()
     {
-        return PiezaExtraida::with(['atributo', 'equipoOrigen'])
+        return PiezaExtraida::with(['atributo', 'equipoOrigen', 'componenteAlmacen'])
             ->where('deposito_id', $this->deposito->id)
             ->where('estado', PiezaExtraida::ESTADO_EN_DEPOSITO)
             ->latest()

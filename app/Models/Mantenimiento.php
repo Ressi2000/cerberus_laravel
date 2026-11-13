@@ -240,17 +240,32 @@ class Mantenimiento extends Model
 
     /**
      * ¿Se puede registrar trabajo ahora (componentes, piezas, observaciones)?
-     * Preventivo: mientras el caso esté abierto, igual que siempre. Correctivo:
-     * solo durante "En reparación" — en Reportado/Diagnosticado todavía no hay
-     * nada que registrar, y en Reparado/Cerrado ya se congeló lo hecho.
+     * Solo mientras alguien está trabajando el equipo: Preventivo "En
+     * proceso" y Correctivo "En reparación". En un Preventivo "Programado" el
+     * equipo todavía no está bloqueado (sigue en manos de su usuario), así que
+     * no se le pueden sacar ni poner piezas todavía.
      */
     public function permiteRegistrarTrabajo(): bool
     {
-        if (! $this->estaAbierto()) {
-            return false;
-        }
+        return $this->estado === ($this->esPreventivo() ? 'En proceso' : 'En reparación');
+    }
 
-        return $this->esPreventivo() || $this->estado === 'En reparación';
+    /**
+     * Guardia de transición: corta la acción si el caso no es del tipo o no
+     * está en uno de los estados desde los que esa acción es válida. Los
+     * botones de la vista ya se ocultan según el estado, pero los métodos
+     * públicos de Livewire se pueden invocar igual desde el navegador — la
+     * regla tiene que vivir aquí, no solo en la pantalla.
+     *
+     * @param string[] $estadosPermitidos
+     */
+    private function exigirEstado(string $tipo, array $estadosPermitidos, string $accion): void
+    {
+        if ($this->tipo !== $tipo || ! in_array($this->estado, $estadosPermitidos, true)) {
+            throw new \InvalidArgumentException(
+                "No se puede {$accion} un caso {$this->tipo} en estado «{$this->estado}»."
+            );
+        }
     }
 
     /** Estados válidos según el tipo de esta intervención (para armar el select). */
@@ -303,6 +318,23 @@ class Mantenimiento extends Model
         }
     }
 
+    /**
+     * Caso abierto que tiene bloqueado ahora mismo al equipo, si hay uno.
+     * Un Preventivo "Programado" NO cuenta: todavía no bloqueó el equipo, así
+     * que no debe impedir devolverlo de una asignación o un préstamo.
+     */
+    public static function bloqueoActivoDe(?int $equipoId): ?self
+    {
+        if (! $equipoId) {
+            return null;
+        }
+
+        return static::where('equipo_id', $equipoId)
+            ->abiertos()
+            ->whereNotNull('estado_equipo_anterior_id')
+            ->first();
+    }
+
     /** ¿Este caso llegó a bloquear el equipo? (false para un Preventivo cancelado desde "Programado"). */
     public function estaBloqueado(): bool
     {
@@ -320,11 +352,32 @@ class Mantenimiento extends Model
     {
         $equipo = $this->equipo;
 
-        if (! $equipo || ! $this->estaBloqueado()) {
-            return;
+        if (! $equipo || ! $this->estaBloqueado() || ! $equipo->activo) {
+            return; // un equipo dado de baja no se toca
         }
 
-        $equipo->update(['estado_id' => $this->estado_equipo_anterior_id]);
+        $equipo->update(['estado_id' => $this->estadoAlLiberar($equipo)]);
+    }
+
+    /**
+     * Estado al que vuelve el equipo al liberarlo: el que tenía antes del
+     * bloqueo, salvo que ese estado ya no sea cierto — por ejemplo, era
+     * "Asignado" pero la asignación ya no está activa. En ese caso vuelve a
+     * "Disponible", para no dejar un equipo "Asignado" sin nadie que lo tenga.
+     */
+    private function estadoAlLiberar(Equipo $equipo): int
+    {
+        $anterior   = EstadoEquipo::find($this->estado_equipo_anterior_id);
+        $disponible = EstadoEquipo::where('nombre', EstadoEquipo::DISPONIBLE)->value('id');
+
+        $sigueValido = match ($anterior?->nombre) {
+            EstadoEquipo::ASIGNADO    => AsignacionItem::where('equipo_id', $equipo->id)->where('devuelto', false)->exists(),
+            EstadoEquipo::EN_PRESTAMO => PrestamoItem::where('equipo_id', $equipo->id)->where('devuelto', false)->exists(),
+            null                      => false,
+            default                   => true,
+        };
+
+        return $sigueValido ? $anterior->id : ($disponible ?? $this->estado_equipo_anterior_id);
     }
 
     /**
@@ -353,6 +406,12 @@ class Mantenimiento extends Model
             return false;
         }
 
+        // Reportado -> Diagnosticado solo con el diagnóstico escrito (ver
+        // MantenimientoDetalle::guardarDiagnostico()); no se puede saltar.
+        if ($this->esCorrectivo() && $this->estado === 'Reportado' && blank($this->diagnostico)) {
+            throw new \InvalidArgumentException('Registra el diagnóstico antes de avanzar el caso.');
+        }
+
         $bloquearAhora = $this->esPreventivo() && $this->estado === 'Programado' && $siguiente === 'En proceso';
 
         $this->update(['estado' => $siguiente]);
@@ -374,10 +433,13 @@ class Mantenimiento extends Model
      */
     public function completar(): void
     {
+        $this->exigirEstado(self::TIPO_PREVENTIVO, ['En proceso'], 'completar');
+
         DB::transaction(function () {
             $fechaCierre = now()->toDateString();
             $this->update(['estado' => 'Completado', 'fecha_fin_real' => $fechaCierre]);
             $this->liberarEquipo();
+            $this->cancelarComponentesPendientes();
 
             $this->planMantenimiento?->avanzarSiLoteCompleto();
         });
@@ -386,15 +448,27 @@ class Mantenimiento extends Model
     /** Marca una reparación como técnicamente resuelta. El equipo sigue bloqueado hasta cerrar(). */
     public function marcarReparado(): void
     {
+        $this->exigirEstado(self::TIPO_CORRECTIVO, ['En reparación'], 'marcar como reparado');
+
         $this->update(['estado' => 'Reparado']);
     }
 
-    /** Cierra definitivamente una reparación ya marcada como Reparada y libera el equipo. */
+    /**
+     * Cierra definitivamente una reparación ya marcada como Reparada y libera
+     * el equipo. Exige la foto "Después" como evidencia del resultado.
+     */
     public function cerrar(): void
     {
+        $this->exigirEstado(self::TIPO_CORRECTIVO, ['Reparado'], 'cerrar');
+
+        if (! $this->evidencias()->where('tipo', 'Después')->exists()) {
+            throw new \InvalidArgumentException('Sube la foto "Después" antes de cerrar el caso.');
+        }
+
         DB::transaction(function () {
             $this->update(['estado' => 'Cerrado', 'fecha_fin_real' => now()->toDateString()]);
             $this->liberarEquipo();
+            $this->cancelarComponentesPendientes();
         });
     }
 
@@ -412,13 +486,25 @@ class Mantenimiento extends Model
             throw new \InvalidArgumentException('Solo se puede reabrir una reparación que esté Cerrada.');
         }
 
-        DB::transaction(function () use ($actor, $motivo) {
-            $equipo = $this->equipo;
+        $equipo = $this->equipo;
 
-            if ($equipo && $this->estado_equipo_anterior_id) {
-                $estadoReparacion = EstadoEquipo::where('nombre', EstadoEquipo::EN_REPARACION)->value('id');
-                $equipo->update(['estado_id' => $estadoReparacion ?? $equipo->estado_id]);
-            }
+        if (! $equipo || ! $equipo->activo) {
+            throw new \InvalidArgumentException('No se puede reabrir: el equipo ya no está activo (fue dado de baja).');
+        }
+
+        $otroAbierto = static::where('equipo_id', $equipo->id)->whereKeyNot($this->id)->abiertos()->first();
+        if ($otroAbierto) {
+            throw new \InvalidArgumentException("No se puede reabrir: el equipo ya tiene abierto el caso #{$otroAbierto->id}.");
+        }
+
+        DB::transaction(function () use ($actor, $motivo, $equipo) {
+            // Se vuelve a tomar el estado ACTUAL del equipo: desde que se
+            // cerró el caso pudo haberse asignado, prestado o devuelto, y al
+            // volver a cerrar debe regresar a ese estado, no al de antes.
+            $estadoReparacion = EstadoEquipo::where('nombre', EstadoEquipo::EN_REPARACION)->value('id');
+
+            $this->update(['estado_equipo_anterior_id' => $equipo->estado_id]);
+            $equipo->update(['estado_id' => $estadoReparacion ?? $equipo->estado_id]);
 
             $nota = 'Reabierto el ' . now()->format('d/m/Y') . " por {$actor->name}: {$motivo}";
 
@@ -489,8 +575,14 @@ class Mantenimiento extends Model
      */
     public function eliminarCaso(): void
     {
+        // Un caso cerrado, completado, cancelado o dado de baja es historial
+        // del equipo: no se elimina.
+        if (! $this->estaAbierto()) {
+            throw new \InvalidArgumentException('Solo se pueden eliminar casos abiertos; uno cerrado forma parte del historial del equipo.');
+        }
+
         DB::transaction(function () {
-            if ($this->estaAbierto() && $this->estaBloqueado()) {
+            if ($this->estaBloqueado()) {
                 $this->liberarEquipo();
             }
 
@@ -507,9 +599,12 @@ class Mantenimiento extends Model
     /** Cancela un mantenimiento preventivo que no llegó a ejecutarse. */
     public function cancelar(): void
     {
+        $this->exigirEstado(self::TIPO_PREVENTIVO, ['Programado', 'En proceso'], 'cancelar');
+
         DB::transaction(function () {
             $this->update(['estado' => 'Cancelado', 'fecha_fin_real' => now()->toDateString()]);
             $this->liberarEquipo();
+            $this->cancelarComponentesPendientes();
 
             $this->planMantenimiento?->avanzarSiLoteCompleto();
         });
@@ -530,6 +625,12 @@ class Mantenimiento extends Model
      */
     public function marcarDadoDeBaja(User $aprobador, string $motivo, Deposito $deposito, array $piezas = []): void
     {
+        $this->exigirEstado(self::TIPO_CORRECTIVO, ['Diagnosticado', 'En reparación'], 'dar de baja');
+
+        if ((int) $deposito->empresa_id !== (int) $this->empresa_id) {
+            throw new \InvalidArgumentException('El depósito debe ser de la misma empresa que el caso.');
+        }
+
         DB::transaction(function () use ($aprobador, $motivo, $deposito, $piezas) {
             $this->update([
                 'estado'         => 'Dado de baja',
@@ -539,12 +640,22 @@ class Mantenimiento extends Model
                 'aprobado_por_id' => $aprobador->id,
             ]);
 
+            $this->cancelarComponentesPendientes();
+
             $itemActivo = AsignacionItem::where('equipo_id', $this->equipo_id)
                 ->where('devuelto', false)
                 ->first();
 
             if ($itemActivo) {
                 $itemActivo->registrarDevolucion('Equipo dado de baja');
+            }
+
+            $prestamoActivo = PrestamoItem::where('equipo_id', $this->equipo_id)
+                ->where('devuelto', false)
+                ->first();
+
+            if ($prestamoActivo) {
+                $prestamoActivo->registrarDevolucion('Equipo dado de baja');
             }
 
             $obsolescencia = app(\App\Services\ObsolescenciaService::class);
@@ -560,8 +671,19 @@ class Mantenimiento extends Model
      */
     public function pedirComponente(ComponenteAlmacen $componente, int $cantidad, User $actor): MantenimientoComponente
     {
+        if (! $this->permiteRegistrarTrabajo()) {
+            throw new \InvalidArgumentException('No se pueden pedir componentes en el estado actual del caso.');
+        }
+
+        if ((int) $componente->empresa_id !== (int) $this->empresa_id || ! $componente->activo) {
+            throw new \InvalidArgumentException('Ese componente no está disponible para este caso.');
+        }
+
         return DB::transaction(function () use ($componente, $cantidad, $actor) {
-            $hayStock = $componente->stock_actual >= $cantidad;
+            // Solo cuenta lo que se puede entregar por esta vía: unidades sin
+            // identidad y piezas registradas a mano. Las piezas ligadas a una
+            // característica del equipo se instalan desde el panel de Piezas.
+            $hayStock = $componente->unidadesParaConsumo() >= $cantidad;
 
             $item = $this->componentes()->create([
                 'componente_id'      => $componente->id,
@@ -572,8 +694,10 @@ class Mantenimiento extends Model
             ]);
 
             if ($hayStock) {
-                $componente->registrarSalida($cantidad, $actor, 'Uso en mantenimiento', $this);
-                $this->consumirPiezasTrazadas($componente, $cantidad, $actor);
+                $this->anotarPiezas($item, $this->consumirDelAlmacen($componente, $cantidad, $actor));
+            } else {
+                // Avisar a los Administradores, solo si todo se guardó.
+                DB::afterCommit(fn () => $this->notificarSolicitud($item, $actor));
             }
 
             $this->recalcularEsperandoComponente();
@@ -582,28 +706,120 @@ class Mantenimiento extends Model
         });
     }
 
+    /** Campanita de los Administradores (menos quien la pidió): llegó una solicitud de pieza. */
+    private function notificarSolicitud(MantenimientoComponente $item, User $actor): void
+    {
+        rescue(function () use ($item, $actor) {
+            $notif = new \App\Notifications\SolicitudPiezaNotification($item);
+            User::role('Administrador')->whereKeyNot($actor->id)->each(fn (User $admin) => $admin->notify($notif));
+        }, report: true);
+    }
+
+    /**
+     * Usa en este caso UNA pieza concreta del almacén (familias por unidad,
+     * elegida por su serial) que no actualiza la ficha del equipo — ej. una
+     * pantalla o un teclado. Queda "instalada" en el equipo del caso y en la
+     * lista de lo usado del almacén, con la pieza exacta.
+     */
+    public function usarPieza(PiezaExtraida $pieza, User $actor, ?MantenimientoComponente $pendiente = null): MantenimientoComponente
+    {
+        if (! $this->permiteRegistrarTrabajo()) {
+            throw new \InvalidArgumentException('No se pueden usar piezas en el estado actual del caso.');
+        }
+
+        $componente = $pieza->componenteAlmacen;
+
+        if (! $componente || (int) $componente->empresa_id !== (int) $this->empresa_id) {
+            throw new \InvalidArgumentException('Esa pieza no está disponible para este caso.');
+        }
+
+        return DB::transaction(function () use ($pieza, $componente, $actor, $pendiente) {
+            // Bloquea la pieza y verifica que siga en el almacén.
+            $componente->registrarSalida(1, $actor, 'Uso en mantenimiento', $this, [$pieza]);
+
+            $pieza->update([
+                'estado'            => PiezaExtraida::ESTADO_INSTALADA,
+                'equipo_destino_id' => $this->equipo_id,
+            ]);
+
+            $pieza->movimientos()->create([
+                'tipo'                  => PiezaExtraidaMovimiento::TIPO_INSTALACION,
+                'equipo_relacionado_id' => $this->equipo_id,
+                'mantenimiento_id'      => $this->id,
+                'registrado_por'        => $actor->id,
+            ]);
+
+            return $this->anotarUsoDePieza($pieza, $actor, $pendiente);
+        });
+    }
+
+    /**
+     * Deja en lo usado del caso la pieza exacta que se entregó. Si venía de
+     * una solicitud pendiente de esa variante, la solicitud queda entregada
+     * (si pedía varias, se descuenta una y sigue pendiente el resto).
+     */
+    public function anotarUsoDePieza(PiezaExtraida $pieza, User $actor, ?MantenimientoComponente $pendiente = null): MantenimientoComponente
+    {
+        $entregado = [
+            'estado'           => MantenimientoComponente::ESTADO_ENTREGADO,
+            'fecha_entrega'    => now()->toDateString(),
+            'entregado_por_id' => $actor->id,
+        ];
+
+        $pendiente = $pendiente
+            && (int) $pendiente->mantenimiento_id === (int) $this->id
+            && (int) $pendiente->componente_id === (int) $pieza->componente_almacen_id
+            ? MantenimientoComponente::lockForUpdate()->find($pendiente->id)
+            : null;
+
+        if ($pendiente && $pendiente->estado === MantenimientoComponente::ESTADO_PENDIENTE) {
+            if ((int) $pendiente->cantidad_requerida > 1) {
+                $pendiente->decrement('cantidad_requerida');
+                $item = $this->componentes()->create(['componente_id' => $pieza->componente_almacen_id, 'pieza_id' => $pieza->id, 'cantidad_requerida' => 1] + $entregado);
+            } else {
+                $pendiente->update(['pieza_id' => $pieza->id] + $entregado);
+                $item = $pendiente;
+            }
+
+            $this->recalcularEsperandoComponente();
+
+            return $item;
+        }
+
+        return $this->componentes()->create(['componente_id' => $pieza->componente_almacen_id, 'pieza_id' => $pieza->id, 'cantidad_requerida' => 1] + $entregado);
+    }
+
     /** Descuenta del almacén un componente que había quedado pendiente por falta de stock. */
     public function entregarComponentePendiente(MantenimientoComponente $item, User $actor): bool
     {
+        if ((int) $item->mantenimiento_id !== (int) $this->id) {
+            throw new \InvalidArgumentException('Ese componente no pertenece a este caso.');
+        }
+
+        if (! $this->permiteRegistrarTrabajo()) {
+            throw new \InvalidArgumentException('No se pueden entregar componentes en el estado actual del caso.');
+        }
+
         if ($item->estado !== 'Pendiente') {
             return false;
         }
 
         $componente = $item->componente;
 
-        if (! $componente || $componente->stock_actual < $item->cantidad_requerida) {
+        if (! $componente || $componente->unidadesParaConsumo() < $item->cantidad_requerida) {
             return false;
         }
 
         DB::transaction(function () use ($item, $componente, $actor) {
-            $componente->registrarSalida($item->cantidad_requerida, $actor, 'Uso en mantenimiento', $this);
-            $this->consumirPiezasTrazadas($componente, $item->cantidad_requerida, $actor);
+            $piezas = $this->consumirDelAlmacen($componente, $item->cantidad_requerida, $actor);
 
             $item->update([
                 'estado'           => 'Entregado',
                 'fecha_entrega'    => now()->toDateString(),
                 'entregado_por_id' => $actor->id,
             ]);
+
+            $this->anotarPiezas($item, $piezas);
 
             $this->recalcularEsperandoComponente();
         });
@@ -612,21 +828,21 @@ class Mantenimiento extends Model
     }
 
     /**
-     * Cuando se consume stock de un componente, marca como "instalada" una
-     * unidad trazada (PiezaExtraida) de ese mismo bucket por cada unidad
-     * consumida — si no, las piezas individuales quedarían para siempre en
-     * "en_almacen" aunque el stock agregado ya haya bajado, desincronizadas.
-     * Más antigua primero (FIFO). Si el bucket no tiene piezas trazadas
-     * (stock sin identidad, como lo era todo antes de esta función), no pasa
-     * nada — sigue siendo solo un descuento de stock, como siempre fue.
+     * Descuenta $cantidad del almacén para este caso. Salen primero las
+     * unidades sin identidad y, si no alcanzan, las piezas registradas a
+     * mano más antiguas — que quedan "instaladas" en el equipo del caso,
+     * con su movimiento, en la MISMA salida de stock (así stock y piezas
+     * en almacén siguen cuadrando). Las piezas ligadas a una característica
+     * del equipo nunca salen por aquí: instalarlas sin actualizar las
+     * características del equipo dejaría su ficha desactualizada, y podrían
+     * ni siquiera ser de su categoría. Esas se instalan desde el panel de
+     * Piezas (SustitucionPiezaService::instalar()).
      */
-    private function consumirPiezasTrazadas(ComponenteAlmacen $componente, int $cantidad, User $actor): void
+    private function consumirDelAlmacen(ComponenteAlmacen $componente, int $cantidad, User $actor): \Illuminate\Support\Collection
     {
-        $piezas = PiezaExtraida::where('componente_almacen_id', $componente->id)
-            ->where('estado', PiezaExtraida::ESTADO_EN_ALMACEN)
-            ->oldest()
-            ->limit($cantidad)
-            ->get();
+        $piezas = $componente->piezasParaConsumo($cantidad);
+
+        $componente->registrarSalida($cantidad, $actor, 'Uso en mantenimiento', $this, $piezas);
 
         foreach ($piezas as $pieza) {
             $pieza->update([
@@ -641,6 +857,50 @@ class Mantenimiento extends Model
                 'registrado_por'        => $actor->id,
             ]);
         }
+
+        return collect($piezas);
+    }
+
+    /**
+     * Deja en lo usado del caso CUÁLES piezas salieron (con su serial): un
+     * renglón por pieza. Si además salieron unidades sin serial, quedan en
+     * el renglón original con esa cantidad.
+     */
+    private function anotarPiezas(MantenimientoComponente $item, \Illuminate\Support\Collection $piezas): void
+    {
+        if ($piezas->isEmpty()) {
+            return;
+        }
+
+        $sinSerial = (int) $item->cantidad_requerida - $piezas->count();
+
+        if ($sinSerial > 0) {
+            $item->update(['cantidad_requerida' => $sinSerial]);
+        } else {
+            $item->update(['pieza_id' => $piezas->shift()->id, 'cantidad_requerida' => 1]);
+        }
+
+        foreach ($piezas as $pieza) {
+            $this->componentes()->create([
+                'componente_id'      => $item->componente_id,
+                'pieza_id'           => $pieza->id,
+                'cantidad_requerida' => 1,
+                'estado'             => $item->estado,
+                'fecha_entrega'      => $item->fecha_entrega,
+                'entregado_por_id'   => $item->entregado_por_id,
+            ]);
+        }
+    }
+
+    /**
+     * Al terminar el caso (cerrar, completar, cancelar, dar de baja), los
+     * componentes que seguían "Pendiente" por falta de stock ya no se van a
+     * entregar: pasan a "Cancelado" y la bandera esperando_componente se apaga.
+     */
+    public function cancelarComponentesPendientes(): void
+    {
+        $this->componentesPendientes()->update(['estado' => MantenimientoComponente::ESTADO_CANCELADO]);
+        $this->recalcularEsperandoComponente();
     }
 
     public function recalcularEsperandoComponente(): void

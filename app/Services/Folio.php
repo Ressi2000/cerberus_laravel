@@ -13,6 +13,7 @@ class Folio
         'asignacion' => 'AS',
         'prestamo'   => 'PR',
         'traslado'   => 'TR',
+        'traslado_almacen' => 'TA',
     ];
 
     public static function etiqueta(string $tipo, int $id): string

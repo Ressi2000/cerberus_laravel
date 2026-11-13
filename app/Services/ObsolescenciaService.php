@@ -87,6 +87,10 @@ class ObsolescenciaService
     /** Marca el equipo como dado de baja y lo deja archivado en el depósito indicado. */
     public function archivarEquipo(Equipo $equipo, Deposito $deposito): void
     {
+        if ((int) $deposito->empresa_id !== (int) $equipo->empresa_id) {
+            throw new \InvalidArgumentException('El depósito debe ser de la misma empresa que el equipo.');
+        }
+
         $estadoBaja = EstadoEquipo::where('nombre', EstadoEquipo::BAJA)->value('id');
 
         $equipo->update([

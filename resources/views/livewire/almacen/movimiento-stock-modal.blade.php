@@ -9,8 +9,8 @@
 
                 <div class="flex items-center justify-between px-6 py-4 flex-shrink-0 border-b border-gray-100 dark:border-cerberus-steel">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                        <span class="material-icons text-cerberus-accent">swap_vert</span>
-                        Movimiento de stock
+                        <span class="material-icons text-cerberus-accent">remove_circle_outline</span>
+                        Registrar salida
                         @if ($this->componente)
                             <span class="text-gray-400 dark:text-cerberus-steel font-normal text-sm">— {{ $this->componente->nombre }}</span>
                         @endif
@@ -24,17 +24,12 @@
 
                     @if ($this->componente)
                         <div class="bg-gray-50 dark:bg-cerberus-dark/50 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg px-4 py-3 text-sm">
-                            Stock actual: <span class="font-semibold text-gray-900 dark:text-white">{{ $this->componente->stock_actual }} {{ $this->componente->unidad }}</span>
+                            Stock actual: <span class="font-semibold text-gray-900 dark:text-white">{{ $this->componente->stock_actual }}</span>
                         </div>
                     @endif
 
-                    <x-form.select
-                        label="Tipo de movimiento"
-                        :options="['Entrada' => 'Entrada (suma al stock)', 'Salida' => 'Salida (resta del stock)']"
-                        wire:model.live="tipo"
-                        :error="$errors->first('tipo')"
-                    />
 
+                    @unless ($this->soloPiezas)
                     <x-form.input
                         label="Cantidad"
                         type="number"
@@ -43,37 +38,8 @@
                         :error="$errors->first('cantidad')"
                         required
                     />
+                    @endunless
 
-                    @if ($tipo === 'Entrada')
-                        <x-form.select
-                            label="Condición"
-                            :options="\App\Models\PiezaExtraida::CONDICIONES"
-                            wire:model.live="condicion"
-                            :error="$errors->first('condicion')"
-                        />
-
-                        @if ($condicion === \App\Models\PiezaExtraida::CONDICION_REUTILIZADO)
-                            <x-form.select
-                                label="Equipo de origen"
-                                placeholder="¿De cuál equipo salió?"
-                                searchable
-                                :options="$this->equiposOpciones"
-                                wire:model="equipoOrigenId"
-                                :error="$errors->first('equipoOrigenId')"
-                                required
-                            />
-                        @endif
-
-                        <x-form.input
-                            label="Identificador / serial (opcional)"
-                            wire:model="identificador"
-                            placeholder="Déjalo vacío para que se genere uno automático"
-                            hint="{{ $cantidad > 1 ? 'Con más de 1 unidad, cada una recibe su propio identificador automático — este campo se ignora.' : 'Sirve para distinguir esta unidad de otras idénticas (ej. un código propio o de fábrica).' }}"
-                            :error="$errors->first('identificador')"
-                        />
-                    @endif
-
-                    @if ($tipo === 'Salida')
                         <div class="flex items-center gap-3">
                             <button type="button" wire:click="$toggle('danado')" role="switch"
                                 class="relative inline-flex h-5 w-9 flex-shrink-0 rounded-full
@@ -87,9 +53,8 @@
                                 Se dañó estando guardado — pasa a un depósito
                             </span>
                         </div>
-                    @endif
 
-                    @if ($tipo === 'Salida' && $danado)
+                    @if ($danado)
                         <x-form.select
                             label="Depósito"
                             placeholder="Selecciona un depósito..."
@@ -98,24 +63,50 @@
                             :error="$errors->first('depositoId')"
                             required
                         />
+                    @endif
 
                         @if ($this->piezasEnAlmacen->isNotEmpty())
-                            <x-form.select
-                                label="¿Es una unidad trazada específica? (opcional)"
-                                placeholder="No — es stock genérico"
-                                :options="$this->piezasEnAlmacen->mapWithKeys(fn ($p) => [$p->id => $p->atributo->describirValor($p->valor_extraido)])"
-                                wire:model="piezaId"
-                                hint="Si esta unidad viene de un equipo rescatado, vincúlala para conservar su historial completo."
-                            />
+                            <div>
+                                <p class="text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">¿Cuáles piezas salen?</p>
+                                <p class="text-xs text-gray-500 dark:text-cerberus-light mb-2">
+                                    @if ($this->unidadesSinIdentidad > 0)
+                                        Hay {{ $this->unidadesSinIdentidad }} unidad(es) sin identidad que salen sin elegir nada.
+                                        Si la cantidad supera ese número, marca cuáles de estas piezas salen.
+                                    @else
+                                        Marca cuáles salen, por su serial.
+                                    @endif
+                                </p>
+                                <div class="max-h-48 overflow-y-auto space-y-1.5 border border-gray-200 dark:border-cerberus-steel/50 rounded-lg p-2">
+                                    @foreach ($this->piezasEnAlmacen as $pieza)
+                                        <label wire:key="pieza-salida-{{ $pieza->id }}"
+                                            class="flex items-start gap-2 text-sm rounded-md px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-cerberus-steel/10 cursor-pointer">
+                                            <input type="checkbox" value="{{ $pieza->id }}" wire:model="piezaIds"
+                                                class="mt-0.5 rounded border-gray-300 dark:border-cerberus-steel dark:bg-cerberus-dark text-cerberus-primary focus:ring-cerberus-primary">
+                                            <span class="text-gray-900 dark:text-white">
+                                                {{ $pieza->descripcion() }}
+                                                <span class="block text-xs text-gray-500 dark:text-cerberus-light">
+                                                    {{ $pieza->labelCondicion() }}
+                                                    @if ($pieza->equipoOrigen) · de {{ $pieza->equipoOrigen->codigo_interno }} @endif
+                                                    · ingresó {{ $pieza->created_at->format('d/m/Y') }}
+                                                </span>
+                                            </span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @error('piezaIds')
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
                         @endif
-                    @else
+
+                    @unless ($danado)
                         <x-form.input
                             label="Motivo"
                             wire:model="motivo"
-                            placeholder="Ej: Compra, ajuste de inventario..."
+                            placeholder="Ej: pérdida, ajuste de inventario..."
                             :error="$errors->first('motivo')"
                         />
-                    @endif
+                    @endunless
 
                     <x-form.textarea
                         label="Observaciones"

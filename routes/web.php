@@ -132,6 +132,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/categorias',  [ConfiguracionController::class, 'categorias'])->name('categorias');
             Route::get('/estados',     [ConfiguracionController::class, 'estados'])->name('estados');
             Route::get('/atributos',   [ConfiguracionController::class, 'atributos'])->name('atributos');
+            Route::get('/familias',    [ConfiguracionController::class, 'familias'])->name('familias');
             Route::get('/departamentos', [ConfiguracionController::class, 'departamentos'])->name('departamentos');
             Route::get('/cargos',      [ConfiguracionController::class, 'cargos'])->name('cargos');
             Route::get('/ubicaciones', [ConfiguracionController::class, 'ubicaciones'])->name('ubicaciones');
@@ -182,6 +183,10 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/',              [MantenimientoController::class, 'index'])->name('index');
             Route::get('/crear',         [MantenimientoController::class, 'create'])->name('create');
             Route::get('/{mantenimiento}', [MantenimientoController::class, 'show'])->name('show');
+            // Fotos de evidencia: solo con sesión y permiso para ver el caso.
+            Route::get('/{mantenimiento}/evidencias/{evidencia}', [MantenimientoController::class, 'evidencia'])
+                ->name('evidencias.show')
+                ->scopeBindings();
         });
 
     // Cronograma de mantenimiento preventivo
@@ -201,6 +206,9 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
         ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
         ->group(function () {
             Route::get('/', [AlmacenController::class, 'index'])->name('index');
+            Route::get('/solicitudes', [AlmacenController::class, 'solicitudes'])->name('solicitudes');
+            Route::get('/etiquetas', [AlmacenController::class, 'etiquetas'])->name('etiquetas');
+            Route::get('/traslados/{traslado}/autorizacion', [AlmacenController::class, 'autorizacionTraslado'])->name('traslados.autorizacion');
         });
 
     // Monitor de red (ping + TCP, historial de caídas, test de velocidad)

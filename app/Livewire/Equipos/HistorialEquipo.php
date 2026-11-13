@@ -410,11 +410,12 @@ class HistorialEquipo extends Component
             ->get();
     }
 
-    /** Piezas rescatadas de OTROS equipos que terminaron instaladas en este. */
+    /** Piezas del almacén (nuevas o rescatadas de otros equipos) instaladas hoy en este. */
     protected function piezasInstaladas(): Collection
     {
         return $this->equipo->piezasInstaladas()
-            ->with(['atributo', 'equipoOrigen'])
+            ->where('estado', PiezaExtraida::ESTADO_INSTALADA)
+            ->with(['atributo', 'equipoOrigen', 'componenteAlmacen'])
             ->latest()
             ->get();
     }
@@ -426,7 +427,10 @@ class HistorialEquipo extends Component
             ->pluck('nombre', 'id');
 
         $fuentes = [
-            'tecnico'       => fn() => $this->eventosTecnicos()->merge($this->eventosGrupos()),
+            // toBase(): si el equipo no tiene historial de valores simples,
+            // eventosTecnicos() es una colección Eloquent vacía y merge() de
+            // Eloquent falla al recibir arrays (equipos con solo grupos, ej. RAM).
+            'tecnico'       => fn() => $this->eventosTecnicos()->toBase()->merge($this->eventosGrupos()),
             'asignacion'    => fn() => $this->eventosAsignaciones(),
             'traslado'      => fn() => $this->eventosTraslados(),
             'prestamo'      => fn() => $this->eventosPrestamos(),
