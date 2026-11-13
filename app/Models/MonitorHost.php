@@ -37,6 +37,7 @@ class MonitorHost extends Model
     protected $fillable = [
         'empresa_id',
         'equipo_id',
+        'enlace_id',
         'nombre',
         'host',
         'tipo',
@@ -82,6 +83,12 @@ class MonitorHost extends Model
     public function equipo()
     {
         return $this->belongsTo(Equipo::class);
+    }
+
+    /** Enlace (proveedor de internet de la localidad) al que pertenece, si aplica. */
+    public function enlace()
+    {
+        return $this->belongsTo(MonitorEnlace::class, 'enlace_id');
     }
 
     public function creadoPor()

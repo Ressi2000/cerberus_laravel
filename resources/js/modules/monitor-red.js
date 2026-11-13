@@ -153,10 +153,14 @@ async function medirSubida(seg, onProg) {
     return r.mbps
 }
 
-export function pruebaVelocidad(ultima = null, mejor = {}) {
+const soloDigitos = (s) => String(s ?? '').replace(/\D/g, '')
+
+export function pruebaVelocidad(ultima = null, mejor = {}, enlaces = []) {
     const pref = leerPref()
 
     return {
+        enlaces,
+        enlaceSel: '', // '' = detectar automáticamente
         enCurso: false,
         duracion: 8,
         estado: 'Listo para medir',
@@ -173,8 +177,41 @@ export function pruebaVelocidad(ultima = null, mejor = {}) {
         planB: +pref.planB || '',
         planS: +pref.planS || '',
 
-        init() {
-            detectarISP().then((p) => { if (p) this.proveedor = p })
+        detectando: false,
+
+        init() { this.redetectar() },
+
+        /** Vuelve a consultar por qué IP/ISP sale la conexión (tras cambiar la puerta de enlace). */
+        async redetectar() {
+            this.detectando = true
+            const p = await detectarISP()
+            if (p) this.proveedor = p
+            this.detectando = false
+        },
+
+        /** Enlace por el que está saliendo AHORA la conexión (según IP pública / ASN detectados). */
+        enlaceDetectado() {
+            const p = this.proveedor
+            if (!p || p.delUltimo) return null
+            const porIp = this.enlaces.find((e) => e.ip && e.ip === p.ip)
+            if (porIp) return porIp
+            const asn = soloDigitos(p.asn)
+            const porAsn = asn ? this.enlaces.filter((e) => soloDigitos(e.asn) === asn) : []
+            return porAsn.length === 1 ? porAsn[0] : null
+        },
+        enlaceElegido() {
+            return this.enlaces.find((e) => String(e.id) === String(this.enlaceSel)) || null
+        },
+        /** Enlace al que se atribuirá el test: el elegido, o si no el detectado. */
+        enlaceActual() {
+            return this.enlaceElegido() || this.enlaceDetectado()
+        },
+        /** Se eligió un enlace a mano pero la conexión sale por otro proveedor. */
+        desajuste() {
+            const sel = this.enlaceElegido(), p = this.proveedor
+            if (!sel || !p || p.delUltimo) return false
+            if (sel.ip && p.ip) return sel.ip !== p.ip && !(sel.asn && soloDigitos(sel.asn) === soloDigitos(p.asn))
+            return !!(sel.asn && p.asn && soloDigitos(sel.asn) !== soloDigitos(p.asn))
         },
 
         fmt(v) { return v == null || isNaN(v) ? '—' : (v >= 100 ? (+v).toFixed(0) : (+v).toFixed(1)) },
@@ -189,6 +226,9 @@ export function pruebaVelocidad(ultima = null, mejor = {}) {
         guardarPlan() { guardarPref({ planB: +this.planB || 0, planS: +this.planS || 0 }) },
 
         referencia(tipo) {
+            const e = this.enlaceActual()
+            const planEnlace = e ? +(tipo === 'bajada' ? e.bajada : e.subida) : 0
+            if (planEnlace > 0) return { v: planEnlace, txt: `del plan de «${e.nombre}» (${this.fmt(planEnlace)} Mbps)` }
             const plan = tipo === 'bajada' ? +this.planB : +this.planS
             if (plan > 0) return { v: plan, txt: `del plan contratado (${this.fmt(plan)} Mbps)` }
             const m = +this.mejor[tipo] || 0
@@ -206,6 +246,8 @@ export function pruebaVelocidad(ultima = null, mejor = {}) {
 
         async iniciar() {
             if (this.enCurso) return
+            const e = this.enlaceActual()
+            if (e && e.cuota && !confirm(`«${e.nombre}» tiene cuota de datos. El test consume ~100 MB o más. ¿Continuar?`)) return
             this.enCurso = true
             this.error = false
             this.res = { bajada: null, subida: null, ping: null, jitter: null }
@@ -227,9 +269,11 @@ export function pruebaVelocidad(ultima = null, mejor = {}) {
                 this.progreso = 100
 
                 this.estado = 'Guardando…'
-                const r = await this.$wire.guardar({ ...this.res, ...(info || {}) })
+                const r = await this.$wire.guardar({ ...this.res, ...(info || {}), enlace_id: this.enlaceSel || null })
                 this.mejor = { bajada: Math.max(+this.mejor.bajada || 0, this.res.bajada), subida: Math.max(+this.mejor.subida || 0, this.res.subida) }
-                this.estado = r && r.ok ? 'Listo · ' + new Date().toLocaleTimeString() : 'Medición completa (no se guardó)'
+                this.estado = !(r && r.ok) ? 'Medición completa (no se guardó)'
+                    : 'Listo · ' + new Date().toLocaleTimeString() + (r.enlace ? ` · guardado en «${r.enlace}»` : ' · sin enlace asociado')
+                this.error = !!(r && r.noCoincide)
             } catch (e) {
                 this.error = true
                 this.estado = 'Error: ' + (e.message || 'no se pudo completar el test')

@@ -141,6 +141,7 @@
                     ['monitoreos',                  'Monitoreos Web',       'public'],
                     ['admin.monitor-red.index',     'Monitor de red',       'insights'],
                     ['admin.monitor-red.hosts',     'Hosts',                'lan'],
+                    ['admin.monitor-red.enlaces',   'Enlaces de internet',  'router'],
                     ['admin.monitor-red.caidas',    'Historial de caídas',  'history'],
                     ['admin.monitor-red.velocidad', 'Test de velocidad',    'speed'],
                 ] as [$ruta, $texto, $icono])

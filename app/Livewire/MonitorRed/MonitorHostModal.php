@@ -4,6 +4,7 @@ namespace App\Livewire\MonitorRed;
 
 use App\Models\Empresa;
 use App\Models\Equipo;
+use App\Models\MonitorEnlace;
 use App\Models\MonitorHost;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -23,6 +24,7 @@ class MonitorHostModal extends Component
     public string $proveedor   = '';
     public string $puerto_tcp  = '';
     public string $observaciones = '';
+    public string $enlace_id     = '';
 
     // Vínculo opcional con el inventario
     public ?int   $equipo_id     = null;
@@ -60,6 +62,7 @@ class MonitorHostModal extends Component
         $this->puerto_tcp    = (string) ($h->puerto_tcp ?? '');
         $this->observaciones = $h->observaciones ?? '';
         $this->equipo_id     = $h->equipo_id;
+        $this->enlace_id     = (string) ($h->enlace_id ?? '');
         $this->open          = true;
     }
 
@@ -71,6 +74,16 @@ class MonitorHostModal extends Component
         return $actor->hasRole('Administrador')
             ? Empresa::activas()->orderBy('nombre')->pluck('nombre', 'id')
             : Empresa::where('id', $actor->empresa_activa_id)->pluck('nombre', 'id');
+    }
+
+    /** Enlaces (proveedores) de la empresa elegida. */
+    #[Computed]
+    public function enlacesOpciones()
+    {
+        return $this->empresa_id === ''
+            ? collect()
+            : MonitorEnlace::where('empresa_id', $this->empresa_id)->activos()->orderBy('nombre')->get(['id', 'nombre', 'proveedor'])
+                ->mapWithKeys(fn ($e) => [$e->id => "{$e->nombre} ({$e->proveedor})"]);
     }
 
     #[Computed]
@@ -134,6 +147,7 @@ class MonitorHostModal extends Component
             'puerto_tcp'    => ['nullable', 'integer', 'between:1,65535'],
             'observaciones' => ['nullable', 'string', 'max:1000'],
             'equipo_id'     => ['nullable', 'integer', Rule::exists('equipos', 'id')],
+            'enlace_id'     => ['nullable', Rule::exists('monitor_enlaces', 'id')->where('empresa_id', (int) $this->empresa_id)->whereNull('deleted_at')],
         ];
     }
 
@@ -170,13 +184,16 @@ class MonitorHostModal extends Component
             return;
         }
 
+        $enlace = $this->enlace_id !== '' ? MonitorEnlace::find($this->enlace_id) : null;
+
         $data = [
             'empresa_id'    => (int) $this->empresa_id,
             'equipo_id'     => $this->equipo_id,
+            'enlace_id'     => $enlace?->id,
             'nombre'        => trim($this->nombre) ?: $this->host,
             'host'          => $this->host,
             'tipo'          => trim($this->tipo) ?: 'Servicio',
-            'proveedor'     => trim($this->proveedor) ?: null,
+            'proveedor'     => trim($this->proveedor) ?: ($enlace ? mb_substr($enlace->proveedor, 0, 60) : null),
             'puerto_tcp'    => $this->puerto_tcp === '' ? null : (int) $this->puerto_tcp,
             'observaciones' => trim($this->observaciones) ?: null,
         ];
@@ -210,7 +227,7 @@ class MonitorHostModal extends Component
 
     private function limpiar(): void
     {
-        $this->reset(['hostId', 'empresa_id', 'nombre', 'host', 'tipo', 'proveedor', 'puerto_tcp', 'observaciones', 'equipo_id', 'equipoBusqueda']);
+        $this->reset(['hostId', 'empresa_id', 'nombre', 'host', 'tipo', 'proveedor', 'puerto_tcp', 'observaciones', 'equipo_id', 'equipoBusqueda', 'enlace_id']);
         $this->resetValidation();
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\MonitorRed;
 use App\Exports\MonitorCaidasExport;
 use App\Http\Controllers\Controller;
 use App\Livewire\MonitorRed\CaidasTable;
+use App\Models\MonitorEnlace;
 use App\Models\MonitorHost;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -31,6 +32,12 @@ class MonitorRedController extends Controller
     {
         $this->authorize('viewAny', MonitorHost::class);
         return view('monitor-red.caidas');
+    }
+
+    public function enlaces()
+    {
+        $this->authorize('viewAny', MonitorEnlace::class);
+        return view('monitor-red.enlaces');
     }
 
     public function velocidad()

@@ -19,6 +19,8 @@ class MonitorPruebaVelocidad extends Model
     protected $fillable = [
         'empresa_id',
         'usuario_id',
+        'enlace_id',
+        'enlace_asignado_por',
         'bajada_mbps',
         'subida_mbps',
         'ping_ms',
@@ -40,6 +42,12 @@ class MonitorPruebaVelocidad extends Model
     public function empresa()
     {
         return $this->belongsTo(Empresa::class);
+    }
+
+    /** Enlace por el que salió el test (detectado por IP/ASN o elegido a mano). */
+    public function enlace()
+    {
+        return $this->belongsTo(MonitorEnlace::class, 'enlace_id')->withTrashed();
     }
 
     public function usuario()

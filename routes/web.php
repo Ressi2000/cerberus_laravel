@@ -212,6 +212,7 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/hosts',           [MonitorRedController::class, 'hosts'])->name('hosts');
             Route::get('/caidas',          [MonitorRedController::class, 'caidas'])->name('caidas');
             Route::get('/caidas/exportar', [MonitorRedController::class, 'exportarCaidas'])->name('caidas.exportar');
+            Route::get('/enlaces',         [MonitorRedController::class, 'enlaces'])->name('enlaces');
             Route::get('/velocidad',       [MonitorRedController::class, 'velocidad'])->name('velocidad');
         });
 

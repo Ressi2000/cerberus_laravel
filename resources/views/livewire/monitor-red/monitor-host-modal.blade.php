@@ -20,7 +20,7 @@
 
                     @if ($this->empresasOpciones->count() > 1)
                         <x-form.select label="Empresa" placeholder="Selecciona una empresa" :options="$this->empresasOpciones"
-                            wire:model="empresa_id" :error="$errors->first('empresa_id')" required />
+                            wire:model.live="empresa_id" :error="$errors->first('empresa_id')" required />
                     @endif
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
@@ -43,6 +43,12 @@
                         <x-form.input label="Proveedor / enlace" wire:model="proveedor" placeholder="ISP 1, Enlace dedicado..."
                             :error="$errors->first('proveedor')" />
                     </div>
+
+                    @if ($this->enlacesOpciones->isNotEmpty())
+                        <x-form.select label="Enlace de internet" placeholder="Ninguno" wire:model="enlace_id" :options="$this->enlacesOpciones"
+                            hint="Si este host es la puerta de enlace o la IP pública de un proveedor, asócialo para ver la disponibilidad por enlace."
+                            :error="$errors->first('enlace_id')" />
+                    @endif
 
                     <x-form.input label="Puerto TCP de respaldo" type="number" wire:model="puerto_tcp" placeholder="80, 443, 22..."
                         hint="Opcional. Si el equipo bloquea el ping, se considera activo cuando este puerto acepta conexiones."

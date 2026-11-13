@@ -3,6 +3,7 @@
     $tabs = [
         ['route' => 'admin.monitor-red.index',     'label' => 'Dashboard',          'icon' => 'insights'],
         ['route' => 'admin.monitor-red.hosts',     'label' => 'Hosts',              'icon' => 'lan'],
+        ['route' => 'admin.monitor-red.enlaces',   'label' => 'Enlaces',            'icon' => 'router'],
         ['route' => 'admin.monitor-red.caidas',    'label' => 'Historial de caídas', 'icon' => 'history'],
         ['route' => 'admin.monitor-red.velocidad', 'label' => 'Test de velocidad',  'icon' => 'speed'],
     ];

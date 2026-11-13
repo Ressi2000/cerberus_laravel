@@ -21,6 +21,42 @@ Menú: **Monitoreo → Monitor de red / Hosts / Historial de caídas / Test de v
 | Hosts | Lista o cuadros (con sparkline), filtros, orden, selección múltiple, alta individual o importación masiva (pegar desde Excel), pausa por mantenimiento, vínculo opcional con un equipo del inventario. |
 | Test de velocidad | Medido por el navegador contra speed.cloudflare.com: latencia, jitter, bajada, subida e ISP. Se guarda por empresa y avisa si cambió el proveedor respecto al test anterior. |
 
+## Enlaces de internet (proveedores por localidad)
+
+Pantalla **Monitoreo → Enlaces de internet**. Cada empresa/localidad registra sus
+conexiones: nombre, proveedor, tipo (fibra, radio, 4G…), **puerta de enlace en la
+LAN**, IP pública (si es fija), ASN del proveedor y plan contratado. El analista
+solo ve y edita los enlaces de su empresa activa; el administrador ve todas,
+agrupadas por localidad. Un enlace puede marcarse como principal (uno por
+empresa) o "con cuota" (4G: pide confirmación antes de un test).
+
+- **Vigilar IP pública:** crea un host del monitor para la IP WAN del enlace.
+  Así se sabe si cada proveedor está arriba aunque no sea el que está en uso.
+  Requiere IP fija y que el router responda ping desde el servidor de Cerberus.
+- **Tests por enlace:** cada test de velocidad se atribuye a un enlace
+  automáticamente (por IP pública exacta o, si es único en la empresa, por ASN)
+  o a mano, y se compara contra el plan de ese enlace.
+
+### Medir cada proveedor estando en la localidad
+
+El navegador sale por la ruta que decide la red, así que para probar un
+proveedor concreto el equipo tiene que salir por **su** puerta de enlace:
+
+1. Cambiar temporalmente la puerta de enlace del equipo a la del proveedor
+   (`route change 0.0.0.0 mask 0.0.0.0 <gateway>` en Windows,
+   `sudo ip route replace default via <gateway>` en Linux).
+2. En la pantalla de test, **"Volver a detectar"**: debe indicar
+   "Saliendo por: <enlace>". Si se eligió el enlace a mano y la conexión sale
+   por otro ASN, la pantalla lo advierte y el resultado se marca.
+3. Iniciar el test, repetir con el siguiente proveedor y volver a DHCP.
+
+Esto funciona cuando cada proveedor tiene su propio router/módem con una IP
+distinta en la LAN. Si la localidad tiene **un solo equipo multi-WAN**
+(MikroTik, FortiGate, pfSense…) que balancea o hace failover, cambiar la
+puerta de enlace no alcanza: redes debe crear una regla de ruteo por política
+(p. ej. "la IP X sale siempre por el proveedor 2") o conectar la laptop
+directamente al módem del proveedor.
+
 ## Puesta en marcha (producción)
 
 ```bash
