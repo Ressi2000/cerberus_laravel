@@ -6,6 +6,7 @@ use App\Http\Controllers\Almacen\AlmacenController;
 use App\Http\Controllers\Asignaciones\AsignacionController;
 use App\Http\Controllers\Cronograma\CronogramaController;
 use App\Http\Controllers\Mantenimientos\MantenimientoController;
+use App\Http\Controllers\MonitorRed\MonitorRedController;
 use App\Http\Controllers\Prestamos\PrestamoController;
 use App\Http\Controllers\Traslados\TrasladoController;
 use App\Http\Controllers\Usuario\UsuarioController;
@@ -208,6 +209,19 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             Route::get('/solicitudes', [AlmacenController::class, 'solicitudes'])->name('solicitudes');
             Route::get('/etiquetas', [AlmacenController::class, 'etiquetas'])->name('etiquetas');
             Route::get('/traslados/{traslado}/autorizacion', [AlmacenController::class, 'autorizacionTraslado'])->name('traslados.autorizacion');
+        });
+
+    // Monitor de red (ping + TCP, historial de caídas, test de velocidad)
+    Route::prefix('admin/monitor-red')
+        ->name('admin.monitor-red.')
+        ->middleware(['auth', 'verified', 'user.active', 'empresa.activa', 'role:Administrador|Analista'])
+        ->group(function () {
+            Route::get('/',                [MonitorRedController::class, 'index'])->name('index');
+            Route::get('/hosts',           [MonitorRedController::class, 'hosts'])->name('hosts');
+            Route::get('/caidas',          [MonitorRedController::class, 'caidas'])->name('caidas');
+            Route::get('/caidas/exportar', [MonitorRedController::class, 'exportarCaidas'])->name('caidas.exportar');
+            Route::get('/enlaces',         [MonitorRedController::class, 'enlaces'])->name('enlaces');
+            Route::get('/velocidad',       [MonitorRedController::class, 'velocidad'])->name('velocidad');
         });
 
     // Traslados
