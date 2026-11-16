@@ -71,7 +71,7 @@
     @if ($puedeVerFicha)
         @livewire('almacen.pieza-ficha-modal')
     @endif
-    @if ($piezasExtraidas->isNotEmpty() || $piezasInstaladas->isNotEmpty())
+    @if ($piezasExtraidas->isNotEmpty() || $piezasInstaladas->isNotEmpty() || $granelInstalado->isNotEmpty())
         <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
             <h3 class="text-lg font-bold text-cerberus-light flex items-center gap-2 mb-4">
                 <span class="material-icons text-cerberus-accent">memory</span>
@@ -116,6 +116,22 @@
                                 ])>
                                     {{ $p->labelEstado() }}
                                 </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            @if ($granelInstalado->isNotEmpty())
+                <div class="{{ $piezasInstaladas->isNotEmpty() ? 'mb-5' : '' }}">
+                    <p class="text-xs font-medium text-cerberus-accent uppercase tracking-wide mb-2">
+                        A granel puesto en este equipo
+                    </p>
+                    <div class="space-y-2">
+                        @foreach ($granelInstalado as $g)
+                            <div class="flex items-center justify-between gap-3 bg-cerberus-dark rounded-lg px-4 py-2.5 border border-cerberus-steel/50">
+                                <p class="text-sm text-cerberus-light truncate">{{ $g->componente->nombre }}</p>
+                                <span class="text-sm text-cerberus-accent whitespace-nowrap">{{ $g->cantidad }}</span>
                             </div>
                         @endforeach
                     </div>

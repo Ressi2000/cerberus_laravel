@@ -23,6 +23,11 @@ class MantenimientoComponentesPanel extends Component
     #[Locked]
     public int $mantenimientoId;
 
+    // ── Devolver lo usado a granel (se registró de más) ──────────────────
+    public ?int   $devolverItemId   = null;
+    public ?int   $devolverCantidad = 1;
+    public string $devolverMotivo   = '';
+
     public function mount(int $mantenimientoId): void
     {
         $this->mantenimientoId = $mantenimientoId;
@@ -33,7 +38,75 @@ class MantenimientoComponentesPanel extends Component
     #[On('componenteRefrescar')]
     public function refrescar(): void
     {
-        unset($this->mantenimiento);
+        unset($this->mantenimiento, $this->devueltos, $this->granelPuesto);
+    }
+
+    /** Cuánto se devolvió de cada renglón a granel (item_id => cantidad). */
+    #[Computed]
+    public function devueltos(): array
+    {
+        return \App\Models\RetiroGranel::where('mantenimiento_id', $this->mantenimientoId)
+            ->where('tipo', \App\Models\RetiroGranel::TIPO_DEVOLUCION)
+            ->selectRaw('mantenimiento_componente_id, sum(cantidad) as total')
+            ->groupBy('mantenimiento_componente_id')
+            ->pluck('total', 'mantenimiento_componente_id')
+            ->map(fn ($n) => (int) $n)
+            ->all();
+    }
+
+    /** Lo a granel que sigue puesto hoy en el equipo del caso (componente_id => cantidad). */
+    #[Computed]
+    public function granelPuesto(): array
+    {
+        return app(\App\Services\RetiroGranelService::class)->instaladoEnEquipo($this->mantenimiento->equipo)
+            ->mapWithKeys(fn ($r) => [$r->componente->id => $r->cantidad])
+            ->all();
+    }
+
+    public function abrirDevolver(int $itemId): void
+    {
+        $this->authorize('update', $this->mantenimiento);
+        $this->devolverItemId   = $itemId;
+        $this->devolverCantidad = 1;
+        $this->devolverMotivo   = '';
+        $this->resetValidation();
+    }
+
+    public function cancelarDevolver(): void
+    {
+        $this->devolverItemId = null;
+        $this->resetValidation();
+    }
+
+    public function devolver(): void
+    {
+        $m = $this->mantenimiento;
+        $this->authorize('update', $m);
+
+        // Solo renglones de ESTE caso (el id llega del navegador).
+        $item = MantenimientoComponente::where('mantenimiento_id', $m->id)->with(['componente.familia', 'mantenimiento.equipo'])->find($this->devolverItemId);
+        if (! $item) {
+            $this->cancelarDevolver();
+            return;
+        }
+
+        $this->validate([
+            'devolverCantidad' => 'required|integer|min:1',
+            'devolverMotivo'   => 'required|string|min:' . \App\Services\RetiroGranelService::MOTIVO_MINIMO . '|max:500',
+        ], [
+            'devolverMotivo.required' => 'Escribe por qué se devuelve (ej. se registró de más).',
+            'devolverMotivo.min'      => 'Escribe por qué se devuelve (ej. se registró de más).',
+        ]);
+
+        try {
+            app(\App\Services\RetiroGranelService::class)->devolver($item, (int) $this->devolverCantidad, $this->devolverMotivo, Auth::user());
+            $this->dispatch('toast', type: 'success', message: "Volvieron {$this->devolverCantidad} al almacén.");
+            $this->cancelarDevolver();
+            unset($this->mantenimiento, $this->devueltos, $this->granelPuesto);
+            $this->dispatch('mantenimientoActualizado');
+        } catch (\InvalidArgumentException $e) {
+            $this->addError('devolverCantidad', $e->getMessage());
+        }
     }
 
     #[Computed]

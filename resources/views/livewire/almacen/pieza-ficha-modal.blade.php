@@ -18,6 +18,7 @@
                 'salida_ajuste'     => 'remove_circle_outline',
                 'agrupada'          => 'stacks',
                 'traslado_almacen'  => 'swap_horiz',
+                'correccion'        => 'edit',
             ];
         @endphp
 
@@ -32,9 +33,27 @@
                 <div class="flex items-start justify-between gap-3 px-6 py-4 border-b border-gray-100 dark:border-cerberus-steel flex-shrink-0">
                     <div class="min-w-0">
                         <p class="text-xs uppercase tracking-wide text-gray-500 dark:text-cerberus-light">Ficha de la pieza</p>
-                        <h2 class="text-lg font-semibold text-gray-900 dark:text-white font-mono break-all">
-                            {{ $pieza->codigo() }}
-                        </h2>
+                        @if ($editandoSerial)
+                            <div class="flex items-start gap-2 mt-1">
+                                <div class="flex-1">
+                                    <input type="text" wire:model="nuevoSerial" wire:keydown.enter="guardarSerial" autofocus
+                                        class="w-full rounded-lg px-3 py-1.5 text-sm font-mono bg-white dark:bg-cerberus-dark
+                                               border border-gray-300 dark:border-cerberus-steel text-gray-900 dark:text-white"
+                                        placeholder="Serial">
+                                    @error('nuevoSerial') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                                </div>
+                                <button wire:click="guardarSerial" class="px-3 py-1.5 text-xs rounded-lg bg-[#1E40AF] text-white">Guardar</button>
+                                <button wire:click="$set('editandoSerial', false)" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">Cancelar</button>
+                            </div>
+                        @else
+                            <h2 class="text-lg font-semibold text-gray-900 dark:text-white font-mono break-all flex items-center gap-2">
+                                {{ $pieza->codigo() }}
+                                <button wire:click="editarSerial" title="Editar serial"
+                                    class="text-gray-400 hover:text-cerberus-primary dark:hover:text-cerberus-accent">
+                                    <span class="material-icons text-base">edit</span>
+                                </button>
+                            </h2>
+                        @endif
                         <p class="text-sm text-gray-600 dark:text-cerberus-light mt-0.5">
                             {{ $pieza->componenteAlmacen?->nombre ?? $pieza->descripcion() }}
                         </p>

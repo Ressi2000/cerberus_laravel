@@ -53,9 +53,15 @@
             @endif
 
             @if ($retirarIndex !== null
-                && ($this->candidatosRetiro[$retirarIndex]['tipo'] ?? null) !== 'pieza'
+                && ! in_array($this->candidatosRetiro[$retirarIndex]['tipo'] ?? null, ['pieza', 'granel'], true)
                 && ! $this->piezasDelRetiro->contains(fn ($p) => $p->identificador))
                 <x-form.input label="Serial (opcional)" wire:model="retirarSerial" placeholder="Si lo tiene a la vista" />
+            @endif
+
+            @php $esGranel = $retirarIndex !== null && ($this->candidatosRetiro[$retirarIndex]['tipo'] ?? null) === 'granel'; @endphp
+            @if ($esGranel)
+                <x-form.input label="¿Cuántas salen? (hay {{ $this->candidatosRetiro[$retirarIndex]['maximo'] }})" type="number"
+                    wire:model="retirarCantidad" :error="$errors->first('retirarCantidad')" />
             @endif
 
             <div>
@@ -65,6 +71,9 @@
                            border border-gray-300 dark:border-cerberus-steel text-gray-900 dark:text-white">
                     <option value="en_almacen">Buena → Almacén (reutilizable)</option>
                     <option value="en_deposito">Dañada → Depósito (descarte)</option>
+                    @if ($esGranel)
+                        <option value="desecho">Dañada → Se desecha (se bota)</option>
+                    @endif
                 </select>
             </div>
 
@@ -78,7 +87,8 @@
                 />
             @endif
 
-            <x-form.textarea label="Observaciones (opcional)" wire:model="retirarObservaciones" rows="2" />
+            <x-form.textarea :label="$esGranel ? 'Motivo' : 'Observaciones (opcional)'" wire:model="retirarObservaciones" rows="2"
+                :error="$errors->first('retirarObservaciones')" />
 
           </div>
             <div class="flex justify-end gap-2 mt-3">
@@ -92,6 +102,17 @@
         </div>
     @endif
 
+
+    {{-- ── Lo a granel que salió en este caso ───────────────────────────── --}}
+    @foreach ($this->retirosGranel as $r)
+        <div wire:key="granel-{{ $r->id }}" class="flex items-center justify-between py-2.5 border-b border-gray-100 dark:border-cerberus-steel/30">
+            <div class="min-w-0">
+                <p class="text-sm text-gray-900 dark:text-white">{{ $r->variante }} · {{ $r->cantidad }}</p>
+                <p class="text-xs text-gray-500 dark:text-cerberus-light">{{ $r->labelTipo() }} → {{ $r->labelDestino() }} · <span class="italic">{{ $r->motivo }}</span></p>
+            </div>
+            <span class="text-xs text-gray-400 dark:text-cerberus-steel">{{ $r->created_at->format('d/m/Y H:i') }}</span>
+        </div>
+    @endforeach
 
     {{-- ── Historial de piezas de este caso ─────────────────────────────── --}}
     @forelse ($this->historial as $mov)
@@ -111,6 +132,8 @@
             <span class="text-xs text-gray-400 dark:text-cerberus-steel">{{ $mov->created_at->format('d/m/Y H:i') }}</span>
         </div>
     @empty
-        <p class="text-sm text-gray-400 dark:text-cerberus-steel text-center py-4">No se han retirado ni instalado piezas en este caso.</p>
+        @if ($this->retirosGranel->isEmpty())
+            <p class="text-sm text-gray-400 dark:text-cerberus-steel text-center py-4">No se han retirado ni instalado piezas en este caso.</p>
+        @endif
     @endforelse
 </div>

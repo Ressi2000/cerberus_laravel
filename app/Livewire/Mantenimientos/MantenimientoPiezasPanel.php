@@ -39,6 +39,8 @@ class MantenimientoPiezasPanel extends Component
     public string $retirarPiezaId      = '';
     /** Serial de la pieza que sale, si no tenía uno registrado (opcional). */
     public string $retirarSerial       = '';
+    /** A granel: cuántas salen del equipo. */
+    public ?int   $retirarCantidad     = 1;
 
     public function mount(int $mantenimientoId): void
     {
@@ -48,7 +50,7 @@ class MantenimientoPiezasPanel extends Component
     #[On('mantenimientoActualizado')]
     public function refrescar(): void
     {
-        unset($this->mantenimiento, $this->candidatosRetiro, $this->historial);
+        unset($this->mantenimiento, $this->candidatosRetiro, $this->historial, $this->retirosGranel);
     }
 
     #[Computed]
@@ -82,7 +84,19 @@ class MantenimientoPiezasPanel extends Component
                 'descripcion'        => ($p->componenteAlmacen?->nombre ?? $p->descripcion()) . ' · ' . $p->codigo(),
             ]);
 
-        return $deLaFicha->concat($fueraDeFicha)->values()->toArray();
+        // Lo a granel puesto en el equipo (bisagras, tornillos…), por cantidad.
+        $granel = app(\App\Services\RetiroGranelService::class)->instaladoEnEquipo($equipo)
+            ->map(fn ($r) => [
+                'tipo'               => 'granel',
+                'atributo_id'        => null,
+                'grupo_instancia_id' => null,
+                'pieza_id'           => null,
+                'componente_id'      => $r->componente->id,
+                'maximo'             => $r->cantidad,
+                'descripcion'        => "{$r->componente->nombre} · {$r->cantidad} a granel en el equipo",
+            ]);
+
+        return $deLaFicha->concat($fueraDeFicha)->concat($granel)->values()->toArray();
     }
 
     /**
@@ -93,7 +107,7 @@ class MantenimientoPiezasPanel extends Component
     public function piezasDelRetiro()
     {
         $candidato = $this->retirarIndex !== null ? ($this->candidatosRetiro[$this->retirarIndex] ?? null) : null;
-        if (! $candidato || $candidato['tipo'] === 'pieza') {
+        if (! $candidato || in_array($candidato['tipo'], ['pieza', 'granel'], true)) {
             return collect();
         }
 
@@ -112,6 +126,10 @@ class MantenimientoPiezasPanel extends Component
 
     public function updatedRetirarIndex(): void
     {
+        // "Se desecha" solo existe para lo a granel.
+        if ($this->retirarDestino === 'desecho' && ($this->candidatosRetiro[$this->retirarIndex]['tipo'] ?? null) !== 'granel') {
+            $this->retirarDestino = PiezaExtraida::ESTADO_EN_ALMACEN;
+        }
         $this->retirarPiezaId = '';
         unset($this->piezasDelRetiro);
     }
@@ -139,6 +157,7 @@ class MantenimientoPiezasPanel extends Component
         }
 
         $this->reset(['retirarIndex', 'retirarDepositoId', 'retirarObservaciones', 'retirarPiezaId', 'retirarSerial']);
+        $this->retirarCantidad = 1;
         $this->retirarDestino = PiezaExtraida::ESTADO_EN_ALMACEN;
         $this->resetValidation();
         $this->retirarAbierto = true;
@@ -173,6 +192,11 @@ class MantenimientoPiezasPanel extends Component
         if (! $candidato) {
             $this->dispatch('toast', type: 'error', message: 'Esa pieza ya no está disponible para retirar.');
             $this->cerrarRetirar();
+            return;
+        }
+
+        if ($candidato['tipo'] === 'granel') {
+            $this->retirarGranel($m, $candidato);
             return;
         }
 
@@ -223,6 +247,52 @@ class MantenimientoPiezasPanel extends Component
             Log::error('MantenimientoPiezasPanel@retirar: ' . $e->getMessage());
             $this->dispatch('toast', type: 'error', message: 'Error al retirar la pieza.');
         }
+    }
+
+    /** Lo a granel que sale del equipo: almacén, depósito o desecho, con motivo. */
+    private function retirarGranel(Mantenimiento $m, array $candidato): void
+    {
+        $this->validate([
+            'retirarCantidad'      => 'required|integer|min:1|max:' . $candidato['maximo'],
+            'retirarObservaciones' => 'required|string|min:' . \App\Services\RetiroGranelService::MOTIVO_MINIMO . '|max:500',
+        ], [
+            'retirarCantidad.max'           => "El equipo tiene puestas {$candidato['maximo']}.",
+            'retirarObservaciones.required' => 'Escribe el motivo del retiro.',
+            'retirarObservaciones.min'      => 'Escribe el motivo del retiro.',
+        ]);
+
+        $destino = match ($this->retirarDestino) {
+            PiezaExtraida::ESTADO_EN_ALMACEN  => \App\Models\RetiroGranel::DESTINO_ALMACEN,
+            PiezaExtraida::ESTADO_EN_DEPOSITO => \App\Models\RetiroGranel::DESTINO_DEPOSITO,
+            default                           => \App\Models\RetiroGranel::DESTINO_DESECHO,
+        };
+        $deposito = $destino === \App\Models\RetiroGranel::DESTINO_DEPOSITO
+            ? Deposito::activos()->where('empresa_id', $m->empresa_id)->find($this->retirarDepositoId)
+            : null;
+
+        $componente = \App\Models\ComponenteAlmacen::withTrashed()->where('empresa_id', $m->empresa_id)->findOrFail($candidato['componente_id']);
+
+        try {
+            app(\App\Services\RetiroGranelService::class)->retirarDelEquipo(
+                $m, $componente, (int) $this->retirarCantidad, $destino, $deposito, $this->retirarObservaciones, Auth::user(),
+            );
+            $this->dispatch('toast', type: 'success', message: "Salieron {$this->retirarCantidad} de «{$componente->nombre}» del equipo.");
+            $this->cerrarRetirar();
+            $this->dispatch('componenteRefrescar');
+            unset($this->mantenimiento, $this->candidatosRetiro, $this->historial, $this->retirosGranel);
+        } catch (\InvalidArgumentException $e) {
+            $this->addError('retirarCantidad', $e->getMessage());
+        }
+    }
+
+    /** Lo a granel que salió en este caso (devoluciones y retiros). */
+    #[Computed]
+    public function retirosGranel()
+    {
+        return \App\Models\RetiroGranel::with(['deposito', 'equipo'])
+            ->where('mantenimiento_id', $this->mantenimientoId)
+            ->latest()
+            ->get();
     }
 
     public function render()

@@ -39,6 +39,8 @@ class MovimientoStockModal extends Component
 
     public bool   $danado      = false;
     public ?int   $depositoId  = null;
+    /** A granel y dañado: va a un depósito o se desecha (se bota). */
+    public string $destinoDanado = 'deposito';
 
     /** @var array<int, int|string> Piezas con identidad que salen en una Salida. */
     public array  $piezaIds    = [];
@@ -50,7 +52,7 @@ class MovimientoStockModal extends Component
         $this->authorize('registrarMovimiento', $componente);
 
         $this->componenteId = $componenteId;
-        $this->reset(['cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds']);
+        $this->reset(['cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds', 'destinoDanado']);
         $this->resetValidation();
         $this->open = true;
     }
@@ -119,7 +121,15 @@ class MovimientoStockModal extends Component
             'piezaIds.*'    => 'integer',
         ];
 
-        if ($this->danado) {
+        $granel = (bool) $this->componente?->esAGranel();
+
+        if ($this->danado && $granel) {
+            // A granel dañado: queda su traza (RetiroGranel), con motivo.
+            $rules['destinoDanado'] = 'required|in:deposito,desecho';
+            $rules['observaciones'] = 'required|string|min:' . \App\Services\RetiroGranelService::MOTIVO_MINIMO . '|max:500';
+        }
+
+        if ($this->danado && (! $granel || $this->destinoDanado === 'deposito')) {
             $rules['depositoId'] = 'required|exists:depositos,id';
         }
 
@@ -132,6 +142,8 @@ class MovimientoStockModal extends Component
             'cantidad.required'      => 'Indica la cantidad.',
             'cantidad.min'           => 'La cantidad debe ser al menos 1.',
             'depositoId.required'    => 'Selecciona en qué depósito queda la unidad dañada.',
+            'observaciones.required' => 'Escribe qué le pasó (motivo).',
+            'observaciones.min'      => 'Escribe qué le pasó (motivo).',
         ];
     }
 
@@ -189,7 +201,19 @@ class MovimientoStockModal extends Component
         }
 
         try {
-            if ($this->danado) {
+            if ($this->danado && $componente->esAGranel()) {
+                $deposito = $this->destinoDanado === 'deposito'
+                    ? Deposito::activos()->where('empresa_id', $componente->empresa_id)->find($this->depositoId)
+                    : null;
+                if ($this->destinoDanado === 'deposito' && ! $deposito) {
+                    $this->addError('depositoId', 'Ese depósito no está disponible para este componente.');
+                    return;
+                }
+
+                app(\App\Services\RetiroGranelService::class)->danado(
+                    $componente, (int) $this->cantidad, $this->destinoDanado, $deposito, $this->observaciones, Auth::user(),
+                );
+            } elseif ($this->danado) {
                 // Solo depósitos activos de la empresa del componente.
                 $deposito = Deposito::activos()
                     ->where('empresa_id', $componente->empresa_id)
@@ -225,7 +249,7 @@ class MovimientoStockModal extends Component
     public function close(): void
     {
         $this->open = false;
-        $this->reset(['componenteId', 'cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds']);
+        $this->reset(['componenteId', 'cantidad', 'motivo', 'observaciones', 'danado', 'depositoId', 'piezaIds', 'destinoDanado']);
         $this->resetValidation();
     }
 

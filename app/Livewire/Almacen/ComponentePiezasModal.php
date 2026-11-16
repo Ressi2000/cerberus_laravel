@@ -26,6 +26,9 @@ class ComponentePiezasModal extends Component
 
     public string $pestana = 'stock'; // stock | piezas | movimientos
 
+    /** Serial para una unidad que está en stock sin serial. */
+    public string $serialNuevo = '';
+
     // Locked: solo se fija en abrir(), después de autorizar — no se puede
     // cambiar desde el navegador para espiar piezas de otro componente.
     #[Locked]
@@ -42,7 +45,7 @@ class ComponentePiezasModal extends Component
 
         $this->componenteId = $componenteId;
         $this->pestana = $componente->esAGranel() ? 'movimientos' : 'stock';
-        unset($this->componente, $this->piezas, $this->todasLasPiezas, $this->usos, $this->resumen);
+        unset($this->componente, $this->piezas, $this->todasLasPiezas, $this->usos, $this->resumen, $this->retirosGranel);
         $this->open = true;
     }
 
@@ -119,6 +122,71 @@ class ComponentePiezasModal extends Component
             ->orderByDesc('id')
             ->limit(self::LIMITE)
             ->get();
+    }
+
+    /**
+     * Le pone serial a UNA unidad que está en stock sin identificar (stock
+     * de antes de la trazabilidad, o que entró por cantidad). El stock no
+     * cambia: esa unidad pasa a ser una pieza con su serial y su recorrido.
+     */
+    public function asignarSerial(): void
+    {
+        $componente = $this->componente;
+        abort_unless($componente, 404);
+        $this->authorize('registrarMovimiento', $componente);
+
+        $serial = trim($this->serialNuevo);
+        if ($serial === '' || mb_strlen($serial) > 100) {
+            $this->addError('serialNuevo', 'Escribe el serial.');
+            return;
+        }
+        if ($componente->esAGranel() || $componente->unidadesSinIdentidad() < 1) {
+            $this->addError('serialNuevo', 'No hay unidades sin serial en esta variante.');
+            return;
+        }
+        if (PiezaExtraida::where('empresa_id', $componente->empresa_id)->where('identificador', $serial)->exists()) {
+            $this->addError('serialNuevo', "Ya hay otra pieza con el serial «{$serial}».");
+            return;
+        }
+
+        $valores  = $componente->valoresFicha();
+        $atributo = $valores ? $componente->familia?->atributoRepresentativo() : null;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($componente, $serial, $valores, $atributo) {
+            $pieza = PiezaExtraida::create([
+                'empresa_id'            => $componente->empresa_id,
+                'atributo_id'           => $atributo?->id,
+                'valor_extraido'        => $valores ?: null,
+                'reutilizable'          => true,
+                'condicion'             => PiezaExtraida::CONDICION_NUEVO,
+                'identificador'         => $serial,
+                'estado'                => PiezaExtraida::ESTADO_EN_ALMACEN,
+                'componente_almacen_id' => $componente->id,
+                'motivo'                => PiezaExtraida::MOTIVO_REGISTRO_MANUAL,
+                'extraido_por'          => \Illuminate\Support\Facades\Auth::id(),
+            ]);
+            $pieza->movimientos()->create([
+                'tipo'           => \App\Models\PiezaExtraidaMovimiento::TIPO_INGRESO_ALMACEN,
+                'registrado_por' => \Illuminate\Support\Facades\Auth::id(),
+                'observaciones'  => 'Ya estaba en el almacén sin serial; se le puso su serial.',
+            ]);
+        });
+
+        $this->serialNuevo = '';
+        $this->resetValidation();
+        unset($this->piezas, $this->todasLasPiezas, $this->resumen);
+        $this->dispatch('stockActualizado');
+        $this->dispatch('toast', type: 'success', message: "Unidad identificada con el serial {$serial}.");
+    }
+
+    /** A granel: devoluciones, retiros de equipos y daños, con su destino. */
+    #[Computed]
+    public function retirosGranel()
+    {
+        return $this->componenteId
+            ? \App\Models\RetiroGranel::with(['equipo:id,codigo_interno', 'mantenimiento:id', 'deposito:id,nombre', 'registradoPor:id,name'])
+                ->where('componente_id', $this->componenteId)->latest()->limit(self::LIMITE)->get()
+            : collect();
     }
 
     /** Abre la ficha de una pieza de ESTA variante (el id llega del navegador). */

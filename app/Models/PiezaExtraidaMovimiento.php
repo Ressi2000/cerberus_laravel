@@ -40,6 +40,7 @@ class PiezaExtraidaMovimiento extends Model
     const TIPO_SALIDA_AJUSTE     = 'salida_ajuste';
     const TIPO_AGRUPADA          = 'agrupada';
     const TIPO_TRASLADO_ALMACEN  = 'traslado_almacen';
+    const TIPO_CORRECCION        = 'correccion';
 
     const TIPOS = [
         self::TIPO_EXTRACCION        => 'Extraída del equipo',
@@ -51,6 +52,7 @@ class PiezaExtraidaMovimiento extends Model
         self::TIPO_SALIDA_AJUSTE     => 'Retirada del almacén (ajuste)',
         self::TIPO_AGRUPADA          => 'Pasó a contarse por cantidad (a granel)',
         self::TIPO_TRASLADO_ALMACEN  => 'Trasladada al almacén de otra empresa',
+        self::TIPO_CORRECCION        => 'Dato corregido',
     ];
 
     // ── Relaciones ────────────────────────────────────────────────────────────
