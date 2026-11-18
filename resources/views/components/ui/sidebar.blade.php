@@ -275,6 +275,15 @@
                     <span class="whitespace-nowrap">Equipos</span>
                 </a>
 
+                <a href="{{ route('admin.renovacion.index') }}"
+                    class="{{ $li }} py-1.5 text-sm {{ $active('admin.renovacion.*') ? $on : $off }}"
+                    title="Renovación de equipos">
+                    <span class="material-icons text-base flex-shrink-0 {{ $active('admin.renovacion.*') ? $ion : $ioff }}">
+                        published_with_changes
+                    </span>
+                    <span class="whitespace-nowrap">Renovación</span>
+                </a>
+
                 <a href="{{ route('admin.prestamos.index') }}"
                     class="{{ $li }} py-1.5 text-sm {{ $active('admin.prestamos.*') ? $on : $off }}"
                     title="Préstamos">
