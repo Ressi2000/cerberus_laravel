@@ -112,6 +112,9 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
 
     // Equipos
     Route::prefix('admin')->name('admin.')->middleware(['role:Administrador|Analista'])->group(function () {
+        // Renovación: qué equipos reemplazar, mejorar o vigilar (antes del resource para no chocar con /equipos/{equipo}).
+        Route::get('/renovacion', [\App\Http\Controllers\Equipo\RenovacionController::class, 'index'])->name('renovacion.index');
+        Route::get('/renovacion/exportar', [\App\Http\Controllers\Equipo\RenovacionController::class, 'exportar'])->name('renovacion.exportar');
         Route::resource('/equipos', EquipoController::class);
         Route::get('/equipos/{equipo}/etiqueta', [EquipoController::class, 'etiqueta'])->name('equipos.etiqueta');
 
