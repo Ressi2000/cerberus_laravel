@@ -10,6 +10,7 @@ use App\Models\MantenimientoComponente;
 use App\Models\PiezaExtraida;
 use App\Services\ExtraccionPiezaService;
 use App\Services\PiezaManualService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -47,18 +48,22 @@ class RegistrarEntradaModal extends Component
 
     public ?int   $cantidad       = 1;
     public string $condicion      = PiezaExtraida::CONDICION_NUEVO;
-    public string $equipoOrigenId = '';
     public string $seriales       = '';
     public string $motivo         = '';
     public string $observaciones  = '';
 
     /**
-     * Usada, de una familia con ficha: cuáles entradas de la ficha del
-     * equipo de origen son las que salieron (ids de instancia). Así solo se
-     * puede declarar algo que el equipo de verdad tiene, y su ficha se
-     * actualiza (deja de tenerlo).
+     * Usada: de qué equipo(s) salió. Puede venir de varios equipos en la
+     * misma entrada; cada pieza queda ligada a SU equipo de origen.
+     *   equipo:     id del equipo
+     *   instancias: familias con ficha — cuáles entradas de su ficha salieron
+     *               (así solo se declara lo que el equipo tiene, y su ficha se actualiza)
+     *   cantidad:   familias sin ficha — cuántas salieron de ese equipo
+     *   seriales:   uno por línea, en el mismo orden
+     *
+     * @var array<int, array{equipo: string, instancias: array, cantidad: int|string|null, seriales: string}>
      */
-    public array $instanciasOrigen = [];
+    public array $origenes = [];
 
     /** Piezas que acaban de entrar (para imprimir sus etiquetas). */
     public array $recienRegistradas = [];
@@ -69,7 +74,8 @@ class RegistrarEntradaModal extends Component
     {
         $this->authorize('create', ComponenteAlmacen::class);
 
-        $this->reset(['familiaId', 'componenteId', 'nuevoNombre', 'valores', 'equipoOrigenId', 'seriales', 'motivo', 'observaciones', 'instanciasOrigen', 'recienRegistradas', 'resumen']);
+        $this->reset(['familiaId', 'componenteId', 'nuevoNombre', 'valores', 'seriales', 'motivo', 'observaciones', 'recienRegistradas', 'resumen']);
+        $this->origenes = [self::origenVacio()];
         $this->nuevaUnidad = 'unidad';
         $this->cantidad    = 1;
         $this->condicion   = PiezaExtraida::CONDICION_NUEVO;
@@ -169,37 +175,77 @@ class RegistrarEntradaModal extends Component
         return $this->usaFicha && $this->condicion === PiezaExtraida::CONDICION_REUTILIZADO;
     }
 
-    #[Computed]
-    public function equipoOrigen(): ?Equipo
+    private static function origenVacio(): array
     {
-        return $this->equipoOrigenId && $this->empresa_id
-            ? Equipo::with('categoria')->where('empresa_id', $this->empresa_id)->find($this->equipoOrigenId)
+        return ['equipo' => '', 'instancias' => [], 'cantidad' => 1, 'seriales' => ''];
+    }
+
+    public function agregarOrigen(): void
+    {
+        $this->origenes[] = self::origenVacio();
+    }
+
+    public function quitarOrigen(int $i): void
+    {
+        unset($this->origenes[$i]);
+        $this->origenes = array_values($this->origenes) ?: [self::origenVacio()];
+        $this->resetValidation();
+    }
+
+    /** Equipos elegidos como origen (de la empresa), por id. */
+    #[Computed]
+    public function equiposOrigen()
+    {
+        $ids = collect($this->origenes)->pluck('equipo')->filter()->map(fn ($id) => (int) $id)->unique();
+
+        return $ids->isEmpty() || ! $this->empresa_id
+            ? collect()
+            : Equipo::with('categoria')->where('empresa_id', $this->empresa_id)->whereIn('id', $ids)->get()->keyBy('id');
+    }
+
+    /** La característica de la categoría del equipo que usa esta familia (ej. la RAM de Laptop). */
+    public function atributoEn(?Equipo $equipo): ?\App\Models\AtributoEquipo
+    {
+        return $equipo && $this->familia
+            ? \App\Models\AtributoEquipo::where('categoria_id', $equipo->categoria_id)->where('familia_id', $this->familia->id)->first()
             : null;
     }
 
-    /** La característica de la categoría del equipo de origen que usa esta familia (ej. la RAM de Laptop). */
+    /**
+     * Para cada origen: el equipo, su característica de esta familia y lo que
+     * su ficha dice que tiene (familias con ficha).
+     */
     #[Computed]
-    public function atributoEnEquipo(): ?\App\Models\AtributoEquipo
+    public function detalleOrigenes(): array
     {
-        return $this->equipoOrigen && $this->familia
-            ? \App\Models\AtributoEquipo::where('categoria_id', $this->equipoOrigen->categoria_id)->where('familia_id', $this->familia->id)->first()
-            : null;
+        return collect($this->origenes)->map(function ($o) {
+            $equipo   = $o['equipo'] ? ($this->equiposOrigen[(int) $o['equipo']] ?? null) : null;
+            $atributo = $this->usaFicha ? $this->atributoEn($equipo) : null;
+            $ficha    = $atributo
+                ? \App\Models\EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
+                    ->where('atributo_id', $atributo->id)
+                    ->where('es_actual', true)
+                    ->orderBy('orden')
+                    ->get()
+                    ->map(fn ($i) => (object) ['id' => $i->id, 'descripcion' => $atributo->describirValor($i->valores ?? [])])
+                : collect();
+
+            return (object) ['equipo' => $equipo, 'atributo' => $atributo, 'ficha' => $ficha];
+        })->all();
     }
 
-    /** Lo que la ficha del equipo de origen dice que tiene de esta familia. */
+    /** "2 de EQ-00057 · 1 de EQ-00031" — para revisar antes de guardar. */
     #[Computed]
-    public function fichaDelEquipo()
+    public function resumenOrigenes(): ?string
     {
-        if (! $this->atributoEnEquipo) {
-            return collect();
-        }
+        $partes = collect($this->origenes)->map(function ($o) {
+            $equipo = $o['equipo'] ? ($this->equiposOrigen[(int) $o['equipo']] ?? null) : null;
+            $n = $this->usaFicha ? count($o['instancias'] ?? []) : (int) ($o['cantidad'] ?? 0);
 
-        return \App\Models\EquipoAtributoGrupoInstancia::where('equipo_id', $this->equipoOrigen->id)
-            ->where('atributo_id', $this->atributoEnEquipo->id)
-            ->where('es_actual', true)
-            ->orderBy('orden')
-            ->get()
-            ->map(fn ($i) => (object) ['id' => $i->id, 'descripcion' => $this->atributoEnEquipo->describirValor($i->valores ?? [])]);
+            return $equipo && $n > 0 ? "{$n} de {$equipo->codigo_interno}" : null;
+        })->filter();
+
+        return $partes->isEmpty() ? null : $partes->implode(' · ');
     }
 
     /**
@@ -219,21 +265,24 @@ class RegistrarEntradaModal extends Component
         return $elegida && $elegida->nombre !== $this->nombreVariante ? $elegida->nombre : null;
     }
 
-    public function updatedEquipoOrigenId(): void
+    /** Si cambia el equipo de un origen, lo marcado de la ficha anterior ya no aplica. */
+    public function updatedOrigenes($valor, ?string $clave = null): void
     {
-        $this->instanciasOrigen = [];
-        unset($this->equipoOrigen, $this->atributoEnEquipo, $this->fichaDelEquipo);
+        if ($clave && preg_match('/^(\d+)\.equipo$/', $clave, $m)) {
+            $this->origenes[(int) $m[1]]['instancias'] = [];
+        }
+        unset($this->equiposOrigen, $this->detalleOrigenes, $this->resumenOrigenes);
     }
 
     public function updatedCondicion(): void
     {
-        $this->instanciasOrigen = [];
+        $this->origenes = [self::origenVacio()];
     }
 
     public function updatedEmpresaId(): void
     {
         $this->componenteId = '';
-        $this->equipoOrigenId = '';
+        $this->origenes = [self::origenVacio()];
     }
 
     public function updatedFamiliaId(): void
@@ -256,9 +305,13 @@ class RegistrarEntradaModal extends Component
         ];
 
         if ($this->desdeFichaDelEquipo) {
-            // Los valores salen de la ficha del equipo: solo hay que elegir cuáles.
-            $rules['instanciasOrigen']   = 'required|array|min:1';
-            $rules['instanciasOrigen.*'] = 'integer';
+            // Los valores salen de la ficha de cada equipo: solo hay que elegir cuáles.
+            $rules['origenes']                = 'required|array|min:1|max:20';
+            $rules['origenes.*.equipo']       = 'required';
+            $rules['origenes.*.instancias']   = 'required|array|min:1';
+            $rules['origenes.*.instancias.*'] = 'integer';
+            $rules['origenes.*.seriales']     = 'nullable|string|max:5000';
+            unset($rules['cantidad']);
         } elseif ($this->usaFicha) {
             // La ficha define la variante: completa (si no, quedaría "RAM" a secas).
             foreach ($this->familia->campos as $campo) {
@@ -274,8 +327,13 @@ class RegistrarEntradaModal extends Component
         if (! $this->familia?->esAGranel()) {
             $rules['condicion'] = 'required|in:' . PiezaExtraida::CONDICION_NUEVO . ',' . PiezaExtraida::CONDICION_REUTILIZADO;
             $rules['seriales']  = 'nullable|string|max:5000';
-            if ($this->condicion === PiezaExtraida::CONDICION_REUTILIZADO) {
-                $rules['equipoOrigenId'] = 'required';
+            if ($this->condicion === PiezaExtraida::CONDICION_REUTILIZADO && ! $this->desdeFichaDelEquipo) {
+                // Sin ficha: cuántas salieron de cada equipo.
+                $rules['origenes']              = 'required|array|min:1|max:20';
+                $rules['origenes.*.equipo']     = 'required';
+                $rules['origenes.*.cantidad']   = 'required|integer|min:1|max:500';
+                $rules['origenes.*.seriales']   = 'nullable|string|max:5000';
+                unset($rules['cantidad'], $rules['seriales']);
             }
         }
 
@@ -289,9 +347,12 @@ class RegistrarEntradaModal extends Component
             'componenteId.required'   => 'Elige la variante, o crea una nueva.',
             'componenteId.in'         => 'Elige la variante, o crea una nueva.',
             'nuevoNombre.required'    => 'Ponle nombre a la nueva variante (ej. Bisagra HP 14").',
-            'equipoOrigenId.required' => 'Indica de qué equipo salió la pieza usada.',
             'valores.*.required'      => 'Completa este campo de la ficha.',
-            'instanciasOrigen.required' => 'Marca cuál (o cuáles) de la ficha del equipo salieron.',
+            'origenes.*.equipo.required'     => 'Indica de qué equipo salió.',
+            'origenes.*.instancias.required' => 'Marca cuál (o cuáles) de la ficha de este equipo salieron.',
+            'origenes.*.instancias.min'      => 'Marca cuál (o cuáles) de la ficha de este equipo salieron.',
+            'origenes.*.cantidad.required'   => 'Indica cuántas salieron de este equipo.',
+            'origenes.*.cantidad.min'        => 'Indica cuántas salieron de este equipo.',
         ];
     }
 
@@ -305,30 +366,33 @@ class RegistrarEntradaModal extends Component
             $this->empresa_id = (string) ($actor->empresa_activa_id ?? '');
         }
 
-        if ($this->desdeFichaDelEquipo) {
-            $this->cantidad = max(1, count($this->instanciasOrigen));
-        }
+        $this->origenes = array_values($this->origenes);
+        $usada = ! $this->familia?->esAGranel() && $this->condicion === PiezaExtraida::CONDICION_REUTILIZADO;
 
         $this->validate();
 
         $familia = $this->familia;
 
-        if ($this->desdeFichaDelEquipo) {
-            $this->guardarDesdeFichaDelEquipo($actor);
-            return;
-        }
-
-        $equipoOrigen = null;
-        if (! $familia->esAGranel() && $this->condicion === PiezaExtraida::CONDICION_REUTILIZADO) {
-            $equipoOrigen = Equipo::where('empresa_id', $this->empresa_id)->find($this->equipoOrigenId);
-            if (! $equipoOrigen) {
-                $this->addError('equipoOrigenId', 'Ese equipo no pertenece a la empresa.');
+        // Usada: cada origen tiene que ser un equipo de la empresa, sin repetir.
+        $equipos = collect();
+        if ($usada) {
+            $equipos = $this->equiposDeOrigen();
+            if ($equipos === null) {
                 return;
             }
         }
 
+        if ($this->desdeFichaDelEquipo) {
+            $this->guardarDesdeFichaDelEquipo($actor, $equipos);
+            return;
+        }
+
+        if ($usada) {
+            $this->cantidad = (int) collect($this->origenes)->sum(fn ($o) => (int) $o['cantidad']);
+        }
+
         try {
-            $componente = DB::transaction(function () use ($familia, $actor, $equipoOrigen) {
+            $componente = DB::transaction(function () use ($familia, $actor, $usada, $equipos) {
                 $atributo = $this->usaFicha ? $familia->atributoRepresentativo() : null;
                 $valores  = $this->usaFicha
                     ? collect($familia->campos)->mapWithKeys(fn ($c) => [$c['id'] => trim((string) ($this->valores[$c['id']] ?? '')) ?: null])->all()
@@ -339,13 +403,33 @@ class RegistrarEntradaModal extends Component
 
                 if ($familia->esAGranel()) {
                     $componente->registrarEntrada($this->cantidad, $actor, $this->motivo ?: 'Entrada de stock', $this->observaciones ?: null);
+                } elseif ($usada) {
+                    // Una entrada por equipo de origen: cada pieza queda con SU equipo.
+                    $ids = [];
+                    foreach ($this->origenes as $n => $o) {
+                        try {
+                            $ids = array_merge($ids, app(PiezaManualService::class)->registrar(
+                                $componente->fresh(),
+                                (int) $o['cantidad'],
+                                $this->condicion,
+                                $actor,
+                                equipoOrigen: $equipos[$n],
+                                observaciones: $this->observaciones ?: null,
+                                seriales: preg_split('/\r\n|\r|\n/', (string) $o['seriales']) ?: [],
+                                atributo: $atributo,
+                                valorFicha: $valores,
+                            )->pluck('id')->all());
+                        } catch (\InvalidArgumentException $e) {
+                            throw new \App\Exceptions\ErrorEnCampoException("origenes.{$n}.seriales", $e->getMessage());
+                        }
+                    }
+                    $this->recienRegistradas = $ids;
                 } else {
                     $this->recienRegistradas = app(PiezaManualService::class)->registrar(
                         $componente,
                         $this->cantidad,
                         $this->condicion,
                         $actor,
-                        equipoOrigen: $equipoOrigen,
                         observaciones: $this->observaciones ?: null,
                         seriales: preg_split('/\r\n|\r|\n/', $this->seriales) ?: [],
                         atributo: $atributo,
@@ -363,7 +447,14 @@ class RegistrarEntradaModal extends Component
                 $msg .= " Hay {$esperando} solicitud(es) pendiente(s) de esta variante: entrégalas desde «Solicitudes pendientes».";
             }
 
+            if ($usada) {
+                $msg = "Entraron {$this->cantidad} usada(s) a «{$componente->nombre}»: {$this->resumenOrigenes}.";
+            }
+
             $this->terminar($msg);
+        } catch (\App\Exceptions\ErrorEnCampoException $e) {
+            // Error en los seriales de un origen concreto: se muestra en ese origen.
+            $this->addError($e->campo, $e->getMessage());
         } catch (\InvalidArgumentException $e) {
             $this->addError('seriales', $e->getMessage());
         } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
@@ -375,53 +466,87 @@ class RegistrarEntradaModal extends Component
     }
 
     /**
-     * Usada de una familia con ficha: cada entrada marcada de la ficha del
-     * equipo de origen sale del equipo (su ficha se actualiza) y entra al
-     * almacén como pieza usada, con su serial si se escribió.
+     * Los equipos de cada origen (mismo orden). Cada uno tiene que ser de la
+     * empresa y no repetirse. Null si hay error (ya queda marcado en el origen).
      */
-    private function guardarDesdeFichaDelEquipo($actor): void
+    private function equiposDeOrigen(): ?Collection
     {
-        $equipo   = $this->equipoOrigen;
-        $atributo = $this->atributoEnEquipo;
+        $equipos = collect();
+        $vistos  = [];
 
-        if (! $equipo || ! $atributo) {
-            $this->addError('equipoOrigenId', 'Elige un equipo cuya ficha tenga ' . ($this->familia->nombre ?? 'esta pieza') . '.');
-            return;
+        foreach ($this->origenes as $n => $o) {
+            $equipo = Equipo::with('categoria')->where('empresa_id', $this->empresa_id)->find((int) $o['equipo']);
+            if (! $equipo) {
+                $this->addError("origenes.{$n}.equipo", 'Ese equipo no pertenece a la empresa.');
+                return null;
+            }
+            if (isset($vistos[$equipo->id])) {
+                $this->addError("origenes.{$n}.equipo", "{$equipo->codigo_interno} ya está arriba: agrega ahí lo que salió de él.");
+                return null;
+            }
+            $vistos[$equipo->id] = true;
+            $equipos[$n] = $equipo;
         }
 
-        $ids = collect($this->instanciasOrigen)->map(fn ($id) => (int) $id)->unique()->values();
-        $instancias = \App\Models\EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
-            ->where('atributo_id', $atributo->id)
-            ->where('es_actual', true)
-            ->whereIn('id', $ids)
-            ->get()
-            ->sortBy(fn ($i) => $ids->search($i->id));
+        return $equipos;
+    }
 
-        if ($instancias->count() !== $ids->count()) {
-            $this->addError('instanciasOrigen', 'Alguna de las marcadas ya no está en la ficha del equipo. Vuelve a elegir.');
-            unset($this->fichaDelEquipo);
-            return;
-        }
+    /**
+     * Usada de una familia con ficha: en cada equipo de origen, lo marcado
+     * de su ficha sale del equipo (su ficha se actualiza) y entra al almacén
+     * como pieza usada, con su serial si se escribió. Todo o nada.
+     */
+    private function guardarDesdeFichaDelEquipo($actor, Collection $equipos): void
+    {
+        $plan = [];   // [equipo, [instancias en orden], [seriales]]
 
-        $seriales = collect(preg_split('/\r\n|\r|\n/', $this->seriales) ?: [])->map(fn ($s) => trim($s))->filter()->values();
-        if ($seriales->count() > $instancias->count()) {
-            $this->addError('seriales', "Escribiste {$seriales->count()} seriales para {$instancias->count()} pieza(s).");
-            return;
+        foreach ($this->origenes as $n => $o) {
+            $equipo   = $equipos[$n];
+            $atributo = $this->atributoEn($equipo);
+
+            if (! $atributo) {
+                $this->addError("origenes.{$n}.equipo", "La categoría de {$equipo->codigo_interno} no tiene {$this->familia->nombre} vinculada a la familia.");
+                return;
+            }
+
+            $ids = collect($o['instancias'])->map(fn ($id) => (int) $id)->unique()->values();
+            $instancias = \App\Models\EquipoAtributoGrupoInstancia::where('equipo_id', $equipo->id)
+                ->where('atributo_id', $atributo->id)
+                ->where('es_actual', true)
+                ->whereIn('id', $ids)
+                ->get()
+                ->sortBy(fn ($i) => $ids->search($i->id))
+                ->values();
+
+            if ($instancias->count() !== $ids->count()) {
+                $this->addError("origenes.{$n}.instancias", 'Alguna de las marcadas ya no está en la ficha del equipo. Vuelve a elegir.');
+                unset($this->detalleOrigenes);
+                return;
+            }
+
+            $seriales = collect(preg_split('/\r\n|\r|\n/', (string) $o['seriales']) ?: [])->map(fn ($s) => trim($s))->filter()->values();
+            if ($seriales->count() > $instancias->count()) {
+                $this->addError("origenes.{$n}.seriales", "Escribiste {$seriales->count()} seriales para {$instancias->count()} pieza(s).");
+                return;
+            }
+
+            $plan[] = [$equipo, $instancias, $seriales];
         }
 
         try {
-            $piezas = DB::transaction(fn () => $instancias->values()->map(fn ($instancia, $n) => app(ExtraccionPiezaService::class)->extraerDeGrupoInstancia(
-                $equipo, $instancia, PiezaExtraida::ESTADO_EN_ALMACEN, $actor, PiezaExtraida::MOTIVO_DESARME_MANUAL,
-                observaciones: $this->observaciones ?: null,
-                serial: $seriales[$n] ?? null,
-            )));
+            $piezas = DB::transaction(fn () => collect($plan)->flatMap(fn ($p) => $p[1]->map(
+                fn ($instancia, $k) => app(ExtraccionPiezaService::class)->extraerDeGrupoInstancia(
+                    $p[0], $instancia, PiezaExtraida::ESTADO_EN_ALMACEN, $actor, PiezaExtraida::MOTIVO_DESARME_MANUAL,
+                    observaciones: $this->observaciones ?: null,
+                    serial: $p[2][$k] ?? null,
+                ))));
         } catch (\InvalidArgumentException $e) {
-            $this->addError('instanciasOrigen', $e->getMessage());
+            $this->addError('origenes.0.instancias', $e->getMessage());
             return;
         }
 
         $this->recienRegistradas = $piezas->pluck('id')->all();
-        $this->terminar("Entraron {$piezas->count()} pieza(s) usada(s) de {$equipo->codigo_interno}; su ficha ya no las tiene.");
+        $this->terminar("Entraron {$piezas->count()} pieza(s) usada(s): {$this->resumenOrigenes}. Sus fichas ya no las tienen.");
     }
 
     /** Después de guardar: si entraron piezas con código, se ofrece imprimir sus etiquetas. */

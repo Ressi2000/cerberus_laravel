@@ -47,56 +47,16 @@
                         wire:model.live="familiaId" :error="$errors->first('familiaId')" required />
 
                     @if ($this->familia)
+                        @php $usada = ! $this->familia->esAGranel() && $condicion === \App\Models\PiezaExtraida::CONDICION_REUTILIZADO; @endphp
+
                         {{-- 2. Nueva o usada (por unidad) --}}
                         @unless ($this->familia->esAGranel())
                             <x-form.select label="Condición" :options="\App\Models\PiezaExtraida::CONDICIONES"
                                 wire:model.live="condicion" :error="$errors->first('condicion')" />
-
-                            @if ($condicion === \App\Models\PiezaExtraida::CONDICION_REUTILIZADO)
-                                <x-form.select label="Equipo de origen" placeholder="¿De qué equipo salió?" searchable
-                                    :options="$this->equiposOpciones" wire:model.live="equipoOrigenId"
-                                    :error="$errors->first('equipoOrigenId')" required />
-                            @endif
                         @endunless
 
-                        @if ($this->desdeFichaDelEquipo)
-                            {{-- 3a. Usada con ficha: se elige de lo que el equipo tiene en su ficha --}}
-                            @if ($this->equipoOrigen)
-                                @if (! $this->atributoEnEquipo)
-                                    <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
-                                                bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300
-                                                border border-amber-200 dark:border-amber-500/30">
-                                        <span class="material-icons text-sm">warning</span>
-                                        <span>La categoría {{ $this->equipoOrigen->categoria->nombre ?? '' }} no tiene ninguna característica vinculada a {{ $this->familia->nombre }}:
-                                            no se puede comprobar qué tenía el equipo. Vincúlala en Configuración → Atributos.</span>
-                                    </div>
-                                @elseif ($this->fichaDelEquipo->isEmpty())
-                                    <div class="flex items-start gap-2 px-3 py-2 rounded-lg text-xs
-                                                bg-amber-50 dark:bg-amber-500/10 text-amber-800 dark:text-amber-300
-                                                border border-amber-200 dark:border-amber-500/30">
-                                        <span class="material-icons text-sm">warning</span>
-                                        <span>Según su ficha, {{ $this->equipoOrigen->codigo_interno }} no tiene {{ $this->familia->nombre }}.
-                                            Si de verdad salió de ahí, corrige primero la ficha del equipo.</span>
-                                    </div>
-                                @else
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-700 dark:text-cerberus-accent mb-1">¿Cuál salió de {{ $this->equipoOrigen->codigo_interno }}?</p>
-                                        <p class="text-xs text-gray-500 dark:text-cerberus-light mb-2">Es lo que dice su ficha. Lo que marques sale de su ficha y entra al almacén como usado.</p>
-                                        <div class="space-y-1 rounded-lg border border-gray-200 dark:border-cerberus-steel/50 p-1.5">
-                                            @foreach ($this->fichaDelEquipo as $entrada)
-                                                <label wire:key="origen-{{ $entrada->id }}"
-                                                    class="flex items-center gap-2 text-sm rounded-md px-2 py-1.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-cerberus-steel/10">
-                                                    <input type="checkbox" value="{{ $entrada->id }}" wire:model.live="instanciasOrigen" class="rounded text-cerberus-primary">
-                                                    <span class="text-gray-900 dark:text-white">{{ $entrada->descripcion }}</span>
-                                                </label>
-                                            @endforeach
-                                        </div>
-                                        @error('instanciasOrigen') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
-                                    </div>
-                                @endif
-                            @endif
-                        @else
-                            {{-- 3b. Variante: por la ficha, o elegida/nueva --}}
+                        @unless ($this->desdeFichaDelEquipo)
+                            {{-- 3. Variante: por la ficha, o elegida/nueva (usada con ficha: sale de la ficha de cada equipo) --}}
                             @if ($this->usaFicha)
                                 <div class="space-y-2">
                                     <p class="text-sm font-medium text-gray-700 dark:text-cerberus-accent">Ficha técnica</p>
@@ -137,7 +97,91 @@
                                 </div>
                             @endif
 
-                            <x-form.input label="Cantidad" type="number" wire:model.live="cantidad" :error="$errors->first('cantidad')" required />
+                            @unless ($usada)
+                                <x-form.input label="Cantidad" type="number" wire:model.live="cantidad" :error="$errors->first('cantidad')" required />
+                            @endunless
+                        @endunless
+
+                        {{-- 4. Usada: de qué equipo(s) salió — puede ser de varios --}}
+                        @if ($usada)
+                            <div class="space-y-3">
+                                <div>
+                                    <p class="text-sm font-medium text-gray-700 dark:text-cerberus-accent">¿De qué equipo(s) salió?</p>
+                                    <p class="text-xs text-gray-500 dark:text-cerberus-light">
+                                        @if ($this->usaFicha)
+                                            En cada equipo, marca lo que salió según su ficha: sale de su ficha y entra al almacén como usado.
+                                        @else
+                                            {{ $this->familia->nombre }} no tiene ficha: el equipo de origen queda como lo declaras (no se puede comprobar).
+                                        @endif
+                                    </p>
+                                </div>
+
+                                @foreach ($origenes as $i => $origen)
+                                    @php $d = $this->detalleOrigenes[$i] ?? null; @endphp
+                                    <div wire:key="origen-{{ $i }}"
+                                         class="rounded-lg border border-gray-200 dark:border-cerberus-steel/50 bg-gray-50 dark:bg-cerberus-dark/40 p-3 space-y-2">
+                                        <div class="flex items-start gap-2">
+                                            <div class="flex-1 min-w-0">
+                                                <x-form.select :label="'Equipo de origen' . (count($origenes) > 1 ? ' ' . ($i + 1) : '')" placeholder="¿De qué equipo salió?" searchable
+                                                    :options="$this->equiposOpciones" wire:model.live="origenes.{{ $i }}.equipo"
+                                                    :error="$errors->first('origenes.' . $i . '.equipo')" required />
+                                            </div>
+                                            @if (count($origenes) > 1)
+                                                <button type="button" wire:click="quitarOrigen({{ $i }})" title="Quitar este equipo"
+                                                    class="mt-7 text-gray-400 hover:text-red-500">
+                                                    <span class="material-icons text-base">close</span>
+                                                </button>
+                                            @endif
+                                        </div>
+
+                                        @if ($d?->equipo)
+                                            @if ($this->usaFicha)
+                                                @if (! $d->atributo)
+                                                    <p class="text-xs text-amber-700 dark:text-amber-300">
+                                                        La categoría {{ $d->equipo->categoria->nombre ?? '' }} no tiene {{ $this->familia->nombre }} vinculada a la familia:
+                                                        no se puede comprobar qué tenía. Vincúlala en Configuración → Atributos.
+                                                    </p>
+                                                @elseif ($d->ficha->isEmpty())
+                                                    <p class="text-xs text-amber-700 dark:text-amber-300">
+                                                        Según su ficha, {{ $d->equipo->codigo_interno }} no tiene {{ $this->familia->nombre }}. Si de verdad salió de ahí, corrige primero la ficha del equipo.
+                                                    </p>
+                                                @else
+                                                    <div class="space-y-1 rounded-lg border border-gray-200 dark:border-cerberus-steel/50 bg-white dark:bg-cerberus-dark p-1.5">
+                                                        @foreach ($d->ficha as $entrada)
+                                                            <label wire:key="origen-{{ $i }}-{{ $entrada->id }}"
+                                                                class="flex items-center gap-2 text-sm rounded-md px-2 py-1.5 cursor-pointer hover:bg-gray-50 dark:hover:bg-cerberus-steel/10">
+                                                                <input type="checkbox" value="{{ $entrada->id }}" wire:model.live="origenes.{{ $i }}.instancias" class="rounded text-cerberus-primary">
+                                                                <span class="text-gray-900 dark:text-white">{{ $entrada->descripcion }}</span>
+                                                            </label>
+                                                        @endforeach
+                                                    </div>
+                                                @endif
+                                                @error('origenes.' . $i . '.instancias') <p class="text-red-500 text-xs">{{ $message }}</p> @enderror
+                                            @else
+                                                <x-form.input label="¿Cuántas salieron de este equipo?" type="number" wire:model.live="origenes.{{ $i }}.cantidad"
+                                                    :error="$errors->first('origenes.' . $i . '.cantidad')" />
+                                            @endif
+
+                                            <x-form.textarea label="Seriales (uno por línea, opcional)" wire:model="origenes.{{ $i }}.seriales" rows="2"
+                                                placeholder="En el mismo orden" :error="$errors->first('origenes.' . $i . '.seriales')" />
+                                        @endif
+                                    </div>
+                                @endforeach
+
+                                <button type="button" wire:click="agregarOrigen"
+                                    class="text-sm text-cerberus-primary dark:text-cerberus-accent hover:underline flex items-center gap-1">
+                                    <span class="material-icons text-base">add</span> Otro equipo de origen
+                                </button>
+
+                                @if ($this->resumenOrigenes)
+                                    <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm
+                                                bg-blue-50 dark:bg-blue-500/10 text-blue-800 dark:text-blue-200
+                                                border border-blue-200 dark:border-blue-500/30">
+                                        <span class="material-icons text-base">inventory_2</span>
+                                        <span>Entran: <b>{{ $this->resumenOrigenes }}</b></span>
+                                    </div>
+                                @endif
+                            </div>
                         @endif
 
                         @if ($this->familia->esAGranel())
@@ -148,13 +192,7 @@
                                 <span>{{ $this->familia->nombre }} es a granel: solo se suma la cantidad, sin seriales.</span>
                             </div>
                             <x-form.input label="Motivo (opcional)" wire:model="motivo" placeholder="Ej: Compra, donación…" />
-                        @else
-                            @if ($condicion === \App\Models\PiezaExtraida::CONDICION_REUTILIZADO && ! $this->usaFicha)
-                                <p class="text-xs text-gray-500 dark:text-cerberus-light flex items-start gap-1.5">
-                                    <span class="material-icons text-sm">info</span>
-                                    {{ $this->familia->nombre }} no tiene ficha: el equipo de origen queda como lo declaras (no se puede comprobar).
-                                </p>
-                            @endif
+                        @elseif (! $usada)
                             <x-form.textarea label="Seriales (recomendado)" wire:model="seriales" rows="3"
                                 placeholder="Uno por línea, en el mismo orden que las unidades"
                                 hint="Las unidades sin serial reciben un código interno (AUTO-…)." :error="$errors->first('seriales')" />

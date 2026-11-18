@@ -406,13 +406,13 @@ class EntradaYUsoTest extends TestCase
             ->set('empresa_id', (string) $this->empresa->id)
             ->set('familiaId', (string) $this->ram->id)
             ->set('condicion', PiezaExtraida::CONDICION_REUTILIZADO)
-            ->set('equipoOrigenId', (string) $equipo->id)
-            ->assertSee('¿Cuál salió de')
+            ->set('origenes.0.equipo', (string) $equipo->id)
+            ->assertSee('¿De qué equipo(s) salió?')
             ->assertDontSee('Ficha técnica')
             ->call('guardar')
-            ->assertHasErrors('instanciasOrigen')
-            ->set('instanciasOrigen', [$ram->id])
-            ->set('seriales', 'SN-DEL-EQUIPO')
+            ->assertHasErrors('origenes.0.instancias')
+            ->set('origenes.0.instancias', [$ram->id])
+            ->set('origenes.0.seriales', 'SN-DEL-EQUIPO')
             ->call('guardar')
             ->assertHasNoErrors()
             ->assertSee('Imprimir etiquetas (1)');
@@ -436,10 +436,10 @@ class EntradaYUsoTest extends TestCase
             ->set('empresa_id', (string) $this->empresa->id)
             ->set('familiaId', (string) $this->ram->id)
             ->set('condicion', PiezaExtraida::CONDICION_REUTILIZADO)
-            ->set('equipoOrigenId', (string) $equipo->id)
+            ->set('origenes.0.equipo', (string) $equipo->id)
             ->assertSee('no tiene RAM')
             ->call('guardar')
-            ->assertHasErrors('instanciasOrigen');
+            ->assertHasErrors('origenes.0.instancias');
 
         $this->assertSame(0, PiezaExtraida::count());
     }
@@ -517,5 +517,115 @@ class EntradaYUsoTest extends TestCase
             ->assertSee('Frenados por falta de pieza')
             ->assertSee("Caso #{$caso->id}")
             ->assertSee('Bisagra rara');
+    }
+
+    // ─── Usadas que vienen de varios equipos ───────────────────────────────
+
+    private function equipoConRam(string $codigo, string $capacidad): array
+    {
+        $equipo = Equipo::forceCreate([
+            'empresa_id' => $this->empresa->id, 'categoria_id' => $this->laptop->id,
+            'estado_id' => EstadoEquipo::where('nombre', 'Disponible')->value('id'),
+            'codigo_interno' => $codigo, 'activo' => true,
+        ]);
+        $ram = EquipoAtributoGrupoInstancia::create([
+            'equipo_id' => $equipo->id, 'atributo_id' => $this->ramLaptop->id,
+            'valores' => [$this->campo('Capacidad (GB)') => $capacidad, $this->campo('Tipo') => 'DDR4', $this->campo('Formato') => 'SO-DIMM (laptop)'],
+            'orden' => 0, 'es_actual' => true, 'creado_por' => $this->admin->id,
+        ]);
+
+        return [$equipo, $ram];
+    }
+
+    /** @test */
+    public function una_entrada_de_usadas_puede_traer_piezas_de_varios_equipos_con_ficha(): void
+    {
+        [$a, $ramA] = $this->equipoConRam('EQ-A', '8');
+        [$b, $ramB] = $this->equipoConRam('EQ-B', '4');
+
+        Livewire::actingAs($this->admin)
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir')
+            ->set('empresa_id', (string) $this->empresa->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('condicion', PiezaExtraida::CONDICION_REUTILIZADO)
+            ->set('origenes.0.equipo', (string) $a->id)
+            ->set('origenes.0.instancias', [$ramA->id])
+            ->set('origenes.0.seriales', 'SN-DE-A')
+            ->call('agregarOrigen')
+            ->set('origenes.1.equipo', (string) $a->id)          // repetido
+            ->set('origenes.1.instancias', [])
+            ->call('guardar')
+            ->assertHasErrors('origenes.1.instancias')
+            ->set('origenes.1.equipo', (string) $b->id)
+            ->set('origenes.1.instancias', [$ramB->id])
+            ->set('origenes.1.seriales', 'SN-DE-B')
+            ->assertSee('1 de EQ-A · 1 de EQ-B')
+            ->call('guardar')
+            ->assertHasNoErrors()
+            ->assertSee('Imprimir etiquetas (2)');
+
+        $this->assertFalse($ramA->fresh()->es_actual);
+        $this->assertFalse($ramB->fresh()->es_actual);
+        $this->assertSame($a->id, (int) PiezaExtraida::where('identificador', 'SN-DE-A')->value('equipo_origen_id'));
+        $this->assertSame($b->id, (int) PiezaExtraida::where('identificador', 'SN-DE-B')->value('equipo_origen_id'));
+        $this->assertStringContainsString('Capacidad (GB): 4', PiezaExtraida::where('identificador', 'SN-DE-B')->first()->componenteAlmacen->nombre);
+    }
+
+    /** @test */
+    public function no_se_repite_un_equipo_de_origen(): void
+    {
+        [$a, $ramA] = $this->equipoConRam('EQ-REP', '8');
+
+        Livewire::actingAs($this->admin)
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir')
+            ->set('empresa_id', (string) $this->empresa->id)
+            ->set('familiaId', (string) $this->ram->id)
+            ->set('condicion', PiezaExtraida::CONDICION_REUTILIZADO)
+            ->set('origenes.0.equipo', (string) $a->id)
+            ->set('origenes.0.instancias', [$ramA->id])
+            ->call('agregarOrigen')
+            ->set('origenes.1.equipo', (string) $a->id)
+            ->set('origenes.1.instancias', [$ramA->id])
+            ->call('guardar')
+            ->assertHasErrors('origenes.1.equipo');
+
+        $this->assertSame(0, PiezaExtraida::count());
+        $this->assertTrue($ramA->fresh()->es_actual, 'Nada sale si hay error.');
+    }
+
+    /** @test */
+    public function sin_ficha_cada_equipo_de_origen_lleva_su_cantidad_y_sus_seriales(): void
+    {
+        $pantalla = ComponenteAlmacen::create([
+            'empresa_id' => $this->empresa->id, 'familia_id' => $this->pantallas->id, 'nombre' => 'Pantalla 14" HD',
+            'unidad' => 'unidad', 'stock_actual' => 0, 'activo' => true, 'creado_por' => $this->admin->id,
+        ]);
+        [$a] = $this->equipoConRam('EQ-P1', '8');
+        [$b] = $this->equipoConRam('EQ-P2', '8');
+
+        Livewire::actingAs($this->admin)
+            ->test(RegistrarEntradaModal::class)
+            ->call('abrir', $pantalla->id)
+            ->set('condicion', PiezaExtraida::CONDICION_REUTILIZADO)
+            ->set('origenes.0.equipo', (string) $a->id)
+            ->set('origenes.0.cantidad', 1)
+            ->set('origenes.0.seriales', 'PAN-A')
+            ->call('agregarOrigen')
+            ->set('origenes.1.equipo', (string) $b->id)
+            ->set('origenes.1.cantidad', 2)
+            ->set('origenes.1.seriales', "PAN-B1\nPAN-B2\nPAN-B3")     // uno de más
+            ->call('guardar')
+            ->assertHasErrors('origenes.1.seriales')
+            ->set('origenes.1.seriales', "PAN-B1\nPAN-B2")
+            ->call('guardar')
+            ->assertHasNoErrors();
+
+        $this->assertSame(3, $pantalla->fresh()->stock_actual);
+        $this->assertSame($a->id, (int) PiezaExtraida::where('identificador', 'PAN-A')->value('equipo_origen_id'));
+        $this->assertSame(2, PiezaExtraida::where('equipo_origen_id', $b->id)->count());
+        $this->assertTrue(PiezaExtraida::where('componente_almacen_id', $pantalla->id)->get()->every(fn ($p) => $p->condicion === PiezaExtraida::CONDICION_REUTILIZADO));
+        $this->assertSame(2, \App\Models\MovimientoComponente::where('componente_id', $pantalla->id)->where('tipo', 'Entrada')->count(), 'Una entrada por equipo.');
     }
 }
