@@ -27,6 +27,9 @@ class PiezaFichaModal extends Component
     #[Locked]
     public ?int $piezaId = null;
 
+    public bool   $editandoSerial = false;
+    public string $nuevoSerial    = '';
+
     #[On('openPiezaFicha')]
     public function abrir(int $piezaId): void
     {
@@ -34,6 +37,8 @@ class PiezaFichaModal extends Component
         PiezaExtraida::visiblePara(Auth::user())->findOrFail($piezaId);
 
         $this->piezaId = $piezaId;
+        $this->editandoSerial = false;
+        $this->resetValidation();
         unset($this->pieza, $this->recorrido);
         $this->open = true;
     }
@@ -91,6 +96,42 @@ class PiezaFichaModal extends Component
             ->reject(fn ($v) => $v === null || $v === '')
             ->mapWithKeys(fn ($v, $id) => [($campos[$id]['nombre'] ?? 'Campo') => (string) $v])
             ->all();
+    }
+
+    public function editarSerial(): void
+    {
+        $this->autorizarEdicion();
+        $this->nuevoSerial    = (string) $this->pieza->identificador;
+        $this->editandoSerial = true;
+        $this->resetValidation();
+    }
+
+    public function guardarSerial(): void
+    {
+        $this->autorizarEdicion();
+        $this->resetValidation();
+
+        try {
+            $this->pieza->corregirSerial($this->nuevoSerial, Auth::user());
+            $this->editandoSerial = false;
+            unset($this->pieza, $this->recorrido);
+            $this->dispatch('stockActualizado');
+            $this->dispatch('toast', type: 'success', message: 'Serial actualizado.');
+        } catch (\InvalidArgumentException $e) {
+            $this->addError('nuevoSerial', $e->getMessage());
+        }
+    }
+
+    /** Edita quien puede mover el stock de su variante (o el Administrador si ya no tiene). */
+    private function autorizarEdicion(): void
+    {
+        $pieza = $this->pieza;
+        abort_unless($pieza, 404);
+
+        $componente = $pieza->componenteAlmacen;
+        $componente
+            ? $this->authorize('registrarMovimiento', $componente)
+            : abort_unless(Auth::user()->hasRole('Administrador'), 403);
     }
 
     /** Desde la ficha se puede saltar al historial de su variante. */

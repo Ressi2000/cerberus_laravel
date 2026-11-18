@@ -470,6 +470,8 @@ class HistorialEquipo extends Component
             'atributos'        => $atributos,
             'piezasExtraidas'  => $this->piezasExtraidas(),
             'piezasInstaladas' => $this->piezasInstaladas(),
+            // Lo a granel puesto hoy (bisagras, tornillos…): usado en sus casos menos lo retirado.
+            'granelInstalado'  => app(\App\Services\RetiroGranelService::class)->instaladoEnEquipo($this->equipo),
         ]);
     }
 }

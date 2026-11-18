@@ -246,6 +246,40 @@ class PiezaExtraida extends Model
         };
     }
 
+    /**
+     * Cambia el serial (corrección de un error al registrarlo, o ponérselo a
+     * una que tenía código AUTO-…). No puede repetirse dentro de la empresa,
+     * y la corrección queda en su recorrido.
+     */
+    public function corregirSerial(string $nuevo, User $actor): void
+    {
+        $nuevo = trim($nuevo);
+
+        if ($nuevo === '' || mb_strlen($nuevo) > 100) {
+            throw new \InvalidArgumentException('Escribe el serial (hasta 100 caracteres).');
+        }
+
+        if ($nuevo === $this->identificador) {
+            return;
+        }
+
+        $repetida = static::where('empresa_id', $this->empresa_id)->where('identificador', $nuevo)->whereKeyNot($this->id)->first();
+        if ($repetida) {
+            throw new \InvalidArgumentException("Ya hay otra pieza con el serial «{$nuevo}» ({$repetida->ubicacion()}).");
+        }
+
+        $anterior = $this->identificador ?: "Pieza #{$this->id}";
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($nuevo, $anterior, $actor) {
+            $this->update(['identificador' => $nuevo]);
+            $this->movimientos()->create([
+                'tipo'           => PiezaExtraidaMovimiento::TIPO_CORRECCION,
+                'registrado_por' => $actor->id,
+                'observaciones'  => "Serial corregido: {$anterior} → {$nuevo}",
+            ]);
+        });
+    }
+
     public function esManual(): bool
     {
         return $this->atributo_id === null;

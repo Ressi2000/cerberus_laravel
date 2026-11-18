@@ -58,6 +58,13 @@ class DepositoContenido extends Component
             ->get();
     }
 
+    /** Lo a granel que llegó a este depósito (retirado de equipos o dañado en el almacén). */
+    #[Computed]
+    public function granel()
+    {
+        return app(\App\Services\RetiroGranelService::class)->enDeposito($this->deposito);
+    }
+
     #[Computed]
     public function depositosDestino()
     {

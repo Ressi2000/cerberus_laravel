@@ -130,4 +130,36 @@
         @endforelse
     </div>
 
+
+    {{-- A GRANEL --}}
+    <div class="bg-cerberus-mid border border-cerberus-steel shadow-cerberus rounded-xl p-6">
+        <h3 class="text-sm font-semibold text-cerberus-light mb-4 flex items-center gap-2">
+            <span class="material-icons text-cerberus-accent text-base">inventory</span>
+            A granel
+            <span class="text-xs font-normal text-cerberus-steel">({{ $this->granel->sum('cantidad') }})</span>
+        </h3>
+
+        @forelse ($this->granel as $grupo)
+            <div wire:key="dep-granel-{{ $loop->index }}" class="py-2.5 {{ ! $loop->last ? 'border-b border-cerberus-steel/30' : '' }}">
+                <p class="text-sm text-cerberus-light">{{ $grupo->variante }} · <b>{{ $grupo->cantidad }}</b></p>
+                @foreach ($grupo->entradas as $r)
+                    <p class="text-xs text-cerberus-steel">
+                        {{ $r->cantidad }} ·
+                        @if ($r->equipo)
+                            de <a href="{{ route('admin.equipos.show', $r->equipo) }}" wire:navigate class="text-cerberus-accent hover:underline">{{ $r->equipo->codigo_interno }}</a>
+                            @if ($r->mantenimiento)
+                                (<a href="{{ route('admin.mantenimientos.show', $r->mantenimiento) }}" wire:navigate class="text-cerberus-accent hover:underline">caso #{{ $r->mantenimiento->id }}</a>)
+                            @endif
+                        @else
+                            se dañó en el almacén
+                        @endif
+                        · {{ $r->created_at->format('d/m/Y') }} · {{ $r->registradoPor?->name }} · <span class="italic">{{ $r->motivo }}</span>
+                    </p>
+                @endforeach
+            </div>
+        @empty
+            <p class="text-sm text-cerberus-steel text-center py-4">No hay nada a granel en este depósito.</p>
+        @endforelse
+    </div>
+
 </div>

@@ -472,9 +472,10 @@ class SeguridadMantenimientoAlmacenTest extends TestCase
             ->call('abrir', $componenteA->id)
             ->set('cantidad', 1)
             ->set('condicion', 'reutilizado')
-            ->set('equipoOrigenId', (string) $equipoB->id)
+            ->set('origenes.0.equipo', (string) $equipoB->id)
+            ->set('origenes.0.cantidad', 1)
             ->call('guardar')
-            ->assertHasErrors('equipoOrigenId');
+            ->assertHasErrors('origenes.0.equipo');
 
         $this->assertSame(0, $componenteA->fresh()->stock_actual);
     }

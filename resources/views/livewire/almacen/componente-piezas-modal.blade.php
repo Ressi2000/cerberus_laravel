@@ -100,6 +100,28 @@
                             <div class="text-center text-sm text-gray-400 dark:text-cerberus-steel py-6">Todavía no tiene movimientos.</div>
                         @endforelse
 
+                        @if ($this->retirosGranel->isNotEmpty())
+                            <p class="pt-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-cerberus-light">Devoluciones, retiros y daños</p>
+                            @foreach ($this->retirosGranel as $r)
+                                <div wire:key="ret-{{ $r->id }}"
+                                     class="bg-gray-50 dark:bg-cerberus-dark border border-gray-200 dark:border-cerberus-steel/50 rounded-lg px-4 py-2.5 text-sm flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-gray-900 dark:text-white">
+                                            {{ $r->cantidad }} · {{ $r->labelTipo() }} → {{ $r->labelDestino() }}
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-cerberus-light">
+                                            @if ($r->equipo) {{ $r->equipo->codigo_interno }} @endif
+                                            @if ($r->mantenimiento)
+                                                · <a href="{{ route('admin.mantenimientos.show', $r->mantenimiento) }}" wire:navigate class="text-cerberus-primary dark:text-cerberus-accent hover:underline">Caso #{{ $r->mantenimiento->id }}</a>
+                                            @endif
+                                            · {{ $r->registradoPor?->name }} · <span class="italic">{{ $r->motivo }}</span>
+                                        </p>
+                                    </div>
+                                    <span class="text-xs text-gray-400 dark:text-cerberus-steel whitespace-nowrap">{{ $r->created_at->format('d/m/Y') }}</span>
+                                </div>
+                            @endforeach
+                        @endif
+
                     {{-- TODAS LAS PIEZAS --}}
                     @elseif ($pestana === 'piezas')
                         @forelse ($this->todasLasPiezas as $pieza)
@@ -130,6 +152,25 @@
 
                     {{-- EN STOCK --}}
                     @else
+                    @php $sinSerial = $this->componente->unidadesSinIdentidad(); @endphp
+                    @if ($sinSerial > 0)
+                        <div class="rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-3 space-y-2">
+                            <p class="text-sm text-amber-800 dark:text-amber-300">
+                                <b>{{ $sinSerial }}</b> unidad(es) en stock sin serial. Si tienes la pieza a la mano, ponle su serial:
+                            </p>
+                            @can('registrarMovimiento', $this->componente)
+                                <div class="flex items-start gap-2">
+                                    <div class="flex-1">
+                                        <input type="text" wire:model="serialNuevo" wire:keydown.enter="asignarSerial" placeholder="Serial"
+                                            class="w-full rounded-lg px-3 py-1.5 text-sm font-mono bg-white dark:bg-cerberus-dark
+                                                   border border-gray-300 dark:border-cerberus-steel text-gray-900 dark:text-white">
+                                        @error('serialNuevo') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                                    </div>
+                                    <button wire:click="asignarSerial" class="px-3 py-1.5 text-xs rounded-lg bg-[#1E40AF] text-white whitespace-nowrap">Ponerle serial</button>
+                                </div>
+                            @endcan
+                        </div>
+                    @endif
                     @if ($this->piezas->isNotEmpty())
                         <div class="flex justify-end">
                             <a href="{{ route('admin.almacen.etiquetas', ['componente' => $this->componente->id]) }}" target="_blank"

@@ -50,11 +50,22 @@
                                              {{ $danado ? 'translate-x-4' : 'translate-x-0' }}"></span>
                             </button>
                             <span class="text-sm text-gray-600 dark:text-cerberus-light select-none">
-                                Se dañó estando guardado — pasa a un depósito
+                                {{ $this->componente?->esAGranel() ? 'Se dañó estando guardado' : 'Se dañó estando guardado — pasa a un depósito' }}
                             </span>
                         </div>
 
-                    @if ($danado)
+                    @if ($danado && $this->componente?->esAGranel())
+                        <div class="flex flex-wrap gap-4 text-sm text-gray-700 dark:text-white">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="deposito" wire:model.live="destinoDanado"> Va a un depósito
+                            </label>
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer">
+                                <input type="radio" value="desecho" wire:model.live="destinoDanado"> Se desecha (se bota)
+                            </label>
+                        </div>
+                    @endif
+
+                    @if ($danado && (! $this->componente?->esAGranel() || $destinoDanado === 'deposito'))
                         <x-form.select
                             label="Depósito"
                             placeholder="Selecciona un depósito..."
@@ -109,10 +120,11 @@
                     @endunless
 
                     <x-form.textarea
-                        label="Observaciones"
+                        :label="$danado && $this->componente?->esAGranel() ? 'Motivo (qué le pasó)' : 'Observaciones'"
                         wire:model="observaciones"
                         rows="2"
                         placeholder="Detalle opcional..."
+                        :error="$errors->first('observaciones')"
                     />
 
                     @if ($this->componente && $this->componente->movimientos->isNotEmpty())
