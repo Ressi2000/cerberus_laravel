@@ -65,7 +65,11 @@ class Gemini implements ProveedorIA
                 // La IA pide con códigos ("Persona-12"); la consulta se hace con el nombre real…
                 $args   = $privacidad->revelar((array) ($parte['functionCall']['args'] ?? []));
                 $resultado = $this->herramientas->ejecutar($nombre, $actor, $args);
-                $usadas[] = ['nombre' => $nombre, 'args' => $args, 'ok' => $resultado['ok']];
+
+                // "_adjunto" (ej. el enlace de un informe) es para la pantalla, no para la IA.
+                $adjunto = $resultado['datos']['_adjunto'] ?? null;
+                unset($resultado['datos']['_adjunto']);
+                $usadas[] = array_filter(['nombre' => $nombre, 'args' => $args, 'ok' => $resultado['ok'], 'adjunto' => $adjunto], fn ($v) => $v !== null);
 
                 $partes[] = ['functionResponse' => array_filter([
                     'id'       => $parte['functionCall']['id'] ?? null,

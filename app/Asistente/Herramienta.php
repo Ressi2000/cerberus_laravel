@@ -26,6 +26,15 @@ use Illuminate\Database\Eloquent\Builder;
  */
 abstract class Herramienta
 {
+    /**
+     * true mientras se arma un informe (PDF/Excel): las listas no se cortan
+     * en los 20-100 elementos pensados para el chat.
+     */
+    public static bool $modoInforme = false;
+
+    /** Tope de elementos en un informe. */
+    const MAX_INFORME = 2000;
+
     /** Nombre corto en snake_case con el que la IA la llama. */
     abstract public function nombre(): string;
 
@@ -65,6 +74,10 @@ abstract class Herramienta
 
     protected function limite(array $args, int $porDefecto = 20, int $maximo = 100): int
     {
+        if (self::$modoInforme) {
+            return self::MAX_INFORME;
+        }
+
         return max(1, min($maximo, (int) ($args['limite'] ?? $porDefecto)));
     }
 
