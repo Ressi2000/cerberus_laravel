@@ -56,6 +56,10 @@ class CriteriosRenovacionModal extends Component
         $c = CriterioRenovacion::paraCategoria($categoria);
         $this->f = [
             'evaluar'                 => (bool) $c->evaluar,
+            'aplicar_procesador'      => (bool) $c->aplicar_procesador,
+            'aplicar_so'              => (bool) $c->aplicar_so,
+            'aplicar_ram'             => (bool) $c->aplicar_ram,
+            'aplicar_disco'           => (bool) $c->aplicar_disco,
             'atributo_procesador_id'  => (string) ($c->atributo_procesador_id ?? ''),
             'atributo_ram_id'         => (string) ($c->atributo_ram_id ?? ''),
             'atributo_disco_id'       => (string) ($c->atributo_disco_id ?? ''),
@@ -77,6 +81,9 @@ class CriteriosRenovacionModal extends Component
     {
         $this->autorizar();
         foreach (CriterioRenovacion::VALORES_SUGERIDOS as $k => $v) {
+            if (str_starts_with($k, 'aplicar_')) {
+                continue;
+            }
             $this->f[$k] = match ($k) {
                 'ram_tipos_obsoletos' => implode(', ', $v),
                 default               => $v,
@@ -144,6 +151,10 @@ class CriteriosRenovacionModal extends Component
 
         CriterioRenovacion::updateOrCreate(['categoria_id' => $this->categoria->id], [
             'evaluar'                 => (bool) $this->f['evaluar'],
+            'aplicar_procesador'      => (bool) $this->f['aplicar_procesador'],
+            'aplicar_so'              => (bool) $this->f['aplicar_so'],
+            'aplicar_ram'             => (bool) $this->f['aplicar_ram'],
+            'aplicar_disco'           => (bool) $this->f['aplicar_disco'],
             'atributo_procesador_id'  => $atributo('atributo_procesador_id'),
             'atributo_ram_id'         => $atributo('atributo_ram_id'),
             'atributo_disco_id'       => $atributo('atributo_disco_id'),

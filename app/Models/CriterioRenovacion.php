@@ -34,6 +34,10 @@ class CriterioRenovacion extends Model
      *   mantener que reemplazar.
      */
     const VALORES_SUGERIDOS = [
+        'aplicar_procesador'      => true,
+        'aplicar_so'              => true,
+        'aplicar_ram'             => true,
+        'aplicar_disco'           => true,
         'edad_revisar'            => 5,
         'edad_obsoleto'           => 8,
         'intel_generacion_minima' => 8,
@@ -47,7 +51,7 @@ class CriterioRenovacion extends Model
     ];
 
     protected $fillable = [
-        'categoria_id', 'evaluar',
+        'categoria_id', 'evaluar', 'aplicar_procesador', 'aplicar_so', 'aplicar_ram', 'aplicar_disco',
         'atributo_procesador_id', 'atributo_ram_id', 'atributo_disco_id', 'atributo_so_id',
         'edad_revisar', 'edad_obsoleto', 'intel_generacion_minima', 'ryzen_serie_minima',
         'ram_minima_gb', 'ram_tipos_obsoletos', 'requiere_ssd', 'disco_minimo_gb', 'reparaciones_max_12m',
@@ -56,6 +60,10 @@ class CriterioRenovacion extends Model
 
     protected $casts = [
         'evaluar'             => 'boolean',
+        'aplicar_procesador'  => 'boolean',
+        'aplicar_so'          => 'boolean',
+        'aplicar_ram'         => 'boolean',
+        'aplicar_disco'       => 'boolean',
         'requiere_ssd'        => 'boolean',
         'ram_tipos_obsoletos' => 'array',
         'so_sin_soporte'      => 'array',
@@ -69,7 +77,9 @@ class CriterioRenovacion extends Model
     /**
      * Los criterios de la categoría: los guardados, o los sugeridos (sin
      * guardar) si nadie los ha configurado. Por defecto se evalúan las
-     * categorías que tienen RAM o disco en su ficha (computadoras y servidores).
+     * categorías que tienen RAM o disco en su ficha (computadoras y servidores),
+     * y cada criterio técnico se enciende solo si la ficha tiene ese dato.
+     * Vida útil y reparaciones se aplican siempre.
      */
     public static function paraCategoria(CategoriaEquipo $categoria): self
     {
@@ -79,8 +89,13 @@ class CriterioRenovacion extends Model
         }
 
         $criterio = new static(['categoria_id' => $categoria->id] + self::VALORES_SUGERIDOS);
-        $criterio->evaluar = app(\App\Services\RenovacionService::class)->atributosDe($categoria, $criterio)['ram'] !== null
-            || app(\App\Services\RenovacionService::class)->atributosDe($categoria, $criterio)['disco'] !== null;
+        $detectados = app(\App\Services\RenovacionService::class)->atributosDe($categoria, $criterio);
+
+        // Cada criterio técnico arranca encendido solo si la ficha tiene ese dato.
+        foreach (['procesador', 'so', 'ram', 'disco'] as $dato) {
+            $criterio->{'aplicar_' . $dato} = $detectados[$dato] !== null;
+        }
+        $criterio->evaluar = $detectados['ram'] !== null || $detectados['disco'] !== null;
         $criterio->setRelation('categoria', $categoria);
 
         return $criterio;

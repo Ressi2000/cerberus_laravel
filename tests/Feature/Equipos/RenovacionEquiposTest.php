@@ -238,4 +238,51 @@ class RenovacionEquiposTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.renovacion.exportar'))
             ->assertOk()->assertDownload();
     }
+
+    /** @test */
+    public function cada_criterio_tecnico_se_puede_apagar_por_tipo_de_equipo(): void
+    {
+        $e = $this->equipo('APAGAR', 'i3-3110M', 'Win 7', [['4', 'DDR4']], [['500', 'HDD 2.5"']], now()->subYear()->toDateString());
+        $this->assertSame('obsoleto', $this->evaluar($e)['clasificacion']);
+
+        Livewire::actingAs($this->admin)->test(CriteriosRenovacionModal::class)
+            ->call('abrir', $this->laptop->id)
+            ->set('f.aplicar_procesador', false)
+            ->set('f.aplicar_so', false)
+            ->assertSee('No se aplica a este tipo de equipo')
+            ->call('guardar')->assertHasNoErrors();
+
+        $r = $this->evaluar($e);
+        $this->assertSame('repotenciable', $r['clasificacion'], 'Sin procesador ni Windows, quedan RAM y disco.');
+        $this->assertSame([], $r['obsoleto']);
+    }
+
+    /** @test */
+    public function un_tipo_de_equipo_sin_datos_tecnicos_se_evalua_por_vida_util_y_reparaciones(): void
+    {
+        $impresora = CategoriaEquipo::create(['nombre' => 'Impresora']);
+        AtributoEquipo::create(['categoria_id' => $impresora->id, 'nombre' => 'Marca', 'slug' => 'marca', 'tipo' => 'string']);
+
+        $criterio = CriterioRenovacion::paraCategoria($impresora);
+        $this->assertFalse($criterio->evaluar, 'Por defecto no se evalúa (no tiene RAM ni disco).');
+        $this->assertFalse($criterio->aplicar_procesador);
+        $this->assertFalse($criterio->aplicar_ram);
+
+        Livewire::actingAs($this->admin)->test(CriteriosRenovacionModal::class)
+            ->call('abrir', $impresora->id)
+            ->set('f.evaluar', true)
+            ->assertSee('Criterios generales')
+            ->set('f.edad_revisar', 3)->set('f.edad_obsoleto', 6)
+            ->call('guardar')->assertHasNoErrors();
+
+        $vieja = Equipo::forceCreate([
+            'empresa_id' => $this->empresa->id, 'categoria_id' => $impresora->id,
+            'estado_id' => EstadoEquipo::where('nombre', 'Disponible')->value('id'),
+            'codigo_interno' => 'IMP-1', 'activo' => true, 'fecha_adquisicion' => now()->subYears(7)->toDateString(),
+        ]);
+        $r = $this->evaluar($vieja);
+        $this->assertSame('obsoleto', $r['clasificacion']);
+        $this->assertStringContainsString('límite de 6 años', implode(' ', $r['obsoleto']));
+        $this->assertSame([], $r['faltan'], 'No pide procesador ni RAM a una impresora.');
+    }
 }
