@@ -18,6 +18,11 @@ return [
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
         'modelo'  => env('GEMINI_MODEL', 'gemini-3.8-flash'),
+        // Si el principal está saturado o no existe, se usa este.
+        'modelo_respaldo' => env('GEMINI_MODEL_RESPALDO', 'gemini-3.6-flash'),
+        // Reintentos cuando Gemini responde "saturado" (503) y espera entre ellos.
+        'reintentos' => 2,
+        'espera_ms'  => 1500,
         'url'     => 'https://generativelanguage.googleapis.com/v1beta',
         'timeout' => 60,
     ],

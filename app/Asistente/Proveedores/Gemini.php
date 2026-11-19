@@ -30,6 +30,7 @@ class Gemini implements ProveedorIA
             throw new AsistenteException('Falta configurar la clave de Gemini (GEMINI_API_KEY en el .env).');
         }
 
+        $this->modeloUsado = null;
         $contenidos = $historial;
         $contenidos[] = ['role' => 'user', 'parts' => [['text' => $pregunta]]];
         $usadas = [];
@@ -54,7 +55,7 @@ class Gemini implements ProveedorIA
                     ->filter(fn ($p) => isset($p['text']) && empty($p['thought']))
                     ->pluck('text')->implode('');
 
-                return $this->terminar($texto, $usadas, $contenidos, $config['modelo']);
+                return $this->terminar($texto, $usadas, $contenidos, $this->modeloUsado ?? $config['modelo']);
             }
 
             $partes = [];
@@ -75,7 +76,7 @@ class Gemini implements ProveedorIA
 
         return $this->terminar(
             'Necesité demasiadas consultas para esta pregunta y me detuve. ¿Puedes hacerla más concreta? [[SIN_DATOS]]',
-            $usadas, $contenidos, $config['modelo']
+            $usadas, $contenidos, $this->modeloUsado ?? $config['modelo']
         );
     }
 
@@ -104,12 +105,64 @@ class Gemini implements ProveedorIA
         }, $this->herramientas->definiciones());
     }
 
+    /** Modelo que respondió la última llamada (el principal o el de respaldo). */
+    private ?string $modeloUsado = null;
+
+    /**
+     * Llama a Gemini. Si el modelo está saturado (500/503), reintenta unas
+     * veces y, si sigue así (o el modelo no existe), prueba el de respaldo.
+     */
     private function llamar(array $config, array $contenidos, string $instrucciones): array
     {
+        $modelos = array_values(array_unique(array_filter([
+            $this->modeloUsado ?? $config['modelo'],
+            $config['modelo_respaldo'] ?? null,
+        ])));
+        $http = null;
+
+        foreach ($modelos as $i => $modelo) {
+            for ($intento = 0; $intento <= ($config['reintentos'] ?? 2); $intento++) {
+                if ($intento > 0) {
+                    usleep((int) (($config['espera_ms'] ?? 1500) * 1000 * $intento));
+                }
+
+                $http = $this->enviar($config, $modelo, $contenidos, $instrucciones);
+
+                if ($http->successful()) {
+                    $this->modeloUsado = $modelo;
+
+                    return $http->json() ?? [];
+                }
+                if (! in_array($http->status(), [500, 502, 503, 504], true)) {
+                    break; // reintentar no ayuda (clave mala, límite, modelo inexistente…)
+                }
+            }
+
+            $siguiente = isset($modelos[$i + 1]) && in_array($http->status(), [404, 500, 502, 503, 504], true);
+            Log::warning('Cerberus Bot: Gemini respondió con error', [
+                'modelo' => $modelo, 'status' => $http->status(), 'body' => mb_substr($http->body(), 0, 1000),
+            ]);
+            if (! $siguiente) {
+                break;
+            }
+        }
+
+        throw new AsistenteException(match (true) {
+            in_array($http->status(), [400, 401, 403]) && str_contains($http->body(), 'API key')
+                => 'La clave de Gemini no es válida. Revisa GEMINI_API_KEY.',
+            $http->status() === 404 => "El modelo «{$config['modelo']}» no existe o no está disponible. Revisa GEMINI_MODEL.",
+            $http->status() === 429 => 'Se alcanzó el límite de uso de Gemini. Espera un momento e intenta de nuevo.',
+            $http->status() >= 500  => 'Gemini está saturado en este momento (pasa a menudo en el plan gratuito). Intenta de nuevo en unos minutos.',
+            default                 => 'Gemini rechazó la consulta (error ' . $http->status() . ').',
+        });
+    }
+
+    private function enviar(array $config, string $modelo, array $contenidos, string $instrucciones): \Illuminate\Http\Client\Response
+    {
         try {
-            $http = Http::withHeaders(['x-goog-api-key' => $config['api_key']])
+            return Http::withHeaders(['x-goog-api-key' => $config['api_key']])
                 ->timeout($config['timeout'] ?? 60)
-                ->post("{$config['url']}/models/{$config['modelo']}:generateContent", [
+                ->post("{$config['url']}/models/{$modelo}:generateContent", [
                     'systemInstruction' => ['parts' => [['text' => $instrucciones]]],
                     'contents'          => $contenidos,
                     'tools'             => [['functionDeclarations' => $this->declaraciones()]],
@@ -118,21 +171,6 @@ class Gemini implements ProveedorIA
         } catch (ConnectionException $e) {
             throw new AsistenteException('No pude conectarme con Gemini. Revisa la conexión a internet del servidor.');
         }
-
-        if ($http->failed()) {
-            Log::warning('Cerberus Bot: Gemini respondió con error', ['status' => $http->status(), 'body' => mb_substr($http->body(), 0, 1000)]);
-
-            throw new AsistenteException(match (true) {
-                in_array($http->status(), [400, 401, 403]) && str_contains($http->body(), 'API key')
-                    => 'La clave de Gemini no es válida. Revisa GEMINI_API_KEY.',
-                $http->status() === 404 => "El modelo «{$config['modelo']}» no existe o no está disponible. Revisa GEMINI_MODEL.",
-                $http->status() === 429 => 'Se alcanzó el límite de uso de Gemini. Espera un momento e intenta de nuevo.',
-                $http->status() >= 500  => 'Gemini no está disponible en este momento. Intenta de nuevo en unos minutos.',
-                default                 => 'Gemini rechazó la consulta (error ' . $http->status() . ').',
-            });
-        }
-
-        return $http->json() ?? [];
     }
 
     private function terminar(string $texto, array $usadas, array $contenidos, string $modelo): Respuesta

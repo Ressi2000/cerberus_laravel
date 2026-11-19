@@ -54,6 +54,8 @@ class CerberusBotTest extends TestCase
             'asistente.habilitado'      => true,
             'asistente.gemini.api_key'  => 'clave-de-prueba',
             'asistente.gemini.modelo'   => 'gemini-prueba',
+            'asistente.gemini.modelo_respaldo' => 'gemini-respaldo',
+            'asistente.gemini.espera_ms' => 0,
         ]);
     }
 
@@ -137,6 +139,31 @@ class CerberusBotTest extends TestCase
         }
 
         $this->assertNotNull(AsistenteConsulta::sole()->error);
+    }
+
+    /** @test */
+    public function si_gemini_esta_saturado_reintenta_y_luego_usa_el_modelo_de_respaldo(): void
+    {
+        Http::fake([
+            '*/models/gemini-prueba:*'    => Http::response(['error' => ['message' => 'The model is overloaded']], 503),
+            '*/models/gemini-respaldo:*'  => Http::response(self::texto('Hola desde el respaldo.')),
+        ]);
+
+        $r = app(Asistente::class)->preguntar($this->admin, 'Hola');
+
+        $this->assertSame('Hola desde el respaldo.', $r->texto);
+        $this->assertSame('gemini-respaldo', $r->modelo);
+        $this->assertCount(4, Http::recorded()); // 3 intentos al principal + 1 al respaldo
+        $this->assertSame('gemini-respaldo', AsistenteConsulta::sole()->modelo);
+    }
+
+    /** @test */
+    public function si_los_dos_modelos_estan_saturados_lo_explica(): void
+    {
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['message' => 'overloaded']], 503)]);
+
+        $this->expectExceptionMessage('saturado');
+        app(Asistente::class)->preguntar($this->admin, 'Hola');
     }
 
     /** @test */
