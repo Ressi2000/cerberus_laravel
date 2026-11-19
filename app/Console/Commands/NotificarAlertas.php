@@ -5,12 +5,14 @@ namespace App\Console\Commands;
 use App\Models\AsignacionItem;
 use App\Models\Equipo;
 use App\Models\Mantenimiento;
+use App\Models\PlanMantenimiento;
 use App\Models\Prestamo;
 use App\Models\User;
 use App\Notifications\EquipoReparacionExtendidaNotification;
 use App\Notifications\GarantiaProximaVencerNotification;
 use App\Notifications\MantenimientoProximoNotification;
 use App\Notifications\MantenimientoProximoUsuarioNotification;
+use App\Notifications\PlanMantenimientoProximoNotification;
 use App\Notifications\PrestamoProximoAVencerNotification;
 use App\Notifications\PrestamoVencidoNotification;
 use App\Notifications\RotacionAsignacionRecomendadaNotification;
@@ -18,6 +20,9 @@ use Illuminate\Console\Command;
 
 class NotificarAlertas extends Command
 {
+    /** Días antes de un mantenimiento preventivo en que se avisa a los analistas. */
+    const DIAS_AVISO_MANTENIMIENTO = [14, 7, 1];
+
     protected $signature   = 'cerberus:notificar-alertas';
     protected $description = 'Envía notificaciones diarias: préstamos vencidos/por vencer y garantías próximas a vencer.';
 
@@ -45,10 +50,17 @@ class NotificarAlertas extends Command
         return User::role('Administrador')->get();
     }
 
+    /**
+     * Analistas que atienden la empresa: la tienen activa o asignada (un
+     * analista con varias empresas recibe los avisos de todas, no solo de la
+     * que tenga abierta ese día).
+     */
     private function analistasDeEmpresa(int $empresaId)
     {
         return User::role('Analista')
-            ->where('empresa_activa_id', $empresaId)
+            ->where('estado', 'Activo')
+            ->where(fn ($q) => $q->where('empresa_activa_id', $empresaId)
+                ->orWhereHas('empresasAsignadas', fn ($e) => $e->whereKey($empresaId)))
             ->get();
     }
 
@@ -203,25 +215,49 @@ class NotificarAlertas extends Command
             });
     }
 
-    /** Mantenimientos preventivos con fecha programada próxima a cumplirse. */
+    /**
+     * Mantenimientos preventivos que se acercan: aviso en el sistema y por
+     * correo a los analistas de la empresa (y al responsable, si lo hay)
+     * exactamente 14, 7 y 1 día(s) antes — no todos los días.
+     *
+     *  - Del cronograma: UN aviso por plan (lote), con cuántos equipos son.
+     *    Se mira el plan y no los casos porque los casos del lote se generan
+     *    recién 7 días antes (PlanMantenimiento::DIAS_ANTELACION_GENERACION).
+     *  - Sueltos (creados a mano, sin plan): un aviso por caso.
+     */
     private function notificarMantenimientosProximos(): void
     {
-        $umbralDias = 7;
+        $fechas = collect(self::DIAS_AVISO_MANTENIMIENTO)
+            ->mapWithKeys(fn ($d) => [now()->addDays($d)->toDateString() => $d]);
+
+        PlanMantenimiento::activos()
+            ->whereIn('fecha_proximo', $fechas->keys())
+            ->with(['categoria', 'empresa', 'departamento', 'responsable'])
+            ->get()
+            ->each(function (PlanMantenimiento $plan) use ($fechas) {
+                $dias    = $fechas[$plan->fecha_proximo->toDateString()];
+                $equipos = $plan->equiposAlcanzados()->count();
+                $notif   = new PlanMantenimientoProximoNotification($plan, $dias, $equipos);
+
+                foreach ($this->destinatariosMantenimiento($plan->empresa_id, $plan->responsable_id) as $user) {
+                    if (! $this->yaNotificadoHoy($user, PlanMantenimientoProximoNotification::class, 'plan_id', $plan->id)) {
+                        $user->notify($notif);
+                    }
+                }
+
+                $this->line("  ✓ Plan de mantenimiento #{$plan->id} ({$plan->categoria?->nombre}) en {$dias}d");
+            });
 
         Mantenimiento::preventivos()->abiertos()
-            ->whereNotNull('proxima_fecha_programada')
-            ->whereBetween('proxima_fecha_programada', [now()->startOfDay(), now()->addDays($umbralDias)->endOfDay()])
-            ->with('equipo')
+            ->whereNull('plan_mantenimiento_id')
+            ->whereIn('proxima_fecha_programada', $fechas->keys())
+            ->with('equipo', 'empresa')
             ->get()
-            ->each(function (Mantenimiento $mantenimiento) {
-                $dias  = (int) now()->startOfDay()->diffInDays($mantenimiento->proxima_fecha_programada);
+            ->each(function (Mantenimiento $mantenimiento) use ($fechas) {
+                $dias  = $fechas[$mantenimiento->proxima_fecha_programada->toDateString()];
                 $notif = new MantenimientoProximoNotification($mantenimiento, $dias);
 
-                $destinatarios = $mantenimiento->empresa_id
-                    ? $this->analistasDeEmpresa($mantenimiento->empresa_id)
-                    : collect();
-
-                foreach ($destinatarios->merge($this->admins())->unique('id') as $user) {
+                foreach ($this->destinatariosMantenimiento($mantenimiento->empresa_id, $mantenimiento->responsable_id) as $user) {
                     if (! $this->yaNotificadoHoy($user, MantenimientoProximoNotification::class, 'mantenimiento_id', $mantenimiento->id)) {
                         $user->notify($notif);
                     }
@@ -229,6 +265,17 @@ class NotificarAlertas extends Command
 
                 $this->line("  ✓ Mantenimiento próximo: {$mantenimiento->equipo?->codigo_interno} (en {$dias}d)");
             });
+    }
+
+    /** Analistas de la empresa + el responsable asignado + administradores, sin repetir. */
+    private function destinatariosMantenimiento(?int $empresaId, ?int $responsableId)
+    {
+        $responsable = $responsableId ? User::whereKey($responsableId)->where('estado', 'Activo')->get() : collect();
+
+        return ($empresaId ? $this->analistasDeEmpresa($empresaId) : collect())
+            ->merge($responsable)
+            ->merge($this->admins())
+            ->unique('id');
     }
 
     /**

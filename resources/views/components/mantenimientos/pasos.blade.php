@@ -30,7 +30,8 @@
                     // abre el form de reabrir (con motivo) en vez de
                     // retroceder directo — reabrir() siempre aterriza en
                     // "En reparación" sin importar cuál paso pasado se toque.
-                    $accionReabrir   = $editable && $esCorrectivo && $m->estado === 'Cerrado' && $paso === 'Reparado';
+                    // Igual desde un preventivo "Completado": el paso "En proceso".
+                    $accionReabrir   = $editable && $m->puedeReabrirse() && $paso === ($esCorrectivo ? 'Reparado' : 'En proceso');
                     $accionRetroceder = $editable && $esPasado && $puedeRetroceder && in_array($paso, $retrocedibles, true);
                     $esClicable      = $accionReabrir || $accionRetroceder;
                 @endphp

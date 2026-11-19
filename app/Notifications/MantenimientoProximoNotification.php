@@ -15,6 +15,15 @@ class MantenimientoProximoNotification extends Notification implements ShouldQue
 
     public function __construct(public Mantenimiento $mantenimiento, public int $diasRestantes) {}
 
+    private function cuando(): string
+    {
+        return match ($this->diasRestantes) {
+            0       => 'hoy',
+            1       => 'mañana',
+            default => "en {$this->diasRestantes} días",
+        };
+    }
+
     public function via(object $notifiable): array
     {
         return ['database', 'broadcast', 'mail'];
@@ -29,8 +38,8 @@ class MantenimientoProximoNotification extends Notification implements ShouldQue
             'tipo'    => 'mantenimiento_proximo',
             'icono'   => 'build',
             'color'   => 'blue',
-            'titulo'  => 'Mantenimiento próximo a vencer',
-            'mensaje' => "El mantenimiento preventivo de {$e?->codigo_interno} vence en {$this->diasRestantes} día(s) ({$m->proxima_fecha_programada?->format('d/m/Y')}).",
+            'titulo'  => 'Mantenimiento preventivo ' . $this->cuando(),
+            'mensaje' => "El mantenimiento preventivo de {$e?->codigo_interno} es {$this->cuando()} ({$m->proxima_fecha_programada?->format('d/m/Y')}).",
             'url'     => route('admin.mantenimientos.show', $m->id),
             'meta'    => [
                 'mantenimiento_id' => $m->id,
@@ -53,13 +62,13 @@ class MantenimientoProximoNotification extends Notification implements ShouldQue
         $e = $m->equipo;
 
         return (new MailMessage)
-            ->subject("Cerberus · Mantenimiento de {$e?->codigo_interno} vence en {$this->diasRestantes} día(s)")
+            ->subject("Cerberus · Mantenimiento de {$e?->codigo_interno} {$this->cuando()}")
             ->view('emails.notificacion', [
-                'titulo'   => 'Mantenimiento próximo a vencer',
+                'titulo'   => 'Mantenimiento preventivo ' . $this->cuando(),
                 'icono'    => '🔧',
                 'tipo'     => 'warning',
                 'etiqueta' => 'Mantenimiento',
-                'mensaje'  => "El mantenimiento preventivo programado para \"{$e?->codigo_interno}\" vence en {$this->diasRestantes} día(s). Se recomienda coordinarlo a tiempo.",
+                'mensaje'  => "El mantenimiento preventivo programado para \"{$e?->codigo_interno}\" es {$this->cuando()}. Se recomienda coordinarlo a tiempo.",
                 'detalles' => [
                     'Equipo'              => $e?->codigo_interno ?? '—',
                     'Empresa'             => $m->empresa?->nombre ?? '—',

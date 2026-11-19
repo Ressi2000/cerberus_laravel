@@ -61,13 +61,15 @@ class MantenimientoPolicy
             && $mantenimiento->estaAbierto();
     }
 
-    /** Reabrir una reparación Cerrada (con motivo). update() no sirve: exige caso abierto. */
+    /**
+     * Reabrir (con motivo) una reparación Cerrada o un preventivo Completado.
+     * update() no sirve: exige caso abierto.
+     */
     public function reabrir(User $user, Mantenimiento $mantenimiento): bool
     {
         return $user->hasRole('Analista')
             && (int) $user->empresa_activa_id === (int) $mantenimiento->empresa_id
-            && $mantenimiento->esCorrectivo()
-            && $mantenimiento->estado === 'Cerrado';
+            && $mantenimiento->puedeReabrirse();
     }
 
     /** Aprobar la baja de un equipo sin solución — decisión patrimonial e irreversible. */

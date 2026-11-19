@@ -148,36 +148,55 @@
     {{-- editable: retroceder (caso abierto, permiso update) o reabrir (Cerrado, permiso reabrir). --}}
     <x-mantenimientos.pasos :mantenimiento="$m" :editable="(bool) (auth()->user()?->can('update', $m) || auth()->user()?->can('reabrir', $m))" />
 
-    {{-- ── Reabrir caso (Correctivo, Cerrado) — form que abre el paso "Reparado" del stepper --}}
-    @if ($m->esCorrectivo() && $m->estado === 'Cerrado' && $reabrirAbierto)
+    {{-- ── Reabrir caso (reparación Cerrada o preventivo Completado) ─────────
+         Se abre con el botón de abajo o tocando el paso anterior del stepper. --}}
+    @if ($m->puedeReabrirse())
         @can('reabrir', $m)
-            <div class="bg-white dark:bg-cerberus-mid border border-amber-200 dark:border-amber-700/40 rounded-xl p-5">
-                <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
-                    <span class="material-icons text-amber-600 dark:text-amber-400 text-base">restore</span>
-                    Reabrir caso
-                </h3>
-                <p class="text-xs text-gray-500 dark:text-cerberus-light mb-3">
-                    Solo si el problema que volvió es el mismo diagnóstico — si es otra falla, crea una reparación nueva.
-                </p>
-                <div class="space-y-3">
-                    <x-form.textarea
-                        label="Motivo de la reapertura"
-                        wire:model="motivoReapertura"
-                        rows="2"
-                        placeholder="Ej: El equipo volvió a fallar con el mismo diagnóstico..."
-                        :error="$errors->first('motivoReapertura')"
-                        required
-                    />
-                    <div class="flex justify-end gap-2">
-                        <button wire:click="cerrarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
-                            Cancelar
-                        </button>
-                        <button wire:click="confirmarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-amber-600 hover:bg-amber-700 text-white">
-                            Reabrir
-                        </button>
+            @if ($reabrirAbierto)
+                <div class="bg-white dark:bg-cerberus-mid border border-amber-200 dark:border-amber-700/40 rounded-xl p-5">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1 flex items-center gap-2">
+                        <span class="material-icons text-amber-600 dark:text-amber-400 text-base">restore</span>
+                        Reabrir caso
+                    </h3>
+                    <p class="text-xs text-gray-500 dark:text-cerberus-light mb-3">
+                        @if ($m->esCorrectivo())
+                            Vuelve a «En reparación». Úsalo para completar información o si volvió la misma falla;
+                            si es otra falla, crea una reparación nueva.
+                        @else
+                            Vuelve a «En proceso» para completar lo que faltó (checklist, fotos, observaciones).
+                        @endif
+                        El equipo queda otra vez {{ $m->esCorrectivo() ? 'en reparación' : 'en mantenimiento' }} hasta que lo cierres de nuevo.
+                    </p>
+                    <div class="space-y-3">
+                        <x-form.textarea
+                            label="¿Qué vas a corregir o completar?"
+                            wire:model="motivoReapertura"
+                            rows="2"
+                            placeholder="Ej: Faltó subir la foto «Después» y marcar la limpieza interna."
+                            :error="$errors->first('motivoReapertura')"
+                            required
+                        />
+                        <div class="flex justify-end gap-2">
+                            <button wire:click="cerrarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-gray-100 dark:bg-cerberus-steel/30 text-gray-700 dark:text-white">
+                                Cancelar
+                            </button>
+                            <button wire:click="confirmarReabrir" class="px-3 py-1.5 text-xs rounded-lg bg-amber-600 hover:bg-amber-700 text-white">
+                                Reabrir
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @else
+                <div class="bg-white dark:bg-cerberus-mid border border-gray-200 dark:border-cerberus-steel rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+                    <p class="text-sm text-gray-600 dark:text-cerberus-light">
+                        ¿Faltó algo? Puedes reabrir el caso para completar el checklist, las fotos o las observaciones.
+                    </p>
+                    <button wire:click="abrirReabrir"
+                        class="px-4 py-2 text-sm rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-700/40 transition flex items-center gap-1.5">
+                        <span class="material-icons text-sm">restore</span> Reabrir para completar
+                    </button>
+                </div>
+            @endif
         @endcan
     @endif
 

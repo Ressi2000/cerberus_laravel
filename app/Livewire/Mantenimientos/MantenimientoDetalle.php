@@ -217,6 +217,7 @@ class MantenimientoDetalle extends Component
     public function abrirReabrir(): void
     {
         $this->authorize('reabrir', $this->mantenimiento);
+        abort_unless($this->mantenimiento->puedeReabrirse(), 403);
         $this->motivoReapertura = '';
         $this->resetValidation();
         $this->reabrirAbierto = true;
@@ -236,12 +237,12 @@ class MantenimientoDetalle extends Component
         $this->validate([
             'motivoReapertura' => 'required|string|max:1000',
         ], [
-            'motivoReapertura.required' => 'Indica por qué se reabre el caso.',
+            'motivoReapertura.required' => 'Indica qué vas a corregir o completar.',
         ]);
 
         try {
             $m->reabrir(Auth::user(), $this->motivoReapertura);
-            $this->dispatch('toast', type: 'success', message: 'Caso reabierto. Volvió a «En reparación».');
+            $this->dispatch('toast', type: 'success', message: "Caso reabierto. Volvió a «{$m->estado}».");
             $this->cerrarReabrir();
             $this->notificarActualizacion();
         } catch (\InvalidArgumentException $e) {

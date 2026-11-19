@@ -42,6 +42,7 @@
                             Cambiar foto
                             <input type="file" name="foto" id="fotoInput" class="hidden" accept="image/*">
                         </label>
+                        <p class="text-xs text-gray-500 dark:text-cerberus-light">Elige la foto, ajústala y luego pulsa «Guardar foto».</p>
                     </div>
 
                     <div class="flex justify-end">
@@ -461,42 +462,8 @@
             });
         </script> --}}
 
-        {{-- Foto de perfil: vista previa y achicar en el navegador antes de subir
-             (una foto de celular pesa varios MB; así no choca con el límite del servidor). --}}
-        <script>
-            (() => {
-                const input = document.getElementById('fotoInput');
-                const preview = document.getElementById('previewFoto');
-                if (!input || !preview) return;
-
-                const LADO = 600;   // px: de sobra para un avatar
-
-                input.addEventListener('change', () => {
-                    const file = input.files && input.files[0];
-                    if (!file || !file.type.startsWith('image/')) return;
-
-                    const img = new Image();
-                    img.onload = () => {
-                        const escala = Math.min(1, LADO / Math.max(img.width, img.height));
-                        const canvas = document.createElement('canvas');
-                        canvas.width = Math.round(img.width * escala);
-                        canvas.height = Math.round(img.height * escala);
-                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                        canvas.toBlob(blob => {
-                            URL.revokeObjectURL(img.src);
-                            if (!blob) return;     // si el navegador no puede, se sube la original
-                            const achicada = new File([blob], (file.name.replace(/\.[^.]+$/, '') || 'foto') + '.jpg', { type: 'image/jpeg' });
-                            const dt = new DataTransfer();
-                            dt.items.add(achicada);
-                            input.files = dt.files;
-                            preview.src = URL.createObjectURL(achicada);
-                        }, 'image/jpeg', 0.88);
-                    };
-                    img.onerror = () => { preview.src = URL.createObjectURL(file); };
-                    img.src = URL.createObjectURL(file);
-                });
-            })();
-        </script>
+        {{-- La foto se recorta (cuadrada, 256 px) con el recortador global de
+             resources/js/modules/avatar-cropper.js, que deja el resultado en
+             #fotoInput para que viaje con "Guardar foto". --}}
 
     </x-app-layout>
