@@ -25,6 +25,8 @@ return [
         'espera_ms'  => 1500,
         'url'     => env('GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'timeout' => 60,
+        // Si la red de la empresa sale a internet por un proxy: http://usuario:clave@proxy:puerto
+        'proxy'   => env('GEMINI_PROXY'),
     ],
 
     // Seudónimos: los nombres de las personas viajan a la IA como "Persona-12"
