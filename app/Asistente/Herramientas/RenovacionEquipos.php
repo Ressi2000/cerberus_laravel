@@ -34,7 +34,7 @@ class RenovacionEquipos extends Herramienta
     {
         $q = Equipo::visiblePara($actor)->where('activo', true)->with(['categoria', 'estado', 'ubicacion']);
         if ($cat = $args['categoria'] ?? null) {
-            $q->whereHas('categoria', fn ($c) => $c->where('nombre', 'like', $this->like($cat)));
+            $q->whereIn('categoria_id', $this->idsCategoria($cat));
         }
 
         $evaluados = app(RenovacionService::class)->evaluarEquipos($q->get())

@@ -60,7 +60,7 @@ class CasosMantenimiento extends Herramienta
             $q->whereHas('responsable', fn ($u) => $u->where('name', 'like', $this->like($resp)));
         }
         if ($cat = $args['categoria'] ?? null) {
-            $q->whereHas('equipo.categoria', fn ($c) => $c->where('nombre', 'like', $this->like($cat)));
+            $q->whereHas('equipo', fn ($e) => $e->whereIn('categoria_id', $this->idsCategoria($cat)));
         }
         if ($desde = $args['desde'] ?? null) {
             $q->whereDate('fecha_inicio', '>=', $this->dia($desde));

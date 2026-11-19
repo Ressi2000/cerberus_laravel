@@ -33,7 +33,7 @@ class ResumenInventario extends Herramienta
     public function ejecutar(User $actor, array $args): array
     {
         $base = fn () => Equipo::visiblePara($actor)->where('equipos.activo', true)
-            ->when($args['categoria'] ?? null, fn ($q, $cat) => $q->whereHas('categoria', fn ($c) => $c->where('nombre', 'like', $this->like($cat))));
+            ->when($args['categoria'] ?? null, fn ($q, $cat) => $q->whereIn('categoria_id', $this->idsCategoria($cat)));
 
         $agrupar = fn (string $relacion) => $base()->with($relacion)->get()
             ->countBy(fn ($e) => $e->{$relacion}?->nombre ?? 'Sin dato')->sortDesc()->all();

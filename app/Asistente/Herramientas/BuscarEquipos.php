@@ -62,7 +62,7 @@ class BuscarEquipos extends Herramienta
             });
         }
         if ($cat = $args['categoria'] ?? null) {
-            $q->whereHas('categoria', fn ($c) => $c->where('nombre', 'like', $this->like($cat)));
+            $q->whereIn('categoria_id', $this->idsCategoria($cat));
         }
         if ($estado = $args['estado'] ?? null) {
             $q->whereHas('estado', fn ($c) => $c->where('nombre', 'like', $this->like($estado)));
@@ -96,7 +96,7 @@ class BuscarEquipos extends Herramienta
         }
 
         $categorias = isset($args['categoria'])
-            ? CategoriaEquipo::where('nombre', 'like', $this->like($args['categoria']))->pluck('id')
+            ? collect($this->idsCategoria($args['categoria']))
             : null;
         $objetivos = Caracteristicas::resolver($args['caracteristica'], $categorias);
 

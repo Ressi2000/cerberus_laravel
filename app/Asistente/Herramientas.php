@@ -28,6 +28,7 @@ class Herramientas
         Herramientas\ResumenInventario::class,
         Herramientas\BuscarPersonas::class,
         Herramientas\GenerarInforme::class,
+        Herramientas\MostrarGrafico::class,
     ];
 
     /** @var array<string, Herramienta>|null */
