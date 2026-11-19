@@ -111,6 +111,13 @@
          sistema y reemplaza window.confirm() nativo (ver App\Livewire\Ui\ConfirmModal). --}}
     <livewire:ui.confirm-modal />
 
+    {{-- ── Cerberus Bot (prueba: solo donde ASISTENTE_HABILITADO=true) ──── --}}
+    @if (\App\Asistente\Asistente::disponiblePara(auth()->user()))
+        @persist('cerberus-bot')
+            <livewire:asistente.chat-asistente />
+        @endpersist
+    @endif
+
     <script>
         // Activar transiciones sólo después de que Alpine esté listo
         document.addEventListener('alpine:initialized', function () {

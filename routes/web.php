@@ -81,6 +81,12 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
 
     // Solo Administrador
     Route::middleware(['role:Administrador'])->group(function () {
+        // Bitácora de Cerberus Bot (solo existe donde el bot está habilitado: QA).
+        Route::get('admin/asistente/consultas', function () {
+            abort_unless(config('asistente.habilitado'), 404);
+            return view('asistente.consultas');
+        })->name('admin.asistente.consultas');
+
         Route::get('export/categorias',    [ExportController::class, 'categorias'])->name('export.categorias');
         Route::get('export/estados',       [ExportController::class, 'estados'])->name('export.estados');
         Route::get('export/atributos',     [ExportController::class, 'atributos'])->name('export.atributos');
