@@ -4,6 +4,11 @@
 //   1. Input VISIBLE (#fotoInput) — solo para el cropper JS
 //   2. Input OCULTO (#fotoInputLivewire) — wire:model, lo maneja Livewire
 //   3. Al confirmar el crop, inyectamos el blob en el input de Livewire via DataTransfer
+//
+// En "Mi perfil" no hay Livewire: es un formulario normal. Ahí no existe
+// #fotoInputLivewire y la foto recortada se deja en el MISMO #fotoInput, que
+// es el que viaja al pulsar "Guardar foto". (Antes se vaciaba #fotoInput y el
+// formulario se enviaba sin foto: "la primera vez no hace nada".)
 
 export function initAvatarCropper({
     inputId       = 'fotoInput',
@@ -25,6 +30,11 @@ export function initAvatarCropper({
 
     // Si no existe ninguno de los inputs, no hay formulario con foto en esta página
     if (!fotoInput && !livewireInput) return
+
+    // Se llama al cargar y también en livewire:navigated: no enganchar dos veces.
+    const marca = fotoInput ?? livewireInput
+    if (marca.dataset.cropperListo) return
+    marca.dataset.cropperListo = '1'
 
     const openModal  = () => window.dispatchEvent(new CustomEvent('open-modal',  { detail: modalName }))
     const closeModal = () => window.dispatchEvent(new CustomEvent('close-modal', { detail: modalName }))
@@ -87,8 +97,15 @@ export function initAvatarCropper({
                 previewFoto.src = URL.createObjectURL(blob)
             }
 
-            // Limpiar el input visible
-            if (fotoInput) fotoInput.value = ''
+            if (livewireInput) {
+                // Limpiar el input visible: la foto ya va por el de Livewire
+                if (fotoInput) fotoInput.value = ''
+            } else if (fotoInput) {
+                // Formulario normal (Mi perfil): la foto recortada viaja en este input
+                const dt = new DataTransfer()
+                dt.items.add(file)
+                fotoInput.files = dt.files
+            }
 
             cropper.destroy()
             cropper = null

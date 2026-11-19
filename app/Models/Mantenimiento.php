@@ -473,17 +473,37 @@ class Mantenimiento extends Model
     }
 
     /**
-     * Reabre un caso Cerrado — solo si el problema sigue siendo el mismo
-     * diagnóstico; si es otra falla, corresponde abrir un caso nuevo, no
-     * reabrir este. Vuelve a "En reparación" y re-bloquea el equipo
-     * directamente (bloquearEquipo() no sirve acá: se niega a correr dos
-     * veces sobre el mismo caso). El motivo queda anotado en observaciones
-     * para no perder por qué se reabrió.
+     * ¿Se puede reabrir? Una reparación "Cerrada" o un preventivo
+     * "Completado" (para corregir o completar algo que faltó: checklist,
+     * fotos, observaciones). Cancelado y Dado de baja no se reabren.
+     */
+    public function puedeReabrirse(): bool
+    {
+        return ($this->esCorrectivo() && $this->estado === 'Cerrado')
+            || ($this->esPreventivo() && $this->estado === 'Completado');
+    }
+
+    /** Estado al que vuelve el caso al reabrirlo. */
+    public function estadoAlReabrir(): string
+    {
+        return $this->esCorrectivo() ? 'En reparación' : 'En proceso';
+    }
+
+    /**
+     * Reabre un caso terminado para corregir o completar información:
+     * - Reparación "Cerrada" → "En reparación" (mismo diagnóstico; si es otra
+     *   falla corresponde un caso nuevo).
+     * - Preventivo "Completado" → "En proceso" (faltó marcar el checklist,
+     *   subir fotos, anotar algo…).
+     * El equipo vuelve a quedar bloqueado (en reparación / en mantenimiento)
+     * hasta que se cierre de nuevo — bloquearEquipo() no sirve acá: se niega
+     * a correr dos veces sobre el mismo caso. El motivo queda anotado en
+     * observaciones para no perder por qué se reabrió.
      */
     public function reabrir(User $actor, string $motivo): void
     {
-        if (! ($this->esCorrectivo() && $this->estado === 'Cerrado')) {
-            throw new \InvalidArgumentException('Solo se puede reabrir una reparación que esté Cerrada.');
+        if (! $this->puedeReabrirse()) {
+            throw new \InvalidArgumentException('Solo se puede reabrir una reparación Cerrada o un mantenimiento preventivo Completado.');
         }
 
         $equipo = $this->equipo;
@@ -494,22 +514,22 @@ class Mantenimiento extends Model
 
         $otroAbierto = static::where('equipo_id', $equipo->id)->whereKeyNot($this->id)->abiertos()->first();
         if ($otroAbierto) {
-            throw new \InvalidArgumentException("No se puede reabrir: el equipo ya tiene abierto el caso #{$otroAbierto->id}.");
+            throw new \InvalidArgumentException("No se puede reabrir: el equipo ya tiene abierto el caso #{$otroAbierto->id}. Ciérralo primero.");
         }
 
         DB::transaction(function () use ($actor, $motivo, $equipo) {
             // Se vuelve a tomar el estado ACTUAL del equipo: desde que se
             // cerró el caso pudo haberse asignado, prestado o devuelto, y al
             // volver a cerrar debe regresar a ese estado, no al de antes.
-            $estadoReparacion = EstadoEquipo::where('nombre', EstadoEquipo::EN_REPARACION)->value('id');
+            $bloqueo = EstadoEquipo::where('nombre', $this->esCorrectivo() ? EstadoEquipo::EN_REPARACION : EstadoEquipo::EN_MANTENIMIENTO)->value('id');
 
             $this->update(['estado_equipo_anterior_id' => $equipo->estado_id]);
-            $equipo->update(['estado_id' => $estadoReparacion ?? $equipo->estado_id]);
+            $equipo->update(['estado_id' => $bloqueo ?? $equipo->estado_id]);
 
             $nota = 'Reabierto el ' . now()->format('d/m/Y') . " por {$actor->name}: {$motivo}";
 
             $this->update([
-                'estado'         => 'En reparación',
+                'estado'         => $this->estadoAlReabrir(),
                 'fecha_fin_real' => null,
                 'observaciones'  => trim(($this->observaciones ? $this->observaciones . "\n\n" : '') . $nota),
             ]);

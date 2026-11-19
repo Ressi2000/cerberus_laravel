@@ -168,6 +168,45 @@ class FlujoCasosAlmacenTest extends TestCase
     }
 
     /** @test */
+    public function un_preventivo_completado_se_reabre_para_completar_informacion(): void
+    {
+        $equipo = $this->crearEquipo('Asignado');
+        $caso = $this->crearCaso('Preventivo', 'Completado', $equipo, $this->estado('Asignado'));
+        $caso->update(['fecha_fin_real' => now()->toDateString(), 'checklist' => [['tarea' => 'Limpieza', 'hecho' => false]]]);
+
+        Livewire::actingAs($this->analista)
+            ->test(MantenimientoDetalle::class, ['mantenimientoId' => $caso->id])
+            ->assertSee('Reabrir para completar')
+            ->call('abrirReabrir')
+            ->set('motivoReapertura', 'Faltó marcar la limpieza y subir fotos')
+            ->call('confirmarReabrir')
+            ->assertHasNoErrors()
+            // Ya abierto: se puede marcar el checklist que faltó.
+            ->call('toggleChecklistItem', 0);
+
+        $caso->refresh();
+        $this->assertSame('En proceso', $caso->estado);
+        $this->assertNull($caso->fecha_fin_real);
+        $this->assertTrue($caso->checklist[0]['hecho']);
+        $this->assertStringContainsString('Faltó marcar la limpieza', $caso->observaciones);
+        $this->assertSame($this->estado('En mantenimiento'), (int) $equipo->fresh()->estado_id);
+
+        // Al completarlo de nuevo, el equipo vuelve a su estado (sigue asignado si tiene asignación).
+        $caso->completar();
+        $this->assertSame('Completado', $caso->fresh()->estado);
+    }
+
+    /** @test */
+    public function un_caso_cancelado_no_se_reabre(): void
+    {
+        $caso = $this->crearCaso('Preventivo', 'Cancelado');
+
+        $this->assertFalse($this->analista->can('reabrir', $caso));
+        $this->expectException(\InvalidArgumentException::class);
+        $caso->reabrir($this->analista, 'motivo');
+    }
+
+    /** @test */
     public function no_se_reabre_si_el_equipo_ya_tiene_otro_caso_abierto(): void
     {
         $equipo = $this->crearEquipo('Disponible');
