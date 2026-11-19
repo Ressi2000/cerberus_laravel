@@ -4,6 +4,7 @@ namespace App\Asistente\Proveedores;
 
 use App\Asistente\AsistenteException;
 use App\Asistente\Herramientas;
+use App\Asistente\Privacidad;
 use App\Asistente\Respuesta;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
@@ -23,11 +24,11 @@ class Gemini implements ProveedorIA
     {
     }
 
-    public function responder(User $actor, string $pregunta, array $historial, string $instrucciones): Respuesta
+    public function responder(User $actor, string $pregunta, array $historial, string $instrucciones, Privacidad $privacidad): Respuesta
     {
         $config = config('asistente.gemini');
         if (empty($config['api_key'])) {
-            throw new AsistenteException('Falta configurar la clave de Gemini (GEMINI_API_KEY en el .env).');
+            throw new AsistenteException('El asistente todavía no está configurado. Avísale al administrador.', 'Falta GEMINI_API_KEY en el .env.');
         }
 
         $this->modeloUsado = null;
@@ -41,7 +42,7 @@ class Gemini implements ProveedorIA
 
             if (! $contenido || empty($contenido['parts'])) {
                 $motivo = $respuesta['candidates'][0]['finishReason'] ?? $respuesta['promptFeedback']['blockReason'] ?? 'desconocido';
-                throw new AsistenteException("Gemini no devolvió respuesta (motivo: {$motivo}). Intenta reformular la pregunta.");
+                throw new AsistenteException('No pude responder esa pregunta. Intenta reformularla.', "Gemini no devolvió respuesta (motivo: {$motivo}).");
             }
 
             // Se guarda tal cual (incluye las "firmas de pensamiento" que Gemini exige de vuelta).
@@ -61,14 +62,16 @@ class Gemini implements ProveedorIA
             $partes = [];
             foreach ($llamadas as $parte) {
                 $nombre = $parte['functionCall']['name'] ?? '';
-                $args   = (array) ($parte['functionCall']['args'] ?? []);
+                // La IA pide con códigos ("Persona-12"); la consulta se hace con el nombre real…
+                $args   = $privacidad->revelar((array) ($parte['functionCall']['args'] ?? []));
                 $resultado = $this->herramientas->ejecutar($nombre, $actor, $args);
                 $usadas[] = ['nombre' => $nombre, 'args' => $args, 'ok' => $resultado['ok']];
 
                 $partes[] = ['functionResponse' => array_filter([
                     'id'       => $parte['functionCall']['id'] ?? null,
                     'name'     => $nombre,
-                    'response' => $resultado,
+                    // …y lo que vuelve a la IA lleva los nombres cambiados por códigos.
+                    'response' => $privacidad->ocultar($resultado),
                 ], fn ($v) => $v !== null)];
             }
             $contenidos[] = ['role' => 'user', 'parts' => $partes];
@@ -147,14 +150,21 @@ class Gemini implements ProveedorIA
             }
         }
 
+        $status = $http->status();
+        $detalle = match (true) {
+            in_array($status, [400, 401, 403]) && str_contains($http->body(), 'API key') => 'La clave de Gemini no es válida. Revisa GEMINI_API_KEY.',
+            $status === 404 => "El modelo «{$config['modelo']}» no existe o no está disponible. Revisa GEMINI_MODEL.",
+            $status === 429 => 'Gemini: se alcanzó el límite de uso de la cuenta.',
+            $status >= 500  => 'Gemini está saturado (pasa a menudo en el plan gratuito).',
+            default         => "Gemini rechazó la consulta (error {$status}).",
+        };
+
         throw new AsistenteException(match (true) {
-            in_array($http->status(), [400, 401, 403]) && str_contains($http->body(), 'API key')
-                => 'La clave de Gemini no es válida. Revisa GEMINI_API_KEY.',
-            $http->status() === 404 => "El modelo «{$config['modelo']}» no existe o no está disponible. Revisa GEMINI_MODEL.",
-            $http->status() === 429 => 'Se alcanzó el límite de uso de Gemini. Espera un momento e intenta de nuevo.',
-            $http->status() >= 500  => 'Gemini está saturado en este momento (pasa a menudo en el plan gratuito). Intenta de nuevo en unos minutos.',
-            default                 => 'Gemini rechazó la consulta (error ' . $http->status() . ').',
-        });
+            in_array($status, [400, 401, 403, 404]) => 'El asistente tiene un problema de configuración. Avísale al administrador.',
+            $status === 429 => 'El asistente alcanzó su límite de uso por ahora. Intenta de nuevo en unos minutos.',
+            $status >= 500  => 'El asistente está muy ocupado en este momento. Intenta de nuevo en unos minutos.',
+            default         => 'No pude completar la consulta. Intenta de nuevo.',
+        }, $detalle);
     }
 
     private function enviar(array $config, string $modelo, array $contenidos, string $instrucciones): \Illuminate\Http\Client\Response
@@ -169,7 +179,7 @@ class Gemini implements ProveedorIA
                     'generationConfig'  => ['temperature' => 0.2],
                 ]);
         } catch (ConnectionException $e) {
-            throw new AsistenteException('No pude conectarme con Gemini. Revisa la conexión a internet del servidor.');
+            throw new AsistenteException('No pude conectarme con el servicio del asistente. Intenta en un momento.', 'Sin conexión con Gemini: revisa la salida a internet del servidor.');
         }
     }
 

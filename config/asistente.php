@@ -27,6 +27,14 @@ return [
         'timeout' => 60,
     ],
 
+    // Seudónimos: los nombres de las personas viajan a la IA como "Persona-12"
+    // y Cerberus los vuelve a poner al mostrar la respuesta.
+    'seudonimos' => (bool) env('ASISTENTE_SEUDONIMOS', true),
+
+    // Características de equipos que el asistente nunca lee ni envía a la IA
+    // (palabras que aparecen en el nombre de la característica).
+    'caracteristicas_ocultas' => ['puk', 'pin', 'clave', 'contrasena', 'password', 'key', 'token'],
+
     // Cuántas consultas puede encadenar la IA para responder una pregunta.
     'max_pasos' => 8,
 

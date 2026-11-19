@@ -133,7 +133,7 @@
                 </button>
             </div>
             <p class="mt-1.5 text-[10px] text-gray-400 dark:text-cerberus-steel text-center">
-                Prueba con IA (Gemini). Puede equivocarse: verifica en las pantallas antes de decidir.
+                Asistente en prueba. Puede equivocarse: verifica en las pantallas antes de decidir.
             </p>
         </form>
     </div>

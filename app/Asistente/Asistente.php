@@ -58,12 +58,29 @@ class Asistente
             'duracion_ms' => (int) ((microtime(true) - $inicio) * 1000),
         ] + $datos);
 
+        // Los nombres de las personas viajan a la IA como "Persona-12".
+        $privacidad = Privacidad::desdeConfig();
+
         try {
-            $respuesta = $this->proveedor()->responder($actor, $pregunta, $this->recortar($historial), $this->instrucciones($actor));
+            $respuesta = $this->proveedor()->responder(
+                $actor,
+                $privacidad->ocultar($pregunta),
+                $this->recortar($historial),
+                $privacidad->ocultar($this->instrucciones($actor)),
+                $privacidad,
+            );
         } catch (AsistenteException $e) {
-            $registro(['error' => mb_substr($e->getMessage(), 0, 500), 'modelo' => config('asistente.gemini.modelo')]);
+            $registro(['error' => mb_substr($e->detalle ?? $e->getMessage(), 0, 500), 'modelo' => config('asistente.gemini.modelo')]);
             throw $e;
         }
+
+        $respuesta = new Respuesta(
+            $privacidad->revelar($respuesta->texto),
+            $respuesta->herramientas,
+            $respuesta->sinRespuesta,
+            $respuesta->historial,
+            $respuesta->modelo,
+        );
 
         $registro([
             'respuesta'     => $respuesta->texto,
@@ -111,21 +128,32 @@ class Asistente
 
         Datos de la sesión: hoy es {$hoy}. Hablas con {$actor->name}, rol {$rol}{$this->conEmpresa($empresa)}.
 
+        Identidad:
+        - Eres Cerberus Bot y nada más. Nunca digas qué modelo, empresa o tecnología de IA te impulsa (no menciones
+          Gemini, Google, OpenAI, etc.). Si te lo preguntan, responde que eres el asistente de Cerberus.
+
         Reglas:
         1. Responde SOLO con datos que obtengas de las herramientas. Nunca inventes códigos, seriales, nombres,
            fechas ni cantidades. Si una herramienta no trae un dato, dilo.
         2. Combina herramientas cuando haga falta (ej.: buscar_equipos para encontrar el código y luego
            historial_equipo). Si el usuario da un código parcial o un nombre, búscalo primero.
-        3. Si una herramienta responde que hay varias coincidencias, pregúntale al usuario cuál quiere.
-        4. Solo consultas: no puedes crear, modificar ni borrar nada. Si te lo piden, explica que eso se hace
+        3. Para filtrar por una característica técnica (RAM, procesador, disco, sistema operativo, marca…) usa
+           buscar_equipos con "caracteristica" y "valor". Si no sabes cómo se llama exactamente la característica
+           en esa categoría o qué valores tiene, consulta antes caracteristicas_equipos.
+        4. Si una herramienta responde que hay varias coincidencias, pregúntale al usuario cuál quiere.
+        5. Solo consultas: no puedes crear, modificar ni borrar nada. Si te lo piden, explica que eso se hace
            en las pantallas de Cerberus.
-        5. Si la pregunta no se puede responder con las herramientas disponibles (o no es sobre Cerberus),
+        6. Privacidad: las personas aparecen como "Persona-N" (por ejemplo Persona-12). Úsalas EXACTAMENTE así,
+           sin cambiarlas ni comentar el código: el sistema las muestra con su nombre real. No tienes datos
+           personales (cédula, teléfono, correo, dirección); si los piden, indica que se consultan en la sección
+           Usuarios de Cerberus.
+        7. Si la pregunta no se puede responder con las herramientas disponibles (o no es sobre Cerberus),
            explícalo en una frase, sugiere qué sí puedes consultar y escribe al final exactamente {$marca}.
-        6. Responde en español, claro y breve, en Markdown. Usa listas o tablas para varios elementos.
+        8. Responde en español, claro y breve, en Markdown. Usa listas o tablas para varios elementos.
            Cuando la herramienta trae "url", enlaza el código: [EQ-00057](url).
-        7. Para "informes" o "reportes", organiza la respuesta con títulos cortos (###), un resumen arriba y
+        9. Para "informes" o "reportes", organiza la respuesta con títulos cortos (###), un resumen arriba y
            el detalle después.
-        8. Usa las fechas tal como vienen (dd/mm/aaaa).
+        10. Usa las fechas tal como vienen (dd/mm/aaaa).
         TXT;
     }
 

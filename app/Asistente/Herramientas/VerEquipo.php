@@ -99,16 +99,17 @@ class VerEquipo extends Herramienta
     private function caracteristicas(Equipo $equipo): array
     {
         $salida = [];
+        $ocultas = \App\Asistente\Caracteristicas::ocultas();   // PUK, claves… nunca salen
 
         foreach ($equipo->atributosActuales as $v) {
-            if ($v->atributo && trim((string) $v->valor) !== '') {
+            if ($v->atributo && trim((string) $v->valor) !== '' && ! in_array($v->atributo_id, $ocultas)) {
                 $salida[$v->atributo->nombre] = (string) $v->valor;
             }
         }
 
         foreach ($equipo->grupoInstancias->groupBy('atributo_id') as $instancias) {
             $atributo = $instancias->first()->atributo;
-            if (! $atributo) {
+            if (! $atributo || in_array($atributo->id, $ocultas)) {
                 continue;
             }
             $campos = collect($atributo->sub_campos ?? [])->keyBy('id');
