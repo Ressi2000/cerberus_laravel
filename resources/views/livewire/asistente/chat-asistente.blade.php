@@ -57,7 +57,7 @@
                         @foreach ([
                             '¿Qué reparaciones están abiertas?',
                             'Hazme un informe del historial del equipo EQ-00057',
-                            '¿Cuántas memorias DDR4 hay en el almacén?',
+                            'Excel de las laptops con menos de 8 GB de RAM',
                             '¿Qué laptops habría que renovar?',
                         ] as $ejemplo)
                             <button type="button" wire:click="$set('pregunta', @js($ejemplo))" x-on:click="$nextTick(() => $refs.entrada.focus())"
@@ -83,6 +83,17 @@
                     ])>
                         @if ($m['rol'] === 'bot')
                             <div class="cerberus-bot-md">{!! \Illuminate\Support\Str::markdown($m['texto'], ['html_input' => 'escape', 'allow_unsafe_links' => false]) !!}</div>
+                            @foreach ($m['adjuntos'] ?? [] as $adj)
+                                <a href="{{ $adj['url'] }}" target="_blank"
+                                    class="mt-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition
+                                           {{ $adj['tipo'] === 'Excel'
+                                               ? 'border-green-300 dark:border-green-700/50 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300 hover:bg-green-100'
+                                               : 'border-red-300 dark:border-red-700/50 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 hover:bg-red-100' }}">
+                                    <span class="material-icons text-lg">{{ $adj['tipo'] === 'Excel' ? 'table_view' : 'picture_as_pdf' }}</span>
+                                    <span class="min-w-0 flex-1 truncate">Descargar {{ $adj['tipo'] }}<br><span class="font-normal opacity-75">{{ $adj['archivo'] }}</span></span>
+                                    <span class="material-icons text-base">download</span>
+                                </a>
+                            @endforeach
                             @if (! empty($m['consultas']))
                                 <div class="mt-2 flex flex-wrap gap-1">
                                     @foreach ($m['consultas'] as $c)

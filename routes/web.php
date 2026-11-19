@@ -86,6 +86,15 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             abort_unless(config('asistente.habilitado'), 404);
             return view('asistente.consultas');
         })->name('admin.asistente.consultas');
+    });
+
+    // Informes de Cerberus Bot: enlace firmado y temporal; solo los descarga quien los pidió.
+    Route::get('asistente/informes/{informe}', function (string $informe) {
+        abort_unless(config('asistente.habilitado'), 404);
+        return app(\App\Asistente\Informes\Informes::class)->descargar(auth()->user(), $informe);
+    })->middleware(['signed', 'role:Administrador|Analista'])->name('asistente.informes.descargar');
+
+    Route::middleware(['role:Administrador'])->group(function () {
 
         Route::get('export/categorias',    [ExportController::class, 'categorias'])->name('export.categorias');
         Route::get('export/estados',       [ExportController::class, 'estados'])->name('export.estados');

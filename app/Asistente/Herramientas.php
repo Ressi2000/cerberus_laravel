@@ -26,6 +26,8 @@ class Herramientas
         Herramientas\CasosMantenimiento::class,
         Herramientas\RenovacionEquipos::class,
         Herramientas\ResumenInventario::class,
+        Herramientas\BuscarPersonas::class,
+        Herramientas\GenerarInforme::class,
     ];
 
     /** @var array<string, Herramienta>|null */
@@ -67,7 +69,7 @@ class Herramientas
      * devuelve ['ok' => true, 'datos' => …] o ['ok' => false, 'error' => '…'],
      * que es lo que la IA necesita para seguir la conversación.
      */
-    public function ejecutar(string $nombre, User $actor, array $args = []): array
+    public function ejecutar(string $nombre, User $actor, array $args = [], bool $paraInforme = false): array
     {
         $herramienta = $this->obtener($nombre);
 
@@ -79,6 +81,7 @@ class Herramientas
         }
 
         try {
+            Herramienta::$modoInforme = $paraInforme;
             $datos = $herramienta->ejecutar($actor, $this->validar($herramienta, $args));
 
             return ['ok' => true, 'datos' => $datos];
@@ -88,6 +91,8 @@ class Herramientas
             Log::error("Asistente: falló la herramienta {$nombre}", ['args' => $args, 'error' => $e->getMessage()]);
 
             return ['ok' => false, 'error' => 'No se pudo completar la consulta por un error interno.'];
+        } finally {
+            Herramienta::$modoInforme = false;
         }
     }
 
