@@ -16,6 +16,7 @@ class Herramientas
     /** Clases de las herramientas disponibles. Para agregar una nueva, súmala aquí. */
     const CLASES = [
         Herramientas\BuscarEquipos::class,
+        Herramientas\CaracteristicasEquipos::class,
         Herramientas\VerEquipo::class,
         Herramientas\HistorialEquipo::class,
         Herramientas\EquiposDePersona::class,

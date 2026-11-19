@@ -135,10 +135,12 @@ class CerberusBotTest extends TestCase
             app(Asistente::class)->preguntar($this->admin, 'Hola');
             $this->fail('Debió fallar');
         } catch (AsistenteException $e) {
-            $this->assertStringContainsString('clave de Gemini no es válida', $e->getMessage());
+            // Al usuario: mensaje neutro; el detalle técnico queda para el administrador y la bitácora.
+            $this->assertStringNotContainsString('Gemini', $e->getMessage());
+            $this->assertStringContainsString('clave de Gemini no es válida', $e->detalle);
         }
 
-        $this->assertNotNull(AsistenteConsulta::sole()->error);
+        $this->assertStringContainsString('clave de Gemini', AsistenteConsulta::sole()->error);
     }
 
     /** @test */
@@ -162,7 +164,7 @@ class CerberusBotTest extends TestCase
     {
         Http::fake(['generativelanguage.googleapis.com/*' => Http::response(['error' => ['message' => 'overloaded']], 503)]);
 
-        $this->expectExceptionMessage('saturado');
+        $this->expectExceptionMessage('muy ocupado');
         app(Asistente::class)->preguntar($this->admin, 'Hola');
     }
 

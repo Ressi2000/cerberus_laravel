@@ -30,6 +30,7 @@ class ChatAsistente extends Component
         'casos_mantenimiento' => 'Casos de mantenimiento',
         'renovacion_equipos'  => 'Renovación',
         'resumen_inventario'  => 'Resumen del inventario',
+        'caracteristicas_equipos' => 'Características',
     ];
 
     public bool $abierto = false;
@@ -85,7 +86,12 @@ class ChatAsistente extends Component
                     ->map(fn ($n) => self::ETIQUETAS[$n] ?? $n)->values()->all(),
             ]);
         } catch (AsistenteException $e) {
-            $this->agregarMensaje(['rol' => 'error', 'texto' => $e->getMessage()]);
+            // El detalle técnico (qué falló con el servicio de IA) solo lo ve el Administrador.
+            $texto = $e->getMessage();
+            if ($e->detalle && Auth::user()->hasRole('Administrador')) {
+                $texto .= "\n\nDetalle para el administrador: {$e->detalle}";
+            }
+            $this->agregarMensaje(['rol' => 'error', 'texto' => $texto]);
         } catch (\Throwable $e) {
             Log::error('Cerberus Bot falló', ['error' => $e->getMessage()]);
             $this->agregarMensaje(['rol' => 'error', 'texto' => 'Ocurrió un error inesperado. Intenta de nuevo.']);
