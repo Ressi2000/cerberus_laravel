@@ -63,7 +63,7 @@ class UserPolicy
             $user->hasRole('Analista') &&
             $model->hasRole('Usuario') &&
             (
-                $model->ubicacion_id === $user->empresa_activa_id ||
+                (int) $model->ubicacion_id === (int) $user->empresa_activa_id ||
                 $model->ubicacion?->es_estado === true
             )
         ) {
@@ -96,7 +96,7 @@ class UserPolicy
             $user->hasRole('Analista') &&
             $model->hasRole('Usuario') &&
             (
-                $model->ubicacion_id === $user->empresa_activa_id ||
+                (int) $model->ubicacion_id === (int) $user->empresa_activa_id ||
                 $model->ubicacion?->es_estado === true
             )
         ) {

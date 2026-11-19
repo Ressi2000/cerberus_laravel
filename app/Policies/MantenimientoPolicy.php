@@ -34,7 +34,7 @@ class MantenimientoPolicy
     public function view(User $user, Mantenimiento $mantenimiento): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $mantenimiento->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $mantenimiento->empresa_id;
     }
 
     public function create(User $user): bool
@@ -45,7 +45,7 @@ class MantenimientoPolicy
     public function update(User $user, Mantenimiento $mantenimiento): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $mantenimiento->empresa_id
+            && (int) $user->empresa_activa_id === (int) $mantenimiento->empresa_id
             && $mantenimiento->estaAbierto();
     }
 
@@ -57,7 +57,7 @@ class MantenimientoPolicy
     public function delete(User $user, Mantenimiento $mantenimiento): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $mantenimiento->empresa_id
+            && (int) $user->empresa_activa_id === (int) $mantenimiento->empresa_id
             && $mantenimiento->estaAbierto();
     }
 
@@ -65,7 +65,7 @@ class MantenimientoPolicy
     public function reabrir(User $user, Mantenimiento $mantenimiento): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $mantenimiento->empresa_id
+            && (int) $user->empresa_activa_id === (int) $mantenimiento->empresa_id
             && $mantenimiento->esCorrectivo()
             && $mantenimiento->estado === 'Cerrado';
     }
