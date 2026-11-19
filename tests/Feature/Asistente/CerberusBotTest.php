@@ -169,6 +169,23 @@ class CerberusBotTest extends TestCase
     }
 
     /** @test */
+    public function un_fallo_de_conexion_explica_que_revisar_en_el_servidor(): void
+    {
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 60: SSL certificate problem: unable to get local issuer certificate'));
+
+        try {
+            app(Asistente::class)->preguntar($this->admin, 'Hola');
+            $this->fail('Debió fallar');
+        } catch (AsistenteException $e) {
+            $this->assertStringContainsString('No pude conectarme', $e->getMessage());
+            $this->assertStringContainsString('curl.cainfo', $e->detalle);
+            $this->assertStringContainsString('cURL error 60', $e->detalle);
+        }
+
+        $this->assertStringContainsString('cacert.pem', AsistenteConsulta::sole()->error);
+    }
+
+    /** @test */
     public function la_memoria_se_recorta_al_inicio_de_una_pregunta(): void
     {
         config(['asistente.max_turnos_memoria' => 2]);

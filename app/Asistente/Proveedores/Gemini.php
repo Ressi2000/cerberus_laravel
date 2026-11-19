@@ -175,17 +175,53 @@ class Gemini implements ProveedorIA
     private function enviar(array $config, string $modelo, array $contenidos, string $instrucciones): \Illuminate\Http\Client\Response
     {
         try {
-            return Http::withHeaders(['x-goog-api-key' => $config['api_key']])
-                ->timeout($config['timeout'] ?? 60)
+            return $this->cliente($config)
                 ->post("{$config['url']}/models/{$modelo}:generateContent", [
                     'systemInstruction' => ['parts' => [['text' => $instrucciones]]],
                     'contents'          => $contenidos,
                     'tools'             => [['functionDeclarations' => $this->declaraciones()]],
                     'generationConfig'  => ['temperature' => 0.2],
                 ]);
-        } catch (ConnectionException $e) {
-            throw new AsistenteException('No pude conectarme con el servicio del asistente. Intenta en un momento.', 'Sin conexión con Gemini: revisa la salida a internet del servidor.');
+        } catch (ConnectionException|\Illuminate\Http\Client\RequestException|\GuzzleHttp\Exception\TransferException $e) {
+            Log::warning('Cerberus Bot: sin conexión con Gemini', ['error' => $e->getMessage()]);
+
+            throw new AsistenteException(
+                'No pude conectarme con el servicio del asistente. Intenta en un momento.',
+                self::explicarFalloDeConexion($e->getMessage()),
+            );
         }
+    }
+
+    /** Cliente HTTP con la clave y, si la red lo exige, el proxy de la empresa (GEMINI_PROXY). */
+    public function cliente(array $config): \Illuminate\Http\Client\PendingRequest
+    {
+        $http = Http::withHeaders(['x-goog-api-key' => (string) $config['api_key']])
+            ->timeout($config['timeout'] ?? 60);
+
+        return empty($config['proxy']) ? $http : $http->withOptions(['proxy' => $config['proxy']]);
+    }
+
+    /**
+     * Traduce el error técnico de conexión (cURL) a qué revisar en el
+     * servidor. Lo ve solo el Administrador y queda en la bitácora.
+     */
+    public static function explicarFalloDeConexion(string $error): string
+    {
+        $pista = match (true) {
+            (bool) preg_match('/SSL certificate|certificate verify|local issuer|error 60|error 77/i', $error)
+                => 'PHP no tiene los certificados de confianza (típico en Windows): descarga cacert.pem de curl.se/docs/caextract.html, '
+                 . 'guárdalo (ej. C:\php\extras\ssl\cacert.pem) y en php.ini pon curl.cainfo y openssl.cafile con esa ruta; luego reinicia Apache.',
+            (bool) preg_match('/resolve host|getaddrinfo|error 6\b/i', $error)
+                => 'El servidor no logra resolver el nombre generativelanguage.googleapis.com (DNS). Revisa el DNS o si la red exige un proxy (GEMINI_PROXY).',
+            (bool) preg_match('/timed out|error 28|Failed to connect|error 7\b|Connection refused/i', $error)
+                => 'El servidor no llega a Google: probablemente el firewall bloquea la salida o la red exige un proxy. '
+                 . 'Pide que permitan generativelanguage.googleapis.com por el puerto 443, o configura GEMINI_PROXY.',
+            (bool) preg_match('/proxy/i', $error)
+                => 'Falló el proxy configurado en GEMINI_PROXY: revisa la dirección, el puerto y si pide usuario.',
+            default => 'Revisa la salida a internet del servidor hacia generativelanguage.googleapis.com.',
+        };
+
+        return $pista . ' Error técnico: ' . mb_substr($error, 0, 300);
     }
 
     private function terminar(string $texto, array $usadas, array $contenidos, string $modelo): Respuesta
