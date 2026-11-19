@@ -62,6 +62,23 @@ class RenovacionService
         ];
     }
 
+    /**
+     * Lo que de verdad se usa para evaluar: la característica de cada dato
+     * técnico, o null si ese criterio está apagado para el tipo de equipo
+     * (o su ficha no lo tiene).
+     */
+    public function atributosEfectivos(CategoriaEquipo $categoria, CriterioRenovacion $criterio): array
+    {
+        $a = $this->atributosDe($categoria, $criterio);
+
+        return [
+            'procesador' => $criterio->aplicar_procesador ? $a['procesador'] : null,
+            'ram'        => $criterio->aplicar_ram ? $a['ram'] : null,
+            'disco'      => $criterio->aplicar_disco ? $a['disco'] : null,
+            'so'         => $criterio->aplicar_so ? $a['so'] : null,
+        ];
+    }
+
     // ── Evaluar ─────────────────────────────────────────────────────────────
 
     /**
@@ -88,7 +105,7 @@ class RenovacionService
             $catId = $equipo->categoria_id;
             if (! isset($porCategoria[$catId])) {
                 $criterio = CriterioRenovacion::paraCategoria($equipo->categoria);
-                $porCategoria[$catId] = [$criterio, $this->atributosDe($equipo->categoria, $criterio)];
+                $porCategoria[$catId] = [$criterio, $this->atributosEfectivos($equipo->categoria, $criterio)];
             }
             [$criterio, $atributos] = $porCategoria[$catId];
 
