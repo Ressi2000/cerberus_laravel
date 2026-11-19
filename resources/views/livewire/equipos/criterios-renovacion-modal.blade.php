@@ -11,7 +11,7 @@
                         <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                             <span class="material-icons text-cerberus-accent">tune</span> Criterios de renovación
                         </h2>
-                        <p class="text-sm text-gray-500 dark:text-cerberus-light">Cada tipo de equipo tiene los suyos. Los valores sugeridos tienen su razón al lado.</p>
+                        <p class="text-sm text-gray-500 dark:text-cerberus-light">Cada tipo de equipo tiene los suyos. Pasa el cursor por el <span class="material-icons text-[14px] align-middle">help_outline</span> de cada campo para ver qué hace.</p>
                     </div>
                     <button wire:click="close" class="text-gray-400 hover:text-gray-600 dark:hover:text-white"><span class="material-icons">close</span></button>
                 </div>
@@ -38,7 +38,7 @@
                             <p class="{{ $seccion }}">De qué característica de la ficha sale cada dato</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
                                 @foreach (['procesador' => 'Procesador', 'ram' => 'RAM', 'disco' => 'Disco', 'so' => 'Sistema operativo'] as $k => $titulo)
-                                    <x-form.select :label="$titulo" :placeholder="'Detectar sola' . (($this->detectados[$k] ?? null) ? ' (' . $this->detectados[$k] . ')' : ' (no encontrada)')"
+                                    <x-form.select :label="$titulo" :hint="'La característica de la ficha donde está el dato «' . $titulo . '». «Detectar sola» la busca por su nombre; elige otra si en este tipo de equipo se llama distinto. Si no existe, este criterio no se aplica.'" :placeholder="'Detectar sola' . (($this->detectados[$k] ?? null) ? ' (' . $this->detectados[$k] . ')' : ' (no encontrada)')"
                                         :options="$this->atributos" wire:model="f.atributo_{{ $k }}_id" />
                                 @endforeach
                             </div>
@@ -48,34 +48,32 @@
                         <div class="space-y-2">
                             <p class="{{ $seccion }}">Procesador</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-                                <x-form.input label="Intel: generación mínima" type="number" wire:model="f.intel_generacion_minima" :error="$errors->first('f.intel_generacion_minima')" />
-                                <x-form.input label="AMD Ryzen: serie mínima" type="number" wire:model="f.ryzen_serie_minima" :error="$errors->first('f.ryzen_serie_minima')" />
+                                <x-form.input label="Intel: generación mínima" hint="La generación de Intel Core más antigua que se acepta (ej. 8 = 8.ª generación). Un procesador más viejo vuelve obsoleto el equipo. Súbela cuando Windows o los programas de la empresa dejen de admitir esa generación." type="number" wire:model="f.intel_generacion_minima" :error="$errors->first('f.intel_generacion_minima')" />
+                                <x-form.input label="AMD Ryzen: serie mínima" hint="La serie de AMD Ryzen más antigua que se acepta (ej. 2 = Ryzen 2000). Un procesador más viejo vuelve obsoleto el equipo. Súbela al mismo tiempo que la de Intel." type="number" wire:model="f.ryzen_serie_minima" :error="$errors->first('f.ryzen_serie_minima')" />
                             </div>
-                            <p class="{{ $ayuda }}">Sugerido: Intel 8.ª gen y Ryzen serie 2000, lo mínimo que exige Windows 11. Por debajo, el equipo se marca obsoleto. Celeron, Pentium y Athlon no dicen su generación: se evalúan por lo demás.</p>
                         </div>
 
                         {{-- Edad --}}
                         <div class="space-y-2">
                             <p class="{{ $seccion }}">Edad</p>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
-                                <x-form.input label="Revisar desde (años)" type="number" wire:model="f.edad_revisar" :error="$errors->first('f.edad_revisar')" />
-                                <x-form.input label="Obsoleto desde (años)" type="number" wire:model="f.edad_obsoleto" :error="$errors->first('f.edad_obsoleto')" />
+                                <x-form.input label="Revisar desde (años)" hint="Años de uso a partir de los cuales el equipo sale «por revisar». Se cuentan desde su fecha de adquisición; si no la tiene, se estiman por el año de su procesador." type="number" wire:model="f.edad_revisar" :error="$errors->first('f.edad_revisar')" />
+                                <x-form.input label="Obsoleto desde (años)" hint="Años de uso a partir de los cuales el equipo es obsoleto. Solo cuenta la fecha de adquisición real: una edad estimada nunca lo vuelve obsoleto, solo «por revisar»." type="number" wire:model="f.edad_obsoleto" :error="$errors->first('f.edad_obsoleto')" />
                             </div>
-                            <p class="{{ $ayuda }}">Sugerido: revisar a los 5, obsoleto a los 8. Usa la fecha de adquisición; si no hay, estima por el procesador y en ese caso solo marca "por revisar".</p>
                         </div>
 
                         {{-- RAM y disco --}}
                         <div class="space-y-2">
                             <p class="{{ $seccion }}">RAM y disco</p>
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
-                                <x-form.input label="RAM mínima (GB)" type="number" wire:model="f.ram_minima_gb" :error="$errors->first('f.ram_minima_gb')" />
-                                <x-form.input label="Tipos de RAM obsoletos" wire:model="f.ram_tipos_obsoletos" placeholder="DDR, DDR2" />
-                                <x-form.input label="Disco mínimo (GB)" type="number" wire:model="f.disco_minimo_gb" :error="$errors->first('f.disco_minimo_gb')" />
+                                <x-form.input label="RAM mínima (GB)" hint="Con menos RAM que esto (sumando todos sus módulos), el equipo sale repotenciable con la mejora «subir la RAM»." type="number" wire:model="f.ram_minima_gb" :error="$errors->first('f.ram_minima_gb')" />
+                                <x-form.input label="Tipos de RAM obsoletos" hint="Separados por coma (ej. DDR, DDR2). Si el equipo usa uno de estos tipos, es obsoleto: ya no se consiguen módulos para mejorarlo. Agrega un tipo cuando deje de venderse." wire:model="f.ram_tipos_obsoletos" placeholder="DDR, DDR2" />
+                                <x-form.input label="Disco mínimo (GB)" hint="Con menos espacio que esto (sumando todos sus discos), el equipo sale repotenciable con la mejora «disco más grande»." type="number" wire:model="f.disco_minimo_gb" :error="$errors->first('f.disco_minimo_gb')" />
                             </div>
                             <label class="flex items-center gap-2 cursor-pointer text-gray-700 dark:text-white">
                                 <input type="checkbox" wire:model="f.requiere_ssd" class="rounded text-cerberus-primary"> Recomendar SSD si solo tiene disco HDD
+                                <span class="material-icons text-[16px] text-gray-400 cursor-help" title="Si todos sus discos son mecánicos (HDD), el equipo sale repotenciable con la mejora «cambiar a SSD».">help_outline</span>
                             </label>
-                            <p class="{{ $ayuda }} mt-0">Sugerido: 8 GB de RAM y 240 GB de disco; por debajo, el equipo es repotenciable. DDR y DDR2 ya no se consiguen: obsoleto.</p>
                         </div>
 
                         {{-- Sistema operativo y reparaciones --}}
@@ -89,9 +87,9 @@
                                     </label>
                                 @endforeach
                             </div>
-                            <p class="{{ $ayuda }} mt-0">Windows 10 dejó de tener soporte en octubre de 2025. Si el procesador admite Windows 11, el equipo es repotenciable; si no, obsoleto.</p>
+                            <p class="{{ $ayuda }} mt-0">Marca las versiones de Windows que ya no reciben actualizaciones de seguridad (y agrega la siguiente cuando le quiten el soporte). Un equipo con una de ellas es repotenciable si su procesador cumple el mínimo de arriba; si no, obsoleto.</p>
                             <div class="max-w-xs">
-                                <x-form.input label="Reparaciones en 12 meses para obsoleto" type="number" wire:model="f.reparaciones_max_12m" :error="$errors->first('f.reparaciones_max_12m')" />
+                                <x-form.input label="Reparaciones en 12 meses para obsoleto" hint="Cuántas reparaciones (casos correctivos) en el último año vuelven obsoleto al equipo: cuesta más mantenerlo que reemplazarlo." type="number" wire:model="f.reparaciones_max_12m" :error="$errors->first('f.reparaciones_max_12m')" />
                             </div>
                         </div>
                     @elseif ($f)
