@@ -27,7 +27,7 @@ class Informes
     const HORAS_VIGENCIA = 24;
 
     /** Consultas que no tiene sentido exportar. */
-    const NO_EXPORTABLES = ['generar_informe'];
+    const NO_EXPORTABLES = ['generar_informe', 'mostrar_grafico'];
 
     public function __construct(private Herramientas $herramientas, private Tabulador $tabulador)
     {

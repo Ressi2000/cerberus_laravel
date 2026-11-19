@@ -21,6 +21,7 @@ import 'cropperjs/dist/cropper.css'
 import { cerberusDarkMode } from './dark-mode'
 import { initAvatarCropper } from './modules/avatar-cropper'
 import { monitorRedAlertas, pruebaVelocidad } from './modules/monitor-red'
+import { graficoBot } from './modules/grafico-bot'
 
 // ─── Registrar componentes Alpine ANTES de que Alpine arranque ────────────────
 // Livewire 3 dispara 'alpine:init' antes de iniciar Alpine
@@ -28,6 +29,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('cerberusDarkMode', cerberusDarkMode)
     Alpine.data('monitorRedAlertas', monitorRedAlertas)
     Alpine.data('pruebaVelocidad', pruebaVelocidad)
+    Alpine.data('graficoBot', graficoBot)
 })
 
 // ─── Exponer Cropper globalmente ──────────────────────────────────────────────

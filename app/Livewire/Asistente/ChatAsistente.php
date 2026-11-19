@@ -33,6 +33,7 @@ class ChatAsistente extends Component
         'caracteristicas_equipos' => 'Características',
         'buscar_personas'     => 'Buscó personas',
         'generar_informe'     => 'Preparó un informe',
+        'mostrar_grafico'     => 'Hizo un gráfico',
     ];
 
     public bool $abierto = false;
@@ -88,6 +89,7 @@ class ChatAsistente extends Component
                     ->map(fn ($n) => self::ETIQUETAS[$n] ?? $n)->values()->all(),
                 // Informes listos para descargar (PDF/Excel).
                 'adjuntos'  => collect($respuesta->herramientas)->pluck('adjunto')->filter()->values()->all(),
+                'graficos'  => collect($respuesta->herramientas)->pluck('grafico')->filter()->values()->all(),
             ]);
         } catch (AsistenteException $e) {
             // El detalle técnico (qué falló con el servicio de IA) solo lo ve el Administrador.

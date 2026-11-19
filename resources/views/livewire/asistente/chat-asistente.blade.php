@@ -58,6 +58,7 @@
                             '¿Qué reparaciones están abiertas?',
                             'Hazme un informe del historial del equipo EQ-00057',
                             'Excel de las laptops con menos de 8 GB de RAM',
+                            'Gráfico de los equipos por estado',
                             '¿Qué laptops habría que renovar?',
                         ] as $ejemplo)
                             <button type="button" wire:click="$set('pregunta', @js($ejemplo))" x-on:click="$nextTick(() => $refs.entrada.focus())"
@@ -83,6 +84,15 @@
                     ])>
                         @if ($m['rol'] === 'bot')
                             <div class="cerberus-bot-md">{!! \Illuminate\Support\Str::markdown($m['texto'], ['html_input' => 'escape', 'allow_unsafe_links' => false]) !!}</div>
+                            @foreach ($m['graficos'] ?? [] as $g => $grafico)
+                                <div class="mt-2 rounded-lg border border-gray-200 dark:border-cerberus-steel bg-gray-50 dark:bg-cerberus-dark p-2"
+                                     wire:key="graf-{{ $i }}-{{ $g }}" wire:ignore>
+                                    <p class="text-xs font-semibold text-gray-700 dark:text-white mb-1">{{ $grafico['titulo'] }}</p>
+                                    <div x-data="graficoBot(@js($grafico))" style="height: {{ ($grafico['tipo'] === 'barras' && count($grafico['labels']) > 6) ? max(160, count($grafico['labels']) * 22) : 190 }}px">
+                                        <canvas x-ref="lienzo"></canvas>
+                                    </div>
+                                </div>
+                            @endforeach
                             @foreach ($m['adjuntos'] ?? [] as $adj)
                                 <a href="{{ $adj['url'] }}" target="_blank"
                                     class="mt-2 flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition

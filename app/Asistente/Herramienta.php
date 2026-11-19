@@ -90,6 +90,18 @@ abstract class Herramienta
         return \Illuminate\Support\Carbon::parse($valor)->format($conHora ? 'd/m/Y H:i' : 'd/m/Y');
     }
 
+    /**
+     * Ids de las categorías que corresponden a lo que pidió la IA: si hay una
+     * con ese nombre exacto ("Laptop") solo esa —no "Adaptador Laptop"—; si
+     * no, las que lo contienen.
+     */
+    protected function idsCategoria(string $texto): array
+    {
+        $exacta = \App\Models\CategoriaEquipo::whereRaw('LOWER(nombre) = ?', [mb_strtolower(trim($texto))])->pluck('id');
+
+        return ($exacta->isNotEmpty() ? $exacta : \App\Models\CategoriaEquipo::where('nombre', 'like', $this->like($texto))->pluck('id'))->all();
+    }
+
     /** "%texto%" escapando los comodines de LIKE. */
     protected function like(string $texto): string
     {

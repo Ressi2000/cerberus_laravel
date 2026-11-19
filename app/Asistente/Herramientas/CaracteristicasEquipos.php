@@ -41,7 +41,7 @@ class CaracteristicasEquipos extends Herramienta
     {
         $ocultas = Caracteristicas::ocultas();
         $categorias = CategoriaEquipo::query()
-            ->when($args['categoria'] ?? null, fn ($q, $c) => $q->where('nombre', 'like', $this->like($c)))
+            ->when($args['categoria'] ?? null, fn ($q, $c) => $q->whereIn('id', $this->idsCategoria($c)))
             ->with(['atributos' => fn ($q) => $q->whereNotIn('id', $ocultas)->orderBy('orden')])
             ->orderBy('nombre')->get();
 

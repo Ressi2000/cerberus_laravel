@@ -23,7 +23,7 @@ return [
         // Reintentos cuando Gemini responde "saturado" (503) y espera entre ellos.
         'reintentos' => 2,
         'espera_ms'  => 1500,
-        'url'     => 'https://generativelanguage.googleapis.com/v1beta',
+        'url'     => env('GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'timeout' => 60,
     ],
 

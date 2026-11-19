@@ -66,10 +66,11 @@ class Gemini implements ProveedorIA
                 $args   = $privacidad->revelar((array) ($parte['functionCall']['args'] ?? []));
                 $resultado = $this->herramientas->ejecutar($nombre, $actor, $args);
 
-                // "_adjunto" (ej. el enlace de un informe) es para la pantalla, no para la IA.
+                // "_adjunto" (enlace de un informe) y "_grafico" son para la pantalla, no para la IA.
                 $adjunto = $resultado['datos']['_adjunto'] ?? null;
-                unset($resultado['datos']['_adjunto']);
-                $usadas[] = array_filter(['nombre' => $nombre, 'args' => $args, 'ok' => $resultado['ok'], 'adjunto' => $adjunto], fn ($v) => $v !== null);
+                $grafico = $resultado['datos']['_grafico'] ?? null;
+                unset($resultado['datos']['_adjunto'], $resultado['datos']['_grafico']);
+                $usadas[] = array_filter(['nombre' => $nombre, 'args' => $args, 'ok' => $resultado['ok'], 'adjunto' => $adjunto, 'grafico' => $grafico], fn ($v) => $v !== null);
 
                 $partes[] = ['functionResponse' => array_filter([
                     'id'       => $parte['functionCall']['id'] ?? null,
