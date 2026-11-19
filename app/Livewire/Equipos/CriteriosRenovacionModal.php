@@ -64,7 +64,6 @@ class CriteriosRenovacionModal extends Component
             'edad_obsoleto'           => $c->edad_obsoleto,
             'intel_generacion_minima' => $c->intel_generacion_minima,
             'ryzen_serie_minima'      => $c->ryzen_serie_minima,
-            'gama_basica'             => $c->gama_basica,
             'ram_minima_gb'           => $c->ram_minima_gb,
             'ram_tipos_obsoletos'     => implode(', ', $c->ram_tipos_obsoletos ?? []),
             'requiere_ssd'            => (bool) $c->requiere_ssd,
@@ -131,7 +130,6 @@ class CriteriosRenovacionModal extends Component
             'f.edad_obsoleto'           => 'required|integer|min:1|max:40|gte:f.edad_revisar',
             'f.intel_generacion_minima' => 'required|integer|min:1|max:15',
             'f.ryzen_serie_minima'      => 'required|integer|min:1|max:9',
-            'f.gama_basica'             => 'required|in:' . implode(',', array_keys(CriterioRenovacion::GAMA_BASICA)),
             'f.ram_minima_gb'           => 'required|integer|min:1|max:4096',
             'f.disco_minimo_gb'         => 'required|integer|min:1|max:100000',
             'f.reparaciones_max_12m'    => 'required|integer|min:1|max:50',
@@ -154,7 +152,6 @@ class CriteriosRenovacionModal extends Component
             'edad_obsoleto'           => (int) $this->f['edad_obsoleto'],
             'intel_generacion_minima' => (int) $this->f['intel_generacion_minima'],
             'ryzen_serie_minima'      => (int) $this->f['ryzen_serie_minima'],
-            'gama_basica'             => $this->f['gama_basica'],
             'ram_minima_gb'           => (int) $this->f['ram_minima_gb'],
             'ram_tipos_obsoletos'     => collect(explode(',', (string) $this->f['ram_tipos_obsoletos']))
                 ->map(fn ($t) => strtoupper(trim($t)))->filter()->unique()->values()->all(),

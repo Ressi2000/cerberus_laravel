@@ -38,7 +38,6 @@ class CriterioRenovacion extends Model
         'edad_obsoleto'           => 8,
         'intel_generacion_minima' => 8,
         'ryzen_serie_minima'      => 2,
-        'gama_basica'             => 'revisar',
         'ram_minima_gb'           => 8,
         'ram_tipos_obsoletos'     => ['DDR', 'DDR2'],
         'requiere_ssd'            => true,
@@ -47,16 +46,10 @@ class CriterioRenovacion extends Model
         'so_sin_soporte'          => ['XP', 'Vista', '7', '8', '8.1', '10'],
     ];
 
-    const GAMA_BASICA = [
-        'ignorar'  => 'No tomarla en cuenta',
-        'revisar'  => 'Marcar "por revisar"',
-        'obsoleto' => 'Considerarla obsoleta',
-    ];
-
     protected $fillable = [
         'categoria_id', 'evaluar',
         'atributo_procesador_id', 'atributo_ram_id', 'atributo_disco_id', 'atributo_so_id',
-        'edad_revisar', 'edad_obsoleto', 'intel_generacion_minima', 'ryzen_serie_minima', 'gama_basica',
+        'edad_revisar', 'edad_obsoleto', 'intel_generacion_minima', 'ryzen_serie_minima',
         'ram_minima_gb', 'ram_tipos_obsoletos', 'requiere_ssd', 'disco_minimo_gb', 'reparaciones_max_12m',
         'so_sin_soporte', 'actualizado_por',
     ];

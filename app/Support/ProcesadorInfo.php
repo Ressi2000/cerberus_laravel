@@ -8,7 +8,8 @@ namespace App\Support;
  * "AMD Ryzen 5 3500U", "Pentium(R) CPU G645T"…).
  *
  * - marca:       intel | amd | apple | null
- * - linea:       core | ultra | ryzen | gama_basica | antiguo | servidor | apple | null
+ * - linea:       core | ultra | ryzen | sin_generacion | antiguo | servidor | apple | null
+ *                (sin_generacion: Celeron, Pentium, Atom, Athlon — su nombre no dice la generación)
  * - generacion:  Intel: generación (2, 3… 14; Core Ultra = 15). AMD Ryzen: serie (1, 2… 9).
  * - anio:        año aproximado de lanzamiento (para estimar la edad del equipo)
  * - nombre:      cómo mostrarlo ("Intel Core i5 · 11.ª gen")
@@ -81,9 +82,9 @@ final class ProcesadorInfo
             return new self($original, 'intel', 'servidor', null, null, 'Intel Xeon');
         }
 
-        // ── Intel gama básica ────────────────────────────────────────────────
+        // ── Intel Celeron/Pentium/Atom: el nombre no dice la generación ────────────────────────────────────────────
         if (preg_match('/CELERON|PENTIUM|ATOM|INTEL ?N\d{2,3}\b/', $t)) {
-            return new self($original, 'intel', 'gama_basica', null, null, 'Intel gama básica (Celeron/Pentium/Atom)');
+            return new self($original, 'intel', 'sin_generacion', null, null, 'Intel Celeron/Pentium/Atom');
         }
 
         // ── AMD Ryzen ────────────────────────────────────────────────────────
@@ -102,9 +103,9 @@ final class ProcesadorInfo
             return new self($original, 'amd', 'antiguo', null, 2012, 'AMD (anterior a Ryzen)');
         }
 
-        // ── AMD gama básica moderna (Athlon Silver/Gold 3000…) ───────────────
+        // ── AMD Athlon moderno (Silver/Gold 3000…) ──────────────────────────
         if (str_contains($t, 'ATHLON')) {
-            return new self($original, 'amd', 'gama_basica', null, preg_match('/\b3\d{3}/', $t) ? 2020 : null, 'AMD Athlon (gama básica)');
+            return new self($original, 'amd', 'sin_generacion', null, preg_match('/\b3\d{3}/', $t) ? 2020 : null, 'AMD Athlon');
         }
 
         if (str_contains($t, 'EPYC') || str_contains($t, 'OPTERON')) {

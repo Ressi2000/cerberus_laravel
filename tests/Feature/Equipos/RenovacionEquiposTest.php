@@ -107,7 +107,7 @@ class RenovacionEquiposTest extends TestCase
         $casos = [
             'i5-1135G7 @ 2.40GHz' => ['core', 11], 'Intel Core i3 2328M 2.20GHz' => ['core', 2], 'i7-1255U, 2611MHz' => ['core', 12],
             'Intel Core i5-10210U' => ['core', 10], 'I5-2450M 2.50 GHZ' => ['core', 2], 'Ultra 7 155U' => ['ultra', 15],
-            'AMD Ryzen 5 3500U' => ['ryzen', 3], 'Pentium(R) CPU G645T' => ['gama_basica', null], 'AMD A8-6410' => ['antiguo', null],
+            'AMD Ryzen 5 3500U' => ['ryzen', 3], 'Pentium(R) CPU G645T' => ['sin_generacion', null], 'AMD A8-6410' => ['antiguo', null],
             'Core 2 Duo E8400' => ['antiguo', null], 'Intel Xeon E5-2620' => ['servidor', null], 'sss' => [null, null],
         ];
         foreach ($casos as $texto => [$linea, $gen]) {

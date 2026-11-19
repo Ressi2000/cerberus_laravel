@@ -114,7 +114,7 @@ class RenovacionService
             'ultra'   => true,
             'ryzen'   => $cpu->generacion >= $c->ryzen_serie_minima,
             'antiguo' => false,
-            default   => null,   // gama básica, servidor, Apple o no reconocido
+            default   => null,   // Celeron/Pentium/Athlon (su nombre no dice la generación), servidor, Apple o no reconocido
         };
 
         if ($atributos['procesador']) {
@@ -127,13 +127,6 @@ class RenovacionService
 
         if ($cpuW11 === false) {
             $obsoleto[] = "Procesador {$cpu->nombre}: por debajo del mínimo (Intel {$c->intel_generacion_minima}.ª gen / Ryzen {$c->ryzen_serie_minima}000), no cumple los requisitos de Windows 11.";
-        }
-        if ($cpu->linea === 'gama_basica') {
-            match ($c->gama_basica) {
-                'obsoleto' => $obsoleto[] = "Procesador de gama básica ({$cpu->nombre}).",
-                'revisar'  => $revisar[]  = "Procesador de gama básica ({$cpu->nombre}): rinde poco para trabajo de oficina exigente.",
-                default    => null,
-            };
         }
 
         // ── Edad ────────────────────────────────────────────────────────────

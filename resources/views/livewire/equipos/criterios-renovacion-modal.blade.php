@@ -47,12 +47,11 @@
                         {{-- Procesador --}}
                         <div class="space-y-2">
                             <p class="{{ $seccion }}">Procesador</p>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
                                 <x-form.input label="Intel: generación mínima" type="number" wire:model="f.intel_generacion_minima" :error="$errors->first('f.intel_generacion_minima')" />
                                 <x-form.input label="AMD Ryzen: serie mínima" type="number" wire:model="f.ryzen_serie_minima" :error="$errors->first('f.ryzen_serie_minima')" />
-                                <x-form.select label="Gama básica (Celeron, Pentium, Athlon)" placeholder="Elige…" :options="\App\Models\CriterioRenovacion::GAMA_BASICA" wire:model="f.gama_basica" />
                             </div>
-                            <p class="{{ $ayuda }}">Sugerido: Intel 8.ª gen y Ryzen serie 2000, lo mínimo que exige Windows 11. Por debajo, el equipo se marca obsoleto.</p>
+                            <p class="{{ $ayuda }}">Sugerido: Intel 8.ª gen y Ryzen serie 2000, lo mínimo que exige Windows 11. Por debajo, el equipo se marca obsoleto. Celeron, Pentium y Athlon no dicen su generación: se evalúan por lo demás.</p>
                         </div>
 
                         {{-- Edad --}}
