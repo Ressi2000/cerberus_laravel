@@ -32,7 +32,7 @@ class ComponenteAlmacenPolicy
     public function view(User $user, ComponenteAlmacen $componente): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $componente->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $componente->empresa_id;
     }
 
     public function create(User $user): bool
@@ -43,7 +43,7 @@ class ComponenteAlmacenPolicy
     public function update(User $user, ComponenteAlmacen $componente): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $componente->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $componente->empresa_id;
     }
 
     public function delete(User $user, ComponenteAlmacen $componente): bool
@@ -55,6 +55,6 @@ class ComponenteAlmacenPolicy
     public function registrarMovimiento(User $user, ComponenteAlmacen $componente): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $componente->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $componente->empresa_id;
     }
 }

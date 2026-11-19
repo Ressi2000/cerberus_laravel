@@ -30,7 +30,7 @@ class DepositoPolicy
     public function view(User $user, Deposito $deposito): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $deposito->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $deposito->empresa_id;
     }
 
     public function create(User $user): bool

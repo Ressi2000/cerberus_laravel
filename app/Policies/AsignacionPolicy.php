@@ -63,7 +63,7 @@ class AsignacionPolicy
     public function view(User $user, Asignacion $asignacion): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $asignacion->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $asignacion->empresa_id;
     }
 
     /**
@@ -83,7 +83,7 @@ class AsignacionPolicy
     public function devolver(User $user, Asignacion $asignacion): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $asignacion->empresa_id
+            && (int) $user->empresa_activa_id === (int) $asignacion->empresa_id
             && $asignacion->estado !== 'Cerrada';
     }
 

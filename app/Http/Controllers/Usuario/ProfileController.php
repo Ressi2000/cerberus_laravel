@@ -61,29 +61,70 @@ class ProfileController extends Controller
         }
     }
 
+    /**
+     * Cambiar la foto de perfil. La página ya la achica en el navegador; si
+     * llega grande igual (o sin JavaScript), se achica aquí a 600 px. Si el
+     * servidor la rechazó por tamaño antes de llegar a Laravel, se dice claro.
+     */
     public function updatePhoto(Request $request)
     {
-        try {
-            $request->validate([
-                'foto' => ['required', 'image', 'max:2048'],
-            ]);
+        // PHP rechazó el archivo por su límite (upload_max_filesize / post_max_size).
+        $error = $_FILES['foto']['error'] ?? null;
+        if (in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
+            || ($request->isMethod('put') && empty($_FILES) && (int) $request->server('CONTENT_LENGTH') > 0)) {
+            return back()->withErrors(['photo' => 'La foto pesa más de lo que permite el servidor (' . ini_get('upload_max_filesize') . '). Elige una más liviana.']);
+        }
 
+        $request->validate([
+            'foto' => ['required', 'image', 'max:10240'],
+        ], [
+            'foto.required' => 'Elige una foto.',
+            'foto.image'    => 'El archivo tiene que ser una imagen (JPG, PNG…).',
+            'foto.max'      => 'La foto no puede pesar más de 10 MB.',
+            'foto.uploaded' => 'No se pudo subir la foto. Intenta con una más liviana.',
+        ]);
+
+        try {
             $user = $request->user();
+            $path = $this->guardarAchicada($request->file('foto'));
 
             if ($user->foto) {
                 Storage::disk('public')->delete($user->foto);
             }
-
-            $path = $request->file('foto')->store('users', 'public');
-
-            $user->update([
-                'foto' => $path,
-            ]);
+            $user->update(['foto' => $path]);
 
             return back()->with(['success' => 'Foto actualizada correctamente.', 'photo-updated' => true]);
-        } catch (\Exception $e) {
-            return back()->withErrors(['photo' => 'Error al actualizar la foto: ' . $e->getMessage()]);
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['photo' => 'No se pudo guardar la foto. Intenta de nuevo.']);
         }
+    }
+
+    /** Guarda la foto en storage/app/public/users, achicada a 600 px de lado si hace falta. */
+    private function guardarAchicada(\Illuminate\Http\UploadedFile $archivo): string
+    {
+        $info = @getimagesize($archivo->getRealPath());
+
+        if ($info && function_exists('imagecreatefromstring') && max($info[0], $info[1]) > 600) {
+            $origen = @imagecreatefromstring(file_get_contents($archivo->getRealPath()));
+            if ($origen) {
+                $escala = 600 / max($info[0], $info[1]);
+                $destino = imagescale($origen, (int) round($info[0] * $escala), (int) round($info[1] * $escala));
+                ob_start();
+                imagejpeg($destino, null, 88);
+                $jpeg = ob_get_clean();
+                imagedestroy($origen);
+                imagedestroy($destino);
+
+                $path = 'users/' . \Illuminate\Support\Str::random(40) . '.jpg';
+                Storage::disk('public')->put($path, $jpeg);
+
+                return $path;
+            }
+        }
+
+        return $archivo->store('users', 'public');
     }
 
     public function profileActivity(Request $request): View

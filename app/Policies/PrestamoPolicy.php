@@ -25,7 +25,7 @@ class PrestamoPolicy
     public function view(User $user, Prestamo $prestamo): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $prestamo->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $prestamo->empresa_id;
     }
 
     public function create(User $user): bool
@@ -36,14 +36,14 @@ class PrestamoPolicy
     public function devolver(User $user, Prestamo $prestamo): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $prestamo->empresa_id
+            && (int) $user->empresa_activa_id === (int) $prestamo->empresa_id
             && $prestamo->estado !== 'Cerrado';
     }
 
     public function renovar(User $user, Prestamo $prestamo): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $prestamo->empresa_id
+            && (int) $user->empresa_activa_id === (int) $prestamo->empresa_id
             && $prestamo->estado !== 'Cerrado';
     }
 

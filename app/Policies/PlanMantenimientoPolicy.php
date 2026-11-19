@@ -25,7 +25,7 @@ class PlanMantenimientoPolicy
     public function view(User $user, PlanMantenimiento $plan): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $plan->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $plan->empresa_id;
     }
 
     public function create(User $user): bool
@@ -36,12 +36,12 @@ class PlanMantenimientoPolicy
     public function update(User $user, PlanMantenimiento $plan): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $plan->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $plan->empresa_id;
     }
 
     public function delete(User $user, PlanMantenimiento $plan): bool
     {
         return $user->hasRole('Analista')
-            && $user->empresa_activa_id === $plan->empresa_id;
+            && (int) $user->empresa_activa_id === (int) $plan->empresa_id;
     }
 }
