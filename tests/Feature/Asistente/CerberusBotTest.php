@@ -226,6 +226,27 @@ class CerberusBotTest extends TestCase
     }
 
     /** @test */
+    public function una_consulta_sin_parametros_se_reenvia_como_objeto_vacio(): void
+    {
+        // Gemini manda "args": {} y PHP lo lee como []: al reenviarlo debe volver a ser {}.
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push('{"candidates":[{"content":{"role":"model","parts":[{"functionCall":{"name":"resumen_inventario","args":{}}}]}}]}')
+            ->push(self::texto('Hay 1 equipo.')),
+        ]);
+
+        $r = app(Asistente::class)->preguntar($this->admin, '¿Cuántos equipos hay?');
+
+        $this->assertSame('Hay 1 equipo.', $r->texto);
+        $cuerpo = Http::recorded()[1][0]->body();
+        $this->assertStringContainsString('"args":{}', $cuerpo);
+        $this->assertStringNotContainsString('"args":[]', $cuerpo);
+
+        // Y queda registrado cuánto tardó cada paso.
+        $tiempos = AsistenteConsulta::sole()->tiempos;
+        $this->assertSame(['IA gemini-prueba', 'consulta resumen_inventario', 'IA gemini-prueba'], array_column($tiempos, 'que'));
+    }
+
+    /** @test */
     public function la_memoria_se_recorta_al_inicio_de_una_pregunta(): void
     {
         config(['asistente.max_turnos_memoria' => 2]);

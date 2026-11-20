@@ -27,7 +27,7 @@ return [
         'razonamiento' => env('GEMINI_RAZONAMIENTO', 'low'),
         'url'     => env('GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         // Segundos máximos por llamada a Gemini.
-        'timeout' => (int) env('GEMINI_TIMEOUT', 30),
+        'timeout' => (int) env('GEMINI_TIMEOUT', 45),
         // Si la red de la empresa sale a internet por un proxy: http://usuario:clave@proxy:puerto
         'proxy'   => env('GEMINI_PROXY'),
     ],
@@ -43,7 +43,7 @@ return [
     // Segundos máximos para responder una pregunta completa (todas las
     // llamadas). Debe quedar por debajo del límite de PHP (max_execution_time):
     // Cerberus lo amplía solo para el chat a este valor + 15 s.
-    'tiempo_maximo' => (int) env('ASISTENTE_TIEMPO_MAXIMO', 75),
+    'tiempo_maximo' => (int) env('ASISTENTE_TIEMPO_MAXIMO', 100),
 
     // Cuántas consultas puede encadenar la IA para responder una pregunta.
     'max_pasos' => 8,

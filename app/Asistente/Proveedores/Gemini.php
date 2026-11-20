@@ -34,7 +34,8 @@ class Gemini implements ProveedorIA
 
         $this->modeloUsado = null;
         $this->sinRazonamiento = false;
-        $this->fin = microtime(true) + (int) config('asistente.tiempo_maximo', 75);
+        $this->tiempos = [];
+        $this->fin = microtime(true) + (int) config('asistente.tiempo_maximo', 100);
         $contenidos = $historial;
         $contenidos[] = ['role' => 'user', 'parts' => [['text' => $pregunta]]];
         $usadas = [];
@@ -67,7 +68,9 @@ class Gemini implements ProveedorIA
                 $nombre = $parte['functionCall']['name'] ?? '';
                 // La IA pide con códigos ("Persona-12"); la consulta se hace con el nombre real…
                 $args   = $privacidad->revelar((array) ($parte['functionCall']['args'] ?? []));
+                $t0 = microtime(true);
                 $resultado = $this->herramientas->ejecutar($nombre, $actor, $args);
+                $this->tiempos[] = ['que' => "consulta {$nombre}", 'ms' => (int) ((microtime(true) - $t0) * 1000)];
 
                 // "_adjunto" (enlace de un informe) y "_grafico" son para la pantalla, no para la IA.
                 $adjunto = $resultado['datos']['_adjunto'] ?? null;
@@ -119,6 +122,14 @@ class Gemini implements ProveedorIA
     /** Modelo que respondió la última llamada (el principal o el de respaldo). */
     private ?string $modeloUsado = null;
 
+    /** Cuánto tardó cada llamada a la IA y cada consulta (para la bitácora). */
+    private array $tiempos = [];
+
+    public function tiempos(): array
+    {
+        return $this->tiempos;
+    }
+
     /** Momento (microtime) en que se acaba el tiempo para responder la pregunta. */
     private float $fin = 0;
 
@@ -160,9 +171,12 @@ class Gemini implements ProveedorIA
                     break 2;
                 }
 
+                $t0 = microtime(true);
                 try {
                     $http = $this->enviar($config, $modelo, $contenidos, $instrucciones, (int) min($config['timeout'] ?? 30, $restante - 2));
+                    $this->tiempos[] = ['que' => "IA {$modelo}", 'ms' => (int) ((microtime(true) - $t0) * 1000), 'status' => $http->status()];
                 } catch (ConnectionException $e) {
+                    $this->tiempos[] = ['que' => "IA {$modelo}", 'ms' => (int) ((microtime(true) - $t0) * 1000), 'status' => 'sin respuesta'];
                     if (! preg_match('/timed out|error 28/i', $e->getMessage())) {
                         throw $this->sinConexion($e);
                     }
@@ -217,6 +231,32 @@ class Gemini implements ProveedorIA
         }, $detalle);
     }
 
+    /**
+     * Los objetos vacíos que devuelve Gemini (ej. "args": {} de una consulta
+     * sin parámetros) llegan a PHP como [] y, al reenviarlos, JSON los
+     * escribiría como lista: Google rechaza la conversación con un 400.
+     */
+    public static function normalizar(array $contenidos): array
+    {
+        foreach ($contenidos as &$c) {
+            if (! isset($c['parts']) || ! is_array($c['parts'])) {
+                continue;
+            }
+            foreach ($c['parts'] as &$parte) {   // por referencia: no usar "?? []" aquí (sería una copia)
+                if (isset($parte['functionCall']) && empty($parte['functionCall']['args'])) {
+                    $parte['functionCall']['args'] = new \stdClass;
+                }
+                if (isset($parte['functionResponse']) && empty($parte['functionResponse']['response'])) {
+                    $parte['functionResponse']['response'] = new \stdClass;
+                }
+            }
+            unset($parte);
+        }
+        unset($c);
+
+        return $contenidos;
+    }
+
     public static function claveSaturado(string $modelo): string
     {
         return "asistente:gemini-saturado:{$modelo}";
@@ -234,7 +274,7 @@ class Gemini implements ProveedorIA
             return $this->cliente($config)->timeout(max(5, $timeout))
                 ->post("{$config['url']}/models/{$modelo}:generateContent", array_filter([
                     'systemInstruction' => ['parts' => [['text' => $instrucciones]]],
-                    'contents'          => $contenidos,
+                    'contents'          => self::normalizar($contenidos),
                     'tools'             => [['functionDeclarations' => $this->declaraciones()]],
                     'generationConfig'  => $generacion ?: null,
                 ]));
