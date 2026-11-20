@@ -50,6 +50,9 @@ class Asistente
         }
         RateLimiter::hit($clave, 3600);
 
+        // El chat puede necesitar más que el límite normal de PHP (60 s en XAMPP).
+        @set_time_limit((int) config('asistente.tiempo_maximo', 75) + 15);
+
         $inicio = microtime(true);
         $registro = fn (array $datos) => AsistenteConsulta::create([
             'user_id'     => $actor->id,

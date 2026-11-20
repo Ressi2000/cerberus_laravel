@@ -8,6 +8,7 @@ use App\Asistente\Privacidad;
 use App\Asistente\Respuesta;
 use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -32,12 +33,14 @@ class Gemini implements ProveedorIA
         }
 
         $this->modeloUsado = null;
+        $this->sinRazonamiento = false;
+        $this->fin = microtime(true) + (int) config('asistente.tiempo_maximo', 75);
         $contenidos = $historial;
         $contenidos[] = ['role' => 'user', 'parts' => [['text' => $pregunta]]];
         $usadas = [];
 
         for ($paso = 0; $paso < config('asistente.max_pasos', 8); $paso++) {
-            $respuesta = $this->llamar($config, $contenidos, $instrucciones);
+            $respuesta = $this->llamar($config, $contenidos, $instrucciones);   // controla el tiempo que queda
             $contenido = $respuesta['candidates'][0]['content'] ?? null;
 
             if (! $contenido || empty($contenido['parts'])) {
@@ -116,44 +119,86 @@ class Gemini implements ProveedorIA
     /** Modelo que respondió la última llamada (el principal o el de respaldo). */
     private ?string $modeloUsado = null;
 
+    /** Momento (microtime) en que se acaba el tiempo para responder la pregunta. */
+    private float $fin = 0;
+
+    /** true si el modelo rechazó la configuración de razonamiento: se manda sin ella. */
+    private bool $sinRazonamiento = false;
+
     /**
-     * Llama a Gemini. Si el modelo está saturado (500/503), reintenta unas
-     * veces y, si sigue así (o el modelo no existe), prueba el de respaldo.
+     * Llama a Gemini cuidando el tiempo:
+     *  - Si el principal está saturado (5xx) o no responde a tiempo, pasa de
+     *    inmediato al de respaldo y recuerda por unos minutos que está
+     *    saturado, para no volver a esperarlo en las siguientes preguntas.
+     *  - Cada llamada usa solo el tiempo que queda: nunca se pasa del límite
+     *    de PHP y siempre termina con un mensaje claro.
      */
     private function llamar(array $config, array $contenidos, string $instrucciones): array
     {
-        $modelos = array_values(array_unique(array_filter([
-            $this->modeloUsado ?? $config['modelo'],
-            $config['modelo_respaldo'] ?? null,
-        ])));
+        $principal = $this->modeloUsado ?? $config['modelo'];
+        $respaldo  = $config['modelo_respaldo'] ?? null;
+        $modelos = array_values(array_unique(array_filter([$principal, $respaldo])));
+
+        // Si el principal estuvo saturado hace poco, se empieza por el respaldo.
+        if (count($modelos) > 1 && Cache::get(self::claveSaturado($modelos[0]))) {
+            $modelos = array_reverse($modelos);
+        }
+
         $http = null;
+        $tiempoAgotado = false;
 
         foreach ($modelos as $i => $modelo) {
-            for ($intento = 0; $intento <= ($config['reintentos'] ?? 2); $intento++) {
+            $esUltimo = ! isset($modelos[$i + 1]);
+            // Al último modelo se le da un segundo intento; a los demás no, se pasa al siguiente.
+            for ($intento = 0; $intento < ($esUltimo ? 2 : 1); $intento++) {
                 if ($intento > 0) {
-                    usleep((int) (($config['espera_ms'] ?? 1500) * 1000 * $intento));
+                    usleep((int) ($config['espera_ms'] ?? 1000) * 1000);
+                }
+                $restante = $this->fin - microtime(true);
+                if ($restante < 4) {
+                    $tiempoAgotado = true;
+                    break 2;
                 }
 
-                $http = $this->enviar($config, $modelo, $contenidos, $instrucciones);
+                try {
+                    $http = $this->enviar($config, $modelo, $contenidos, $instrucciones, (int) min($config['timeout'] ?? 30, $restante - 2));
+                } catch (ConnectionException $e) {
+                    if (! preg_match('/timed out|error 28/i', $e->getMessage())) {
+                        throw $this->sinConexion($e);
+                    }
+                    $tiempoAgotado = true;      // tardó demasiado: se prueba el siguiente si queda tiempo
+                    Cache::put(self::claveSaturado($modelo), true, now()->addMinutes(5));
+                    continue;
+                }
+                $tiempoAgotado = false;
 
+                // Algunos modelos no aceptan el nivel de razonamiento: se reintenta sin él.
+                if ($http->status() === 400 && ! $this->sinRazonamiento && preg_match('/thinking/i', $http->body())) {
+                    $this->sinRazonamiento = true;
+                    $intento--;
+                    continue;
+                }
                 if ($http->successful()) {
                     $this->modeloUsado = $modelo;
 
                     return $http->json() ?? [];
                 }
                 if (! in_array($http->status(), [500, 502, 503, 504], true)) {
-                    break; // reintentar no ayuda (clave mala, límite, modelo inexistente…)
+                    break 2; // reintentar no ayuda (clave mala, límite, modelo inexistente…)
                 }
-            }
-
-            $siguiente = isset($modelos[$i + 1]) && in_array($http->status(), [404, 500, 502, 503, 504], true);
-            Log::warning('Cerberus Bot: Gemini respondió con error', [
-                'modelo' => $modelo, 'status' => $http->status(), 'body' => mb_substr($http->body(), 0, 1000),
-            ]);
-            if (! $siguiente) {
-                break;
+                Cache::put(self::claveSaturado($modelo), true, now()->addMinutes(5));
+                Log::warning('Cerberus Bot: Gemini saturado', ['modelo' => $modelo, 'status' => $http->status()]);
             }
         }
+
+        if ($tiempoAgotado || ! $http) {
+            throw new AsistenteException(
+                'El asistente tardó demasiado en responder. Intenta de nuevo en un momento (o con una pregunta más concreta).',
+                'Gemini no respondió dentro del tiempo (asistente.tiempo_maximo = ' . config('asistente.tiempo_maximo') . ' s).'
+            );
+        }
+
+        Log::warning('Cerberus Bot: Gemini respondió con error', ['status' => $http->status(), 'body' => mb_substr($http->body(), 0, 1000)]);
 
         $status = $http->status();
         $detalle = match (true) {
@@ -161,7 +206,7 @@ class Gemini implements ProveedorIA
             $status === 404 => "El modelo «{$config['modelo']}» no existe o no está disponible. Revisa GEMINI_MODEL.",
             $status === 429 => 'Gemini: se alcanzó el límite de uso de la cuenta.',
             $status >= 500  => 'Gemini está saturado (pasa a menudo en el plan gratuito).',
-            default         => "Gemini rechazó la consulta (error {$status}).",
+            default         => "Gemini rechazó la consulta (error {$status}): " . mb_substr($http->json('error.message') ?? '', 0, 200),
         };
 
         throw new AsistenteException(match (true) {
@@ -172,24 +217,40 @@ class Gemini implements ProveedorIA
         }, $detalle);
     }
 
-    private function enviar(array $config, string $modelo, array $contenidos, string $instrucciones): \Illuminate\Http\Client\Response
+    public static function claveSaturado(string $modelo): string
     {
+        return "asistente:gemini-saturado:{$modelo}";
+    }
+
+    private function enviar(array $config, string $modelo, array $contenidos, string $instrucciones, int $timeout): \Illuminate\Http\Client\Response
+    {
+        $generacion = [];
+        if (! $this->sinRazonamiento && ! empty($config['razonamiento'])) {
+            // Razonamiento bajo: respuestas mucho más rápidas para consultas como estas.
+            $generacion['thinkingConfig'] = ['thinkingLevel' => $config['razonamiento']];
+        }
+
         try {
-            return $this->cliente($config)
-                ->post("{$config['url']}/models/{$modelo}:generateContent", [
+            return $this->cliente($config)->timeout(max(5, $timeout))
+                ->post("{$config['url']}/models/{$modelo}:generateContent", array_filter([
                     'systemInstruction' => ['parts' => [['text' => $instrucciones]]],
                     'contents'          => $contenidos,
                     'tools'             => [['functionDeclarations' => $this->declaraciones()]],
-                    'generationConfig'  => ['temperature' => 0.2],
-                ]);
-        } catch (ConnectionException|\Illuminate\Http\Client\RequestException|\GuzzleHttp\Exception\TransferException $e) {
-            Log::warning('Cerberus Bot: sin conexión con Gemini', ['error' => $e->getMessage()]);
-
-            throw new AsistenteException(
-                'No pude conectarme con el servicio del asistente. Intenta en un momento.',
-                self::explicarFalloDeConexion($e->getMessage()),
-            );
+                    'generationConfig'  => $generacion ?: null,
+                ]));
+        } catch (\Illuminate\Http\Client\RequestException|\GuzzleHttp\Exception\TransferException $e) {
+            throw $this->sinConexion($e);
         }
+    }
+
+    private function sinConexion(\Throwable $e): AsistenteException
+    {
+        Log::warning('Cerberus Bot: sin conexión con Gemini', ['error' => $e->getMessage()]);
+
+        return new AsistenteException(
+            'No pude conectarme con el servicio del asistente. Intenta en un momento.',
+            self::explicarFalloDeConexion($e->getMessage()),
+        );
     }
 
     /** Cliente HTTP con la clave y, si la red lo exige, el proxy de la empresa (GEMINI_PROXY). */
