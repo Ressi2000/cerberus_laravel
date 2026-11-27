@@ -155,8 +155,48 @@ class CerberusBotTest extends TestCase
 
         $this->assertSame('Hola desde el respaldo.', $r->texto);
         $this->assertSame('gemini-respaldo', $r->modelo);
-        $this->assertCount(4, Http::recorded()); // 3 intentos al principal + 1 al respaldo
+        $this->assertCount(2, Http::recorded()); // sin esperar al saturado: 1 intento al principal y pasa al respaldo
         $this->assertSame('gemini-respaldo', AsistenteConsulta::sole()->modelo);
+    }
+
+    /** @test */
+    public function recuerda_el_modelo_saturado_y_empieza_por_el_respaldo(): void
+    {
+        Http::fake([
+            '*/models/gemini-prueba:*'   => Http::response(['error' => ['message' => 'overloaded']], 503),
+            '*/models/gemini-respaldo:*' => Http::response(self::texto('Hola.')),
+        ]);
+
+        app(Asistente::class)->preguntar($this->admin, 'Hola');
+        app(Asistente::class)->preguntar($this->admin, 'Hola otra vez');
+
+        // 2 llamadas la primera vez; la segunda va directo al respaldo.
+        $this->assertCount(3, Http::recorded());
+        $this->assertStringContainsString('gemini-respaldo', Http::recorded()[2][0]->url());
+    }
+
+    /** @test */
+    public function pide_razonamiento_bajo_y_si_el_modelo_no_lo_acepta_reintenta_sin_el(): void
+    {
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push(['error' => ['message' => 'thinking_level is not supported for this model']], 400)
+            ->push(self::texto('Hola.')),
+        ]);
+
+        $r = app(Asistente::class)->preguntar($this->admin, 'Hola');
+
+        $this->assertSame('Hola.', $r->texto);
+        $this->assertSame('low', Http::recorded()[0][0]->data()['generationConfig']['thinkingConfig']['thinkingLevel']);
+        $this->assertArrayNotHasKey('generationConfig', Http::recorded()[1][0]->data());
+    }
+
+    /** @test */
+    public function si_gemini_no_responde_a_tiempo_lo_dice_sin_romper_la_pagina(): void
+    {
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 28: Operation timed out after 30001 milliseconds'));
+
+        $this->expectExceptionMessage('tardó demasiado');
+        app(Asistente::class)->preguntar($this->admin, 'Hola');
     }
 
     /** @test */
@@ -183,6 +223,27 @@ class CerberusBotTest extends TestCase
         }
 
         $this->assertStringContainsString('cacert.pem', AsistenteConsulta::sole()->error);
+    }
+
+    /** @test */
+    public function una_consulta_sin_parametros_se_reenvia_como_objeto_vacio(): void
+    {
+        // Gemini manda "args": {} y PHP lo lee como []: al reenviarlo debe volver a ser {}.
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::sequence()
+            ->push('{"candidates":[{"content":{"role":"model","parts":[{"functionCall":{"name":"resumen_inventario","args":{}}}]}}]}')
+            ->push(self::texto('Hay 1 equipo.')),
+        ]);
+
+        $r = app(Asistente::class)->preguntar($this->admin, '¿Cuántos equipos hay?');
+
+        $this->assertSame('Hay 1 equipo.', $r->texto);
+        $cuerpo = Http::recorded()[1][0]->body();
+        $this->assertStringContainsString('"args":{}', $cuerpo);
+        $this->assertStringNotContainsString('"args":[]', $cuerpo);
+
+        // Y queda registrado cuánto tardó cada paso.
+        $tiempos = AsistenteConsulta::sole()->tiempos;
+        $this->assertSame(['IA gemini-prueba', 'consulta resumen_inventario', 'IA gemini-prueba'], array_column($tiempos, 'que'));
     }
 
     /** @test */

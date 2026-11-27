@@ -62,6 +62,19 @@
                                 </ul>
                             </div>
                         @endif
+                        @if ($c->tiempos)
+                            <div>
+                                <p class="text-xs font-semibold uppercase text-gray-500 dark:text-cerberus-light mb-1">Dónde se fue el tiempo</p>
+                                <ul class="space-y-0.5">
+                                    @foreach ($c->tiempos as $t)
+                                        <li class="font-mono text-xs text-gray-600 dark:text-cerberus-light">
+                                            {{ str_pad(number_format(($t['ms'] ?? 0) / 1000, 1), 6, ' ', STR_PAD_LEFT) }} s · {{ $t['que'] ?? '' }}
+                                            @if (isset($t['status']) && $t['status'] !== 200) <span class="text-red-500">({{ $t['status'] }})</span> @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         <p class="text-xs text-gray-400">Modelo: {{ $c->modelo ?? '—' }}</p>
                     </div>
                 @endif

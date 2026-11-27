@@ -50,6 +50,9 @@ class Asistente
         }
         RateLimiter::hit($clave, 3600);
 
+        // El chat puede necesitar más que el límite normal de PHP (60 s en XAMPP).
+        @set_time_limit((int) config('asistente.tiempo_maximo', 100) + 15);
+
         $inicio = microtime(true);
         $registro = fn (array $datos) => AsistenteConsulta::create([
             'user_id'     => $actor->id,
@@ -61,8 +64,11 @@ class Asistente
         // Los nombres de las personas viajan a la IA como "Persona-12".
         $privacidad = Privacidad::desdeConfig();
 
+        $proveedor = $this->proveedor();
+        $tiempos = fn () => method_exists($proveedor, 'tiempos') ? $proveedor->tiempos() : null;
+
         try {
-            $respuesta = $this->proveedor()->responder(
+            $respuesta = $proveedor->responder(
                 $actor,
                 $privacidad->ocultar($pregunta),
                 $this->recortar($historial),
@@ -70,7 +76,7 @@ class Asistente
                 $privacidad,
             );
         } catch (AsistenteException $e) {
-            $registro(['error' => mb_substr($e->detalle ?? $e->getMessage(), 0, 500), 'modelo' => config('asistente.gemini.modelo')]);
+            $registro(['error' => mb_substr($e->detalle ?? $e->getMessage(), 0, 500), 'modelo' => config('asistente.gemini.modelo'), 'tiempos' => $tiempos()]);
             throw $e;
         }
 
@@ -87,6 +93,7 @@ class Asistente
             'herramientas'  => $respuesta->herramientas,
             'sin_respuesta' => $respuesta->sinRespuesta,
             'modelo'        => $respuesta->modelo,
+            'tiempos'       => $tiempos(),
         ]);
 
         return $respuesta;

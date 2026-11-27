@@ -12,11 +12,12 @@ class AsistenteConsulta extends Model
 
     protected $fillable = [
         'user_id', 'empresa_id', 'pregunta', 'respuesta', 'herramientas',
-        'sin_respuesta', 'error', 'modelo', 'duracion_ms',
+        'sin_respuesta', 'error', 'modelo', 'duracion_ms', 'tiempos',
     ];
 
     protected $casts = [
         'herramientas'  => 'array',
+        'tiempos'       => 'array',
         'sin_respuesta' => 'boolean',
     ];
 
