@@ -208,7 +208,7 @@ class User extends Authenticatable
     public function getFotoUrlAttribute()
     {
         if ($this->foto && Storage::disk('public')->exists($this->foto)) {
-            return Storage::url($this->foto);
+            return asset('storage/' . ltrim($this->foto, '/'));
         }
         return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=1B263B&color=A9D6E5&size=128';
     }

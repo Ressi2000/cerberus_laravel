@@ -65,28 +65,49 @@ class ProfileController extends Controller
      * Cambiar la foto de perfil. La página ya la achica en el navegador; si
      * llega grande igual (o sin JavaScript), se achica aquí a 600 px. Si el
      * servidor la rechazó por tamaño antes de llegar a Laravel, se dice claro.
+     * Acepta archivo multipart en "foto" o el respaldo base64 "foto_recortada".
      */
     public function updatePhoto(Request $request)
     {
         // PHP rechazó el archivo por su límite (upload_max_filesize / post_max_size).
         $error = $_FILES['foto']['error'] ?? null;
         if (in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
-            || ($request->isMethod('put') && empty($_FILES) && (int) $request->server('CONTENT_LENGTH') > 0)) {
+            || (empty($_POST) && empty($_FILES) && (int) $request->server('CONTENT_LENGTH') > 0)) {
             return back()->withErrors(['photo' => 'La foto pesa más de lo que permite el servidor (' . ini_get('upload_max_filesize') . '). Elige una más liviana.']);
         }
 
-        $request->validate([
-            'foto' => ['required', 'image', 'max:10240'],
-        ], [
-            'foto.required' => 'Elige una foto.',
-            'foto.image'    => 'El archivo tiene que ser una imagen (JPG, PNG…).',
-            'foto.max'      => 'La foto no puede pesar más de 10 MB.',
-            'foto.uploaded' => 'No se pudo subir la foto. Intenta con una más liviana.',
-        ]);
+        $tieneArchivo = $request->hasFile('foto');
+        $tieneBase64  = $request->filled('foto_recortada');
+
+        if ($tieneArchivo) {
+            $request->validate([
+                'foto' => ['required', 'image', 'max:10240'],
+            ], [
+                'foto.required' => 'Elige una foto.',
+                'foto.image'    => 'El archivo tiene que ser una imagen (JPG, PNG…).',
+                'foto.max'      => 'La foto no puede pesar más de 10 MB.',
+                'foto.uploaded' => 'No se pudo subir la foto. Intenta con una más liviana.',
+            ]);
+        } elseif (! $tieneBase64) {
+            $request->validate([
+                'foto' => ['required', 'image', 'max:10240'],
+            ], [
+                'foto.required' => 'Elige una foto antes de pulsar «Guardar foto».',
+                'foto.image'    => 'El archivo tiene que ser una imagen (JPG, PNG…).',
+                'foto.max'      => 'La foto no puede pesar más de 10 MB.',
+                'foto.uploaded' => 'No se pudo subir la foto. Intenta con una más liviana.',
+            ]);
+        }
 
         try {
             $user = $request->user();
-            $path = $this->guardarAchicada($request->file('foto'));
+            $path = $tieneArchivo
+                ? $this->guardarAchicada($request->file('foto'))
+                : $this->guardarDesdeBase64((string) $request->input('foto_recortada'));
+
+            if (! $path) {
+                return back()->withErrors(['photo' => 'La imagen recortada no es válida. Elige otra foto e intenta de nuevo.']);
+            }
 
             if ($user->foto) {
                 Storage::disk('public')->delete($user->foto);
@@ -101,6 +122,30 @@ class ProfileController extends Controller
         }
     }
 
+    /** Guarda una foto recortada enviada como data URL base64 (respaldo del cropper). */
+    private function guardarDesdeBase64(string $dataUrl): ?string
+    {
+        if (! preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,(.+)$/s', $dataUrl, $m)) {
+            return null;
+        }
+
+        $binario = base64_decode($m[2], true);
+        if ($binario === false || strlen($binario) === 0 || strlen($binario) > 10 * 1024 * 1024) {
+            return null;
+        }
+
+        $info = @getimagesizefromstring($binario);
+        if (! $info) {
+            return null;
+        }
+
+        $ext = $m[1] === 'jpg' ? 'jpg' : $m[1];
+        $path = 'users/' . \Illuminate\Support\Str::random(40) . '.' . $ext;
+        Storage::disk('public')->put($path, $binario);
+
+        return $path;
+    }
+
     /** Guarda la foto en storage/app/public/users, achicada a 600 px de lado si hace falta. */
     private function guardarAchicada(\Illuminate\Http\UploadedFile $archivo): string
     {
@@ -109,18 +154,32 @@ class ProfileController extends Controller
         if ($info && function_exists('imagecreatefromstring') && max($info[0], $info[1]) > 600) {
             $origen = @imagecreatefromstring(file_get_contents($archivo->getRealPath()));
             if ($origen) {
-                $escala = 600 / max($info[0], $info[1]);
-                $destino = imagescale($origen, (int) round($info[0] * $escala), (int) round($info[1] * $escala));
-                ob_start();
-                imagejpeg($destino, null, 88);
-                $jpeg = ob_get_clean();
+                $escala  = 600 / max($info[0], $info[1]);
+                $nuevoAncho = max(1, (int) round($info[0] * $escala));
+                $nuevoAlto  = max(1, (int) round($info[1] * $escala));
+                $destino = @imagescale($origen, $nuevoAncho, $nuevoAlto);
+
+                if ($destino) {
+                    // Rellenar transparencia sobre fondo blanco antes de exportar a JPEG
+                    $final = imagecreatetruecolor($nuevoAncho, $nuevoAlto);
+                    $blanco = imagecolorallocate($final, 255, 255, 255);
+                    imagefill($final, 0, 0, $blanco);
+                    imagecopy($final, $destino, 0, 0, 0, 0, $nuevoAncho, $nuevoAlto);
+
+                    ob_start();
+                    imagejpeg($final, null, 88);
+                    $jpeg = ob_get_clean();
+                    imagedestroy($origen);
+                    imagedestroy($destino);
+                    imagedestroy($final);
+
+                    $path = 'users/' . \Illuminate\Support\Str::random(40) . '.jpg';
+                    Storage::disk('public')->put($path, $jpeg);
+
+                    return $path;
+                }
+
                 imagedestroy($origen);
-                imagedestroy($destino);
-
-                $path = 'users/' . \Illuminate\Support\Str::random(40) . '.jpg';
-                Storage::disk('public')->put($path, $jpeg);
-
-                return $path;
             }
         }
 

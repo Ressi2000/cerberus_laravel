@@ -15,44 +15,53 @@
                 @if (session('photo-updated'))
                     <x-form.success />
                 @endif
-                @if ($errors->has('photo'))
-                    <div class="mb-6 rounded-lg border border-red-500 bg-red-950/40 p-4 text-red-200">
+                @php
+                    $erroresFoto = array_merge($errors->get('photo'), $errors->get('foto'));
+                @endphp
+                @if (! empty($erroresFoto))
+                    <div class="mb-6 rounded-lg border border-red-500 bg-red-50 dark:bg-red-950/40 p-4 text-red-700 dark:text-red-200">
                         <div class="flex items-center gap-2 mb-2">
-                            <span class="material-icons text-red-400">error</span>
+                            <span class="material-icons text-red-500 dark:text-red-400">error</span>
                             <h3 class="font-semibold">Error al actualizar la foto</h3>
                         </div>
                         <ul class="list-disc list-inside text-sm space-y-1">
-                            @foreach ($errors->get('photo') as $error)
+                            @foreach ($erroresFoto as $error)
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
                     </div>
                 @endif
-                <form method="POST" action="{{ route('profile.photo.update') }}" enctype="multipart/form-data"
+                <form method="POST" action="{{ route('profile.photo.store') }}" enctype="multipart/form-data"
                     class="space-y-4">
                     @csrf
-                    @method('PUT')
+                    <input type="hidden" name="foto_recortada" id="fotoRecortadaInput">
 
-                    <div class="flex items-center gap-6">
+                    <div class="flex flex-wrap items-center gap-6">
                         <img id="previewFoto" src="{{ $user->foto_url }}"
                             class="w-24 h-24 rounded-full object-cover border border-cerberus-steel">
 
-                        <label class="cursor-pointer text-cerberus-light hover:text-cerberus-accent">
-                            <span class="material-icons mr-1">upload</span>
-                            Cambiar foto
-                            <input type="file" name="foto" id="fotoInput" class="hidden" accept="image/*">
-                        </label>
-                        <p class="text-xs text-gray-500 dark:text-cerberus-light">Elige la foto, ajústala y luego pulsa «Guardar foto».</p>
+                        <div class="space-y-1.5">
+                            <label class="inline-flex items-center gap-1.5 cursor-pointer px-4 py-2 rounded-lg text-sm font-medium
+                                          bg-gray-100 dark:bg-cerberus-dark border border-gray-300 dark:border-cerberus-steel
+                                          text-gray-700 dark:text-cerberus-light hover:bg-gray-200 dark:hover:bg-cerberus-steel/40 transition">
+                                <span class="material-icons text-base">upload</span>
+                                Cambiar foto
+                                <input type="file" name="foto" id="fotoInput" class="hidden" accept="image/*">
+                            </label>
+                            <p id="fotoEstado" class="text-xs text-gray-500 dark:text-cerberus-light">
+                                Elige la foto, ajústala y luego pulsa «Guardar foto».
+                            </p>
+                        </div>
                     </div>
 
                     <div class="flex justify-end">
-                        <button
-                            class="px-6 py-2 bg-cerberus-primary hover:bg-cerberus-hover text-white font-semibold rounded-lg">
+                        <button type="submit"
+                            class="px-6 py-2 bg-cerberus-primary hover:bg-cerberus-hover text-white font-semibold rounded-lg transition">
                             Guardar foto
                         </button>
                     </div>
                 </form>
-            </x-card>
+            </x-ui.card>
 
             {{-- INFORMACIÓN DEL PERFIL --}}
             <x-ui.card title="Información del perfil" description="Actualiza tus datos personales y correo electrónico">
@@ -366,7 +375,7 @@
 
         {{-- MODAL CROP FOTO --}}
         <x-modal.modal name="crop-photo" maxWidth="lg">
-            <div class="bg-cerberus-dark p-6 space-y-4">
+            <div class="bg-white dark:bg-cerberus-dark p-6 space-y-4">
 
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Ajustar foto de perfil
@@ -378,7 +387,7 @@
 
                 <div class="flex justify-end gap-3 pt-4">
                     <button type="button" id="cancelCrop"
-                        class="px-4 py-2 text-sm rounded-lg bg-cerberus-steel text-gray-900 dark:text-white hover:bg-cerberus-hover hover:text-white">
+                        class="px-4 py-2 text-sm rounded-lg bg-gray-200 dark:bg-cerberus-steel text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-cerberus-hover hover:text-gray-900 dark:hover:text-white">
                         Cancelar
                     </button>
 
@@ -389,7 +398,7 @@
                 </div>
 
             </div>
-        </x-modal>
+        </x-modal.modal>
 
         {{-- <script>
             let cropper = null;

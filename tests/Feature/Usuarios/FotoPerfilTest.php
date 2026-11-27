@@ -53,4 +53,31 @@ class FotoPerfilTest extends TestCase
             ->put(route('profile.photo.update'), ['foto' => UploadedFile::fake()->create('nota.pdf', 10, 'application/pdf')])
             ->assertSessionHasErrors(['foto' => 'El archivo tiene que ser una imagen (JPG, PNG…).']);
     }
+
+    /** @test */
+    public function funciona_por_post_y_con_respaldo_base64_del_recortador(): void
+    {
+        Storage::fake('public');
+        Role::firstOrCreate(['name' => 'Analista', 'guard_name' => 'web']);
+        $empresa = Empresa::create(['nombre' => 'Empresa C']);
+        $user = User::factory()->create(['empresa_id' => $empresa->id, 'empresa_activa_id' => $empresa->id]);
+        $user->assignRole('Analista');
+        $user->empresasAsignadas()->attach($empresa->id);
+
+        // Imagen PNG válida 1x1 en base64
+        $png1x1 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aK4cAAAAASUVORK5CYII=';
+
+        $this->actingAs($user)->from(route('profile.edit'))
+            ->post(route('profile.photo.store'), ['foto_recortada' => $png1x1])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('photo-updated', true);
+
+        $this->assertNotNull($user->fresh()->foto);
+        Storage::disk('public')->assertExists($user->fresh()->foto);
+
+        // Si envía vacío, muestra error en español y la vista renderiza errores de "foto"
+        $this->actingAs($user)->followingRedirects()->from(route('profile.edit'))
+            ->post(route('profile.photo.store'), [])
+            ->assertSee('Elige una foto antes de pulsar');
+    }
 }
