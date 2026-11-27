@@ -1,6 +1,6 @@
 @props([
-    'badge',   // Nombre del archivo dentro de images/banner-error/
-    'code',    // Código HTTP, ej. 404
+    'badge' => null, // Nombre del archivo dentro de images/banner-error/ (opcional)
+    'code',          // Código HTTP, ej. 404
     'title',
     'message',
 ])
@@ -73,14 +73,48 @@
             line-height: 1.6;
             margin: 0;
         }
+        .error-code {
+            font-size: 4rem;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.04em;
+            background: linear-gradient(135deg, #60A5FA 0%, #A9D6E5 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0 0 1rem;
+        }
+
+        .error-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1.5rem;
+            padding: 0.65rem 1.25rem;
+            border-radius: 10px;
+            background: #1E40AF;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: background 0.15s ease;
+        }
+
+        .error-action:hover {
+            background: #1E3A8A;
+        }
     </style>
 </head>
 
 <body>
     <div class="error-card">
-        <img src="{{ asset('images/banner-error/' . $badge) }}" alt="Error {{ $code }}" class="error-badge">
+        @if ($badge)
+            <img src="{{ asset('images/banner-error/' . $badge) }}" alt="Error {{ $code }}" class="error-badge">
+        @else
+            <p class="error-code">{{ $code }}</p>
+        @endif
         <p class="error-title">{{ $title }}</p>
         <p class="error-message">{{ $message }}</p>
+        <a href="{{ url('/') }}" class="error-action">Volver al inicio</a>
     </div>
 </body>
 

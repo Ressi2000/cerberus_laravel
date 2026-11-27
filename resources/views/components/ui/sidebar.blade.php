@@ -166,6 +166,24 @@
             @include('components.ui._sidebar-tooltip', ['label' => 'Notificaciones'])
         </a>
 
+        {{-- ── CERBERUS BOT (solo donde está habilitado) ──────────────────── --}}
+        @if (\App\Asistente\Asistente::disponiblePara(auth()->user()))
+            @php $botActive = $active('asistente.index', 'admin.asistente.*'); @endphp
+            <a href="{{ route('asistente.index') }}"
+               class="{{ $li }} {{ $botActive ? $on : $off }}" title="{{ config('asistente.nombre') }}">
+                <span class="material-icons text-xl flex-shrink-0 {{ $botActive ? $ion : $ioff }}">
+                    smart_toy
+                </span>
+                <span class="sidebar-label flex-1 text-sm font-medium whitespace-nowrap">
+                    {{ config('asistente.nombre') }}
+                </span>
+                <span class="sidebar-badge rounded bg-amber-400/90 px-1.5 py-0.5 text-[9px] font-bold text-gray-900">
+                    BETA
+                </span>
+                @include('components.ui._sidebar-tooltip', ['label' => config('asistente.nombre')])
+            </a>
+        @endif
+
         {{-- ── USUARIOS (colapsable) ───────────────────────────────────────── --}}
         @php
             $usersOpen = $active('admin.usuarios.*', 'profile.*');

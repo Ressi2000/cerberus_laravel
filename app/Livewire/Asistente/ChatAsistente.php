@@ -38,14 +38,20 @@ class ChatAsistente extends Component
 
     public bool $abierto = false;
 
+    public bool $pantallaCompleta = false;
+
     public string $pregunta = '';
 
     #[Locked]
     public bool $pensando = false;
 
-    public function mount(): void
+    public function mount(bool $pantallaCompleta = false): void
     {
         abort_unless(Asistente::disponiblePara(Auth::user()), 403);
+        $this->pantallaCompleta = $pantallaCompleta;
+        if ($pantallaCompleta) {
+            $this->abierto = true;
+        }
     }
 
     public function enviar(): void

@@ -310,4 +310,28 @@ class CerberusBotTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.asistente.consultas'))
             ->assertOk()->assertSee('¿Cuánto gana Pedro?');
     }
+
+    /** @test */
+    public function la_vista_completa_del_chat_funciona_solo_si_esta_habilitado_y_sin_duplicar_la_burbuja(): void
+    {
+        $this->actingAs($this->admin)->get(route('asistente.index'))
+            ->assertOk()
+            ->assertSee('Cerberus Bot')
+            ->assertDontSee('Abrir en pantalla completa');
+
+        $analista = User::factory()->create([
+            'empresa_id'        => $this->admin->empresa_id,
+            'empresa_activa_id' => $this->admin->empresa_id,
+        ]);
+        $analista->assignRole('Analista');
+        $analista->empresasAsignadas()->attach($this->admin->empresa_id);
+        $this->actingAs($analista)->get(route('asistente.index'))->assertOk();
+
+        $usuario = User::factory()->create(['empresa_id' => $this->admin->empresa_id]);
+        $usuario->assignRole('Usuario');
+        $this->actingAs($usuario)->get(route('asistente.index'))->assertForbidden();
+
+        config(['asistente.habilitado' => false]);
+        $this->actingAs($this->admin)->get(route('asistente.index'))->assertNotFound();
+    }
 }

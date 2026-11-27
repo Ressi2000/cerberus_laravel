@@ -1,12 +1,13 @@
 <div>
     @if ($open)
-        <div class="fixed inset-0 z-50 flex items-center justify-center">
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" wire:click="close"></div>
 
-            <div class="relative z-50 w-full max-w-lg mx-4 bg-white dark:bg-cerberus-mid
-                        border border-gray-200 dark:border-cerberus-steel rounded-xl shadow-xl">
+            <div class="relative z-50 w-full max-w-lg bg-white dark:bg-cerberus-mid
+                        border border-gray-200 dark:border-cerberus-steel rounded-xl shadow-xl
+                        flex flex-col max-h-[90vh]" style="max-height: 90vh;">
 
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-cerberus-steel">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-cerberus-steel flex-shrink-0">
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                         <span class="material-icons text-cerberus-accent">{{ $componenteId ? 'edit' : 'add_circle' }}</span>
                         {{ $componenteId ? 'Editar componente' : 'Nuevo componente' }}
@@ -16,7 +17,7 @@
                     </button>
                 </div>
 
-                <div class="px-6 py-5 space-y-4">
+                <div class="px-6 py-5 space-y-4 overflow-y-auto flex-1 min-h-0">
 
                     <x-form.select
                         label="Empresa"
@@ -118,7 +119,7 @@
 
                 </div>
 
-                <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel">
+                <div class="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-cerberus-steel flex-shrink-0">
                     <button wire:click="close"
                         class="px-4 py-2 text-sm rounded-lg bg-gray-100 dark:bg-cerberus-steel/30
                                text-gray-700 dark:text-white hover:bg-gray-200 dark:hover:bg-cerberus-steel/50 transition">

@@ -113,7 +113,9 @@ class GraficosAsistenteTest extends TestCase
         Livewire::actingAs($this->admin)->test(ChatAsistente::class)
             ->set('pregunta', 'Gráfico por estado')->call('enviar')->call('responder')
             ->assertSee('Equipos por estado')
-            ->assertSeeHtml('graficoBot(');
+            ->assertSeeHtml('graficoBot(')
+            ->assertSeeHtml('descargar()')
+            ->assertSeeHtml('abrirAmpliado()');
 
         $this->assertStringNotContainsString('"_grafico"', Http::recorded()[1][0]->body());
         $this->assertStringContainsString('"valores"', Http::recorded()[1][0]->body());

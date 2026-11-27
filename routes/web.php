@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AuditoriaController;
 use App\Http\Controllers\Admin\DepartamentoController;
 use App\Http\Controllers\Almacen\AlmacenController;
 use App\Http\Controllers\Asignaciones\AsignacionController;
+use App\Http\Controllers\Asistente\AsistenteController;
 use App\Http\Controllers\Cronograma\CronogramaController;
 use App\Http\Controllers\Mantenimientos\MantenimientoController;
 use App\Http\Controllers\MonitorRed\MonitorRedController;
@@ -87,6 +88,11 @@ Route::middleware(['auth', 'verified', 'user.active', 'empresa.activa'])->group(
             return view('asistente.consultas');
         })->name('admin.asistente.consultas');
     });
+
+    // Vista completa de Cerberus Bot (solo si ASISTENTE_HABILITADO=true).
+    Route::get('/asistente', [AsistenteController::class, 'index'])
+        ->name('asistente.index')
+        ->middleware(['role:Administrador|Analista']);
 
     // Informes de Cerberus Bot: enlace firmado y temporal; solo los descarga quien los pidió.
     Route::get('asistente/informes/{informe}', function (string $informe) {
