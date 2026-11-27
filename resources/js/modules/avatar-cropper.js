@@ -140,6 +140,15 @@ export function initAvatarCropper({
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.9)
 
+        // En "Mi perfil" (formulario normal) escribimos el respaldo base64 y la vista
+        // previa de forma SÍNCRONA para que el formulario siempre tenga la foto lista
+        // aunque el usuario pulse «Guardar foto» de inmediato.
+        if (!livewireInput) {
+            if (hiddenData) hiddenData.value = dataUrl
+            if (previewFoto) previewFoto.src = dataUrl
+            setStatus('Foto ajustada. Pulsa «Guardar foto» para aplicarla.', true)
+        }
+
         canvas.toBlob(blob => {
             if (blob) {
                 const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
@@ -151,34 +160,25 @@ export function initAvatarCropper({
                     livewireInput.files = dt.files
                     livewireInput.dispatchEvent(new Event('change', { bubbles: true }))
                     if (fotoInput) fotoInput.value = ''
-                } else {
-                    // Formulario normal (Mi perfil): guardar en respaldo base64 y en #fotoInput
-                    if (hiddenData) hiddenData.value = dataUrl
-                    if (fotoInput) {
-                        try {
-                            const dt = new DataTransfer()
-                            dt.items.add(file)
-                            fotoInput.files = dt.files
-                        } catch {
-                            // Si el navegador bloquea asignar .files, vaciar para que viaje solo hiddenData
-                            fotoInput.value = ''
-                        }
-                    }
-                    setStatus('Foto ajustada. Pulsa «Guardar foto» para aplicarla.', true)
-                }
 
-                // Actualizar el preview visual
-                if (previewFoto) {
-                    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl)
-                    previewObjectUrl = URL.createObjectURL(blob)
-                    previewFoto.src = previewObjectUrl
+                    if (previewFoto) {
+                        if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl)
+                        previewObjectUrl = URL.createObjectURL(blob)
+                        previewFoto.src = previewObjectUrl
+                    }
+                } else if (fotoInput) {
+                    try {
+                        const dt = new DataTransfer()
+                        dt.items.add(file)
+                        fotoInput.files = dt.files
+                    } catch {
+                        // Si el navegador bloquea asignar .files, vaciar para que viaje hiddenData
+                        fotoInput.value = ''
+                    }
                 }
-            } else if (!livewireInput && hiddenData && dataUrl) {
+            } else if (!livewireInput && fotoInput) {
                 // Fallback puro por dataUrl si toBlob devolviera null
-                hiddenData.value = dataUrl
-                if (fotoInput) fotoInput.value = ''
-                if (previewFoto) previewFoto.src = dataUrl
-                setStatus('Foto ajustada. Pulsa «Guardar foto» para aplicarla.', true)
+                fotoInput.value = ''
             }
 
             destruirCropper()
